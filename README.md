@@ -43,21 +43,36 @@ $ ./target/release/frontier-template-node --dev --manual-seal
 
 ### Docker Based Development
 
-Optionally, You can build and run the frontier node within Docker directly.  
-The Dockerfile is optimized for development speed.  
-(Running the `docker run...` command will recompile the binaries but not the dependencies)
+Optionally, You can build and run the frontier node within Docker directly.
 
-Building (takes 5-10 min):
+#### Build
 
-```bash
-docker build -t frontier-node-dev .
+To build the Docker container, run the following command in the root of the project
+
+```
+$ docker build -f ./docker/Dockerfile -t stability .
 ```
 
-Running (takes 1 min to rebuild binaries):
+#### Run
 
-```bash
-docker run -t frontier-node-dev
 ```
+docker run -d -p 30333:30333 -p 9933:9933 -p 9944:9944 -p 9615:9615 stability
+```
+
+Optional environment variables:
+
+- SEED: This environment variable allows the node to authenticate with a specific account.
+- BOOTNODE: This environment variable allows specifying the bootnode to which the node will connect.
+
+To set an environment variable in the docker run, use the flag -e NAME=VALUE
+
+##### Example
+
+```
+docker run -d -p 30333:30333 -p 9933:9933 -p 9944:9944 -p 9615:9615 -e SEED=account -e BOOTNODE=/ip4/... stability
+```
+
+````
 
 ## Genesis Configuration
 
@@ -95,7 +110,7 @@ inspect blocks:
 		"s": "H256"
 	}
 }
-```
+````
 
 Use the `Developer` app's `RPC calls` tab to query `eth > getBalance(address, number)` with Alice's
 EVM account ID (`0xd43593c715fdd31c61141abd04a99fd6822c8558`); the value that is returned should be:
