@@ -15,8 +15,8 @@ fi
 
 if [ -n "$BOOTNODE" ]; then
   echo "Starting node with bootnode: $BOOTNODE"
-  ./target/release/frontier-template-node --base-path /tmp/node --validator --bootnodes "$BOOTNODE" --chain ./genesis.json
+  ./target/release/frontier-template-node --base-path /tmp/node --validator --bootnodes "$BOOTNODE"
 else
   echo "Starting node without bootnode"
-  ./target/release/frontier-template-node --base-path /tmp/node --validator --chain ./genesis.json
+  ./target/release/frontier-template-node --base-path /tmp/node --validator
 fi
