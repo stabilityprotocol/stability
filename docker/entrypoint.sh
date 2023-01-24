@@ -1,7 +1,6 @@
 #!/bin/bash
 
 if [ -n "$SEED" ]; then
-
   ./target/release/frontier-template-node key insert --base-path /tmp/node \
   --keystore-path  /tmp/node/chains/alphanet/keystore \
   --scheme Sr25519 \
