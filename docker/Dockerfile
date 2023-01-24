@@ -14,7 +14,7 @@ RUN rustup target add wasm32-unknown-unknown
 # Copy source code
 COPY node ./node
 COPY runtime ./runtime
-COPY Cargo.lock Cargo.toml genesis.json ./
+COPY Cargo.lock Cargo.toml ./
 
 
 
