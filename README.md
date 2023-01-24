@@ -1,4 +1,4 @@
-[stability](media/header.png)
+![stability](media/header.png)
 
 Implementation of Stability blockchain in Substrate + Rust, a scalability solution for accessing the gas market.
 
