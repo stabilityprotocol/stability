@@ -298,5 +298,6 @@ git = 'https://github.com/paritytech/substrate'
 version = '5.0.0'
 
 [dependencies.precompile-balances-erc20]
+default-features = false
 path = "../precompiles/balances-erc20"
 version = "0.1.0"
