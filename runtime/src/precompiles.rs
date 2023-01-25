@@ -14,15 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
 
-
 use frame_support::parameter_types;
+use pallet_evm_precompile_blake2::Blake2F;
+use pallet_evm_precompile_bn128::{Bn128Add, Bn128Mul, Bn128Pairing};
 use pallet_evm_precompile_modexp::Modexp;
 use pallet_evm_precompile_sha3fips::Sha3FIPS256;
 use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256};
-use pallet_evm_precompile_blake2::Blake2F;
-use pallet_evm_precompile_bn128::{Bn128Add, Bn128Mul, Bn128Pairing};
 use precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata};
 use precompile_utils::precompile_set::*;
+
+use crate::stability_config::DefaultOwner;
 
 pub struct NativeErc20Metadata;
 
@@ -91,7 +92,10 @@ pub type MoonbeamPrecompiles<R> = PrecompileSetBuilder<
                 // Non-Moonbeam specific nor Ethereum precompiles :
                 PrecompileAt<AddressU64<1024>, Sha3FIPS256>,
                 PrecompileAt<AddressU64<1025>, ECRecoverPublicKey>,
-                PrecompileAt<AddressU64<1026>, Erc20BalancesPrecompile<R, NativeErc20Metadata>>,
+                PrecompileAt<
+                    AddressU64<1026>,
+                    Erc20BalancesPrecompile<R, NativeErc20Metadata, DefaultOwner>,
+                >,
                 // Moonbeam specific precompiles:
             ),
         >,

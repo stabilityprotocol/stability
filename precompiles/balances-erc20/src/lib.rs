@@ -23,7 +23,7 @@ use fp_evm::PrecompileHandle;
 use frame_support::{
     dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
     sp_runtime::traits::{Bounded, CheckedSub, StaticLookup},
-    storage::types::{StorageDoubleMap, StorageMap, ValueQuery},
+    storage::types::{StorageDoubleMap, StorageMap, StorageValue, ValueQuery},
     traits::StorageInstance,
     Blake2_128Concat,
 };
@@ -33,6 +33,7 @@ use pallet_balances::pallet::{
 };
 use pallet_evm::AddressMapping;
 use precompile_utils::prelude::*;
+use sp_core::Get;
 use sp_core::{H160, H256, U256};
 use sp_std::{
     convert::{TryFrom, TryInto},
@@ -67,6 +68,9 @@ pub trait InstanceToPrefix {
 
     /// Prefix used for the Approves storage.
     type NoncesPrefix: StorageInstance;
+
+    /// Prefix used for the Owner storage.
+    type OwnerPrefix: StorageInstance;
 }
 
 // We use a macro to implement the trait for () and the 16 substrate Instance.
@@ -98,9 +102,20 @@ macro_rules! impl_prefix {
                     }
                 }
 
+                pub struct Owner;
+
+                impl StorageInstance for Owner {
+                    const STORAGE_PREFIX: &'static str = "Owner";
+
+                    fn pallet_prefix() -> &'static str {
+                        $name
+                    }
+                }
+
                 impl InstanceToPrefix for $instance {
                     type ApprovesPrefix = Approves;
                     type NoncesPrefix = Nonces;
+                    type OwnerPrefix = Owner;
                 }
             }
         }
@@ -144,6 +159,9 @@ pub type ApprovesStorage<Runtime, Instance> = StorageDoubleMap<
     BalanceOf<Runtime, Instance>,
 >;
 
+pub type OwnerStorage<Instance, DefaultOwner> =
+    StorageValue<<Instance as InstanceToPrefix>::OwnerPrefix, H160, ValueQuery, DefaultOwner>;
+
 /// Storage type used to store EIP2612 nonces.
 pub type NoncesStorage<Instance> = StorageMap<
     <Instance as InstanceToPrefix>::NoncesPrefix,
@@ -174,13 +192,18 @@ pub trait Erc20Metadata {
 /// Precompile exposing a pallet_balance as an ERC20.
 /// Multiple precompiles can support instances of pallet_balance.
 /// The precompile uses an additional storage to store approvals.
-pub struct Erc20BalancesPrecompile<Runtime, Metadata: Erc20Metadata, Instance: 'static = ()>(
-    PhantomData<(Runtime, Metadata, Instance)>,
-);
+pub struct Erc20BalancesPrecompile<
+    Runtime,
+    Metadata: Erc20Metadata,
+    DefaultOwner: Get<H160> + 'static,
+    Instance: 'static = (),
+>(PhantomData<(Runtime, Metadata, DefaultOwner, Instance)>);
 
 #[precompile_utils::precompile]
-impl<Runtime, Metadata, Instance> Erc20BalancesPrecompile<Runtime, Metadata, Instance>
+impl<Runtime, Metadata, DefaultOwner, Instance>
+    Erc20BalancesPrecompile<Runtime, Metadata, DefaultOwner, Instance>
 where
+    DefaultOwner: Get<H160> + 'static,
     Metadata: Erc20Metadata,
     Instance: InstanceToPrefix + 'static,
     Runtime: pallet_balances::Config<Instance> + pallet_evm::Config + pallet_timestamp::Config,
@@ -190,6 +213,30 @@ where
     BalanceOf<Runtime, Instance>: TryFrom<U256> + Into<U256>,
     <Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
 {
+    #[precompile::public("owner()")]
+    #[precompile::view]
+    fn owner(handle: &mut impl PrecompileHandle) -> EvmResult<H256> {
+        handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+        Ok(OwnerStorage::<Instance, DefaultOwner>::get().into())
+    }
+
+    #[precompile::public("transferOwnership(address)")]
+    fn transfer_ownership(handle: &mut impl PrecompileHandle, new_owner: Address) -> EvmResult {
+        handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+
+        let sender = &handle.context().caller;
+
+        OwnerStorage::<Instance, DefaultOwner>::mutate(move |current_owner| {
+            if (*current_owner).eq(sender) {
+                *current_owner = new_owner.into();
+                Ok(())
+            } else {
+                Err(revert("sender is not owner"))
+            }
+        })
+    }
+
     #[precompile::public("totalSupply()")]
     #[precompile::view]
     fn total_supply(handle: &mut impl PrecompileHandle) -> EvmResult<U256> {
@@ -464,7 +511,7 @@ where
         r: H256,
         s: H256,
     ) -> EvmResult {
-        <Eip2612<Runtime, Metadata, Instance>>::permit(
+        <Eip2612<Runtime, Metadata, DefaultOwner, Instance>>::permit(
             handle, owner, spender, value, deadline, v, r, s,
         )
     }
@@ -472,13 +519,13 @@ where
     #[precompile::public("nonces(address)")]
     #[precompile::view]
     fn eip2612_nonces(handle: &mut impl PrecompileHandle, owner: Address) -> EvmResult<U256> {
-        <Eip2612<Runtime, Metadata, Instance>>::nonces(handle, owner)
+        <Eip2612<Runtime, Metadata, DefaultOwner, Instance>>::nonces(handle, owner)
     }
 
     #[precompile::public("DOMAIN_SEPARATOR()")]
     #[precompile::view]
     fn eip2612_domain_separator(handle: &mut impl PrecompileHandle) -> EvmResult<H256> {
-        <Eip2612<Runtime, Metadata, Instance>>::domain_separator(handle)
+        <Eip2612<Runtime, Metadata, DefaultOwner, Instance>>::domain_separator(handle)
     }
 
     fn u256_to_amount(value: U256) -> MayRevert<BalanceOf<Runtime, Instance>> {
