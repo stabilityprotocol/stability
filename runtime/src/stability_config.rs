@@ -22,5 +22,5 @@ pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_MILLIS
 pub const MAXIMUM_BLOCK_LENGTH: u32 = u32::MAX;
 
 parameter_types! {
-    pub DefaultOwner : H160 = H160::from_str("0x0e92e75Dcdc783c86749D4cd9F19e1D634C3a7dd").expect("invalid address");
+    pub DefaultOwner : H160 = H160::from_str("0xa58482131a8d67725e996af72D91A849AcC0F4A1").expect("invalid address");
 }
