@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
 
+use core::ops::Sub;
 use std::str::from_utf8;
 
 use crate::{eip2612::Eip2612, mock::*, *};
 
-use fp_evm::ExitError;
 use frame_support::parameter_types;
 use libsecp256k1::{sign, Message, SecretKey};
 use precompile_utils::testing::*;
@@ -32,9 +32,7 @@ fn precompiles() -> Precompiles<Runtime> {
     PrecompilesValue::get()
 }
 
-parameter_types! {
-    pub DefaultOwner:H160 = H160::from_str("0xa58482131a8d67725e996af72D91A849AcC0F4A1").expect("invalid address");
-}
+use crate::mock::DefaultOwner;
 
 #[test]
 fn selectors() {
@@ -1351,10 +1349,14 @@ fn owner_correctly_init() {
     })
 }
 
+parameter_types! {
+    pub UnpermissionedAccount:H160 = H160::from_str("0x1000000000000000000000000000000000000000").expect("invalid address");
+}
+
 #[test]
 fn transfer_ownership_if_owner() {
     ExtBuilder::default().build().execute_with(|| {
-        let new_owner = H160::from_low_u64_be(1);
+        let new_owner = UnpermissionedAccount::get();
 
         precompiles()
             .prepare_test(
@@ -1375,7 +1377,7 @@ fn transfer_ownership_if_owner() {
 #[test]
 fn fail_transfer_ownership_if_not_owner() {
     ExtBuilder::default().build().execute_with(|| {
-        let new_owner = H160::from_low_u64_be(1);
+        let new_owner = UnpermissionedAccount::get();
 
         precompiles()
             .prepare_test(
@@ -1387,4 +1389,252 @@ fn fail_transfer_ownership_if_not_owner() {
             )
             .execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
     })
+}
+
+#[test]
+fn mint_should_increase_balance() {
+    let target = DefaultOwner::get();
+    let amount = U256::from(1_000_000_000_000_000u128);
+    ExtBuilder::default()
+        .with_balances(vec![(
+            precompile_utils::testing::MockAccount(target),
+            0u128,
+        )])
+        .build()
+        .execute_with(move || {
+            precompiles()
+                .prepare_test(
+                    target,
+                    Precompile1,
+                    PCall::mint_to {
+                        to: precompile_utils::data::Address(target),
+                        amount,
+                    },
+                )
+                .execute_some();
+
+            precompiles()
+                .prepare_test(
+                    target,
+                    Precompile1,
+                    PCall::balance_of {
+                        owner: precompile_utils::data::Address(target),
+                    },
+                )
+                .execute_returns_encoded(amount)
+        })
+}
+
+#[test]
+fn mint_to_different_account() {
+    let sender = DefaultOwner::get();
+    let target = UnpermissionedAccount::get();
+    let amount = U256::from(1_000_000_000_000_000u128);
+
+    let balances = vec![(precompile_utils::testing::MockAccount(target), 0u128)];
+
+    ExtBuilder::default()
+        .with_balances(balances)
+        .build()
+        .execute_with(move || {
+            precompiles()
+                .prepare_test(
+                    sender,
+                    Precompile1,
+                    PCall::mint_to {
+                        to: precompile_utils::data::Address(target),
+                        amount,
+                    },
+                )
+                .execute_some();
+
+            precompiles()
+                .prepare_test(
+                    sender,
+                    Precompile1,
+                    PCall::balance_of {
+                        owner: precompile_utils::data::Address(target),
+                    },
+                )
+                .execute_returns_encoded(amount)
+        })
+}
+
+#[test]
+fn fail_mint_when_not_owner() {
+    let to = UnpermissionedAccount::get();
+    let amount = U256::from(1_000_000);
+
+    ExtBuilder::default().build().execute_with(move || {
+        precompiles()
+            .prepare_test(
+                to,
+                Precompile1,
+                PCall::mint_to {
+                    to: precompile_utils::data::Address(to),
+                    amount,
+                },
+            )
+            .execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
+    })
+}
+
+#[test]
+fn fail_mint_when_overflow() {
+    let to = DefaultOwner::get();
+    let amount = U256::from(1_000_000_000);
+
+    ExtBuilder::default().build().execute_with(move || {
+        precompiles()
+            .prepare_test(
+                to,
+                Precompile1,
+                PCall::mint_to {
+                    to: precompile_utils::data::Address(to),
+                    amount: U256::MAX,
+                },
+            )
+            .execute_some();
+
+        precompiles()
+            .prepare_test(
+                to,
+                Precompile1,
+                PCall::mint_to {
+                    to: precompile_utils::data::Address(to),
+                    amount,
+                },
+            )
+            .execute_reverts(|x| x.eq_ignore_ascii_case(b"failed underlying minting op"));
+    })
+}
+
+#[test]
+fn burn_from_sender() {
+    let sender = DefaultOwner::get();
+    let burned_amount = U256::from(100);
+    let initial_balance = 1_000_000_000u128;
+    let inital_balances = vec![(
+        precompile_utils::testing::MockAccount(sender),
+        initial_balance,
+    )];
+
+    ExtBuilder::default()
+        .with_balances(inital_balances)
+        .build()
+        .execute_with(move || {
+            precompiles()
+                .prepare_test(
+                    sender,
+                    Precompile1,
+                    PCall::burn_from {
+                        to: precompile_utils::data::Address(sender),
+                        amount: U256::from(burned_amount),
+                    },
+                )
+                .execute_some();
+
+            precompiles()
+                .prepare_test(
+                    sender,
+                    Precompile1,
+                    PCall::balance_of {
+                        owner: precompile_utils::data::Address(sender),
+                    },
+                )
+                .execute_returns_encoded(U256::from(initial_balance).sub(burned_amount));
+        })
+}
+
+#[test]
+fn burn_from_not_sender() {
+    let sender = DefaultOwner::get();
+    let target = UnpermissionedAccount::get();
+    let burned_amount = U256::from(100);
+    let initial_balance = 1_000_000_000u128;
+    let inital_balances = vec![(
+        precompile_utils::testing::MockAccount(target),
+        initial_balance,
+    )];
+
+    ExtBuilder::default()
+        .with_balances(inital_balances)
+        .build()
+        .execute_with(move || {
+            precompiles()
+                .prepare_test(
+                    sender,
+                    Precompile1,
+                    PCall::burn_from {
+                        to: precompile_utils::data::Address(target),
+                        amount: U256::from(burned_amount),
+                    },
+                )
+                .execute_some();
+
+            precompiles()
+                .prepare_test(
+                    sender,
+                    Precompile1,
+                    PCall::balance_of {
+                        owner: precompile_utils::data::Address(target),
+                    },
+                )
+                .execute_returns_encoded(U256::from(initial_balance).sub(burned_amount));
+        })
+}
+
+#[test]
+fn fail_burn_from_not_owner() {
+    let sender = UnpermissionedAccount::get();
+    let burned_amount = U256::from(100);
+    let initial_balance = 1_000_000_000u128;
+    let inital_balances = vec![(
+        precompile_utils::testing::MockAccount(sender),
+        initial_balance,
+    )];
+
+    ExtBuilder::default()
+        .with_balances(inital_balances)
+        .build()
+        .execute_with(move || {
+            precompiles()
+                .prepare_test(
+                    sender,
+                    Precompile1,
+                    PCall::burn_from {
+                        to: precompile_utils::data::Address(sender),
+                        amount: U256::from(burned_amount),
+                    },
+                )
+                .execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
+        })
+}
+
+#[test]
+fn fail_burn_when_underflow() {
+    let sender = DefaultOwner::get();
+    let target = UnpermissionedAccount::get();
+    let burned_amount = U256::from(100);
+    let initial_balance = 1u128;
+    let inital_balances = vec![(
+        precompile_utils::testing::MockAccount(target),
+        initial_balance,
+    )];
+
+    ExtBuilder::default()
+        .with_balances(inital_balances)
+        .build()
+        .execute_with(move || {
+            precompiles()
+                .prepare_test(
+                    sender,
+                    Precompile1,
+                    PCall::burn_from {
+                        to: precompile_utils::data::Address(target),
+                        amount: U256::from(burned_amount),
+                    },
+                )
+                .execute_reverts(|x| x.eq_ignore_ascii_case(b"failed underlying burning op"));
+        })
 }

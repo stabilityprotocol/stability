@@ -20,11 +20,12 @@
 #![cfg_attr(test, feature(assert_matches))]
 
 use fp_evm::PrecompileHandle;
+use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::{
     dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
     sp_runtime::traits::{Bounded, CheckedSub, StaticLookup},
     storage::types::{StorageDoubleMap, StorageMap, StorageValue, ValueQuery},
-    traits::StorageInstance,
+    traits::{fungible::Mutate, StorageInstance},
     Blake2_128Concat,
 };
 use pallet_balances::pallet::{
@@ -219,6 +220,50 @@ where
         handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
         Ok(OwnerStorage::<Instance, DefaultOwner>::get().into())
+    }
+
+    #[precompile::public("mintTo(address,uint256)")]
+    fn mint_to(handle: &mut impl PrecompileHandle, to: Address, amount: U256) -> EvmResult {
+        handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+        handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+
+        let sender = handle.context().caller;
+        let owner = OwnerStorage::<Instance, DefaultOwner>::get();
+
+        if sender == owner {
+            let target: Runtime::AccountId = Runtime::AddressMapping::into_account_id(to.into());
+
+            pallet_balances::Pallet::<Runtime, Instance>::mint_into(
+                &target,
+                amount.saturated_into(),
+            )
+            .or_else(|_| Err(revert("failed underlying minting op")))
+        } else {
+            Err(revert("sender is not owner"))
+        }
+    }
+
+    #[precompile::public("burnFrom(address,uint256)")]
+    fn burn_from(handle: &mut impl PrecompileHandle, to: Address, amount: U256) -> EvmResult {
+        handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+        handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+
+        let sender = handle.context().caller;
+        let owner = OwnerStorage::<Instance, DefaultOwner>::get();
+
+        if sender == owner {
+            let target: Runtime::AccountId = Runtime::AddressMapping::into_account_id(to.into());
+
+            match pallet_balances::Pallet::<Runtime, Instance>::burn_from(
+                &target,
+                amount.saturated_into(),
+            ) {
+                Ok(_) => Ok(()),
+                Err(_) => Err(revert("failed underlying burning op")),
+            }
+        } else {
+            Err(revert("sender is not owner"))
+        }
     }
 
     #[precompile::public("transferOwnership(address)")]
