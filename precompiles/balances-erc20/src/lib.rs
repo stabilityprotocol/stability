@@ -237,7 +237,7 @@ where
                 &target,
                 amount.saturated_into(),
             )
-            .or_else(|_| Err(revert("failed underlying minting op")))
+            .or_else(|_| Err(revert("mint operation overflow account balance")))
         } else {
             Err(revert("sender is not owner"))
         }
@@ -259,7 +259,7 @@ where
                 amount.saturated_into(),
             ) {
                 Ok(_) => Ok(()),
-                Err(_) => Err(revert("failed underlying burning op")),
+                Err(_) => Err(revert("insufficient target balance")),
             }
         } else {
             Err(revert("sender is not owner"))

@@ -1505,7 +1505,9 @@ fn fail_mint_when_overflow() {
                     amount,
                 },
             )
-            .execute_reverts(|x| x.eq_ignore_ascii_case(b"failed underlying minting op"));
+            .execute_reverts(|x| {
+                x.eq_ignore_ascii_case(b"mint operation overflow account balance")
+            });
     })
 }
 
@@ -1635,6 +1637,6 @@ fn fail_burn_when_underflow() {
                         amount: U256::from(burned_amount),
                     },
                 )
-                .execute_reverts(|x| x.eq_ignore_ascii_case(b"failed underlying burning op"));
+                .execute_reverts(|x| x.eq_ignore_ascii_case(b"insufficient target balance"));
         })
 }
