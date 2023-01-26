@@ -1435,6 +1435,13 @@ fn claim_ownership_if_claimable() {
 
         precompiles()
             .prepare_test(new_owner, Precompile1, PCall::claim_ownership {})
+            .expect_log(log1(
+                Precompile1,
+                SELECTOR_LOG_NEW_OWNER,
+                EvmDataWriter::new()
+                    .write(Into::<H256>::into(new_owner))
+                    .build(),
+            ))
             .execute_some();
 
         precompiles()

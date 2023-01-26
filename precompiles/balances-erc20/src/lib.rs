@@ -360,6 +360,8 @@ where
         handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
         handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
+        handle.record_log_costs_manual(1, 32)?;
+
         let sender = handle.context().caller;
 
         let target_new_owner = ClaimableOwnerStorage::<Instance>::get();
@@ -372,6 +374,14 @@ where
         OwnerStorage::<Instance, DefaultOwner>::mutate(|owner| {
             *owner = target_new_owner;
         });
+
+        log1(
+            handle.context().address,
+            SELECTOR_LOG_NEW_OWNER,
+            EvmDataWriter::new()
+                .write(Into::<H256>::into(target_new_owner))
+                .build(),
+        ).record(handle)?;
 
         Ok(())
     }
