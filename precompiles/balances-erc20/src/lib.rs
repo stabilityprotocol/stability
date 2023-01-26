@@ -67,12 +67,6 @@ pub const SELECTOR_LOG_WITHDRAWAL: [u8; 32] = keccak256!("Withdrawal(address,uin
 /// Solidity selector of the Withdraw log, which is the Keccak of the Log signature.
 pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
 
-/// Solidity selector of the Withdraw log, which is the Keccak of the Log signature.
-pub const SELECTOR_LOG_MINT_TO: [u8; 32] = keccak256!("MintTo(address,uint256)");
-
-/// Solidity selector of the Withdraw log, which is the Keccak of the Log signature.
-pub const SELECTOR_LOG_BURN_FROM: [u8; 32] = keccak256!("BurnFrom(address,uint256)");
-
 /// Associates pallet Instance to a prefix used for the Approves storage.
 /// This trait is implemented for () and the 16 substrate Instance.
 pub trait InstanceToPrefix {
