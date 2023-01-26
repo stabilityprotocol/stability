@@ -39,6 +39,18 @@ default-features = false
 features = ['derive']
 version = '2.3.0'
 
+[dev-dependencies.sp-core]
+branch = 'polkadot-v0.9.30'
+default-features = false
+git = 'https://github.com/paritytech/substrate'
+version = '6.0.0'
+
+[dev-dependencies.sp-io]
+branch = 'polkadot-v0.9.30'
+default-features = false
+git = 'https://github.com/paritytech/substrate'
+version = '6.0.0'
+
 [features]
 default = ["std"]
 std = [
