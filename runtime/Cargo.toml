@@ -55,6 +55,7 @@ std = [
     'pallet-evm-precompile-sha3fips/std',
     'pallet-evm-precompile-simple/std',
     'pallet-hotfix-sufficients/std',
+    'pallet-collective/std'
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
@@ -295,3 +296,9 @@ branch = 'polkadot-v0.9.30'
 default-features = false
 git = 'https://github.com/paritytech/substrate'
 version = '5.0.0'
+
+[dependencies.pallet-collective]
+branch = 'polkadot-v0.9.30'
+default-features = false
+git = 'https://github.com/paritytech/substrate'
+version = '4.0.0-dev'

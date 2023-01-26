@@ -59,6 +59,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 
 mod stability_config;
 use stability_config::{
+    COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS, COUNCIL_MOTION_MINUTES_DURATION,
     MAXIMUM_BLOCK_LENGTH, MAXIMUM_BLOCK_WEIGHT, MILLISECS_PER_BLOCK, NORMAL_DISPATCH_RATIO,
 };
 
@@ -374,6 +375,23 @@ impl pallet_hotfix_sufficients::Config for Runtime {
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const CouncilMotionDuration: BlockNumber = COUNCIL_MOTION_MINUTES_DURATION * MINUTES;
+    pub const CouncilMaxProposals: u32 = COUNCIL_MAX_PROPOSALS;
+    pub const CouncilMaxMembers: u32 = COUNCIL_MAX_MEMBERS;
+}
+
+impl pallet_collective::Config for Runtime {
+    type RuntimeOrigin = RuntimeOrigin;
+    type Proposal = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+    type MotionDuration = CouncilMotionDuration;
+    type MaxProposals = CouncilMaxProposals;
+    type MaxMembers = CouncilMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -388,6 +406,7 @@ construct_runtime!(
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
         Sudo: pallet_sudo,
+        Collective: pallet_collective,
         Ethereum: pallet_ethereum,
         EVM: pallet_evm,
         EVMChainId: pallet_evm_chain_id,
