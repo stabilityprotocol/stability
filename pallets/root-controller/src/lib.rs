@@ -31,6 +31,14 @@ pub mod pallet {
         type RuntimeCall: Parameter
             + UnfilteredDispatchable<RuntimeOrigin = Self::RuntimeOrigin>
             + GetDispatchInfo;
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+    }
+
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        /// A dispatch_as_root just took place. \[result\]
+        DispatchAsRootOccurred { dispatch_result: DispatchResult },
     }
 
     #[pallet::call]
@@ -43,7 +51,9 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             T::ControlOrigin::ensure_origin(origin)?;
             let res = call.dispatch_bypass_filter(frame_system::RawOrigin::Root.into());
-            // Root user does not pay a fee.
+            Self::deposit_event(Event::DispatchAsRootOccurred {
+                dispatch_result: res.map(|_| ()).map_err(|e| e.error),
+            });
             Ok(Pays::No.into())
         }
     }

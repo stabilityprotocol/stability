@@ -398,6 +398,7 @@ impl pallet_root_controller::Config for Runtime {
     type ControlOrigin =
         pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 1, 2>;
     type RuntimeCall = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

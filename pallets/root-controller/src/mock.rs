@@ -57,18 +57,18 @@ ord_parameter_types! {
 impl Config for Test {
     type ControlOrigin = frame_system::EnsureSignedBy<AllowedAccountId, u64>;
     type RuntimeCall = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
 }
 
 // Logger module to track execution.
 #[frame_support::pallet]
 pub mod logger {
+
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-    }
+    pub trait Config: frame_system::Config {}
 
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
@@ -77,66 +77,27 @@ pub mod logger {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight(*weight)]
-        pub fn privileged_i32_log(
-            origin: OriginFor<T>,
-            i: i32,
-            weight: Weight,
-        ) -> DispatchResultWithPostInfo {
+        #[pallet::weight(0)]
+        pub fn privileged_i32_log(origin: OriginFor<T>, i: i32) -> DispatchResultWithPostInfo {
             // Ensure that the `origin` is `Root`.
             ensure_root(origin)?;
             <I32Log<T>>::try_append(i).map_err(|_| "could not append")?;
-            Self::deposit_event(Event::AppendI32 { value: i, weight });
             Ok(().into())
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight(*weight)]
-        pub fn non_privileged_log(
-            origin: OriginFor<T>,
-            i: i32,
-            weight: Weight,
-        ) -> DispatchResultWithPostInfo {
-            // Ensure that the `origin` is some signed account.
-            let sender = ensure_signed(origin)?;
-            <I32Log<T>>::try_append(i).map_err(|_| "could not append")?;
-            <AccountLog<T>>::try_append(sender.clone()).map_err(|_| "could not append")?;
-            Self::deposit_event(Event::AppendI32AndAccount {
-                sender,
-                value: i,
-                weight,
-            });
-            Ok(().into())
+        #[pallet::weight(0)]
+        pub fn force_fail_log(_: OriginFor<T>) -> DispatchResultWithPostInfo {
+            Err(DispatchError::BadOrigin.into())
         }
     }
-
-    #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config> {
-        AppendI32 {
-            value: i32,
-            weight: Weight,
-        },
-        AppendI32AndAccount {
-            sender: T::AccountId,
-            value: i32,
-            weight: Weight,
-        },
-    }
-
-    #[pallet::storage]
-    #[pallet::getter(fn account_log)]
-    pub(super) type AccountLog<T: Config> =
-        StorageValue<_, BoundedVec<T::AccountId, ConstU32<1_000>>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn i32_log)]
     pub(super) type I32Log<T> = StorageValue<_, BoundedVec<i32, ConstU32<1_000>>, ValueQuery>;
 }
 
-impl logger::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
-}
+impl logger::Config for Test {}
 
 frame_support::construct_runtime!(
     pub enum Test
