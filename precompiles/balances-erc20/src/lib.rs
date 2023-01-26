@@ -19,7 +19,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(test, feature(assert_matches))]
 
+use core::str::FromStr;
+
 use fp_evm::PrecompileHandle;
+use frame_support::parameter_types;
 use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::{
     dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
@@ -61,6 +64,15 @@ pub const SELECTOR_LOG_DEPOSIT: [u8; 32] = keccak256!("Deposit(address,uint256)"
 /// Solidity selector of the Withdraw log, which is the Keccak of the Log signature.
 pub const SELECTOR_LOG_WITHDRAWAL: [u8; 32] = keccak256!("Withdrawal(address,uint256)");
 
+/// Solidity selector of the Withdraw log, which is the Keccak of the Log signature.
+pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
+
+/// Solidity selector of the Withdraw log, which is the Keccak of the Log signature.
+pub const SELECTOR_LOG_MINT_TO: [u8; 32] = keccak256!("MintTo(address,uint256)");
+
+/// Solidity selector of the Withdraw log, which is the Keccak of the Log signature.
+pub const SELECTOR_LOG_BURN_FROM: [u8; 32] = keccak256!("BurnFrom(address,uint256)");
+
 /// Associates pallet Instance to a prefix used for the Approves storage.
 /// This trait is implemented for () and the 16 substrate Instance.
 pub trait InstanceToPrefix {
@@ -72,6 +84,9 @@ pub trait InstanceToPrefix {
 
     /// Prefix used for the Owner storage.
     type OwnerPrefix: StorageInstance;
+
+    /// Prefix used for the ClaimableOwner storage.
+    type ClaimableOwnerPrefix: StorageInstance;
 }
 
 // We use a macro to implement the trait for () and the 16 substrate Instance.
@@ -113,10 +128,22 @@ macro_rules! impl_prefix {
                     }
                 }
 
+                pub struct ClaimableOwner;
+
+                impl StorageInstance for ClaimableOwner {
+                    const STORAGE_PREFIX: &'static str = "ClaimableOwner";
+
+                    fn pallet_prefix() -> &'static str {
+                        $name
+                    }
+                }
+
+
                 impl InstanceToPrefix for $instance {
                     type ApprovesPrefix = Approves;
                     type NoncesPrefix = Nonces;
                     type OwnerPrefix = Owner;
+                    type ClaimableOwnerPrefix = ClaimableOwner;
                 }
             }
         }
@@ -162,6 +189,16 @@ pub type ApprovesStorage<Runtime, Instance> = StorageDoubleMap<
 
 pub type OwnerStorage<Instance, DefaultOwner> =
     StorageValue<<Instance as InstanceToPrefix>::OwnerPrefix, H160, ValueQuery, DefaultOwner>;
+
+parameter_types! {
+    pub ZeroAddress:H160 = H160::from_str("0x0000000000000000000000000000000000000000").expect("invalid address");
+}
+pub type ClaimableOwnerStorage<Instance> = StorageValue<
+    <Instance as InstanceToPrefix>::ClaimableOwnerPrefix,
+    H160,
+    ValueQuery,
+    ZeroAddress,
+>;
 
 /// Storage type used to store EIP2612 nonces.
 pub type NoncesStorage<Instance> = StorageMap<
@@ -222,6 +259,14 @@ where
         Ok(OwnerStorage::<Instance, DefaultOwner>::get().into())
     }
 
+    #[precompile::public("pendingOwner()")]
+    #[precompile::view]
+    fn pending_owner(handle: &mut impl PrecompileHandle) -> EvmResult<H256> {
+        handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+        Ok(ClaimableOwnerStorage::<Instance>::get().into())
+    }
+
     #[precompile::public("mintTo(address,uint256)")]
     fn mint_to(handle: &mut impl PrecompileHandle, to: Address, amount: U256) -> EvmResult {
         handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
@@ -230,16 +275,32 @@ where
         let sender = handle.context().caller;
         let owner = OwnerStorage::<Instance, DefaultOwner>::get();
 
-        if sender == owner {
+        handle.record_log_costs_manual(3, 32)?;
+
+        let zero_address =
+            H160::from_str("0x0000000000000000000000000000000000000000").expect("invalid address");
+
+        if sender != owner {
+            Err(revert("sender is not owner"))
+        } else {
             let target: Runtime::AccountId = Runtime::AddressMapping::into_account_id(to.into());
 
             pallet_balances::Pallet::<Runtime, Instance>::mint_into(
                 &target,
                 amount.saturated_into(),
             )
-            .or_else(|_| Err(revert("mint operation overflow account balance")))
-        } else {
-            Err(revert("sender is not owner"))
+            .or_else(|_| Err(revert("mint operation overflow account balance")))?;
+
+            log3(
+                handle.context().address,
+                SELECTOR_LOG_TRANSFER,
+                zero_address,
+                Into::<H160>::into(to),
+                EvmDataWriter::new().write(amount).build(),
+            )
+            .record(handle)?;
+
+            Ok(())
         }
     }
 
@@ -251,35 +312,74 @@ where
         let sender = handle.context().caller;
         let owner = OwnerStorage::<Instance, DefaultOwner>::get();
 
-        if sender == owner {
+        handle.record_log_costs_manual(3, 32)?;
+
+        let zero_address =
+            H160::from_str("0x0000000000000000000000000000000000000000").expect("invalid address");
+
+        if sender != owner {
+            Err(revert("sender is not owner"))
+        } else {
             let target: Runtime::AccountId = Runtime::AddressMapping::into_account_id(to.into());
 
-            match pallet_balances::Pallet::<Runtime, Instance>::burn_from(
+            pallet_balances::Pallet::<Runtime, Instance>::burn_from(
                 &target,
                 amount.saturated_into(),
-            ) {
-                Ok(_) => Ok(()),
-                Err(_) => Err(revert("insufficient target balance")),
-            }
-        } else {
-            Err(revert("sender is not owner"))
+            )
+            .or_else(|_| return Err(revert("not enough balance to burn")))?;
+
+            log3(
+                handle.context().address,
+                SELECTOR_LOG_TRANSFER,
+                Into::<H160>::into(to),
+                zero_address,
+                EvmDataWriter::new().write(amount).build(),
+            )
+            .record(handle)?;
+
+            Ok(())
         }
     }
 
     #[precompile::public("transferOwnership(address)")]
     fn transfer_ownership(handle: &mut impl PrecompileHandle, new_owner: Address) -> EvmResult {
         handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+        handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-        let sender = &handle.context().caller;
+        let sender = handle.context().caller;
+        let owner = OwnerStorage::<Instance, DefaultOwner>::get();
 
-        OwnerStorage::<Instance, DefaultOwner>::mutate(move |current_owner| {
-            if (*current_owner).eq(sender) {
-                *current_owner = new_owner.into();
-                Ok(())
-            } else {
-                Err(revert("sender is not owner"))
-            }
-        })
+        if sender != owner {
+            return Err(revert("sender is not owner"));
+        }
+
+        ClaimableOwnerStorage::<Instance>::mutate(move |claimable_owner| {
+            *claimable_owner = new_owner.into();
+        });
+
+        Ok(())
+    }
+
+    #[precompile::public("acceptOwnership()")]
+    fn claim_ownership(handle: &mut impl PrecompileHandle) -> EvmResult {
+        handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+        handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+        handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+
+        let sender = handle.context().caller;
+
+        let target_new_owner = ClaimableOwnerStorage::<Instance>::get();
+
+        if target_new_owner != sender {
+            return Err(revert("target owner is not the claimer"));
+        }
+
+        ClaimableOwnerStorage::<Instance>::kill();
+        OwnerStorage::<Instance, DefaultOwner>::mutate(|owner| {
+            *owner = target_new_owner;
+        });
+
+        Ok(())
     }
 
     #[precompile::public("totalSupply()")]
