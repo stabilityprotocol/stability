@@ -200,8 +200,8 @@ fn testnet_genesis(
     chain_id: u64,
 ) -> GenesisConfig {
     use frontier_template_runtime::{
-        AuraConfig, BalancesConfig, CollectiveConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig,
-        SudoConfig, SystemConfig,
+        AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SudoConfig,
+        SystemConfig, TechCommitteeCollectiveConfig,
     };
 
     GenesisConfig {
@@ -236,7 +236,7 @@ fn testnet_genesis(
                 .map(|x| (x.1.clone(), 1))
                 .collect(),
         },
-        collective: CollectiveConfig {
+        tech_committee_collective: TechCommitteeCollectiveConfig {
             phantom: Default::default(),
             members: members.clone(),
         },

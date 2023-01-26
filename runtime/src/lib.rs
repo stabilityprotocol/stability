@@ -381,7 +381,9 @@ parameter_types! {
     pub const CouncilMaxMembers: u32 = COUNCIL_MAX_MEMBERS;
 }
 
-impl pallet_collective::Config for Runtime {
+type TechCommitteeInstance = pallet_collective::Instance1;
+
+impl pallet_collective::Config<TechCommitteeInstance> for Runtime {
     type RuntimeOrigin = RuntimeOrigin;
     type Proposal = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
@@ -390,6 +392,12 @@ impl pallet_collective::Config for Runtime {
     type MaxMembers = CouncilMaxMembers;
     type DefaultVote = pallet_collective::PrimeDefaultVote;
     type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_root_controller::Config for Runtime {
+    type ControlOrigin =
+        pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 1, 2>;
+    type RuntimeCall = RuntimeCall;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -406,7 +414,8 @@ construct_runtime!(
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
         Sudo: pallet_sudo,
-        Collective: pallet_collective,
+        TechCommitteeCollective: pallet_collective::<Instance1>,
+        RootController: pallet_root_controller,
         Ethereum: pallet_ethereum,
         EVM: pallet_evm,
         EVMChainId: pallet_evm_chain_id,
