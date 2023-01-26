@@ -20,10 +20,10 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{
         AccountIdLookup, BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, Get,
-        IdentifyAccount, NumberFor, PostDispatchInfoOf, UniqueSaturatedInto, Verify,
+        NumberFor, PostDispatchInfoOf, UniqueSaturatedInto, Verify,
     },
     transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
-    ApplyExtrinsicResult, MultiSignature, Permill,
+    ApplyExtrinsicResult, Permill,
 };
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
@@ -40,8 +40,10 @@ use pallet_transaction_payment::CurrencyAdapter;
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use pallet_evm::{
-    Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner,
+    Account as EVMAccount, EnsureAddressNever, EnsureAddressRoot, FeeCalculator, Runner,
 };
+mod account;
+use account::AccountId20;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -69,11 +71,11 @@ use precompiles::FrontierPrecompiles;
 pub type BlockNumber = u32;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
-pub type Signature = MultiSignature;
+pub type Signature = account::EthereumSignature;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+pub type AccountId = AccountId20;
 
 /// The type for looking up accounts. We don't expect more than 4 billion of them, but you
 /// never know...
@@ -150,6 +152,16 @@ parameter_types! {
     pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
         ::max_with_normal_ratio(MAXIMUM_BLOCK_LENGTH, NORMAL_DISPATCH_RATIO);
     pub const SS58Prefix: u8 = 42;
+}
+
+pub struct FromH160;
+impl<T> pallet_evm::AddressMapping<T> for FromH160
+where
+    T: From<H160>,
+{
+    fn into_account_id(address: H160) -> T {
+        address.into()
+    }
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -297,11 +309,16 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
     where
         I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
     {
-        if let Some(author_index) = F::find_author(digests) {
-            let authority_id = Aura::authorities()[author_index as usize].clone();
-            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
-        }
-        None
+        F::find_author(digests).and_then(|i| {
+            Aura::authorities().get(i as usize).and_then(|id| {
+                let raw = id.to_raw_vec();
+                if raw.len() >= 24 {
+                    Some(H160::from_slice(&raw[4..24]))
+                } else {
+                    None
+                }
+            })
+        })
     }
 }
 
@@ -317,9 +334,9 @@ impl pallet_evm::Config for Runtime {
     type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
     type WeightPerGas = WeightPerGas;
     type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
-    type CallOrigin = EnsureAddressTruncated;
-    type WithdrawOrigin = EnsureAddressTruncated;
-    type AddressMapping = HashedAddressMapping<BlakeTwo256>;
+    type CallOrigin = EnsureAddressRoot<AccountId>;
+    type WithdrawOrigin = EnsureAddressNever<AccountId>;
+    type AddressMapping = FromH160;
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
     type PrecompilesType = FrontierPrecompiles<Self>;
@@ -370,7 +387,7 @@ impl pallet_base_fee::Config for Runtime {
 }
 
 impl pallet_hotfix_sufficients::Config for Runtime {
-    type AddressMapping = HashedAddressMapping<BlakeTwo256>;
+    type AddressMapping = FromH160;
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 

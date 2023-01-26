@@ -2,6 +2,8 @@
 async-trait = '0.1'
 futures = '0.3.24'
 log = '0.4.17'
+libsecp256k1 = { version = "0.7", default-features = false, features = [ "hmac" ] }
+sha3 = { version = "0.10", default-features = false }
 
 [dependencies.clap]
 features = ['derive']

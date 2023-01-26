@@ -1553,7 +1553,7 @@ dependencies = [
  "fixed-hash",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.3.2",
  "scale-info",
  "tiny-keccak",
 ]
@@ -1587,7 +1587,7 @@ dependencies = [
  "fixed-hash",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.3.2",
  "primitive-types",
  "scale-info",
  "uint",
@@ -2257,6 +2257,7 @@ dependencies = [
  "frontier-template-runtime",
  "futures",
  "jsonrpsee",
+ "libsecp256k1",
  "log",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
@@ -2277,6 +2278,7 @@ dependencies = [
  "sc-telemetry",
  "sc-transaction-pool",
  "sc-transaction-pool-api",
+ "sha3",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
@@ -2303,6 +2305,9 @@ dependencies = [
  "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
+ "impl-serde 0.4.0",
+ "libsecp256k1",
+ "log",
  "pallet-aura",
  "pallet-balances",
  "pallet-base-fee",
@@ -2322,6 +2327,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
+ "sha3",
  "sp-api",
  "sp-block-builder",
  "sp-consensus-aura",
@@ -2934,6 +2940,15 @@ name = "impl-serde"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4551f042f3438e64dbd6226b20527fc84a6e1fe65688b58746a2f53623f25f5c"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "impl-serde"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc88fc67028ae3db0c853baa36269d398d5f45b6982f95549ff5def78c935cd"
 dependencies = [
  "serde",
 ]
@@ -5240,7 +5255,7 @@ dependencies = [
  "fixed-hash",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.3.2",
  "scale-info",
  "uint",
 ]
@@ -7535,7 +7550,7 @@ dependencies = [
  "futures",
  "hash-db",
  "hash256-std-hasher",
- "impl-serde",
+ "impl-serde 0.3.2",
  "lazy_static",
  "libsecp256k1",
  "log",
@@ -7870,7 +7885,7 @@ name = "sp-storage"
 version = "6.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.30#a3ed0119c45cdd0d571ad34e5b3ee7518c8cef8d"
 dependencies = [
- "impl-serde",
+ "impl-serde 0.3.2",
  "parity-scale-codec",
  "ref-cast",
  "serde",
@@ -7972,7 +7987,7 @@ name = "sp-version"
 version = "5.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.30#a3ed0119c45cdd0d571ad34e5b3ee7518c8cef8d"
 dependencies = [
- "impl-serde",
+ "impl-serde 0.3.2",
  "parity-scale-codec",
  "parity-wasm 0.45.0",
  "scale-info",
