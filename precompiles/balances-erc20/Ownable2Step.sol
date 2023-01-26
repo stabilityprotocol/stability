@@ -1,17 +1,5 @@
 interface Ownable2Step {
-    event OwnershipTransferStarted(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
-
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
-
-    event RenounceOwnershipInitiated();
-
-    event OwnershipRenounced();
+    event NewOwner(address newOwner);
 
     /// @dev Returns owner.
     /// @custom:selector 8da5cb5b
