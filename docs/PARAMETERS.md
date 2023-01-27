@@ -9,7 +9,7 @@ There are various parameters that can be adjusted to configure a blockchain and 
   - Max Block Weight = 1_333_333_333_333
 - **EVM Gas Limit**: ~50_000_000. Frontier assumes that a Gas Unit is equals to 20_000 Weight (`WEIGHT_PER_GAS`), and the blocks would allow till 75% (`NORMAL_DISPATCH_RATIO`) of `Normal` extrinsics in each one. The formula looks like:
 
-```math
+```
 Gas Limit = NORMAL_DISPATCH_RATIO * MBW / WEIGHT_PER_GAS
 Gas Limit = 0.75 * 1_333_333_333_333 / 20_000 = 50_000_000
 ```
