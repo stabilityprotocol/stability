@@ -59,7 +59,8 @@ pub use pallet_timestamp::Call as TimestampCall;
 
 mod stability_config;
 use stability_config::{
-    MAXIMUM_BLOCK_LENGTH, MAXIMUM_BLOCK_WEIGHT, MILLISECS_PER_BLOCK, NORMAL_DISPATCH_RATIO,
+    EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH, MAXIMUM_BLOCK_WEIGHT, MILLISECS_PER_BLOCK,
+    NORMAL_DISPATCH_RATIO,
 };
 
 mod precompiles;
@@ -251,7 +252,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 0;
+    pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
     // For weight estimation, we assume that the most locks on an individual account will be 50.
     // This number may need to be adjusted in the future if this assumption no longer holds true.
     pub const MaxLocks: u32 = 50;
