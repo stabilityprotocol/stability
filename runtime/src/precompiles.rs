@@ -12,19 +12,18 @@ use sp_core::H160;
 
 use crate::stability_config::DEFAULT_OWNER;
 
-
 pub struct NativeErc20Metadata;
 
 /// ERC20 metadata for the native token.
 impl Erc20Metadata for NativeErc20Metadata {
     /// Returns the name of the token.
     fn name() -> &'static str {
-        "GLMR token"
+        "DOLR"
     }
 
     /// Returns the symbol of the token.
     fn symbol() -> &'static str {
-        "GLMR"
+        "DOLR"
     }
 
     /// Returns the decimals places of the token.
