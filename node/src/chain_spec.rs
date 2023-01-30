@@ -160,10 +160,28 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
                 main_account.clone(),
                 // Pre-funded accounts
                 vec![main_account.clone()],
-                vec![get_authority_from_pubkeys(
-                    "5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs",
-                    "5FviP577ihFCP4n8jCnrd38dQDCn2VeM5DAoYNEHbPy7JtWz",
-                )],
+                vec![
+                    get_authority_from_pubkeys(
+                        "5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs",
+                        "5FviP577ihFCP4n8jCnrd38dQDCn2VeM5DAoYNEHbPy7JtWz",
+                    ),
+                    get_authority_from_pubkeys(
+                        "5G1wTFx3iLZCWejfaSGfxQtdKHRzDJ4ga7iabWVS1a9DND2L",
+                        "5FqDv66PJL7TtC49CitcfGNokKJjbL3nwDRmYnQ66BJttUrw",
+                    ),
+                    get_authority_from_pubkeys(
+                        "5Dnet7dgiMJBuAyizMH5EW9JYSXttNKFveQH5Miekrwb4GxJ",
+                        "5GUVATr2DwH51tnqaUEuBtuHA4bLnoWBAkauDxDafMukpZAZ",
+                    ),
+                    get_authority_from_pubkeys(
+                        "5H639iD2JYtZbQN5sNNVRhVtpvzHyhXp5MwGBgW1FLz71zkp",
+                        "5FiEnbnj7VV5CWAtbJXtZjCkiQTBBRqyb8MgXEkydW1SfLiJ",
+                    ),
+                    get_authority_from_pubkeys(
+                        "5DtBoSGDHwH4aLJUA2LVYwprziGEyDopXc4YvdU8LRB1rzdv",
+                        "5GzRrcmG4kztd31FPWEcr51B3Jd2GZPh6ZjpxwzymopHuViN",
+                    ),
+                ],
                 20180427,
             )
         },
