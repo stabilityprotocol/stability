@@ -1,7 +1,4 @@
-use core::str::FromStr;
-
 use frame_support::weights::{constants::WEIGHT_PER_MILLIS, Weight};
-use sp_core::{parameter_types, H160};
 use sp_runtime::Perbill;
 
 // Block time
@@ -21,6 +18,4 @@ pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_MILLIS
 
 pub const MAXIMUM_BLOCK_LENGTH: u32 = u32::MAX;
 
-parameter_types! {
-    pub DefaultOwner : H160 = H160::from_str("0xa58482131a8d67725e996af72D91A849AcC0F4A1").expect("invalid address");
-}
+pub const DEFAULT_OWNER: &str = "0xa58482131a8d67725e996af72D91A849AcC0F4A1";

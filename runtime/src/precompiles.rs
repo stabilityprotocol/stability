@@ -1,3 +1,5 @@
+use core::str::FromStr;
+
 use frame_support::parameter_types;
 use pallet_evm_precompile_blake2::Blake2F;
 use pallet_evm_precompile_bn128::{Bn128Add, Bn128Mul, Bn128Pairing};
@@ -6,8 +8,10 @@ use pallet_evm_precompile_sha3fips::Sha3FIPS256;
 use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256};
 use precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata};
 use precompile_utils::precompile_set::*;
+use sp_core::H160;
 
-use crate::stability_config::DefaultOwner;
+use crate::stability_config::DEFAULT_OWNER;
+
 
 pub struct NativeErc20Metadata;
 
@@ -45,6 +49,7 @@ pub const LOCAL_ASSET_PRECOMPILE_ADDRESS_PREFIX: &[u8] = &[255u8, 255u8, 255u8, 
 parameter_types! {
     pub ForeignAssetPrefix: &'static [u8] = FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX;
     pub LocalAssetPrefix: &'static [u8] = LOCAL_ASSET_PRECOMPILE_ADDRESS_PREFIX;
+    pub DefaultOwner:H160 = H160::from_str(DEFAULT_OWNER).expect("invalid address");
 }
 
 // Set of Stability precompiles
