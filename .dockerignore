@@ -1,4 +1,4 @@
 **/target/
 **/examples/
-**/utils/
+utils/
 Dockerfile

@@ -53,6 +53,7 @@ std = [
     'pallet-evm-chain-id/std',
     'pallet-evm-precompile-modexp/std',
     'pallet-evm-precompile-sha3fips/std',
+    'precompile-balances-erc20/std',
     'pallet-evm-precompile-simple/std',
     'pallet-hotfix-sufficients/std',
 ]
@@ -295,3 +296,23 @@ branch = 'polkadot-v0.9.30'
 default-features = false
 git = 'https://github.com/paritytech/substrate'
 version = '5.0.0'
+
+[dependencies.precompile-balances-erc20]
+default-features = false
+path = "../precompiles/balances-erc20"
+version = "0.1.0"
+
+[dependencies.precompile-utils]
+default-features = false
+path = "../precompiles/utils"
+version = "0.1.0"
+
+[dependencies.pallet-evm-precompile-blake2]
+git = "https://github.com/paritytech/frontier" 
+branch = "polkadot-v0.9.30"
+default-features = false
+
+[dependencies.pallet-evm-precompile-bn128]
+git = "https://github.com/paritytech/frontier"
+branch = "polkadot-v0.9.30"
+default-features = false
