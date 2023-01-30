@@ -1,18 +1,18 @@
-// Copyright 2019-2022 PureStake Inc.
-// This file is part of Moonbeam.
+// Copyright 2019-2022 Stability Solutions.
+// This file is part of Stability.
 
-// Moonbeam is free software: you can redistribute it and/or modify
+// Stability is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Moonbeam is distributed in the hope that it will be useful,
+// Stability is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Precompile to interact with pallet_balances instances using the ERC20 interface standard.
 
@@ -381,7 +381,8 @@ where
             EvmDataWriter::new()
                 .write(Into::<H256>::into(target_new_owner))
                 .build(),
-        ).record(handle)?;
+        )
+        .record(handle)?;
 
         Ok(())
     }

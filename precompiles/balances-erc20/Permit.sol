@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.3;
 
-/// @author The Moonbeam Team
+/// @author The Stability Team
 /// @title Extension of the ERC20 interface that allows users to
 /// @dev Sign permit messages to interact with contracts without needing to
 /// make a first approve transaction.
