@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, str::FromStr};
+use std::{collections::BTreeMap, str::FromStr, vec};
 
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -59,6 +59,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 ],
                 // Initial PoA authorities
                 vec![authority_keys_from_seed("Alice")],
+                vec![get_account_id_from_seed::<sr25519::Public>("Alice")],
                 42,
             )
         },
@@ -109,6 +110,10 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 vec![
                     authority_keys_from_seed("Alice"),
                     authority_keys_from_seed("Bob"),
+                ],
+                vec![
+                    get_account_id_from_seed::<sr25519::Public>("Alice"),
+                    get_account_id_from_seed::<sr25519::Public>("Bob"),
                 ],
                 42,
             )
@@ -164,6 +169,10 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
                     "5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs",
                     "5FviP577ihFCP4n8jCnrd38dQDCn2VeM5DAoYNEHbPy7JtWz",
                 )],
+                vec![
+                    AccountId::from_string("5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs")
+                        .expect("Bad account id format"),
+                ],
                 20180427,
             )
         },
@@ -187,11 +196,12 @@ fn testnet_genesis(
     sudo_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     initial_authorities: Vec<(AuraId, GrandpaId)>,
+    members: Vec<AccountId>,
     chain_id: u64,
 ) -> GenesisConfig {
     use frontier_template_runtime::{
-        AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SudoConfig,
-        SystemConfig,
+        AuraConfig, BalancesConfig, CollectiveConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig,
+        SudoConfig, SystemConfig,
     };
 
     GenesisConfig {
@@ -226,7 +236,10 @@ fn testnet_genesis(
                 .map(|x| (x.1.clone(), 1))
                 .collect(),
         },
-
+        collective: CollectiveConfig {
+            phantom: Default::default(),
+            members: members.clone(),
+        },
         // EVM compatibility
         evm_chain_id: EVMChainIdConfig { chain_id },
         evm: EVMConfig {
