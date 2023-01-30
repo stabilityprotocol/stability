@@ -18,4 +18,8 @@ pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_MILLIS
 
 pub const MAXIMUM_BLOCK_LENGTH: u32 = u32::MAX;
 
+/// Minimum deposit of an account to exist.
+/// Since this minimum deposit would be reduced
+/// from the actual account balance we set it to zero
+
 pub const EXISTENTIAL_DEPOSIT: u128 = 0u128;
