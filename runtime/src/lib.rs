@@ -60,11 +60,12 @@ pub use pallet_timestamp::Call as TimestampCall;
 mod stability_config;
 use stability_config::{
     COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS, COUNCIL_MOTION_MINUTES_DURATION,
-    MAXIMUM_BLOCK_LENGTH, MAXIMUM_BLOCK_WEIGHT, MILLISECS_PER_BLOCK, NORMAL_DISPATCH_RATIO,
+    EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH, MAXIMUM_BLOCK_WEIGHT, MILLISECS_PER_BLOCK,
+    NORMAL_DISPATCH_RATIO,
 };
 
 mod precompiles;
-use precompiles::FrontierPrecompiles;
+use precompiles::StabilityPrecompiles;
 
 /// Type of block number.
 pub type BlockNumber = u32;
@@ -252,7 +253,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 500;
+    pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
     // For weight estimation, we assume that the most locks on an individual account will be 50.
     // This number may need to be adjusted in the future if this assumption no longer holds true.
     pub const MaxLocks: u32 = 50;
@@ -309,7 +310,7 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
 const WEIGHT_PER_GAS: u64 = 20_000;
 parameter_types! {
     pub BlockGasLimit: U256 = U256::from(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT.ref_time() / WEIGHT_PER_GAS);
-    pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
+    pub PrecompilesValue: StabilityPrecompiles<Runtime> = StabilityPrecompiles::<_>::new();
     pub WeightPerGas: Weight = Weight::from_ref_time(WEIGHT_PER_GAS);
 }
 
@@ -323,7 +324,7 @@ impl pallet_evm::Config for Runtime {
     type AddressMapping = HashedAddressMapping<BlakeTwo256>;
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
-    type PrecompilesType = FrontierPrecompiles<Self>;
+    type PrecompilesType = StabilityPrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = EVMChainId;
     type BlockGasLimit = BlockGasLimit;

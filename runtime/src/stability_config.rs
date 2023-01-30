@@ -22,3 +22,10 @@ pub const MAXIMUM_BLOCK_LENGTH: u32 = u32::MAX;
 pub const COUNCIL_MOTION_MINUTES_DURATION: u32 = 10;
 pub const COUNCIL_MAX_PROPOSALS: u32 = 100;
 pub const COUNCIL_MAX_MEMBERS: u32 = 100;
+
+pub const DEFAULT_OWNER: &str = "0xa58482131a8d67725e996af72D91A849AcC0F4A1";
+
+/// Minimum deposit of an account to exist.
+/// Since this minimum deposit would be reduced
+/// from the actual account balance we set it to zero
+pub const EXISTENTIAL_DEPOSIT: u128 = 0u128;
