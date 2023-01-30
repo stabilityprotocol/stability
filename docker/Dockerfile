@@ -14,10 +14,7 @@ RUN rustup target add wasm32-unknown-unknown
 # Copy source code
 COPY node ./node
 COPY runtime ./runtime
-<<<<<<< HEAD
 COPY precompiles ./precompiles
-=======
->>>>>>> main
 COPY Cargo.lock Cargo.toml ./
 
 
