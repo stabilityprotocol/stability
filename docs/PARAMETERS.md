@@ -5,6 +5,7 @@ There are various parameters that can be adjusted to configure a blockchain and 
 ## Variables
 
 - **Block Time**: 2s
+- **Existential Deposit**: Minimum deposit of an account to exist. Since this minimum deposit would be reduced from the actual account balance we set it to zero.
 - **Maximum Block Weight (MBW)**: For calculating it, we assumed that 2/3 of the block time are for computating the block, so, `MS_PER_BLOCK * WEIGHT*PER_MS * 2 / 3` will give us the value.
   - Max Block Weight = 1_333_333_333_333
 - **EVM Gas Limit**: ~50_000_000. Frontier assumes that a Gas Unit is equals to 20_000 Weight (`WEIGHT_PER_GAS`), and the blocks would allow till 75% (`NORMAL_DISPATCH_RATIO`) of `Normal` extrinsics in each one. The formula looks like:
