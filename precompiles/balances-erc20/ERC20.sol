@@ -1,16 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.3;
 
-/// @dev The IERC20 contract's address.
-address constant IERC20_ADDRESS = 0x0000000000000000000000000000000000000802;
-
-/// @dev The IERC20 contract's instance.
-IERC20 constant IERC20_CONTRACT = IERC20(IERC20_ADDRESS);
-
 /// @title ERC20 interface
 /// @dev see https://github.com/ethereum/EIPs/issues/20
 /// @dev copied from https://github.com/OpenZeppelin/openzeppelin-contracts
-/// @custom:address 0x0000000000000000000000000000000000000802
 interface IERC20 {
     /// @dev Returns the name of the token.
     /// @custom:selector 06fdde03
@@ -39,10 +32,10 @@ interface IERC20 {
     /// @param owner address The address which owns the funds.
     /// @param spender address The address which will spend the funds.
     /// @return A uint256 specifying the amount of tokens still available for the spender.
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256);
 
     /// @dev Transfer token for a specified address
     /// @custom:selector a9059cbb
@@ -96,7 +89,6 @@ interface IERC20 {
 /// @title Native currency wrapper interface.
 /// @dev Allow compatibility with dApps expecting this precompile to be
 /// a WETH-like contract.
-/// Moonbase address : 0x0000000000000000000000000000000000000802
 interface WrappedNativeCurrency {
     /// @dev Provide compatibility for contracts that expect wETH design.
     /// Returns funds to sender as this precompile tokens and the native tokens are the same.
