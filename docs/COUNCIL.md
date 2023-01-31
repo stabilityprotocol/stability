@@ -36,9 +36,6 @@ pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 1, 
 
 Here we are defining a struct that implements the `EnsureOrigin` trait and that needs that at least 50% (1/2) of the council members have approved the proposal.
 
-2- Once we have a part of the code that depends on the council, we must create a proposal. For this,
-the account that creates the proposal must be a member of the council.
-
 ### Create a proposal
 
 **1. Click "Extrinsics"**
