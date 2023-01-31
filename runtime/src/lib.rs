@@ -46,9 +46,9 @@ use pallet_evm::{
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, Randomness},
+    traits::{ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, OnTimestampSet, Randomness},
     weights::{
-        constants::{BlockExecutionWeight, ExtrinsicBaseWeight, WEIGHT_PER_SECOND},
+        constants::{BlockExecutionWeight, ExtrinsicBaseWeight, WEIGHT_REF_TIME_PER_SECOND},
         ConstantMultiplier, IdentityFee, Weight,
     },
     ConsensusEngineId, StorageValue,
@@ -238,15 +238,23 @@ impl pallet_grandpa::Config for Runtime {
 
 parameter_types! {
     pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
+    pub storage EnableManualSeal: bool = false;
+}
+
+pub struct ConsensusOnTimestampSet<T>(PhantomData<T>);
+impl<T: pallet_aura::Config> OnTimestampSet<T::Moment> for ConsensusOnTimestampSet<T> {
+    fn on_timestamp_set(moment: T::Moment) {
+        if EnableManualSeal::get() {
+            return;
+        }
+        <pallet_aura::Pallet<T> as OnTimestampSet<T::Moment>>::on_timestamp_set(moment)
+    }
 }
 
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    #[cfg(feature = "aura")]
-    type OnTimestampSet = Aura;
-    #[cfg(feature = "manual-seal")]
-    type OnTimestampSet = ();
+    type OnTimestampSet = ConsensusOnTimestampSet<Self>;
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
@@ -398,6 +406,7 @@ construct_runtime!(
     }
 );
 
+#[derive(Clone)]
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -742,6 +751,8 @@ impl_runtime_apis! {
         fn elasticity() -> Option<Permill> {
             Some(BaseFee::elasticity())
         }
+
+        fn gas_limit_multiplier_support() {}
     }
 
     impl fp_rpc::ConvertTransactionRuntimeApi<Block> for Runtime {
