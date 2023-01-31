@@ -1,12 +1,27 @@
 # Council
 
+# Table of contents
+
+1. [Introduction](#introduction)
+2. [How to use](#how-to-use)
+   1. [Check that the origin is the council](#check-that-the-origin-is-the-council)
+   2. [Create a proposal](#create-a-proposal)
+   3. [Vote a proposal](#vote-a-proposal)
+   4. [Execute the proposal](#execute-the-proposal)
+   5. [Flow example](#flow-example)
+3. [Use root](#use-root)
+
+## Introduction
+
 The council is a way to distribute the responsibility for some actions among multiple accounts. For example, to add a new validator to the network. If we did not have the council, a single private key would have that responsibility, being likely to be lost at some point, or be misused intentionally by its knowers. For this reason, a council mechanism is highly recommended.
 
-In Stability, we use the pallet collective of substrate to do this mechanism.
+In Stability, we use the [pallet collective](https://paritytech.github.io/substrate/master/pallet_collective/index.html) of substrate to do this mechanism.
 
-# How to use
+## How to use
 
-1- In the places where we want the council to have control, we will have to provide a struct that implements the `EnsureOrigin` trait:
+### Check that the origin is the council
+
+In the places where we want the council to have control, we will have to provide a struct that implements the `EnsureOrigin` trait:
 
     - EnsureMember (Check that the origin is a member of the council).
     - EnsureMembers<n> (Checks that the origin is the council through a proposal with approved by at least n members)
@@ -24,7 +39,7 @@ Here we are defining a struct that implements the `EnsureOrigin` trait and that 
 2- Once we have a part of the code that depends on the council, we must create a proposal. For this,
 the account that creates the proposal must be a member of the council.
 
-## Create a proposal
+### Create a proposal
 
 **1. Click "Extrinsics"**
 
@@ -62,7 +77,7 @@ the account that creates the proposal must be a member of the council.
 
 ![](https://ajeuwbhvhr.cloudimg.io/colony-recorder.s3.amazonaws.com/files/2023-01-31/334f2210-b80e-4a6f-b64e-56d5874d6386/ascreenshot.jpeg?tl_px=1386,382&br_px=2879,1222&sharp=0.8&width=560&wat_scale=50&wat=1&wat_opacity=0.7&wat_gravity=northwest&wat_url=https://colony-labs-public.s3.us-east-2.amazonaws.com/images/watermarks/watermark_default.png&wat_pad=309,139)
 
-## Vote a proposal
+### Vote a proposal
 
 **1. To vote on a proposal. Go to the blockchain events and look for the `Proposed` event of your council instance. You will need to copy the proposalHash and the index.**
 
@@ -142,7 +157,28 @@ the account that creates the proposal must be a member of the council.
 
 ![](https://ajeuwbhvhr.cloudimg.io/colony-recorder.s3.amazonaws.com/files/2023-01-31/cd8a8f79-2090-4c44-8623-81605c38a88e/ascreenshot.jpeg?tl_px=1386,398&br_px=2879,1238&sharp=0.8&width=560&wat_scale=50&wat=1&wat_opacity=0.7&wat_gravity=northwest&wat_url=https://colony-labs-public.s3.us-east-2.amazonaws.com/images/watermarks/watermark_default.png&wat_pad=363,139)
 
-## Dispatch as root pallet
+### Flow example
+
+```mermaid
+sequenceDiagram
+    participant Member1
+    participant Member2
+    participant Member3
+    participant Member4
+    participant Council
+    participant ExamplePallet
+    Member1->>Council: Create proposal
+    Member1->>Council: Vote Yes (Extrinsic: vote)
+    Member2->>Council: Vote Yes (Extrinsic: vote)
+    Member3->>Council: Vote No (Extrinsic: vote)
+    Member4->>+Council: Execute the proposal (Extrinsic: close)
+    Council->>+ExamplePallet: (Extrinsic: example)
+    ExamplePallet->>-Council:  Ok
+    Council->>-Member4: Ok
+
+```
+
+## Use root
 
 To be able to use parts of the code with root from the council in Stability we have created the RootController pallet, which allows to call from the `dispatch_as_root` extrinsic to another extrinsic with root as long as the origin of the call to `dispatch_as_root` is from a TechCommitteeInstance council proposal with at least 50% of the members approving this proposal as you can see here:
 
