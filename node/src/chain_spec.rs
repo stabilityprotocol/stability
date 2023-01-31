@@ -48,8 +48,6 @@ pub fn development_config() -> Result<ChainSpec, String> {
         move || {
             testnet_genesis(
                 wasm_binary,
-                // Sudo account
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
                 vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -90,8 +88,6 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             testnet_genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                // Sudo account
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
                 vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -161,8 +157,6 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
             testnet_genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                // Sudo account
-                main_account.clone(),
                 // Pre-funded accounts
                 vec![main_account.clone()],
                 vec![get_authority_from_pubkeys(
@@ -193,15 +187,14 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
     wasm_binary: &[u8],
-    sudo_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     initial_authorities: Vec<(AuraId, GrandpaId)>,
     members: Vec<AccountId>,
     chain_id: u64,
 ) -> GenesisConfig {
     use frontier_template_runtime::{
-        AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SudoConfig,
-        SystemConfig, TechCommitteeCollectiveConfig,
+        AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SystemConfig,
+        TechCommitteeCollectiveConfig,
     };
 
     GenesisConfig {
@@ -209,10 +202,6 @@ fn testnet_genesis(
         system: SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
-        },
-        sudo: SudoConfig {
-            // Assign network admin rights.
-            key: Some(sudo_key),
         },
 
         // Monetary

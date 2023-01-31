@@ -286,11 +286,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = ();
 }
 
-impl pallet_sudo::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type RuntimeCall = RuntimeCall;
-}
-
 impl pallet_evm_chain_id::Config for Runtime {}
 
 pub struct FindAuthorTruncated<F>(PhantomData<F>);
@@ -415,7 +410,6 @@ construct_runtime!(
         Grandpa: pallet_grandpa,
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
-        Sudo: pallet_sudo,
         TechCommitteeCollective: pallet_collective::<Instance1>,
         RootController: pallet_root_controller,
         Ethereum: pallet_ethereum,
