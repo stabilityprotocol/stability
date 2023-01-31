@@ -1,18 +1,46 @@
 use std::{collections::BTreeMap, str::FromStr};
 
+use serde::{Deserialize, Serialize};
+// Substrate
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{crypto::Ss58Codec, sr25519, Pair, Public, H160, U256};
+use sp_core::{crypto::Ss58Codec, sr25519, storage::Storage, Pair, Public, H160, U256};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
-
-use frontier_template_runtime::{AccountId, GenesisConfig, Signature, WASM_BINARY};
+use sp_state_machine::BasicExternalities;
+// Frontier
+use frontier_template_runtime::{
+    AccountId, EnableManualSeal, GenesisConfig, Signature, WASM_BINARY,
+};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
+
+/// Specialized `ChainSpec` for development.
+pub type DevChainSpec = sc_service::GenericChainSpec<DevGenesisExt>;
+
+/// Extension for the dev genesis config to support a custom changes to the genesis state.
+#[derive(Serialize, Deserialize)]
+pub struct DevGenesisExt {
+    /// Genesis config.
+    genesis_config: GenesisConfig,
+    /// The flag that if enable manual-seal mode.
+    enable_manual_seal: Option<bool>,
+}
+
+impl sp_runtime::BuildStorage for DevGenesisExt {
+    fn assimilate_storage(&self, storage: &mut Storage) -> Result<(), String> {
+        BasicExternalities::execute_with_storage(storage, || {
+            if let Some(enable_manual_seal) = &self.enable_manual_seal {
+                EnableManualSeal::set(enable_manual_seal);
+            }
+        });
+        self.genesis_config.assimilate_storage(storage)
+    }
+}
 
 /// Generate a crypto pair from seed.
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -36,31 +64,48 @@ pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
     (get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
 }
 
-pub fn development_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+fn get_key_sr(pubkey: &str) -> sr25519::Public {
+    match sr25519::Public::from_str(pubkey) {
+        Ok(sr_pubkey) => sr_pubkey,
+        Err(_) => panic!("sr pubkey bad formatted"),
+    }
+}
 
-    Ok(ChainSpec::from_genesis(
+fn get_authority_from_pubkeys(sr_pubkey: &str, ed_pubkey: &str) -> (AuraId, GrandpaId) {
+    (
+        AuraId::from_string(sr_pubkey).expect("bad formatted sr pubkey"),
+        GrandpaId::from_string(ed_pubkey).expect("bad formatted ed pubkey"),
+    )
+}
+
+pub fn development_config(enable_manual_seal: Option<bool>) -> DevChainSpec {
+    let wasm_binary = WASM_BINARY.expect("WASM not available");
+
+    DevChainSpec::from_genesis(
         // Name
         "Development",
         // ID
         "dev",
         ChainType::Development,
         move || {
-            testnet_genesis(
-                wasm_binary,
-                // Sudo account
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-                // Pre-funded accounts
-                vec![
+            DevGenesisExt {
+                genesis_config: testnet_genesis(
+                    wasm_binary,
+                    // Sudo account
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob"),
-                    get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-                ],
-                // Initial PoA authorities
-                vec![authority_keys_from_seed("Alice")],
-                42,
-            )
+                    // Pre-funded accounts
+                    vec![
+                        get_account_id_from_seed::<sr25519::Public>("Alice"),
+                        get_account_id_from_seed::<sr25519::Public>("Bob"),
+                        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+                        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+                    ],
+                    // Initial PoA authorities
+                    vec![authority_keys_from_seed("Alice")],
+                    42,
+                ),
+                enable_manual_seal,
+            }
         },
         // Bootnodes
         vec![],
@@ -73,13 +118,13 @@ pub fn development_config() -> Result<ChainSpec, String> {
         None,
         // Extensions
         None,
-    ))
+    )
 }
 
-pub fn local_testnet_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+pub fn local_testnet_config() -> ChainSpec {
+    let wasm_binary = WASM_BINARY.expect("WASM not available");
 
-    Ok(ChainSpec::from_genesis(
+    ChainSpec::from_genesis(
         // Name
         "Local Testnet",
         // ID
@@ -124,20 +169,6 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         None,
         // Extensions
         None,
-    ))
-}
-
-fn get_key_sr(pubkey: &str) -> sr25519::Public {
-    match sr25519::Public::from_str(pubkey) {
-        Ok(sr_pubkey) => sr_pubkey,
-        Err(_) => panic!("sr pubkey bad formatted"),
-    }
-}
-
-fn get_authority_from_pubkeys(sr_pubkey: &str, ed_pubkey: &str) -> (AuraId, GrandpaId) {
-    (
-        AuraId::from_string(sr_pubkey).expect("bad formatted sr pubkey"),
-        GrandpaId::from_string(ed_pubkey).expect("bad formatted ed pubkey"),
     )
 }
 
@@ -241,17 +272,31 @@ fn testnet_genesis(
                     H160::from_str("d43593c715fdd31c61141abd04a99fd6822c8558")
                         .expect("internal H160 is valid; qed"),
                     fp_evm::GenesisAccount {
-                        balance: U256::from(1_000_000_000_000_000_000_000_000u128),
+                        balance: U256::from_str("0xffffffffffffffffffffffffffffffff")
+                            .expect("internal U256 is valid; qed"),
                         code: Default::default(),
                         nonce: Default::default(),
                         storage: Default::default(),
                     },
                 );
                 map.insert(
-                    H160::from_str("a58482131a8d67725e996af72D91A849AcC0F4A1")
+                    // H160 address of CI test runner account
+                    H160::from_str("6be02d1d3665660d22ff9624b7be0551ee1ac91b")
                         .expect("internal H160 is valid; qed"),
                     fp_evm::GenesisAccount {
+                        balance: U256::from_str("0xffffffffffffffffffffffffffffffff")
+                            .expect("internal U256 is valid; qed"),
+                        code: Default::default(),
                         nonce: Default::default(),
+                        storage: Default::default(),
+                    },
+                );
+                map.insert(
+                    // H160 address for benchmark usage
+                    H160::from_str("1000000000000000000000000000000000000001")
+                        .expect("internal H160 is valid; qed"),
+                    fp_evm::GenesisAccount {
+                        nonce: U256::from(1),
                         balance: U256::from(1_000_000_000_000_000_000_000_000u128),
                         storage: Default::default(),
                         code: vec![0x00],
