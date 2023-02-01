@@ -59,7 +59,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 ],
                 // Initial PoA authorities
                 vec![authority_keys_from_seed("Alice")],
-                42,
+                20180427,
             )
         },
         // Bootnodes
@@ -110,7 +110,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                     authority_keys_from_seed("Alice"),
                     authority_keys_from_seed("Bob"),
                 ],
-                42,
+                20180427,
             )
         },
         // Bootnodes
