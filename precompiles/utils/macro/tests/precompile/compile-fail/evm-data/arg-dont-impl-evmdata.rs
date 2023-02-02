@@ -1,18 +1,18 @@
-// Copyright 2019-2022 Stability Solutions.
-// This file is part of Stability.
+// Copyright 2019-2022 PureStake Inc.
+// This file is part of Moonbeam.
 
-// Stability is free software: you can redistribute it and/or modify
+// Moonbeam is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Stability is distributed in the hope that it will be useful,
+// Moonbeam is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
 
 use core::marker::PhantomData;
 use fp_evm::PrecompileHandle;
@@ -22,10 +22,10 @@ pub struct Precompile<R>(PhantomData<R>);
 
 #[precompile_utils_macro::precompile]
 impl<R> Precompile<R> {
-    #[precompile::public("foo()")]
-    fn foo(test: &mut impl PrecompileHandle, arg: String) -> EvmResult {
-        todo!()
-    }
+	#[precompile::public("foo()")]
+	fn foo(test: &mut impl PrecompileHandle, arg: String) -> EvmResult {
+		todo!()
+	}
 }
 
-fn main() {}
+fn main() { }
