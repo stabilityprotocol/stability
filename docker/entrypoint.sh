@@ -15,10 +15,11 @@ if [ -n "$SEED" ]; then
   --key-type gran
 fi
 
+START_COMMAND="./target/release/frontier-template-node --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --chain alphanet --pruning archive"
+
 if [ -n "$BOOTNODE" ]; then
-  echo "Starting node with bootnode: $BOOTNODE"
-  ./target/release/frontier-template-node --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --bootnodes "$BOOTNODE" --chain alphanet
-else
-  echo "Starting node without bootnode"
-  ./target/release/frontier-template-node --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --chain alphanet 
+  START_COMMAND="$START_COMMAND --bootnodes $BOOTNODE"
 fi
+
+eval $START_COMMAND
+
