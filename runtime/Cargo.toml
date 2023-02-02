@@ -70,7 +70,7 @@ authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
 description = 'A fresh FRAME-based Substrate runtime, ready for hacking.'
 edition = '2021'
 license = 'Unlicense'
-name = 'frontier-template-runtime'
+name = 'stability-runtime'
 publish = false
 version = '0.0.0'
 [package.metadata.docs.rs]

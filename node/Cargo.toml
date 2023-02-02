@@ -73,7 +73,7 @@ branch = 'polkadot-v0.9.30'
 git = 'https://github.com/paritytech/substrate'
 version = '4.0.0-dev'
 
-[dependencies.frontier-template-runtime]
+[dependencies.stability-runtime]
 default-features = false
 features = ['std']
 path = '../runtime'
@@ -238,7 +238,7 @@ version = '4.0.0-dev'
 [features]
 aura = [
     'sc-consensus-aura',
-    'frontier-template-runtime/aura',
+    'stability-runtime/aura',
 ]
 default = [
     'aura',
@@ -246,17 +246,17 @@ default = [
 ]
 manual-seal = [
     'sc-consensus-manual-seal',
-    'frontier-template-runtime/manual-seal',
+    'stability-runtime/manual-seal',
 ]
 rpc_binary_search_estimate = ['fc-rpc/rpc_binary_search_estimate']
 runtime-benchmarks = [
     'frame-benchmarking',
     'frame-benchmarking-cli',
     'sc-service/runtime-benchmarks',
-    'frontier-template-runtime/runtime-benchmarks',
+    'stability-runtime/runtime-benchmarks',
 ]
-with-paritydb-weights = ['frontier-template-runtime/with-paritydb-weights']
-with-rocksdb-weights = ['frontier-template-runtime/with-rocksdb-weights']
+with-paritydb-weights = ['stability-runtime/with-paritydb-weights']
+with-rocksdb-weights = ['stability-runtime/with-rocksdb-weights']
 [build-dependencies.substrate-build-script-utils]
 branch = 'polkadot-v0.9.30'
 git = 'https://github.com/paritytech/substrate'
@@ -268,7 +268,7 @@ build = 'build.rs'
 description = 'A fresh FRAME-based Substrate node, ready for hacking.'
 edition = '2021'
 license = 'Unlicense'
-name = 'frontier-template-node'
+name = 'stability'
 publish = false
 version = '0.0.0'
 [package.metadata.docs.rs]

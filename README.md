@@ -17,14 +17,14 @@ $ cargo build --release
 To execute the chain, run:
 
 ```
-$ ./target/release/frontier-template-node --dev
+$ ./target/release/stability--dev
 ```
 
 The node also supports to use manual seal (to produce block manually through RPC).
 This is also used by the ts-tests:
 
 ```
-$ ./target/release/frontier-template-node --dev --manual-seal
+$ ./target/release/stability --dev --manual-seal
 ```
 
 For using a Dockerized solution you can follow the [instructions](docker/README.md) under the `docker/` folder.

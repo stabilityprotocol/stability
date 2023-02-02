@@ -6,7 +6,7 @@ use sp_core::{crypto::Ss58Codec, sr25519, Pair, Public, H160, U256};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
-use frontier_template_runtime::{AccountId, GenesisConfig, Signature, WASM_BINARY};
+use stability_runtime::{AccountId, GenesisConfig, Signature, WASM_BINARY};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -210,7 +210,7 @@ fn testnet_genesis(
     members: Vec<AccountId>,
     chain_id: u64,
 ) -> GenesisConfig {
-    use frontier_template_runtime::{
+    use stability_runtime::{
         AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SystemConfig,
         TechCommitteeCollectiveConfig,
     };
