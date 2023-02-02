@@ -15,6 +15,7 @@ RUN rustup target add wasm32-unknown-unknown
 COPY node ./node
 COPY runtime ./runtime
 COPY precompiles ./precompiles
+COPY pallets ./pallets
 COPY Cargo.lock Cargo.toml ./
 
 
