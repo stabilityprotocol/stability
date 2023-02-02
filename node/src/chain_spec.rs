@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, str::FromStr};
+use std::{collections::BTreeMap, str::FromStr, vec};
 
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -48,8 +48,6 @@ pub fn development_config() -> Result<ChainSpec, String> {
         move || {
             testnet_genesis(
                 wasm_binary,
-                // Sudo account
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
                 vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -59,7 +57,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 ],
                 // Initial PoA authorities
                 vec![authority_keys_from_seed("Alice")],
-                20180427,
+                vec![get_account_id_from_seed::<sr25519::Public>("Alice")],
+                42,
             )
         },
         // Bootnodes
@@ -89,8 +88,6 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             testnet_genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                // Sudo account
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
                 vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -109,6 +106,10 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 vec![
                     authority_keys_from_seed("Alice"),
                     authority_keys_from_seed("Bob"),
+                ],
+                vec![
+                    get_account_id_from_seed::<sr25519::Public>("Alice"),
+                    get_account_id_from_seed::<sr25519::Public>("Bob"),
                 ],
                 20180427,
             )
@@ -156,14 +157,34 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
             testnet_genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                // Sudo account
-                main_account.clone(),
                 // Pre-funded accounts
                 vec![main_account.clone()],
-                vec![get_authority_from_pubkeys(
-                    "5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs",
-                    "5FviP577ihFCP4n8jCnrd38dQDCn2VeM5DAoYNEHbPy7JtWz",
-                )],
+                vec![
+                    get_authority_from_pubkeys(
+                        "5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs",
+                        "5FviP577ihFCP4n8jCnrd38dQDCn2VeM5DAoYNEHbPy7JtWz",
+                    ),
+                    get_authority_from_pubkeys(
+                        "5G1wTFx3iLZCWejfaSGfxQtdKHRzDJ4ga7iabWVS1a9DND2L",
+                        "5FqDv66PJL7TtC49CitcfGNokKJjbL3nwDRmYnQ66BJttUrw",
+                    ),
+                    get_authority_from_pubkeys(
+                        "5Dnet7dgiMJBuAyizMH5EW9JYSXttNKFveQH5Miekrwb4GxJ",
+                        "5GUVATr2DwH51tnqaUEuBtuHA4bLnoWBAkauDxDafMukpZAZ",
+                    ),
+                    get_authority_from_pubkeys(
+                        "5H639iD2JYtZbQN5sNNVRhVtpvzHyhXp5MwGBgW1FLz71zkp",
+                        "5FiEnbnj7VV5CWAtbJXtZjCkiQTBBRqyb8MgXEkydW1SfLiJ",
+                    ),
+                    get_authority_from_pubkeys(
+                        "5DtBoSGDHwH4aLJUA2LVYwprziGEyDopXc4YvdU8LRB1rzdv",
+                        "5GzRrcmG4kztd31FPWEcr51B3Jd2GZPh6ZjpxwzymopHuViN",
+                    ),
+                ],
+                vec![
+                    AccountId::from_string("5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs")
+                        .expect("Bad account id format"),
+                ],
                 20180427,
             )
         },
@@ -184,14 +205,14 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
     wasm_binary: &[u8],
-    sudo_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     initial_authorities: Vec<(AuraId, GrandpaId)>,
+    members: Vec<AccountId>,
     chain_id: u64,
 ) -> GenesisConfig {
     use frontier_template_runtime::{
-        AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SudoConfig,
-        SystemConfig,
+        AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SystemConfig,
+        TechCommitteeCollectiveConfig,
     };
 
     GenesisConfig {
@@ -199,10 +220,6 @@ fn testnet_genesis(
         system: SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
-        },
-        sudo: SudoConfig {
-            // Assign network admin rights.
-            key: Some(sudo_key),
         },
 
         // Monetary
@@ -226,7 +243,10 @@ fn testnet_genesis(
                 .map(|x| (x.1.clone(), 1))
                 .collect(),
         },
-
+        tech_committee_collective: TechCommitteeCollectiveConfig {
+            phantom: Default::default(),
+            members: members.clone(),
+        },
         // EVM compatibility
         evm_chain_id: EVMChainIdConfig { chain_id },
         evm: EVMConfig {
