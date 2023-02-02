@@ -39,7 +39,6 @@ std = [
     'pallet-aura/std',
     'pallet-balances/std',
     'pallet-grandpa/std',
-    'pallet-sudo/std',
     'pallet-timestamp/std',
     'pallet-transaction-payment/std',
     'frame-system-rpc-runtime-api/std',
@@ -56,6 +55,8 @@ std = [
     'precompile-balances-erc20/std',
     'pallet-evm-precompile-simple/std',
     'pallet-hotfix-sufficients/std',
+    'pallet-collective/std',
+    'pallet-root-controller/std',
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
@@ -191,12 +192,6 @@ default-features = false
 git = 'https://github.com/paritytech/frontier.git'
 branch = 'polkadot-v0.9.30'
 
-[dependencies.pallet-sudo]
-branch = 'polkadot-v0.9.30'
-default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '4.0.0-dev'
-
 [dependencies.pallet-timestamp]
 branch = 'polkadot-v0.9.30'
 default-features = false
@@ -297,6 +292,15 @@ default-features = false
 git = 'https://github.com/paritytech/substrate'
 version = '5.0.0'
 
+[dependencies.pallet-collective]
+branch = 'polkadot-v0.9.30'
+default-features = false
+git = 'https://github.com/paritytech/substrate'
+version = '4.0.0-dev'
+
+[dependencies.pallet-root-controller]
+path = '../pallets/root-controller'
+default-features = false
 [dependencies.precompile-balances-erc20]
 default-features = false
 path = "../precompiles/balances-erc20"
