@@ -293,8 +293,7 @@ fn testnet_genesis(
                     H160::from_str("d43593c715fdd31c61141abd04a99fd6822c8558")
                         .expect("internal H160 is valid; qed"),
                     fp_evm::GenesisAccount {
-                        balance: U256::from_str("1_000_000_000_000_000_000_000_000u128")
-                            .expect("internal U256 is valid; qed"),
+                        balance: U256::from(1_000_000_000_000_000_000_000_000u128),
                         code: Default::default(),
                         nonce: Default::default(),
                         storage: Default::default(),
