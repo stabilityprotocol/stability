@@ -59,6 +59,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 
 mod stability_config;
 use stability_config::{
+    COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS, COUNCIL_MOTION_MINUTES_DURATION,
     EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH, MAXIMUM_BLOCK_WEIGHT, MILLISECS_PER_BLOCK,
     NORMAL_DISPATCH_RATIO,
 };
@@ -285,11 +286,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = ();
 }
 
-impl pallet_sudo::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type RuntimeCall = RuntimeCall;
-}
-
 impl pallet_evm_chain_id::Config for Runtime {}
 
 pub struct FindAuthorTruncated<F>(PhantomData<F>);
@@ -375,6 +371,32 @@ impl pallet_hotfix_sufficients::Config for Runtime {
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const CouncilMotionDuration: BlockNumber = COUNCIL_MOTION_MINUTES_DURATION * MINUTES;
+    pub const CouncilMaxProposals: u32 = COUNCIL_MAX_PROPOSALS;
+    pub const CouncilMaxMembers: u32 = COUNCIL_MAX_MEMBERS;
+}
+
+type TechCommitteeInstance = pallet_collective::Instance1;
+
+impl pallet_collective::Config<TechCommitteeInstance> for Runtime {
+    type RuntimeOrigin = RuntimeOrigin;
+    type Proposal = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+    type MotionDuration = CouncilMotionDuration;
+    type MaxProposals = CouncilMaxProposals;
+    type MaxMembers = CouncilMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_root_controller::Config for Runtime {
+    type ControlOrigin =
+        pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 1, 2>;
+    type RuntimeCall = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -388,7 +410,8 @@ construct_runtime!(
         Grandpa: pallet_grandpa,
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
-        Sudo: pallet_sudo,
+        TechCommitteeCollective: pallet_collective::<Instance1>,
+        RootController: pallet_root_controller,
         Ethereum: pallet_ethereum,
         EVM: pallet_evm,
         EVMChainId: pallet_evm_chain_id,
