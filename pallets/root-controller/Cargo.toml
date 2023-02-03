@@ -3,53 +3,15 @@ name = "pallet-root-controller"
 version = "1.0.0"
 edition = "2021"
 
-
-[dependencies.frame-support]
-branch = 'polkadot-v0.9.30'
-default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '4.0.0-dev'
-
-[dependencies.frame-system]
-branch = 'polkadot-v0.9.30'
-default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '4.0.0-dev'
-
-[dependencies.sp-runtime]
-branch = 'polkadot-v0.9.30'
-default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '6.0.0'
-
-[dependencies.sp-std]
-branch = 'polkadot-v0.9.30'
-default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '4.0.0'
-
-[dependencies.codec]
-default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '3.2.1'
-
-[dependencies.scale-info]
-default-features = false
-features = ['derive']
-version = '2.3.0'
-
-[dev-dependencies.sp-core]
-branch = 'polkadot-v0.9.30'
-default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '6.0.0'
-
-[dev-dependencies.sp-io]
-branch = 'polkadot-v0.9.30'
-default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '6.0.0'
+[dependencies]
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+codec = { package = "parity-scale-codec", workspace = true }
+scale-info = { workspace = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
 
 [features]
 default = ["std"]
