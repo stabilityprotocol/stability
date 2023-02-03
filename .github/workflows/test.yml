@@ -16,7 +16,10 @@ jobs:
       - name: Install dependencies for compiling
         run: |
           sudo apt update
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo $PATH
+          export PATH=$HOME/.cargo/bin:${PATH}
           sudo apt install protobuf-compiler -y
-          sudo rustup default nightly
+          rustup default nightly
       - name: Run tests
         run: cargo test --release --verbose
