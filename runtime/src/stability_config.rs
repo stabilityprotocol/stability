@@ -1,4 +1,4 @@
-use frame_support::weights::{constants::WEIGHT_PER_MILLIS, Weight};
+use frame_support::weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight};
 use sp_runtime::Perbill;
 
 // Block time
@@ -11,10 +11,14 @@ pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 const COMPUTATION_BLOCK_TIME_RATIO: (u64, u64) = (2, 3); // 2 third parts of the block time
 
 // how much weight is processed in a block
-pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_MILLIS
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_ref_time(WEIGHT_REF_TIME_PER_MILLIS)
     .mul(MILLISECS_PER_BLOCK)
     .mul(COMPUTATION_BLOCK_TIME_RATIO.0)
-    .div(COMPUTATION_BLOCK_TIME_RATIO.1); // 1_333_333_333_333
+    .div(COMPUTATION_BLOCK_TIME_RATIO.1) // 1_333_333_333_333
+    .set_proof_size(u64::MAX);
+// `.set_proof_size`, since migration to WeightV2, we have set the proof size weight for the maximum block.
+// https://github.com/paritytech/substrate/pull/12277
+// https://substrate.stackexchange.com/questions/5557/construct-runtime-integrity-test-failing
 
 pub const MAXIMUM_BLOCK_LENGTH: u32 = u32::MAX;
 

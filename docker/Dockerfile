@@ -1,6 +1,6 @@
 FROM rustlang/rust:nightly
 
-
+LABEL org.opencontainers.image.source https://github.com/OWNER/REPO
 ARG PROFILE=release
 WORKDIR /stability
 
