@@ -9,6 +9,10 @@ RUN apt-get update -y && \
 # Install rust wasm. Needed for substrate wasm engine
 RUN rustup target add wasm32-unknown-unknown
 
+
+# Install cargo expand. Needed for testing
+RUN cargo install cargo-expand
+
 # Copy source code
 COPY node ./node
 COPY runtime ./runtime
