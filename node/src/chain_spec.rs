@@ -307,7 +307,7 @@ fn testnet_genesis(
                         nonce: Default::default(),
                         balance: U256::from(1_000_000_000_000_000_000_000_000u128),
                         storage: Default::default(),
-                        code: vec![0x00],
+                        code: Default::default(),
                     },
                 );
                 map.insert(
