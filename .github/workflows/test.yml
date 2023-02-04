@@ -6,20 +6,19 @@ on:
       - main
 env:
   CARGO_TERM_COLOR: always
-
+  IMAGE_NAME: stability-test
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      - name: Install dependencies for compiling
-        run: |
-          sudo apt update
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          echo $PATH
-          export PATH=$HOME/.cargo/bin:${PATH}
-          sudo apt install protobuf-compiler -y
-          rustup default nightly
+      - name: Build docker image for testing
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          file: ./docker/test/Dockerfile
+          push: false
+          tags: ${{IMAGE_NAME}}:${{github.sha}}
       - name: Run tests
-        run: cargo test --release --verbose
+        run: docker run ${{IMAGE_NAME}}:${{github.sha}}
