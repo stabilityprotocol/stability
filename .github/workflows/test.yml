@@ -1,9 +1,11 @@
 name: Cargo Test
 
 on:
+  push:
+    branches: ["main"]
   pull_request:
-    branches:
-      - main
+    branches: ["main"]
+
 env:
   CARGO_TERM_COLOR: always
   IMAGE_NAME: stability-test
