@@ -1,5 +1,5 @@
 error: This parameter must have type `&mut impl PrecompileHandle`
-  --> tests/precompile/compile-fail/pre-check/wrong-parameter.rs:24:18
+  --> tests/precompile/compile-fail/pre-check/wrong-parameter.rs:23:18
    |
-24 |     fn pre_check(_: u32) {
+23 |     fn pre_check(_: u32) {
    |                     ^^^
