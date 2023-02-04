@@ -1,24 +1,23 @@
-// Copyright 2019-2022 PureStake Inc.
-// This file is part of Moonbeam.
+// Copyright 2023 Stability Solutions.
+// This file is part of Stability.
 
-// Moonbeam is free software: you can redistribute it and/or modify
+// Stability is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Moonbeam is distributed in the hope that it will be useful,
+// Stability is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
-
+// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
 use {
 	core::marker::PhantomData,
-	precompile_utils::{EvmResult, prelude::*},
+	frame_support::pallet_prelude::{ConstU32, Get},
+	precompile_utils::{prelude::*, EvmResult},
 	sp_core::{H160, U256},
-	frame_support::pallet_prelude::{Get, ConstU32},
 };
 
 // Based on Batch with stripped code.
@@ -27,7 +26,6 @@ struct BatchPrecompile<Runtime>(PhantomData<Runtime>);
 
 type GetCallDataLimit = ConstU32<42>;
 type GetArrayLimit = ConstU32<42>;
-
 
 #[precompile_utils_macro::precompile]
 impl<Runtime> BatchPrecompile<Runtime>
@@ -74,9 +72,7 @@ where
 
 	// additional function to check fallback
 	#[precompile::fallback]
-	fn fallback(
-		handle: &mut impl PrecompileHandle,
-	) -> EvmResult {
+	fn fallback(handle: &mut impl PrecompileHandle) -> EvmResult {
 		todo!("fallback")
 	}
 }

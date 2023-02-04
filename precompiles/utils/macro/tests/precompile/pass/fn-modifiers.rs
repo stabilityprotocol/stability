@@ -1,20 +1,23 @@
-// Copyright 2019-2022 PureStake Inc.
-// This file is part of Moonbeam.
+// Copyright 2023 Stability Solutions.
+// This file is part of Stability.
 
-// Moonbeam is free software: you can redistribute it and/or modify
+// Stability is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Moonbeam is distributed in the hope that it will be useful,
+// Stability is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
+// You should have received a copy of the GNU General Public License
+// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
 	core::marker::PhantomData,
-	precompile_utils::{EvmResult, prelude::*, testing::PrecompileTesterExt},
-	sp_core::H160
+	precompile_utils::{prelude::*, testing::PrecompileTesterExt, EvmResult},
+	sp_core::H160,
 };
 
 pub struct PrecompileSet;
@@ -45,46 +48,34 @@ impl PrecompileSet {
 	}
 }
 
-fn main() { 
-	PrecompileSet.prepare_test(
-		[0u8;20],
-		[0u8;20],
-		PrecompileSetCall::default {}
-	).with_value(1)
-	.execute_reverts(|output| output == b"Function is not payable");
+fn main() {
+	PrecompileSet
+		.prepare_test([0u8; 20], [0u8; 20], PrecompileSetCall::default {})
+		.with_value(1)
+		.execute_reverts(|output| output == b"Function is not payable");
 
-	PrecompileSet.prepare_test(
-		[0u8;20],
-		[0u8;20],
-		PrecompileSetCall::default {}
-	).with_static_call(true)
-	.execute_reverts(|output| output == b"Can't call non-static function in static context");
+	PrecompileSet
+		.prepare_test([0u8; 20], [0u8; 20], PrecompileSetCall::default {})
+		.with_static_call(true)
+		.execute_reverts(|output| output == b"Can't call non-static function in static context");
 
-	PrecompileSet.prepare_test(
-		[0u8;20],
-		[0u8;20],
-		PrecompileSetCall::view {}
-	).with_value(1)
-	.execute_reverts(|output| output == b"Function is not payable");
+	PrecompileSet
+		.prepare_test([0u8; 20], [0u8; 20], PrecompileSetCall::view {})
+		.with_value(1)
+		.execute_reverts(|output| output == b"Function is not payable");
 
-	PrecompileSet.prepare_test(
-		[0u8;20],
-		[0u8;20],
-		PrecompileSetCall::view {}
-	).with_static_call(true)
-	.execute_returns_encoded(());
+	PrecompileSet
+		.prepare_test([0u8; 20], [0u8; 20], PrecompileSetCall::view {})
+		.with_static_call(true)
+		.execute_returns_encoded(());
 
-	PrecompileSet.prepare_test(
-		[0u8;20],
-		[0u8;20],
-		PrecompileSetCall::payable {}
-	).with_value(1)
-	.execute_returns_encoded(());
+	PrecompileSet
+		.prepare_test([0u8; 20], [0u8; 20], PrecompileSetCall::payable {})
+		.with_value(1)
+		.execute_returns_encoded(());
 
-	PrecompileSet.prepare_test(
-		[0u8;20],
-		[0u8;20],
-		PrecompileSetCall::payable {}
-	).with_static_call(true)
-	.execute_reverts(|output| output == b"Can't call non-static function in static context");
+	PrecompileSet
+		.prepare_test([0u8; 20], [0u8; 20], PrecompileSetCall::payable {})
+		.with_static_call(true)
+		.execute_reverts(|output| output == b"Can't call non-static function in static context");
 }
