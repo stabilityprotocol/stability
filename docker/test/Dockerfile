@@ -18,6 +18,6 @@ COPY node ./node
 COPY runtime ./runtime
 COPY precompiles ./precompiles
 COPY pallets ./pallets
-COPY Cargo.lock Cargo.toml ./
+COPY Cargo.lock Cargo.toml rust-toolchain ./
 
 CMD [ "cargo", "test", "--release", "--verbose" ]
