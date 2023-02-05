@@ -1,13 +1,13 @@
 #!/bin/bash
 
 if [ -n "$SEED" ]; then
-  ./target/release/frontier-template-node key insert --base-path /tmp/node \
+  ./target/release/stability key insert --base-path /tmp/node \
   --keystore-path  /tmp/node/chains/alphanet/keystore \
   --scheme Sr25519 \
   --suri "$SEED" \
   --key-type aura
 
-  ./target/release/frontier-template-node key insert \
+  ./target/release/stability key insert \
   --keystore-path  /tmp/node/chains/alphanet/keystore \
   --base-path /tmp/node \
   --scheme Ed25519 \
@@ -15,7 +15,7 @@ if [ -n "$SEED" ]; then
   --key-type gran
 fi
 
-START_COMMAND="./target/release/frontier-template-node --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --chain alphanet --pruning archive"
+START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --chain alphanet --pruning archive"
 
 if [ -n "$BOOTNODE" ]; then
   START_COMMAND="$START_COMMAND --bootnodes $BOOTNODE"

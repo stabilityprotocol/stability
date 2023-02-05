@@ -1,6 +1,6 @@
 ## Docker Based Development
 
-Optionally, You can build and run the frontier node within Docker directly.
+Optionally, You can build and run the stability node within Docker directly.
 
 ### Build
 
