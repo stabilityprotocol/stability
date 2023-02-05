@@ -2282,10 +2282,12 @@ dependencies = [
  "pallet-grandpa",
  "pallet-hotfix-sufficients",
  "pallet-root-controller",
+ "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-validator-set",
  "parity-scale-codec",
  "precompile-balances-erc20",
  "precompile-utils",
@@ -4596,6 +4598,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "syn",
 ]
 
 [[package]]

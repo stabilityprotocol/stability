@@ -33,3 +33,10 @@ pub const DEFAULT_OWNER: &str = "0xa58482131a8d67725e996af72D91A849AcC0F4A1";
 /// Since this minimum deposit would be reduced
 /// from the actual account balance we set it to zero
 pub const EXISTENTIAL_DEPOSIT: u128 = 0u128;
+
+// Session
+pub const SESSION_MINUTES_DURATION: u32 = 2;
+
+// VALIDATOR SET
+
+pub const VALIDATOR_SET_MIN_VALIDATORS: u32 = 1;
