@@ -157,7 +157,7 @@ pub fn local_testnet_config() -> ChainSpec {
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
                     get_account_id_from_seed::<sr25519::Public>("Bob"),
                 ],
-                42,
+                20180427,
             )
         },
         // Bootnodes
