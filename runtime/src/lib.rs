@@ -46,9 +46,9 @@ use pallet_evm::{
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, Randomness},
+    traits::{ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, OnTimestampSet, Randomness},
     weights::{
-        constants::{BlockExecutionWeight, ExtrinsicBaseWeight, WEIGHT_PER_SECOND},
+        constants::{BlockExecutionWeight, ExtrinsicBaseWeight, WEIGHT_REF_TIME_PER_SECOND},
         ConstantMultiplier, IdentityFee, Weight,
     },
     ConsensusEngineId, StorageValue,
@@ -59,6 +59,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 
 mod stability_config;
 use stability_config::{
+    COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS, COUNCIL_MOTION_MINUTES_DURATION,
     EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH, MAXIMUM_BLOCK_WEIGHT, MILLISECS_PER_BLOCK,
     NORMAL_DISPATCH_RATIO,
 };
@@ -238,15 +239,23 @@ impl pallet_grandpa::Config for Runtime {
 
 parameter_types! {
     pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
+    pub storage EnableManualSeal: bool = false;
+}
+
+pub struct ConsensusOnTimestampSet<T>(PhantomData<T>);
+impl<T: pallet_aura::Config> OnTimestampSet<T::Moment> for ConsensusOnTimestampSet<T> {
+    fn on_timestamp_set(moment: T::Moment) {
+        if EnableManualSeal::get() {
+            return;
+        }
+        <pallet_aura::Pallet<T> as OnTimestampSet<T::Moment>>::on_timestamp_set(moment)
+    }
 }
 
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    #[cfg(feature = "aura")]
-    type OnTimestampSet = Aura;
-    #[cfg(feature = "manual-seal")]
-    type OnTimestampSet = ();
+    type OnTimestampSet = ConsensusOnTimestampSet<Self>;
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
@@ -283,11 +292,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = IdentityFee<Balance>;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ();
-}
-
-impl pallet_sudo::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type RuntimeCall = RuntimeCall;
 }
 
 impl pallet_evm_chain_id::Config for Runtime {}
@@ -375,6 +379,32 @@ impl pallet_hotfix_sufficients::Config for Runtime {
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const CouncilMotionDuration: BlockNumber = COUNCIL_MOTION_MINUTES_DURATION * MINUTES;
+    pub const CouncilMaxProposals: u32 = COUNCIL_MAX_PROPOSALS;
+    pub const CouncilMaxMembers: u32 = COUNCIL_MAX_MEMBERS;
+}
+
+type TechCommitteeInstance = pallet_collective::Instance1;
+
+impl pallet_collective::Config<TechCommitteeInstance> for Runtime {
+    type RuntimeOrigin = RuntimeOrigin;
+    type Proposal = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+    type MotionDuration = CouncilMotionDuration;
+    type MaxProposals = CouncilMaxProposals;
+    type MaxMembers = CouncilMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_root_controller::Config for Runtime {
+    type ControlOrigin =
+        pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 1, 2>;
+    type RuntimeCall = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -388,7 +418,8 @@ construct_runtime!(
         Grandpa: pallet_grandpa,
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
-        Sudo: pallet_sudo,
+        TechCommitteeCollective: pallet_collective::<Instance1>,
+        RootController: pallet_root_controller,
         Ethereum: pallet_ethereum,
         EVM: pallet_evm,
         EVMChainId: pallet_evm_chain_id,
@@ -398,6 +429,7 @@ construct_runtime!(
     }
 );
 
+#[derive(Clone)]
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -742,6 +774,8 @@ impl_runtime_apis! {
         fn elasticity() -> Option<Permill> {
             Some(BaseFee::elasticity())
         }
+
+        fn gas_limit_multiplier_support() {}
     }
 
     impl fp_rpc::ConvertTransactionRuntimeApi<Block> for Runtime {

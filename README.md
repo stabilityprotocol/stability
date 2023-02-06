@@ -31,10 +31,10 @@ For using a Dockerized solution you can follow the [instructions](docker/README.
 
 ## Architecture
 
-The Stability Substrate chain is based on `polkadot-v0.9.30` using the `frontier` layout.
+The Stability Substrate chain is based on `polkadot-v0.9.36` using the `frontier` layout.
 For building this chain, the next pallets have been imported:
 
 - Consensus: _AuRa, GRANDPA_
-- EVM: _pallet-evm\*, pallet-ethereum, pallet-dynamic-fee_
+- EVM: _pallet-evm, pallet-ethereum, pallet-dynamic-fee_
 - Substrate: _balances, session, timestamp, collectible_
-- Moonbeam: _precompile-utils_
+- Moonbeam: _precompile-utils, balances-erc20_

@@ -1,6 +1,6 @@
 FROM rustlang/rust:nightly
 
-
+LABEL org.opencontainers.image.source https://github.com/stabilityprotocol/stability
 ARG PROFILE=release
 WORKDIR /stability
 
@@ -15,6 +15,7 @@ RUN rustup target add wasm32-unknown-unknown
 COPY node ./node
 COPY runtime ./runtime
 COPY precompiles ./precompiles
+COPY pallets ./pallets
 COPY Cargo.lock Cargo.toml ./
 
 
