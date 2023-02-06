@@ -9,9 +9,7 @@ use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_state_machine::BasicExternalities;
 // Frontier
-use frontier_template_runtime::{
-    AccountId, EnableManualSeal, GenesisConfig, Signature, WASM_BINARY,
-};
+use stabilty_runtime::{AccountId, EnableManualSeal, GenesisConfig, Signature, WASM_BINARY};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -157,7 +155,7 @@ pub fn local_testnet_config() -> ChainSpec {
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
                     get_account_id_from_seed::<sr25519::Public>("Bob"),
                 ],
-                42,
+                20180427,
             )
         },
         // Bootnodes
@@ -242,7 +240,7 @@ fn testnet_genesis(
     members: Vec<AccountId>,
     chain_id: u64,
 ) -> GenesisConfig {
-    use frontier_template_runtime::{
+    use stabilty_runtime::{
         AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SystemConfig,
         TechCommitteeCollectiveConfig,
     };
@@ -307,7 +305,7 @@ fn testnet_genesis(
                         nonce: Default::default(),
                         balance: U256::from(1_000_000_000_000_000_000_000_000u128),
                         storage: Default::default(),
-                        code: vec![0x00],
+                        code: Default::default(),
                     },
                 );
                 map.insert(
