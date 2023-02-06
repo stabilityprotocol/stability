@@ -1,4 +1,4 @@
-// Copyright 2019-2022 Stability Solutions.
+// Copyright 2023 Stability Solutions.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -13,7 +13,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
-
 use core::marker::PhantomData;
 
 pub struct Precompile<R>(PhantomData<R>);
@@ -21,15 +20,15 @@ pub struct Precompile<R>(PhantomData<R>);
 #[precompile_utils_macro::precompile]
 #[precompile::precompile_set]
 impl<R> Precompile<R> {
-    #[precompile::discriminant]
-    fn discriminant(address: H160, other: u32) -> Option<u32> {
-        Some(42)
-    }
+	#[precompile::discriminant]
+	fn discriminant(address: H160, other: u32) -> Option<u32> {
+		Some(42)
+	}
 
-    #[precompile::public("foo()")]
-    fn foo(_discriminant: u32, test: &mut impl PrecompileHandle) -> EvmResult {
-        todo!()
-    }
+	#[precompile::public("foo()")]
+	fn foo(_discriminant: u32, test: &mut impl PrecompileHandle) -> EvmResult {
+		todo!()
+	}
 }
 
 fn main() {}
