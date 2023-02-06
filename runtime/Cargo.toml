@@ -69,7 +69,7 @@ authors = ['Stability Solutions']
 description = 'Stability protocol Substrate based blockchain'
 edition = '2021'
 license = 'Unlicense'
-name = 'frontier-template-runtime'
+name = 'stabilty-runtime'
 publish = false
 version = '0.0.0'
 
