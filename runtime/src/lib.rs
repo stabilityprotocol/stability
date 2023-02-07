@@ -10,6 +10,8 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode};
+use frame_support::traits::EitherOfDiverse;
+use frame_system::EnsureRoot;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
@@ -409,10 +411,14 @@ parameter_types! {
     pub const MinAuthorities: u32 = VALIDATOR_SET_MIN_VALIDATORS;
 }
 
+type EnsureRootOrHalfTechCommittee = EitherOfDiverse<
+    EnsureRoot<AccountId>,
+    pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 1, 2>,
+>;
+
 impl pallet_validator_set::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type AddRemoveOrigin =
-        pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 1, 2>;
+    type AddRemoveOrigin = EnsureRootOrHalfTechCommittee;
     type MinAuthorities = MinAuthorities;
 }
 
