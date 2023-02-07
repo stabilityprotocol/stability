@@ -1,6 +1,7 @@
 name: Cargo Test
 
 on:
+  workflow_dispatch: true
   push:
     branches: ["main"]
   pull_request:
