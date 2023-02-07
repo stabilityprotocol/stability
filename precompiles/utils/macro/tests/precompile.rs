@@ -1,4 +1,4 @@
-// Copyright 2019-2022 Stability Solutions.
+// Copyright 2023 Stability Solutions.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -13,15 +13,14 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
-
 #[test]
 fn ui() {
-    let t = trybuild::TestCases::new();
-    t.compile_fail("tests/precompile/compile-fail/**/*.rs");
-    t.pass("tests/precompile/pass/**/*.rs");
+	let t = trybuild::TestCases::new();
+	t.compile_fail("tests/precompile/compile-fail/**/*.rs");
+	t.pass("tests/precompile/pass/**/*.rs");
 }
 
 #[test]
 fn expand() {
-    macrotest::expand_without_refresh("tests/precompile/expand/**/*.rs");
+	macrotest::expand_without_refresh("tests/precompile/expand/**/*.rs");
 }

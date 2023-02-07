@@ -1,5 +1,5 @@
 [package]
-name = "frontier-template-node"
+name = "stability"
 version = "0.0.0"
 license = "Unlicense"
 build = "build.rs"
@@ -75,19 +75,19 @@ fp-dynamic-fee = { workspace = true, features = ["std"] }
 fp-evm = { workspace = true, features = ["std"] }
 fp-rpc = { workspace = true, features = ["std"] }
 fp-storage = { workspace = true, features = ["std"] }
-frontier-template-runtime = { path = "./../runtime", features = ["std"] }
+stabilty-runtime = { path = "./../runtime", features = ["std"] }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 
 [features]
 default = ["with-rocksdb-weights"]
-with-rocksdb-weights = ["frontier-template-runtime/with-rocksdb-weights"]
-with-paritydb-weights = ["frontier-template-runtime/with-paritydb-weights"]
+with-rocksdb-weights = ["stabilty-runtime/with-rocksdb-weights"]
+with-paritydb-weights = ["stabilty-runtime/with-paritydb-weights"]
 rpc-binary-search-estimate = ["fc-rpc/rpc-binary-search-estimate"]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
-	"frontier-template-runtime/runtime-benchmarks",
+	"stabilty-runtime/runtime-benchmarks",
 ]
