@@ -24,6 +24,5 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          tags: ${{env.IMAGE_NAME}}:${{github.sha}}
       - name: Run tests
-        run: docker run ${{env.IMAGE_NAME}}:${{github.sha}}
+        run: docker run .
