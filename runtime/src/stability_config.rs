@@ -16,7 +16,7 @@ pub const MILLISECS_PER_BLOCK: u64 = 2000;
 const COMPUTATION_BLOCK_TIME_RATIO: (u64, u64) = (2, 3); // 2 third parts of the block time
 
 // how much weight for normal extrinsics could be processed in a block
-pub const MAXIMUM_NORMAL_BLOCK_WEIGHT: Weight = Weight::from_ref_time(WEIGHT_REF_TIME_PER_MILLIS)
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_ref_time(WEIGHT_REF_TIME_PER_MILLIS)
 	.mul(MILLISECS_PER_BLOCK)
 	.mul(COMPUTATION_BLOCK_TIME_RATIO.0)
 	.div(COMPUTATION_BLOCK_TIME_RATIO.1) // 1_333_333_333_333
@@ -75,7 +75,7 @@ pub fn build_block_weights() -> frame_system::limits::BlockWeights {
 		.expect("Sensible defaults are tested to be valid; qed");
 
 	assert!(
-		weights.max_block.ref_time() <= MAXIMUM_NORMAL_BLOCK_WEIGHT.ref_time(),
+		weights.max_block.ref_time() <= MAXIMUM_BLOCK_WEIGHT.ref_time(),
 		"max_block weight is not computable under the given circustances"
 	);
 
