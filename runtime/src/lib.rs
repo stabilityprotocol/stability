@@ -45,7 +45,9 @@ use pallet_evm::{
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
-	construct_runtime, parameter_types,
+	construct_runtime,
+	dispatch::DispatchClass,
+	parameter_types,
 	traits::{ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, OnTimestampSet, Randomness},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, WEIGHT_REF_TIME_PER_SECOND},
@@ -59,9 +61,9 @@ pub use pallet_timestamp::Call as TimestampCall;
 
 mod stability_config;
 use stability_config::{
-	COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS, COUNCIL_MOTION_MINUTES_DURATION,
-	EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH, MAXIMUM_BLOCK_WEIGHT, MILLISECS_PER_BLOCK,
-	NORMAL_DISPATCH_RATIO,
+	build_block_weights, COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS,
+	COUNCIL_MOTION_MINUTES_DURATION, EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH,
+	MILLISECS_PER_BLOCK,
 };
 
 mod precompiles;
@@ -147,10 +149,8 @@ pub fn native_version() -> sp_version::NativeVersion {
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub const BlockHashCount: BlockNumber = 256;
-	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-		::with_sensible_defaults(MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO);
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
-		::max_with_normal_ratio(MAXIMUM_BLOCK_LENGTH, NORMAL_DISPATCH_RATIO);
+		::max(MAXIMUM_BLOCK_LENGTH);
 	pub const SS58Prefix: u8 = 42;
 }
 
@@ -312,7 +312,6 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
 
 const WEIGHT_PER_GAS: u64 = 20_000;
 parameter_types! {
-	pub BlockGasLimit: U256 = U256::from(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT.ref_time() / WEIGHT_PER_GAS);
 	pub PrecompilesValue: StabilityPrecompiles<Runtime> = StabilityPrecompiles::<_>::new();
 	pub WeightPerGas: Weight = Weight::from_ref_time(WEIGHT_PER_GAS);
 }
@@ -548,6 +547,16 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 			_ => None,
 		}
 	}
+}
+
+parameter_types! {
+	pub BlockWeights: frame_system::limits::BlockWeights = build_block_weights();
+
+	pub BlockGasLimit : U256 = {
+		let max_normal_extrinsic_weight = BlockWeights::get().get(DispatchClass::Normal).max_extrinsic.expect("invalid max_extrinsic").ref_time();
+		U256::from(max_normal_extrinsic_weight / WEIGHT_PER_GAS)
+	};
+
 }
 
 #[cfg(feature = "runtime-benchmarks")]
