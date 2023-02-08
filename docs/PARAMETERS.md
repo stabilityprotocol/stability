@@ -7,15 +7,15 @@ There are various parameters that can be adjusted to configure a blockchain and 
 - **Block Time**: 2s
 - **Existential Deposit**: Minimum deposit of an account to exist. Since this minimum deposit would be reduced from the actual account balance we set it to zero.
 
-### Block size limitting
+### Block size limiting
 
-One important feature of every blockchain is to know how the blocks are being formed and limitting their size in order to assure security and latency. Substrate itself already implements this through two different concepts:
+One important feature of every blockchain is to know how the blocks are being formed and limiting their size in order to assure security and latency. Substrate itself already implements this through two different concepts:
 
 - Byte length limit: Limits actual block size
 
 - Weight limit: Weight is a measure for the computational power need to perform some action.
 
-Besides Substrate, Ethereum also implements a block size limitting through `block_gas_limit` that is similar to Substrate's weight limit but it measures the cost of performing an operation in the EVM.
+Besides Substrate, Ethereum also implements a block size limiting through `block_gas_limit` that is similar to Substrate's weight limit but it measures the cost of performing an operation in the EVM.
 
 Stability implements a weight limitation and a gas limitation, while the byte-length is not effective since its set up to `u64::MAX`. Since gas and weight are closely related `Frontier` has established the relationship between how much `WEIGHT` costs to compute one unit of `GAS`.
 
