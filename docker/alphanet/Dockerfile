@@ -31,7 +31,7 @@ EXPOSE 30333 9933 9944 9615
 
 # Copy entrypoint
 
-COPY ./docker/entrypoint.sh /usr/local/bin/
+COPY ./docker/alphanet/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
