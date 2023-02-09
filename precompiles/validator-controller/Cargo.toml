@@ -6,10 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-precompile-utils = { workspace = true }
-
 # Substrate
 sp-core = { workspace = true }
+codec = { package = "parity-scale-codec", workspace = true }
 frame-system = { workspace = true }
 frame-support = { workspace = true }
 sp-std = { workspace = true }
@@ -21,6 +20,7 @@ pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
 
 # Stability
 pallet-validator-set = { workspace = true }
+precompile-utils = { workspace = true }
 
 [features]
 default = [ "std" ]

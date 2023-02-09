@@ -2,6 +2,6 @@
 pragma solidity >=0.8.3;
 
 interface ValidatorController {
-    function addValidator(address validator) external; // onlyOwner
-    function removeValidator(address validator) external; // onlyOwner
+    function addValidator(bytes32 validator) external; // onlyOwner
+    function removeValidator(bytes32 validator) external; // onlyOwner
 }

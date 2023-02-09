@@ -4873,6 +4873,7 @@ dependencies = [
  "pallet-evm",
  "pallet-timestamp",
  "pallet-validator-set",
+ "parity-scale-codec",
  "precompile-utils",
  "sp-core",
  "sp-std",
