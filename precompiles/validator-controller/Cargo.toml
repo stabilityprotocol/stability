@@ -22,6 +22,15 @@ pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
 pallet-validator-set = { workspace = true }
 precompile-utils = { workspace = true }
 
+[dev-dependencies]
+pallet-balances = { workspace = true }
+pallet-session = { workspace = true }
+sp-runtime = { workspace = true }
+precompile-utils = { path = "../utils", features = [ "testing" ] }
+scale-info = { version = "2.0", default-features = false, features = [ "derive" ] }
+sha3 = "0.10"
+sp-io = { workspace = true }
+
 [features]
 default = [ "std" ]
 std = [
@@ -33,4 +42,7 @@ std = [
     "frame-system/std",
     "frame-support/std",
     "sp-std/std",
+    "sp-runtime/std",
+    "pallet-balances/std",
+    "pallet-session/std",
 ]

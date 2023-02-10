@@ -17,6 +17,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(test, feature(assert_matches))]
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 use codec::Decode;
 use core::str::FromStr;
 use fp_evm::PrecompileHandle;
@@ -39,8 +45,9 @@ parameter_types! {
 	pub ZeroAddress:H160 = H160::from_str("0x0000000000000000000000000000000000000000").expect("invalid address");
 }
 
-/// Solidity selector of the Withdraw log, which is the Keccak of the Log signature.
 pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
+pub const SELECTOR_VALIDATOR_ADDED: [u8; 32] = keccak256!("ValidatorAdded(bytes32)");
+pub const SELECTOR_VALIDATOR_REMOVED: [u8; 32] = keccak256!("ValidatorRemoved(bytes32)");
 
 /// Storage prefix for owner.
 pub struct OwnerPrefix;
@@ -170,11 +177,21 @@ where
 				validator_id: origin_id,
 			},
 		)?;
+
+		log1(
+			handle.context().address,
+			SELECTOR_VALIDATOR_ADDED,
+			EvmDataWriter::new()
+				.write(Into::<H256>::into(new_validator))
+				.build(),
+		)
+		.record(handle)?;
+
 		Ok(())
 	}
 
 	#[precompile::public("removeValidator(bytes32)")]
-	fn remove_validator(handle: &mut impl PrecompileHandle, new_validator: H256) -> EvmResult {
+	fn remove_validator(handle: &mut impl PrecompileHandle, removed_validator: H256) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
@@ -185,8 +202,9 @@ where
 			return Err(revert("sender is not owner"));
 		}
 
-		let origin_id = Runtime::AccountId::decode(&mut new_validator.as_fixed_bytes().as_slice())
-			.map_err(|_| revert("invalid account id"))?;
+		let origin_id =
+			Runtime::AccountId::decode(&mut removed_validator.as_fixed_bytes().as_slice())
+				.map_err(|_| revert("invalid account id"))?;
 
 		RuntimeHelper::<Runtime>::try_dispatch(
 			handle,
@@ -195,6 +213,16 @@ where
 				validator_id: origin_id,
 			},
 		)?;
+
+		log1(
+			handle.context().address,
+			SELECTOR_VALIDATOR_REMOVED,
+			EvmDataWriter::new()
+				.write(Into::<H256>::into(removed_validator))
+				.build(),
+		)
+		.record(handle)?;
+
 		Ok(())
 	}
 }
