@@ -9,7 +9,9 @@ use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_state_machine::BasicExternalities;
 // Frontier
-use stabilty_runtime::{AccountId, EnableManualSeal, GenesisConfig, Signature, WASM_BINARY};
+use stabilty_runtime::{
+	AccountId, EnableManualSeal, GenesisConfig, Precompiles, Signature, WASM_BINARY,
+};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -331,6 +333,20 @@ fn testnet_genesis(
 						code: vec![0x00],
 					},
 				);
+				let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+				Precompiles::used_addresses()
+					.into_iter()
+					.for_each(|addr: H160| {
+						map.insert(
+							addr,
+							fp_evm::GenesisAccount {
+								nonce: Default::default(),
+								balance: Default::default(),
+								storage: Default::default(),
+								code: revert_bytecode.clone(),
+							},
+						);
+					});
 				map
 			},
 		},

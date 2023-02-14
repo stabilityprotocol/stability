@@ -69,6 +69,8 @@ use stability_config::{
 mod precompiles;
 use precompiles::StabilityPrecompiles;
 
+pub type Precompiles = StabilityPrecompiles<Runtime>;
+
 /// Type of block number.
 pub type BlockNumber = u32;
 
