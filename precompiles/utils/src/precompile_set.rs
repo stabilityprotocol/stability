@@ -537,11 +537,7 @@ impl<R: pallet_evm::Config, P: PrecompileSetFragment> PrecompileSetBuilder<R, P>
 	}
 
 	/// Return the list of addresses contained in this PrecompileSet.
-	pub fn used_addresses() -> impl Iterator<Item = R::AccountId> {
-		Self::new()
-			.inner
-			.used_addresses()
-			.into_iter()
-			.map(|x| R::AddressMapping::into_account_id(x))
+	pub fn used_addresses() -> impl Iterator<Item = H160> {
+		Self::new().inner.used_addresses().into_iter()
 	}
 }
