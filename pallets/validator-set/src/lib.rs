@@ -167,6 +167,27 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		/// Add an approved validator again when it comes back online.
+		///
+		/// For this call, the dispatch origin must be the validator itself.
+		#[pallet::call_index(2)]
+		#[pallet::weight(0)]
+		pub fn add_validator_again(
+			origin: OriginFor<T>,
+			validator_id: T::AccountId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(who == validator_id, Error::<T>::BadOrigin);
+			ensure!(
+				<ApprovedValidators<T>>::get().contains(&validator_id),
+				Error::<T>::ValidatorNotApproved
+			);
+
+			Self::do_add_validator(validator_id)?;
+
+			Ok(())
+		}
 	}
 }
 
