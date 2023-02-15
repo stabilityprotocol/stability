@@ -20,4 +20,6 @@ COPY precompiles ./precompiles
 COPY pallets ./pallets
 COPY Cargo.lock Cargo.toml rust-toolchain ./
 
+RUN cargo build --release --tests
+
 CMD [ "cargo", "test", "--release", "--verbose" ]
