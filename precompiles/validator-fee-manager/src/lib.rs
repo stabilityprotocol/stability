@@ -21,6 +21,7 @@
 
 use core::str::FromStr;
 
+use codec::{Decode, Encode};
 use fp_evm::PrecompileHandle;
 use frame_support::parameter_types;
 use frame_support::{
@@ -114,6 +115,36 @@ parameter_types! {
 	pub DefaultConversionRate:(U256, U256) = (U256::from(1), U256::from(1));
 }
 
+#[derive(Decode, Encode, Clone, core::marker::Copy)]
+pub struct Acceptance {
+	pub value: bool,
+	pub is_default: bool,
+}
+
+impl From<bool> for Acceptance {
+	fn from(value: bool) -> Self {
+		Acceptance {
+			value,
+			is_default: false,
+		}
+	}
+}
+
+impl Default for Acceptance {
+	fn default() -> Self {
+		Acceptance {
+			value: false,
+			is_default: true,
+		}
+	}
+}
+
+impl Acceptance {
+	fn is_accepted(&self, is_default_token: bool) -> bool {
+		self.value || self.is_default && is_default_token
+	}
+}
+
 /// Storage double map type used to store acceptable tokens for validators.
 pub type ValidatorTokenAcceptanceStorage<Instance> = StorageDoubleMap<
 	<Instance as FeePrefixes>::ValidatorTokenAcceptancePrefix,
@@ -124,10 +155,8 @@ pub type ValidatorTokenAcceptanceStorage<Instance> = StorageDoubleMap<
 	Blake2_128Concat,
 	H160,
 	// Is accepted?
-	bool,
+	Acceptance,
 	ValueQuery,
-	DefaultAcceptance,
-	// ^ false
 >;
 
 /// Storage double map type used to store conversion rates.
@@ -178,7 +207,7 @@ where
 		ValidatorTokenAcceptanceStorage::<Instance>::set::<H160, H160>(
 			msg_sender,
 			token_address.into(),
-			acceptance_value,
+			acceptance_value.into(),
 		);
 
 		log3(
@@ -201,12 +230,14 @@ where
 	) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		let acceptance = ValidatorTokenAcceptanceStorage::<Instance>::get::<H160, H160>(
+		let is_default_token = DefaultFeeToken::get() == token_address.into();
+
+		let acceptance = &ValidatorTokenAcceptanceStorage::<Instance>::get::<H160, H160>(
 			validator.into(),
 			token_address.into(),
 		);
 
-		Ok(acceptance)
+		Ok(acceptance.is_accepted(is_default_token))
 	}
 
 	#[precompile::public("setTokenConversionRate(address,uint256,uint256)")]
@@ -275,12 +306,14 @@ where
 	) -> EvmResult<(U256, U256)> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		let is_token_accepted = ValidatorTokenAcceptanceStorage::<Instance>::get::<H160, H160>(
+		let is_default_token = DefaultFeeToken::get() == token_address.into();
+
+		let acceptance = &ValidatorTokenAcceptanceStorage::<Instance>::get::<H160, H160>(
 			validator.into(),
 			token_address.into(),
 		);
 
-		if is_token_accepted {
+		if acceptance.is_accepted(is_default_token) {
 			Self::token_conversion_rate(handle, validator, token_address)
 		} else {
 			Err(revert(
