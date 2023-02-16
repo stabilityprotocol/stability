@@ -23,7 +23,6 @@ serde = { workspace = true }
 
 # Substrate
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", workspace = true }
-sc-basic-authorship = { workspace = true }
 sc-cli = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
@@ -76,6 +75,9 @@ fp-evm = { workspace = true, features = ["std"] }
 fp-rpc = { workspace = true, features = ["std"] }
 fp-storage = { workspace = true, features = ["std"] }
 stabilty-runtime = { path = "./../runtime", features = ["std"] }
+
+# Stability
+stbl-cli-authorship = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
