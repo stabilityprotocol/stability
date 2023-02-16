@@ -37,6 +37,27 @@ fn non_default_token_address() {
 				},
 			)
 			.execute_returns_encoded(DefaultAcceptance::get());
+
+		precompiles()
+			.prepare_test(
+				CryptoAlith,
+				Precompile1,
+				PCall::set_token_acceptance {
+					token_address: MeaninglessTokenAddress::get().into(),
+					acceptance_value: !DefaultAcceptance::get(),
+				},
+			)
+			.execute_some();
+		precompiles()
+			.prepare_test(
+				CryptoAlith,
+				Precompile1,
+				PCall::validator_supports_token {
+					validator: Address(CryptoAlith.into()),
+					token_address: MeaninglessTokenAddress::get().into(),
+				},
+			)
+			.execute_returns_encoded(!DefaultAcceptance::get());
 	});
 }
 
@@ -54,18 +75,18 @@ fn default_token_address() {
 			)
 			.execute_returns_encoded(true);
 
-        precompiles()
+		precompiles()
 			.prepare_test(
 				CryptoAlith,
 				Precompile1,
 				PCall::set_token_acceptance {
 					token_address: crate::mock::MockDefaultFeeToken::get().into(),
-                    acceptance_value: false
+					acceptance_value: false,
 				},
 			)
 			.execute_some();
 
-            precompiles()
+		precompiles()
 			.prepare_test(
 				CryptoAlith,
 				Precompile1,
