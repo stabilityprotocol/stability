@@ -25,7 +25,7 @@ parameter_types! {
 // fee token acceptance management
 
 #[test]
-fn default_token_address() {
+fn non_default_token_address() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(
@@ -37,6 +37,44 @@ fn default_token_address() {
 				},
 			)
 			.execute_returns_encoded(DefaultAcceptance::get());
+	});
+}
+
+#[test]
+fn default_token_address() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				CryptoAlith,
+				Precompile1,
+				PCall::validator_supports_token {
+					validator: Address(CryptoAlith.into()),
+					token_address: crate::mock::MockDefaultFeeToken::get().into(),
+				},
+			)
+			.execute_returns_encoded(true);
+
+        precompiles()
+			.prepare_test(
+				CryptoAlith,
+				Precompile1,
+				PCall::set_token_acceptance {
+					token_address: crate::mock::MockDefaultFeeToken::get().into(),
+                    acceptance_value: false
+				},
+			)
+			.execute_some();
+
+            precompiles()
+			.prepare_test(
+				CryptoAlith,
+				Precompile1,
+				PCall::validator_supports_token {
+					validator: Address(CryptoAlith.into()),
+					token_address: crate::mock::MockDefaultFeeToken::get().into(),
+				},
+			)
+			.execute_returns_encoded(false);
 	});
 }
 
