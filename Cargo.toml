@@ -9,7 +9,7 @@ members = [
     'precompiles/utils',
     'precompiles/fee-token-selector',
     'precompiles/validator-fee-manager',
-    'primitives/stability'
+    'primitives/stability',
 	'pallets/root-controller',
     'client/authorship'
 ]
