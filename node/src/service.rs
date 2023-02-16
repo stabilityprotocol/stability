@@ -435,7 +435,7 @@ where
 			return Ok(task_manager);
 		}
 
-		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+		let proposer_factory = stbl_cli_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool,
@@ -549,7 +549,7 @@ where
 		RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
 	Executor: NativeExecutionDispatch + 'static,
 {
-	let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+	let proposer_factory = stbl_cli_authorship::ProposerFactory::new(
 		task_manager.spawn_handle(),
 		client.clone(),
 		transaction_pool.clone(),
