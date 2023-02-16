@@ -36,8 +36,8 @@ default = [ "std" ]
 std = [
     "precompile-utils/std",
     "sp-core/std",
-	"fp-evm/std",
-	"precompile-utils/std",
+    "fp-evm/std",
+    "precompile-utils/std",
     "pallet-validator-set/std",
     "frame-system/std",
     "frame-support/std",

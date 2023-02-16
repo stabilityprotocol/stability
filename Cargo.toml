@@ -8,7 +8,7 @@ members = [
     'precompiles/balances-erc20',
     'precompiles/validator-controller',
     'precompiles/utils',
-	'pallets/root-controller',
+    'pallets/root-controller',
     'pallets/validator-set',
 ]
 
