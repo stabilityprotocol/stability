@@ -1,0 +1,14 @@
+[package]
+name = "stbl-primitives"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pallet-evm = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+
+precompile-utils = { path = "../../precompiles/utils", default-features = false }

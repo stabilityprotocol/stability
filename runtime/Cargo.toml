@@ -108,6 +108,7 @@ pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
+pallet-evm-fee-controller = { workspace = true }
 # Frontier
 fp-rpc = { workspace = true }
 fp-self-contained = { workspace = true }
@@ -126,5 +127,7 @@ pallet-evm-precompile-blake2 = { workspace = true }
 pallet-evm-precompile-bn128 = { workspace = true }
 precompile-utils = { workspace = true }
 precompile-balances-erc20 = { workspace = true }
+precompile-fee-token-selector = { workspace = true }
+stbl-primitives = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }

@@ -10,6 +10,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode};
+use core::str::FromStr;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
@@ -62,7 +63,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 mod stability_config;
 use stability_config::{
 	build_block_weights, COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS,
-	COUNCIL_MOTION_MINUTES_DURATION, EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH,
+	COUNCIL_MOTION_MINUTES_DURATION, DEFAULT_FEE_TOKEN, EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH,
 	MILLISECS_PER_BLOCK,
 };
 
@@ -333,13 +334,20 @@ impl pallet_evm::Config for Runtime {
 	type ChainId = EVMChainId;
 	type BlockGasLimit = BlockGasLimit;
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
-	type OnChargeTransaction = ();
+	type OnChargeTransaction = pallet_evm_fee_controller::Pallet<Self>;
 	type FindAuthor = FindAuthorTruncated<Aura>;
 }
 
 impl pallet_ethereum::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
+}
+
+parameter_types! {
+	pub FeeTokenSelectorAddress: H160 = H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address");
+}
+impl pallet_evm_fee_controller::Config for Runtime {
+	type FeeTokenSelectorAddress = FeeTokenSelectorAddress;
 }
 
 parameter_types! {
