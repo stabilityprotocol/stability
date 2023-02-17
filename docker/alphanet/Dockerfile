@@ -17,6 +17,7 @@ COPY runtime ./runtime
 COPY precompiles ./precompiles
 COPY pallets ./pallets
 COPY primitives ./primitives
+COPY client ./client
 COPY Cargo.lock Cargo.toml ./
 
 
