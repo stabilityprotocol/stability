@@ -4251,6 +4251,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-erc20-manager"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-evm",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-tools",
+]
+
+[[package]]
 name = "pallet-ethereum"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/frontier?branch=polkadot-v0.9.36#a032072a623417d3febdcd060464f885bd76103e"
@@ -4316,6 +4332,7 @@ version = "0.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "pallet-erc20-manager",
  "pallet-evm",
  "parity-scale-codec",
  "scale-info",
@@ -4323,7 +4340,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "stbl-primitives",
+ "stbl-tools",
 ]
 
 [[package]]
@@ -7858,6 +7875,7 @@ dependencies = [
  "pallet-base-fee",
  "pallet-collective",
  "pallet-dynamic-fee",
+ "pallet-erc20-manager",
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-chain-id",
@@ -7892,7 +7910,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
- "stbl-primitives",
+ "stbl-tools",
  "substrate-wasm-builder",
 ]
 
@@ -7975,7 +7993,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "stbl-primitives"
+name = "stbl-tools"
 version = "0.1.0"
 dependencies = [
  "pallet-evm",

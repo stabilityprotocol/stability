@@ -131,3 +131,4 @@ precompile-fee-token-selector = { workspace = true }
 stbl-tools = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }
+pallet-erc20-manager = { workspace = true }
