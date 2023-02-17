@@ -334,7 +334,7 @@ fn testnet_genesis(
 				);
 				// Stability testing account
 				map.insert(
-					H160::from_str("a58482131a8d67725e996af72D91A849AcC0F4A1")
+					H160::from_str("A38395b264f232ffF4bb294b5947092E359dDE88")
 						.expect("internal H160 is valid; qed"),
 					fp_evm::GenesisAccount {
 						nonce: Default::default(),
