@@ -80,7 +80,7 @@ targets = ['x86_64-unknown-linux-gnu']
 codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [ "derive" ] }
 scale-info = { workspace = true }
 serde = { workspace = true, optional = true }
-
+log = { workspace = true }
 # Substrate
 sp-api = { workspace = true }
 sp-io = { workspace = true }
@@ -131,3 +131,4 @@ precompile-fee-token-selector = { workspace = true }
 stbl-primitives = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }
+stbl-primitives-fee-compatible-api = { workspace = true }

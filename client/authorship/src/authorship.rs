@@ -38,12 +38,16 @@ use sp_inherents::InherentData;
 use sp_runtime::{
 	generic::BlockId,
 	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT},
-	Digest, Percent, SaturatedConversion,
+	AccountId32, Digest, Percent, SaturatedConversion,
 };
+use stabilty_runtime::AccountId;
 use std::{marker::PhantomData, pin::Pin, sync::Arc, time};
 
 use prometheus_endpoint::Registry as PrometheusRegistry;
 use sc_proposer_metrics::{EndProposingReason, MetricsLink as PrometheusMetrics};
+use sp_core::crypto::KeyTypeId;
+use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
+use stbl_primitives_fee_compatible_api::CompatibleFeeApi;
 
 /// Default block size limit in bytes used by [`Proposer`].
 ///
@@ -63,6 +67,9 @@ pub struct ProposerFactory<A, B, C, PR> {
 	client: Arc<C>,
 	/// The transaction pool.
 	transaction_pool: Arc<A>,
+
+	/// Reference to Keystore
+	keystore: SyncCryptoStorePtr,
 	/// Prometheus Link,
 	metrics: PrometheusMetrics,
 	/// The default block size limit.
@@ -94,12 +101,14 @@ impl<A, B, C> ProposerFactory<A, B, C, DisableProofRecording> {
 		spawn_handle: impl SpawnNamed + 'static,
 		client: Arc<C>,
 		transaction_pool: Arc<A>,
+		keystore: SyncCryptoStorePtr,
 		prometheus: Option<&PrometheusRegistry>,
 		telemetry: Option<TelemetryHandle>,
 	) -> Self {
 		ProposerFactory {
 			spawn_handle: Box::new(spawn_handle),
 			transaction_pool,
+			keystore,
 			metrics: PrometheusMetrics::new(prometheus),
 			default_block_size_limit: DEFAULT_BLOCK_SIZE_LIMIT,
 			soft_deadline_percent: DEFAULT_SOFT_DEADLINE_PERCENT,
@@ -122,6 +131,7 @@ impl<A, B, C> ProposerFactory<A, B, C, EnableProofRecording> {
 		spawn_handle: impl SpawnNamed + 'static,
 		client: Arc<C>,
 		transaction_pool: Arc<A>,
+		keystore: SyncCryptoStorePtr,
 		prometheus: Option<&PrometheusRegistry>,
 		telemetry: Option<TelemetryHandle>,
 	) -> Self {
@@ -129,6 +139,7 @@ impl<A, B, C> ProposerFactory<A, B, C, EnableProofRecording> {
 			client,
 			spawn_handle: Box::new(spawn_handle),
 			transaction_pool,
+			keystore,
 			metrics: PrometheusMetrics::new(prometheus),
 			default_block_size_limit: DEFAULT_BLOCK_SIZE_LIMIT,
 			soft_deadline_percent: DEFAULT_SOFT_DEADLINE_PERCENT,
@@ -184,8 +195,9 @@ where
 		+ Send
 		+ Sync
 		+ 'static,
-	C::Api:
-		ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>> + BlockBuilderApi<Block>,
+	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
+		+ BlockBuilderApi<Block>
+		+ CompatibleFeeApi<Block, AccountId>,
 {
 	fn init_with_now(
 		&mut self,
@@ -207,6 +219,7 @@ where
 			parent_id: id,
 			parent_number: *parent_header.number(),
 			transaction_pool: self.transaction_pool.clone(),
+			keystore: self.keystore.clone(),
 			now,
 			metrics: self.metrics.clone(),
 			default_block_size_limit: self.default_block_size_limit,
@@ -231,8 +244,9 @@ where
 		+ Send
 		+ Sync
 		+ 'static,
-	C::Api:
-		ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>> + BlockBuilderApi<Block>,
+	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
+		+ BlockBuilderApi<Block>
+		+ CompatibleFeeApi<Block, AccountId>,
 	PR: ProofRecording,
 {
 	type CreateProposer = future::Ready<Result<Self::Proposer, Self::Error>>;
@@ -253,6 +267,7 @@ pub struct Proposer<B, Block: BlockT, C, A: TransactionPool, PR> {
 	parent_id: BlockId<Block>,
 	parent_number: <<Block as BlockT>::Header as HeaderT>::Number,
 	transaction_pool: Arc<A>,
+	keystore: SyncCryptoStorePtr,
 	now: Box<dyn Fn() -> time::Instant + Send + Sync>,
 	metrics: PrometheusMetrics,
 	default_block_size_limit: usize,
@@ -273,8 +288,9 @@ where
 		+ Send
 		+ Sync
 		+ 'static,
-	C::Api:
-		ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>> + BlockBuilderApi<Block>,
+	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
+		+ BlockBuilderApi<Block>
+		+ CompatibleFeeApi<Block, AccountId>,
 	PR: ProofRecording,
 {
 	type Transaction = backend::TransactionFor<B, Block>;
@@ -333,8 +349,9 @@ where
 		+ Send
 		+ Sync
 		+ 'static,
-	C::Api:
-		ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>> + BlockBuilderApi<Block>,
+	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
+		+ BlockBuilderApi<Block>
+		+ CompatibleFeeApi<Block, AccountId>,
 	PR: ProofRecording,
 {
 	async fn propose_with(
@@ -432,9 +449,25 @@ where
 				break EndProposingReason::HitDeadline;
 			}
 
+			let key = SyncCryptoStore::sr25519_public_keys(
+				&*self.keystore,
+				KeyTypeId::try_from("aura").unwrap_or_default(),
+			);
+
+			let account = AccountId::from(key[0].clone());
+
+			let is_compatible = self
+				.client
+				.runtime_api()
+				.is_compatible_fee(&self.parent_id, pending_tx.data().clone(), account)
+				.unwrap();
+
+			if !is_compatible {
+				continue;
+			}
+
 			let pending_tx_data = pending_tx.data().clone();
 			let pending_tx_hash = pending_tx.hash().clone();
-
 			let block_size =
 				block_builder.estimate_block_size(self.include_proof_in_block_size_estimation);
 			if block_size + pending_tx_data.encoded_size() > block_size_limit {
@@ -650,8 +683,17 @@ mod tests {
 			)),
 		);
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), None, None);
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.sync_keystore(),
+			None,
+			None,
+		);
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
@@ -694,8 +736,17 @@ mod tests {
 			client.clone(),
 		);
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), None, None);
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.sync_keystore(),
+			None,
+			None,
+		);
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
@@ -738,13 +789,22 @@ mod tests {
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(client.info().genesis_hash)
+					.expect_header(&BlockId::number(0))
 					.expect("there should be header"),
 			)),
 		);
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), None, None);
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.sync_keystore(),
+			None,
+			None,
+		);
 
 		let proposer = proposer_factory.init_with_now(
 			&client.header(genesis_hash).unwrap().unwrap(),
@@ -810,8 +870,18 @@ mod tests {
 		))
 		.unwrap();
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), None, None);
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.sync_keystore(),
+			None,
+			None,
+		);
+
 		let mut propose_block = |client: &TestClient,
 		                         number,
 		                         expected_block_extrinsics,
@@ -907,8 +977,17 @@ mod tests {
 
 		block_on(txpool.maintain(chain_event(genesis_header.clone())));
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), None, None);
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.sync_keystore(),
+			None,
+			None,
+		);
 
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
 
@@ -936,14 +1015,17 @@ mod tests {
 		// Without a block limit we should include all of them
 		assert_eq!(block.extrinsics().len(), extrinsics_num);
 
-		let mut proposer_factory = ProposerFactory::with_proof_recording(
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		let mut proposer_factory = ProposerFactory::new(
 			spawner.clone(),
 			client.clone(),
 			txpool.clone(),
+			keystore_container.sync_keystore(),
 			None,
 			None,
 		);
-
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
 
 		// Give it enough time
@@ -1003,8 +1085,17 @@ mod tests {
 		);
 		assert_eq!(txpool.ready().count(), MAX_SKIPPED_TRANSACTIONS * 3);
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), None, None);
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.sync_keystore(),
+			None,
+			None,
+		);
 
 		let cell = Mutex::new(time::Instant::now());
 		let proposer = proposer_factory.init_with_now(
@@ -1069,8 +1160,17 @@ mod tests {
 		);
 		assert_eq!(txpool.ready().count(), MAX_SKIPPED_TRANSACTIONS * 2 + 2);
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), None, None);
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.sync_keystore(),
+			None,
+			None,
+		);
 
 		let deadline = time::Duration::from_secs(600);
 		let cell = Arc::new(Mutex::new((0, time::Instant::now())));

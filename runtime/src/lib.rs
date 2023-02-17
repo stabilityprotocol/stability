@@ -866,6 +866,17 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId> for Runtime {
+		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool {
+			// log the validator
+			log::info!("validator: {:?}", validator);
+
+			// log the extrinsic
+			log::info!("extrinsic: {:?}", tx);
+			return true;
+		}
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (

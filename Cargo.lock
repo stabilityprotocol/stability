@@ -7827,6 +7827,7 @@ dependencies = [
  "sp-finality-grandpa",
  "sp-inherents",
  "sp-keyring",
+ "sp-keystore",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
@@ -7836,6 +7837,7 @@ dependencies = [
  "sp-trie",
  "stabilty-runtime",
  "stbl-cli-authorship",
+ "stbl-primitives-fee-compatible-api",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
@@ -7853,6 +7855,7 @@ dependencies = [
  "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
+ "log",
  "pallet-aura",
  "pallet-balances",
  "pallet-base-fee",
@@ -7893,6 +7896,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "stbl-primitives",
+ "stbl-primitives-fee-compatible-api",
  "substrate-wasm-builder",
 ]
 
@@ -7950,17 +7954,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stbl-primitives"
-version = "0.1.0"
-dependencies = [
- "pallet-evm",
- "precompile-utils",
- "sp-core",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "stbl-cli-authorship"
 version = "1.0.0"
 dependencies = [
@@ -7972,6 +7965,7 @@ dependencies = [
  "sc-block-builder",
  "sc-client-api",
  "sc-proposer-metrics",
+ "sc-service",
  "sc-telemetry",
  "sc-transaction-pool",
  "sc-transaction-pool-api",
@@ -7980,9 +7974,32 @@ dependencies = [
  "sp-consensus",
  "sp-core",
  "sp-inherents",
+ "sp-keystore",
  "sp-runtime",
+ "stabilty-runtime",
+ "stbl-primitives-fee-compatible-api",
  "substrate-prometheus-endpoint",
  "substrate-test-runtime-client",
+]
+
+[[package]]
+name = "stbl-primitives"
+version = "0.1.0"
+dependencies = [
+ "pallet-evm",
+ "precompile-utils",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "stbl-primitives-fee-compatible-api"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-runtime",
 ]
 
 [[package]]

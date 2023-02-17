@@ -9,7 +9,8 @@ members = [
     'precompiles/utils',
     'precompiles/fee-token-selector',
     'precompiles/validator-fee-manager',
-    'primitives/stability'
+    'primitives/stability',
+    'primitives/fee-compatible-api',
 	'pallets/root-controller',
     'client/authorship'
 ]
@@ -84,6 +85,8 @@ sp-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/sub
 sp-transaction-pool = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 sp-trie = { version = "7.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
+sp-keystore = { version = "0.13.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
+
 # Substrate FRAME
 frame-benchmarking = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 frame-executive = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
@@ -145,3 +148,4 @@ precompile-fee-token-selector = { path = "./precompiles/fee-token-selector", def
 pallet-root-controller = { path = "./pallets/root-controller", default-features = false }
 pallet-evm-fee-controller = { path = "./pallets/evm-fee-controller", default-features = false }
 stbl-primitives = { path = "./primitives/stability", default-features = false }
+stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api", default-features = false }
