@@ -10,7 +10,8 @@ pub mod pallet {
 	use pallet_evm::{EvmConfig, OnChargeEVMTransaction, Runner};
 	use sp_core::{Get, H160, H256, U256};
 	use sp_std::vec::Vec;
-	use stbl_primitives::{eth, map_err};
+	use stbl_tools::{eth, map_err};
+	use pallet_erc20_manager::ERC20Manager;
 
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
@@ -25,6 +26,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_evm::Config {
 		type FeeTokenSelectorAddress: Get<H160>;
+		type ERC20Manager: ERC20Manager;
 	}
 
 	impl<R: pallet_evm::Config, T: Config> OnChargeEVMTransaction<R> for Pallet<T> {
@@ -34,12 +36,12 @@ pub mod pallet {
 			payer: &H160,
 			fee: U256,
 		) -> Result<Self::LiquidityInfo, pallet_evm::Error<R>> {
-			let token = map_err!(
+			let token = &map_err!(
 				Self::user_fee_token(payer),
 				pallet_evm::Error::WithdrawFailed
 			);
 
-			let author = map_err!(Self::find_block_author(), pallet_evm::Error::WithdrawFailed);
+			let author = &map_err!(Self::find_block_author(), pallet_evm::Error::WithdrawFailed);
 
 			let conversion_rate = map_err!(
 				Self::get_unit_conversion_rate(author, token),
@@ -53,9 +55,7 @@ pub mod pallet {
 					.0
 			);
 
-			// ERC20Manager::forceTransferFrom(token, payer, author, fee);
-
-			Ok(U256::default())
+			Ok(map_err!(T::ERC20Manager::forceTransferFrom(token, payer, author, fee), pallet_evm::Error::WithdrawFailed))
 		}
 
 		fn correct_and_deposit_fee(
@@ -106,9 +106,9 @@ pub mod pallet {
 			}
 		}
 
-		fn get_unit_conversion_rate(validator: H160, token: H160) -> Result<(U256, U256), ()> {
+		fn get_unit_conversion_rate(validator: &H160, token: &H160) -> Result<(U256, U256), ()> {
 			let args: Vec<H256> =
-				sp_std::vec![Into::<H256>::into(validator), Into::<H256>::into(token)];
+				sp_std::vec![Into::<H256>::into(*validator), Into::<H256>::into(*token)];
 
 			let calldata: Vec<u8> =
 				eth::generate_calldata("safeTokenConversionRate(address,address)", &args);
