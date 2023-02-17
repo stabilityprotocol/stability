@@ -7913,8 +7913,8 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
- "stbl-tools",
  "stbl-primitives-fee-compatible-api",
+ "stbl-tools",
  "substrate-wasm-builder",
 ]
 
@@ -8001,6 +8001,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "stbl-primitives-fee-compatible-api"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-runtime",
+]
+
+[[package]]
 name = "stbl-tools"
 version = "0.1.0"
 dependencies = [
@@ -8012,14 +8021,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stbl-primitives-fee-compatible-api"
-version = "1.0.0"
-dependencies = [
- "parity-scale-codec",
- "sp-api",
- "sp-runtime",
-]
-
 name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
