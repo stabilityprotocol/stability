@@ -334,7 +334,7 @@ impl pallet_evm::Config for Runtime {
 	type ChainId = EVMChainId;
 	type BlockGasLimit = BlockGasLimit;
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
-	type OnChargeTransaction = pallet_evm_fee_controller::Pallet<Self>;
+	type OnChargeTransaction = ();
 	type FindAuthor = FindAuthorTruncated<Aura>;
 }
 
@@ -348,7 +348,10 @@ parameter_types! {
 }
 impl pallet_evm_fee_controller::Config for Runtime {
 	type FeeTokenSelectorAddress = FeeTokenSelectorAddress;
+	type ERC20Manager = pallet_erc20_manager::Pallet<Self>;
 }
+
+impl pallet_erc20_manager::Config for Runtime {}
 
 parameter_types! {
 	pub BoundDivision: U256 = U256::from(1024);

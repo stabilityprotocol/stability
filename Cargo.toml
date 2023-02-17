@@ -9,8 +9,10 @@ members = [
     'precompiles/utils',
     'precompiles/fee-token-selector',
     'precompiles/validator-fee-manager',
-    'primitives/stability',
     'primitives/fee-compatible-api',
+    'pallets/erc20-manager',
+    'pallets/evm-fee-controller',
+    'primitives/tools',
 	'pallets/root-controller',
     'client/authorship'
 ]
@@ -147,5 +149,6 @@ precompile-balances-erc20 = { path = "./precompiles/balances-erc20", default-fea
 precompile-fee-token-selector = { path = "./precompiles/fee-token-selector", default-features = false }
 pallet-root-controller = { path = "./pallets/root-controller", default-features = false }
 pallet-evm-fee-controller = { path = "./pallets/evm-fee-controller", default-features = false }
-stbl-primitives = { path = "./primitives/stability", default-features = false }
 stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api", default-features = false }
+pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
+stbl-tools = { path = "./primitives/tools", default-features = false }

@@ -128,7 +128,8 @@ pallet-evm-precompile-bn128 = { workspace = true }
 precompile-utils = { workspace = true }
 precompile-balances-erc20 = { workspace = true }
 precompile-fee-token-selector = { workspace = true }
-stbl-primitives = { workspace = true }
+stbl-tools = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true }
+pallet-erc20-manager = { workspace = true }
