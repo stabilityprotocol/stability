@@ -42,6 +42,13 @@ pub const DEFAULT_OWNER: &str = "0xA38395b264f232ffF4bb294b5947092E359dDE88";
 /// from the actual account balance we set it to zero
 pub const EXISTENTIAL_DEPOSIT: u128 = 0u128;
 
+// Session
+pub const SESSION_MINUTES_DURATION: u32 = 2;
+
+// VALIDATOR SET
+
+pub const VALIDATOR_SET_MIN_VALIDATORS: u32 = 1;
+
 pub const TARGET_BLOCK_GAS_LIMIT: u64 = 50_000_000u64;
 
 // Since BlockWeights::builder is not a const function we have to embed into a function

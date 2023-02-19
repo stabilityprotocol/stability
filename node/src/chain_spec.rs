@@ -2,6 +2,7 @@ use std::{collections::BTreeMap, str::FromStr, vec};
 
 use serde::{Deserialize, Serialize};
 // Substrate
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::Ss58Codec, sr25519, storage::Storage, Pair, Public, H160, U256};
@@ -10,7 +11,8 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_state_machine::BasicExternalities;
 // Frontier
 use stabilty_runtime::{
-	AccountId, EnableManualSeal, GenesisConfig, Precompiles, Signature, WASM_BINARY,
+	opaque::SessionKeys, AccountId, EnableManualSeal, GenesisConfig, Precompiles, Signature,
+	WASM_BINARY,
 };
 
 // The URL for the telemetry server.
@@ -60,8 +62,21 @@ where
 }
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
-	(get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
+	(
+		get_account_id_from_seed::<sr25519::Public>(s),
+		get_from_seed::<AuraId>(s),
+		get_from_seed::<GrandpaId>(s),
+		get_from_seed::<ImOnlineId>(s),
+	)
+}
+
+fn session_keys(aura: AuraId, grandpa: GrandpaId, im_online: ImOnlineId) -> SessionKeys {
+	SessionKeys {
+		aura,
+		grandpa,
+		im_online,
+	}
 }
 
 fn get_key_sr(pubkey: &str) -> sr25519::Public {
@@ -71,10 +86,15 @@ fn get_key_sr(pubkey: &str) -> sr25519::Public {
 	}
 }
 
-fn get_authority_from_pubkeys(sr_pubkey: &str, ed_pubkey: &str) -> (AuraId, GrandpaId) {
+fn get_authority_from_pubkeys(
+	sr_pubkey: &str,
+	ed_pubkey: &str,
+) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
 	(
+		AccountId::from_string(sr_pubkey).expect("bad formatted sr pubkey"),
 		AuraId::from_string(sr_pubkey).expect("bad formatted sr pubkey"),
 		GrandpaId::from_string(ed_pubkey).expect("bad formatted ed pubkey"),
+		ImOnlineId::from_string(sr_pubkey).expect("bad formatted ed pubkey"),
 	)
 }
 
@@ -238,13 +258,13 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
 fn testnet_genesis(
 	wasm_binary: &[u8],
 	endowed_accounts: Vec<AccountId>,
-	initial_authorities: Vec<(AuraId, GrandpaId)>,
+	initial_authorities: Vec<(AccountId, AuraId, GrandpaId, ImOnlineId)>,
 	members: Vec<AccountId>,
 	chain_id: u64,
 ) -> GenesisConfig {
 	use stabilty_runtime::{
-		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SystemConfig,
-		TechCommitteeCollectiveConfig,
+		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig,
+		SessionConfig, SystemConfig, TechCommitteeCollectiveConfig, ValidatorSetConfig,
 	};
 
 	GenesisConfig {
@@ -265,15 +285,28 @@ fn testnet_genesis(
 		},
 		transaction_payment: Default::default(),
 
+		session: SessionConfig {
+			keys: initial_authorities
+				.iter()
+				.map(|x| {
+					(
+						x.0.clone(),
+						x.0.clone(),
+						session_keys(x.1.clone(), x.2.clone(), x.3.clone()),
+					)
+				})
+				.collect::<Vec<_>>(),
+		},
+		im_online: ImOnlineConfig { keys: vec![] },
+		validator_set: ValidatorSetConfig {
+			initial_validators: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
+		},
 		// Consensus
 		aura: AuraConfig {
-			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
+			authorities: vec![],
 		},
 		grandpa: GrandpaConfig {
-			authorities: initial_authorities
-				.iter()
-				.map(|x| (x.1.clone(), 1))
-				.collect(),
+			authorities: vec![],
 		},
 		tech_committee_collective: TechCommitteeCollectiveConfig {
 			phantom: Default::default(),

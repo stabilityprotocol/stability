@@ -13,6 +13,13 @@ if [ -n "$SEED" ]; then
   --scheme Ed25519 \
   --suri "$SEED" \
   --key-type gran
+
+  ./target/release/stability key insert \
+  --keystore-path  /tmp/node/chains/alphanet/keystore \
+  --base-path /tmp/node \
+  --scheme Sr25519 \
+  --suri "$SEED" \
+  --key-type imon
 fi
 
 START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --chain alphanet --pruning archive"
