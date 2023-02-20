@@ -44,7 +44,7 @@ trie-db = { workspace = true }
 sc-service = { workspace=true, optional = true, features = ["test-helpers"] }
 sp-state-machine = { workspace = true }
 sp-externalities = { workspace = true }
-
+stbl-primitives-fee-compatible-api = { workspace = true }
 # 3rd party
 cfg-if = { workspace = true }
 log = { workspace = true }
@@ -99,7 +99,8 @@ std = [
 	"sp-finality-grandpa/std",
 	"sp-trie/std",
 	"sp-transaction-pool/std",
-	"trie-db/std",
+	"trie-db/std"
+
 ]
 # Special feature to disable logging
 disable-logging = [ "sp-api/disable-logging" ]

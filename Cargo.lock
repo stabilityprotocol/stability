@@ -7928,6 +7928,7 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "stability-test-runtime-client",
+ "stbl-primitives-fee-compatible-api",
  "substrate-wasm-builder",
  "trie-db",
 ]

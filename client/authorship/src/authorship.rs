@@ -195,9 +195,8 @@ where
 		+ Send
 		+ Sync
 		+ 'static,
-	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
-		+ BlockBuilderApi<Block>
-		+ CompatibleFeeApi<Block, AccountId>,
+	C::Api:
+		ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>> + BlockBuilderApi<Block>,
 {
 	fn init_with_now(
 		&mut self,
@@ -246,7 +245,7 @@ where
 		+ 'static,
 	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
 		+ BlockBuilderApi<Block>
-		+ CompatibleFeeApi<Block, AccountId>,
+		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>,
 	PR: ProofRecording,
 {
 	type CreateProposer = future::Ready<Result<Self::Proposer, Self::Error>>;
@@ -290,7 +289,7 @@ where
 		+ 'static,
 	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
 		+ BlockBuilderApi<Block>
-		+ CompatibleFeeApi<Block, AccountId>,
+		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>,
 	PR: ProofRecording,
 {
 	type Transaction = backend::TransactionFor<B, Block>;
@@ -351,7 +350,7 @@ where
 		+ 'static,
 	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
 		+ BlockBuilderApi<Block>
-		+ CompatibleFeeApi<Block, AccountId>,
+		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>,
 	PR: ProofRecording,
 {
 	async fn propose_with(
@@ -933,7 +932,7 @@ mod tests {
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(hashof1)
+					.expect_header(BlockId::Hash(hashof1))
 					.expect("there should be header"),
 			)),
 		);

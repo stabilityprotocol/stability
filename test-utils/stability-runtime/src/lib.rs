@@ -46,6 +46,7 @@ use frame_system::limits::{BlockLength, BlockWeights};
 use sp_api::{decl_runtime_apis, impl_runtime_apis};
 pub use sp_core::hash::H256;
 use sp_inherents::{CheckInherentsResult, InherentData};
+
 #[cfg(feature = "std")]
 use sp_runtime::traits::NumberFor;
 use sp_runtime::{
@@ -340,6 +341,11 @@ impl<B: BlockT> Decode for DecodeFails<B> {
 		Err("DecodeFails always fails".into())
 	}
 }
+
+pub type Signature = sp_runtime::MultiSignature;
+
+pub type RealAccountiD =
+	<<Signature as sp_runtime::traits::Verify>::Signer as sp_runtime::traits::IdentifyAccount>::AccountId;
 
 cfg_if! {
 	if #[cfg(feature = "std")] {
@@ -1015,6 +1021,12 @@ cfg_if! {
 					0
 				}
 			}
+
+			impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, RealAccountiD> for Runtime {
+				fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: RealAccountiD) -> bool {
+					return true;
+				}
+			}
 		}
 	} else {
 		impl_runtime_apis! {
@@ -1248,6 +1260,12 @@ cfg_if! {
 			impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 				fn account_nonce(_account: AccountId) -> Index {
 					0
+				}
+			}
+
+			impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, RealAccountiD> for Runtime {
+				fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: RealAccountiD) -> bool {
+					return true;
 				}
 			}
 		}
