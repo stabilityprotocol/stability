@@ -610,7 +610,7 @@ mod tests {
 	use sp_consensus::{BlockOrigin, Environment, Proposer};
 	use sp_core::Pair;
 	use sp_runtime::traits::NumberFor;
-	use substrate_test_runtime_client::{
+	use stability_test_runtime_client::{
 		prelude::*,
 		runtime::{Extrinsic, Transfer},
 		TestClientBuilder, TestClientBuilderExt,
@@ -658,7 +658,7 @@ mod tests {
 	#[test]
 	fn should_cease_building_block_when_deadline_is_reached() {
 		// given
-		let client = Arc::new(substrate_test_runtime_client::new());
+		let client = Arc::new(stability_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -678,7 +678,7 @@ mod tests {
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(client.info().genesis_hash)
+					.expect_header(BlockId::Hash((client.info().genesis_hash)))
 					.expect("there should be header"),
 			)),
 		);
@@ -697,7 +697,9 @@ mod tests {
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
-			&client.expect_header(client.info().genesis_hash).unwrap(),
+			&client
+				.expect_header(BlockId::Hash((client.info().genesis_hash)))
+				.unwrap(),
 			Box::new(move || {
 				let mut value = cell.lock();
 				if !value.0 {
@@ -726,7 +728,7 @@ mod tests {
 
 	#[test]
 	fn should_not_panic_when_deadline_is_reached() {
-		let client = Arc::new(substrate_test_runtime_client::new());
+		let client = Arc::new(stability_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -750,7 +752,9 @@ mod tests {
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
-			&client.expect_header(client.info().genesis_hash).unwrap(),
+			&client
+				.expect_header(BlockId::Hash((client.info().genesis_hash)))
+				.unwrap(),
 			Box::new(move || {
 				let mut value = cell.lock();
 				if !value.0 {
@@ -789,7 +793,7 @@ mod tests {
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(&BlockId::number(0))
+					.expect_header(BlockId::number(0))
 					.expect("there should be header"),
 			)),
 		);
@@ -807,7 +811,10 @@ mod tests {
 		);
 
 		let proposer = proposer_factory.init_with_now(
-			&client.header(genesis_hash).unwrap().unwrap(),
+			&client
+				.header(&BlockId::Hash((client.info().genesis_hash)))
+				.unwrap()
+				.unwrap(),
 			Box::new(move || time::Instant::now()),
 		);
 
@@ -835,7 +842,7 @@ mod tests {
 	#[test]
 	fn should_not_remove_invalid_transactions_when_skipping() {
 		// given
-		let mut client = Arc::new(substrate_test_runtime_client::new());
+		let mut client = Arc::new(stability_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -890,7 +897,7 @@ mod tests {
 				.expect_block_hash_from_id(&BlockId::Number(number))
 				.unwrap();
 			let proposer = proposer_factory.init_with_now(
-				&client.expect_header(hash).unwrap(),
+				&client.expect_header(BlockId::Hash((hash))).unwrap(),
 				Box::new(move || time::Instant::now()),
 			);
 
@@ -912,7 +919,7 @@ mod tests {
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(client.info().genesis_hash)
+					.expect_header(BlockId::Hash(client.info().genesis_hash))
 					.expect("there should be header"),
 			)),
 		);
@@ -939,7 +946,7 @@ mod tests {
 
 	#[test]
 	fn should_cease_building_block_when_block_limit_is_reached() {
-		let client = Arc::new(substrate_test_runtime_client::new());
+		let client = Arc::new(stability_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -949,7 +956,7 @@ mod tests {
 			client.clone(),
 		);
 		let genesis_header = client
-			.expect_header(client.info().genesis_hash)
+			.expect_header(BlockId::Hash((client.info().genesis_hash)))
 			.expect("there should be header");
 
 		let extrinsics_num = 5;
@@ -1047,7 +1054,7 @@ mod tests {
 	#[test]
 	fn should_keep_adding_transactions_after_exhausts_resources_before_soft_deadline() {
 		// given
-		let client = Arc::new(substrate_test_runtime_client::new());
+		let client = Arc::new(stability_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -1079,7 +1086,7 @@ mod tests {
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(client.info().genesis_hash)
+					.expect_header(BlockId::Hash(client.info().genesis_hash))
 					.expect("there should be header"),
 			)),
 		);
@@ -1099,7 +1106,9 @@ mod tests {
 
 		let cell = Mutex::new(time::Instant::now());
 		let proposer = proposer_factory.init_with_now(
-			&client.expect_header(client.info().genesis_hash).unwrap(),
+			&client
+				.expect_header(BlockId::Hash(client.info().genesis_hash))
+				.unwrap(),
 			Box::new(move || {
 				let mut value = cell.lock();
 				let old = *value;
@@ -1123,7 +1132,7 @@ mod tests {
 	#[test]
 	fn should_only_skip_up_to_some_limit_after_soft_deadline() {
 		// given
-		let client = Arc::new(substrate_test_runtime_client::new());
+		let client = Arc::new(stability_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -1154,7 +1163,7 @@ mod tests {
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(client.info().genesis_hash)
+					.expect_header(BlockId::Hash(client.info().genesis_hash))
 					.expect("there should be header"),
 			)),
 		);
@@ -1176,7 +1185,9 @@ mod tests {
 		let cell = Arc::new(Mutex::new((0, time::Instant::now())));
 		let cell2 = cell.clone();
 		let proposer = proposer_factory.init_with_now(
-			&client.expect_header(client.info().genesis_hash).unwrap(),
+			&client
+				.expect_header(BlockId::Hash(client.info().genesis_hash))
+				.unwrap(),
 			Box::new(move || {
 				let mut value = cell.lock();
 				let (called, old) = *value;

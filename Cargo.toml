@@ -14,7 +14,10 @@ members = [
     'pallets/evm-fee-controller',
     'primitives/tools',
 	'pallets/root-controller',
-    'client/authorship'
+    'client/authorship',
+    'test-utils/stability-client',
+    'test-utils/stability-runtime',
+    'test-utils/stability-runtime-client'
 ]
 
 [workspace.package]
@@ -42,6 +45,12 @@ futures = "0.3.21"
 futures-timer = "3.0.1"
 log = "0.4.17"
 parking_lot = "0.12.1"
+array-bytes = "4.1"
+async-trait = "0.1.57"
+cfg-if = "1.0"
+memory-db = { version = "0.31.0", default-features = false }
+trie-db = { version = "0.24.0", default-features = false }
+
 # Polkadot
 xcm = { git = "https://github.com/paritytech/polkadot", tag = "v0.9.36", default-features = false }
 # Substrate Client
@@ -59,12 +68,12 @@ sc-network = { version = "0.10.0-dev", git = "https://github.com/paritytech/subs
 sc-network-common = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 sc-rpc = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 sc-rpc-api = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
-sc-service = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+sc-service = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 sc-telemetry = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 sc-transaction-pool = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 sc-transaction-pool-api = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 sc-proposer-metrics = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36"}
-
+sc-offchain = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 # Substrate Primitive
 sp-api = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 sp-block-builder = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
@@ -88,7 +97,11 @@ sp-transaction-pool = { version = "4.0.0-dev", git = "https://github.com/parityt
 sp-trie = { version = "7.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 sp-keystore = { version = "0.13.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
-
+beefy-primitives = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", package = "sp-beefy", branch = "polkadot-v0.9.36" }
+sp-application-crypto = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+sp-consensus-babe = { version = "0.10.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+sp-externalities =  { version = "0.13.0", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+sp-runtime-interface = { version = "7.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 # Substrate FRAME
 frame-benchmarking = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 frame-executive = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
@@ -106,6 +119,8 @@ pallet-transaction-payment-rpc = { version = "4.0.0-dev", git = "https://github.
 pallet-transaction-payment-rpc-runtime-api = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 pallet-utility = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 pallet-collective = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
+pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
+beefy-merkle-tree  = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 # Substrate Utility
 frame-benchmarking-cli = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
@@ -152,3 +167,8 @@ pallet-evm-fee-controller = { path = "./pallets/evm-fee-controller", default-fea
 stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api", default-features = false }
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
 stbl-tools = { path = "./primitives/tools", default-features = false }
+
+# Stability Test
+stability-test-client = { path = "./test-utils/stability-client", default-features = false }
+stability-test-runtime = { path = "./test-utils/stability-runtime", default-features = false }
+stability-test-runtime-client = { path = "./test-utils/stability-runtime-client", default-features = false }
