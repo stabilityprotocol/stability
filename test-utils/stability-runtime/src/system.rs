@@ -292,6 +292,7 @@ fn execute_transaction_backend(utx: &Extrinsic, extrinsic_index: u32) -> ApplyEx
 		Extrinsic::StorageChange(key, value) => {
 			execute_storage_change(key, value.as_ref().map(|v| &**v))
 		}
+		Extrinsic::Skipped(_) => Ok(Ok(())),
 		Extrinsic::OffchainIndexSet(key, value) => {
 			sp_io::offchain_index::set(key, value);
 			Ok(Ok(()))

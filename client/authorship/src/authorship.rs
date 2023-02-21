@@ -617,7 +617,7 @@ mod tests {
 
 	const SOURCE: TransactionSource = TransactionSource::External;
 
-	fn extrinsic(nonce: u64) -> Extrinsic {
+	fn extrinsic_included(nonce: u64) -> Extrinsic {
 		Transfer {
 			amount: Default::default(),
 			nonce,
@@ -625,6 +625,10 @@ mod tests {
 			to: AccountKeyring::Bob.into(),
 		}
 		.into_signed_tx()
+	}
+
+	fn extrinsic_skipped(value: u32) -> Extrinsic {
+		Extrinsic::Skipped(value)
 	}
 
 	fn exhausts_resources_extrinsic_from(who: usize) -> Extrinsic {
@@ -670,7 +674,7 @@ mod tests {
 		block_on(txpool.submit_at(
 			&BlockId::number(0),
 			SOURCE,
-			vec![extrinsic(0), extrinsic(1)],
+			vec![extrinsic_included(0), extrinsic_included(1)],
 		))
 		.unwrap();
 
@@ -801,7 +805,8 @@ mod tests {
 
 		let genesis_hash = client.info().best_hash;
 
-		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, vec![extrinsic(0)])).unwrap();
+		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, vec![extrinsic_included(0)]))
+			.unwrap();
 
 		block_on(
 			txpool.maintain(chain_event(
@@ -876,23 +881,23 @@ mod tests {
 			&BlockId::number(0),
 			SOURCE,
 			vec![
-				extrinsic(0),
-				extrinsic(1),
+				extrinsic_included(0),
+				extrinsic_included(1),
 				Transfer {
 					amount: Default::default(),
 					nonce: 2,
 					from: AccountKeyring::Alice.into(),
 					to: AccountKeyring::Bob.into(),
 				}.into_resources_exhausting_tx(),
-				extrinsic(3),
+				extrinsic_included(3),
 				Transfer {
 					amount: Default::default(),
 					nonce: 4,
 					from: AccountKeyring::Alice.into(),
 					to: AccountKeyring::Bob.into(),
 				}.into_resources_exhausting_tx(),
-				extrinsic(5),
-				extrinsic(6),
+				extrinsic_included(5),
+				extrinsic_included(6),
 			],
 		))
 		.unwrap();
@@ -1107,7 +1112,7 @@ mod tests {
 					.chain(
 						(0..MAX_SKIPPED_TRANSACTIONS)
 							.into_iter()
-							.map(|i| extrinsic(i as _)),
+							.map(|i| extrinsic_included(i as _)),
 					)
 					.collect(),
 			),
@@ -1191,7 +1196,7 @@ mod tests {
 					.chain(
 						(0..MAX_SKIPPED_TRANSACTIONS)
 							.into_iter()
-							.map(|i| extrinsic(i as _)),
+							.map(|i| extrinsic_included(i as _)),
 					)
 					.collect(),
 			),
@@ -1260,5 +1265,63 @@ mod tests {
 			cell2.lock().0 > MAX_SKIPPED_TRANSACTIONS,
 			"Not enough calls to current time, which indicates the test might have ended because of deadline, not soft deadline"
 		);
+	}
+
+	#[test]
+	fn should_skip_transactions_if_runtime_is_compatible_fee_return_false() {
+		// given
+		let client = Arc::new(stability_test_runtime_client::new());
+		let spawner = sp_core::testing::TaskExecutor::new();
+		let txpool = BasicPool::new_full(
+			Default::default(),
+			true.into(),
+			None,
+			spawner.clone(),
+			client.clone(),
+		);
+		let genesis_header = client
+			.expect_header(BlockId::Hash(client.info().genesis_hash))
+			.expect("there should be header");
+
+		let extrinsics = vec![extrinsic_skipped(0), extrinsic_included(0)];
+
+		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, extrinsics)).unwrap();
+
+		block_on(txpool.maintain(chain_event(genesis_header.clone())));
+
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		SyncCryptoStore::sr25519_generate_new(
+			&*keystore_container.sync_keystore().clone(),
+			KeyTypeId::try_from("aura").unwrap(),
+			Some("//Alice"),
+		)
+		.expect("Creates authority key");
+
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.sync_keystore(),
+			None,
+			None,
+		);
+
+		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
+
+		let deadline = time::Duration::from_secs(300);
+		let block =
+			block_on(proposer.propose(Default::default(), Default::default(), deadline, None))
+				.map(|r| r.block)
+				.unwrap();
+
+		assert_eq!(block.extrinsics().len(), 1);
+
+		let extrinsic_in_block = &block.extrinsics()[0];
+
+		if let Extrinsic::Skipped(_) = extrinsic_in_block {
+			panic!("Skipped extrinsic should not be in block")
+		}
 	}
 }

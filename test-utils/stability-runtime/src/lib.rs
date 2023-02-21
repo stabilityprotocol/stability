@@ -154,6 +154,7 @@ impl Transfer {
 		let signature = sp_keyring::AccountKeyring::from_public(&self.from)
 			.expect("Creates keyring from public key.")
 			.sign(&self.encode());
+
 		Extrinsic::Transfer {
 			transfer: self,
 			signature,
@@ -171,6 +172,7 @@ pub enum Extrinsic {
 		signature: AccountSignature,
 		exhaust_resources_when_not_first: bool,
 	},
+	Skipped(u32),
 	IncludeData(Vec<u8>),
 	StorageChange(Vec<u8>, Option<Vec<u8>>),
 	OffchainIndexSet(Vec<u8>, Vec<u8>),
@@ -223,6 +225,7 @@ impl BlindCheckable for Extrinsic {
 				}
 			}
 			Extrinsic::IncludeData(v) => Ok(Extrinsic::IncludeData(v)),
+			Extrinsic::Skipped(v) => Ok(Extrinsic::Skipped(v)),
 			Extrinsic::StorageChange(key, value) => Ok(Extrinsic::StorageChange(key, value)),
 			Extrinsic::OffchainIndexSet(key, value) => Ok(Extrinsic::OffchainIndexSet(key, value)),
 			Extrinsic::OffchainIndexClear(key) => Ok(Extrinsic::OffchainIndexClear(key)),
@@ -1024,7 +1027,10 @@ cfg_if! {
 
 			impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, RealAccountiD> for Runtime {
 				fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: RealAccountiD) -> bool {
-					return true;
+					if let Extrinsic::Skipped(_) = tx {
+						return false;
+					}
+					true
 				}
 			}
 		}
@@ -1265,7 +1271,10 @@ cfg_if! {
 
 			impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, RealAccountiD> for Runtime {
 				fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: RealAccountiD) -> bool {
-					return true;
+					if let Extrinsic::Skipped(_) = tx {
+						return false;
+					}
+					true
 				}
 			}
 		}
