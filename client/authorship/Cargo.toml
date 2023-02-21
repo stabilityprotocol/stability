@@ -27,6 +27,7 @@ sp-blockchain = { workspace = true }
 sp-consensus = { workspace = true }
 sp-core = { workspace = true }
 sp-inherents = { workspace = true }
+sp-keyring = { workspace = true }
 sp-runtime = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true, features = ["std"] }
 sp-keystore = { workspace = true }

@@ -428,6 +428,12 @@ where
 
 		let block_size_limit = block_size_limit.unwrap_or(self.default_block_size_limit);
 
+		let key = SyncCryptoStore::sr25519_public_keys(
+			&*self.keystore,
+			KeyTypeId::try_from("aura").unwrap_or_default(),
+		);
+		let account = AccountId::from(key[0].clone());
+
 		debug!("Attempting to push transactions from the pool.");
 		debug!("Pool status: {:?}", self.transaction_pool.status());
 		let mut transaction_pushed = false;
@@ -448,17 +454,10 @@ where
 				break EndProposingReason::HitDeadline;
 			}
 
-			let key = SyncCryptoStore::sr25519_public_keys(
-				&*self.keystore,
-				KeyTypeId::try_from("aura").unwrap_or_default(),
-			);
-
-			let account = AccountId::from(key[0].clone());
-
 			let is_compatible = self
 				.client
 				.runtime_api()
-				.is_compatible_fee(&self.parent_id, pending_tx.data().clone(), account)
+				.is_compatible_fee(&self.parent_id, pending_tx.data().clone(), account.clone())
 				.unwrap();
 
 			if !is_compatible {
@@ -608,6 +607,7 @@ mod tests {
 	use sp_blockchain::HeaderBackend;
 	use sp_consensus::{BlockOrigin, Environment, Proposer};
 	use sp_core::Pair;
+	use sp_keyring::sr25519::Keyring;
 	use sp_runtime::traits::NumberFor;
 	use stability_test_runtime_client::{
 		prelude::*,
@@ -685,6 +685,13 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
+		SyncCryptoStore::sr25519_generate_new(
+			&*keystore_container.sync_keystore().clone(),
+			KeyTypeId::try_from("aura").unwrap(),
+			Some("//Alice"),
+		)
+		.expect("Creates authority key");
+
 		let mut proposer_factory = ProposerFactory::new(
 			spawner.clone(),
 			client.clone(),
@@ -739,6 +746,13 @@ mod tests {
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		SyncCryptoStore::sr25519_generate_new(
+			&*keystore_container.sync_keystore().clone(),
+			KeyTypeId::try_from("aura").unwrap(),
+			Some("//Alice"),
+		)
+		.expect("Creates authority key");
 
 		let mut proposer_factory = ProposerFactory::new(
 			spawner.clone(),
@@ -799,6 +813,13 @@ mod tests {
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		SyncCryptoStore::sr25519_generate_new(
+			&*keystore_container.sync_keystore().clone(),
+			KeyTypeId::try_from("aura").unwrap(),
+			Some("//Alice"),
+		)
+		.expect("Creates authority key");
 
 		let mut proposer_factory = ProposerFactory::new(
 			spawner.clone(),
@@ -878,6 +899,13 @@ mod tests {
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		SyncCryptoStore::sr25519_generate_new(
+			&*keystore_container.sync_keystore().clone(),
+			KeyTypeId::try_from("aura").unwrap(),
+			Some("//Alice"),
+		)
+		.expect("Creates authority key");
 
 		let mut proposer_factory = ProposerFactory::new(
 			spawner.clone(),
@@ -986,6 +1014,13 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
+		SyncCryptoStore::sr25519_generate_new(
+			&*keystore_container.sync_keystore().clone(),
+			KeyTypeId::try_from("aura").unwrap(),
+			Some("//Alice"),
+		)
+		.expect("Creates authority key");
+
 		let mut proposer_factory = ProposerFactory::new(
 			spawner.clone(),
 			client.clone(),
@@ -1021,10 +1056,7 @@ mod tests {
 		// Without a block limit we should include all of them
 		assert_eq!(block.extrinsics().len(), extrinsics_num);
 
-		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
-		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
-
-		let mut proposer_factory = ProposerFactory::new(
+		let mut proposer_factory = ProposerFactory::with_proof_recording(
 			spawner.clone(),
 			client.clone(),
 			txpool.clone(),
@@ -1093,6 +1125,13 @@ mod tests {
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		SyncCryptoStore::sr25519_generate_new(
+			&*keystore_container.sync_keystore().clone(),
+			KeyTypeId::try_from("aura").unwrap(),
+			Some("//Alice"),
+		)
+		.expect("Creates authority key");
 
 		let mut proposer_factory = ProposerFactory::new(
 			spawner.clone(),
@@ -1170,6 +1209,13 @@ mod tests {
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		SyncCryptoStore::sr25519_generate_new(
+			&*keystore_container.sync_keystore().clone(),
+			KeyTypeId::try_from("aura").unwrap(),
+			Some("//Alice"),
+		)
+		.expect("Creates authority key");
 
 		let mut proposer_factory = ProposerFactory::new(
 			spawner.clone(),

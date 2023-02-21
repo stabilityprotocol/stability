@@ -8083,6 +8083,7 @@ dependencies = [
  "sp-consensus",
  "sp-core",
  "sp-inherents",
+ "sp-keyring",
  "sp-keystore",
  "sp-runtime",
  "stability-test-runtime-client",
