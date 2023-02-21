@@ -1324,4 +1324,47 @@ mod tests {
 			panic!("Skipped extrinsic should not be in block")
 		}
 	}
+
+	#[test]
+	#[should_panic = "called `Result::unwrap()` on an `Err` value: OneShotCancelled(Canceled)"]
+	fn should_panic_if_not_find_aura_key() {
+		let client = Arc::new(stability_test_runtime_client::new());
+		let spawner = sp_core::testing::TaskExecutor::new();
+		let txpool = BasicPool::new_full(
+			Default::default(),
+			true.into(),
+			None,
+			spawner.clone(),
+			client.clone(),
+		);
+		let genesis_header = client
+			.expect_header(BlockId::Hash(client.info().genesis_hash))
+			.expect("there should be header");
+
+		let extrinsics = vec![extrinsic_skipped(0), extrinsic_included(0)];
+
+		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, extrinsics)).unwrap();
+
+		block_on(txpool.maintain(chain_event(genesis_header.clone())));
+
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.sync_keystore(),
+			None,
+			None,
+		);
+
+		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
+
+		let deadline = time::Duration::from_secs(300);
+
+		block_on(proposer.propose(Default::default(), Default::default(), deadline, None))
+			.map(|r| r.block)
+			.unwrap();
+	}
 }
