@@ -417,6 +417,8 @@ impl pallet_root_controller::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_map_svm_evm::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -432,6 +434,7 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment,
 		TechCommitteeCollective: pallet_collective::<Instance1>,
 		RootController: pallet_root_controller,
+		MapSvmEvm: pallet_map_svm_evm,
 		Ethereum: pallet_ethereum,
 		EVM: pallet_evm,
 		EVMChainId: pallet_evm_chain_id,

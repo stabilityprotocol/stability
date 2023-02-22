@@ -4429,6 +4429,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-map-svm-evm"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-root-controller"
 version = "1.0.0"
 dependencies = [
@@ -7981,6 +7995,7 @@ dependencies = [
  "pallet-evm-precompile-simple",
  "pallet-grandpa",
  "pallet-hotfix-sufficients",
+ "pallet-map-svm-evm",
  "pallet-root-controller",
  "pallet-sudo",
  "pallet-timestamp",

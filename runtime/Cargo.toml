@@ -57,6 +57,7 @@ std = [
     'pallet-hotfix-sufficients/std',
     'pallet-collective/std',
     'pallet-root-controller/std',
+    'pallet-map-svm-evm/std'
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
@@ -133,3 +134,4 @@ pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true }
 pallet-erc20-manager = { workspace = true }
+pallet-map-svm-evm = { workspace = true }

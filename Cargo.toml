@@ -14,6 +14,7 @@ members = [
     'pallets/evm-fee-controller',
     'primitives/tools',
 	'pallets/root-controller',
+    'pallets/map-svm-evm',
     'client/authorship',
     'test-utils/stability-client',
     'test-utils/stability-runtime',
@@ -50,7 +51,6 @@ async-trait = "0.1.57"
 cfg-if = "1.0"
 memory-db = { version = "0.31.0", default-features = false }
 trie-db = { version = "0.24.0", default-features = false }
-
 # Polkadot
 xcm = { git = "https://github.com/paritytech/polkadot", tag = "v0.9.36", default-features = false }
 # Substrate Client
@@ -166,6 +166,7 @@ pallet-root-controller = { path = "./pallets/root-controller", default-features 
 pallet-evm-fee-controller = { path = "./pallets/evm-fee-controller", default-features = false }
 stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api", default-features = false }
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
+pallet-map-svm-evm = { path = "./pallets/map-svm-evm", default-features = false }
 stbl-tools = { path = "./primitives/tools", default-features = false }
 
 # Stability Test
