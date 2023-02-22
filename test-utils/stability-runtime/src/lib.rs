@@ -1026,7 +1026,7 @@ cfg_if! {
 			}
 
 			impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, RealAccountiD> for Runtime {
-				fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: RealAccountiD) -> bool {
+				fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, _: RealAccountiD) -> bool {
 					if let Extrinsic::Skipped(_) = tx {
 						return false;
 					}

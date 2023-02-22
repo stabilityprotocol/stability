@@ -871,12 +871,26 @@ impl_runtime_apis! {
 
 	impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId> for Runtime {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool {
-			// log the validator
-			log::info!("validator: {:?}", validator);
+			if let RuntimeCall::Ethereum(transact { transaction }) = tx.0.function {
 
-			// log the extrinsic
-			log::info!("extrinsic: {:?}", tx);
-			return true;
+				/*
+					let validatorH160 = AddressMapping::into_ethereum(validator);
+					let validatorFees = pallet_fee::validator_fees(validator);
+					let defaultTokenFromUser = pallet_fee::default_token_from_user(transaction.from);
+
+					if validatorFees.includes(defaultTokenFromUser) {
+						return true;
+					}
+					else {
+						return false;
+					}
+				 */
+			}
+			else {
+				// always return true for non-ethereum transactions
+				return true;
+			}
+
 		}
 	}
 
