@@ -91,16 +91,21 @@ impl pallet_balances::Config for Runtime {
 	type WeightInfo = ();
 }
 
+
 parameter_types! {
-	pub MockDefaultFeeToken: H160 = H160::from_str("0x0000000000000000000000000000000000000000").expect("invalid address");
+	pub MockDefaultFeeToken: H160 = H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
+}
+
+impl pallet_validator_fee_selector::Config for Runtime {
+	type DefaultFeeToken = MockDefaultFeeToken;
 }
 
 pub type Precompiles<R> = PrecompileSetBuilder<
 	R,
-	PrecompileAt<AddressU64<1>, FeeTokenPrecompile<R, MockDefaultFeeToken>>,
+	PrecompileAt<AddressU64<1>, ValidatorFeeManagerPrecompile<R, pallet_validator_fee_selector::Pallet<R>>>,
 >;
 
-pub type PCall = FeeTokenPrecompileCall<Runtime, MockDefaultFeeToken, ()>;
+pub type PCall = ValidatorFeeManagerPrecompileCall<Runtime, pallet_validator_fee_selector::Pallet<Runtime>, ()>;
 
 parameter_types! {
 		pub BlockGasLimit: U256 = U256::max_value();
@@ -138,6 +143,7 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Evm: pallet_evm::{Pallet, Call, Storage, Event<T>},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+		ValidatorFeeSelector: pallet_validator_fee_selector,
 	}
 );
 
@@ -154,7 +160,6 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
-
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
 		let mut t = frame_system::GenesisConfig::default()
 			.build_storage::<Runtime>()

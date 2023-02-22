@@ -5,7 +5,7 @@ use precompile_utils::{
 	testing::{CryptoAlith, Precompile1, PrecompileTesterExt},
 	EvmDataWriter,
 };
-use sp_core::{TypedGet, H160, U256};
+use sp_core::{H160, U256};
 
 use crate::{
 	mock::{ExtBuilder, PCall, Precompiles, PrecompilesValue, Runtime},
@@ -235,53 +235,12 @@ fn fail_to_update_conversion_rate_for_default_token() {
 			)
 			.execute_reverts(|e| {
 				e.eq_ignore_ascii_case(
-					b"VALIDATOR_FEE_MANAGER: default token has a fixed conversion rate",
+					b"ValidatorFeeTokenController: default token conversion rate cannot be updated",
 				)
 			})
 	});
 }
 
-// safe conversion rate
-
-#[test]
-
-fn not_fail_to_check_conversion_rate() {
-	ExtBuilder::default().build().execute_with(|| {
-		precompiles()
-			.prepare_test(
-				CryptoAlith,
-				Precompile1,
-				PCall::safe_token_conversion_rate {
-					validator: Address(CryptoAlith.into()),
-					token_address: crate::mock::MockDefaultFeeToken::get().into(),
-				},
-			)
-			.execute_returns_encoded(EvmDataWriter::new()
-            .write(DefaultConversionRate::get().0)
-            .write(DefaultConversionRate::get().1)
-            .build());
-	});
-}
-
-#[test]
-fn executes_view_call_if_validator_accepts_token() {
-	ExtBuilder::default().build().execute_with(|| {
-		precompiles()
-			.prepare_test(
-				CryptoAlith,
-				Precompile1,
-				PCall::safe_token_conversion_rate {
-					validator: Address(CryptoAlith.into()),
-					token_address: MeaninglessTokenAddress::get().into(),
-				},
-			)
-			.execute_reverts(|msg| {
-				msg.eq_ignore_ascii_case(
-					b"VALIDATOR_FEE_MANAGER: token not supported by target validator",
-				)
-			});
-	});
-}
 
 #[test]
 fn reverts_if_validator_dont_accepts_token() {

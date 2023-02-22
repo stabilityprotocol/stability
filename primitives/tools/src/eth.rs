@@ -9,7 +9,7 @@ pub fn generate_calldata(signature: &str, args: &Vec<H256>) -> Vec<u8> {
 
 	let mut u8_array: Vec<u8> = Vec::default();
 
-	hash.as_bytes().iter().for_each(|byte| {
+	hash.as_bytes().split_at(4).0.iter().for_each(|byte| {
 		u8_array.push(*byte);
 	});
 
