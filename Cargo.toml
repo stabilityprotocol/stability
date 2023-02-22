@@ -13,6 +13,9 @@ members = [
     'primitives/fee-compatible-api',
     'pallets/erc20-manager',
     'pallets/evm-fee-controller',
+    'pallets/token-fee-controller/supported-tokens-manager',
+    'pallets/token-fee-controller/user-fee-selector',
+    'pallets/token-fee-controller/validator-fee-selector',
     'primitives/tools',
 	'pallets/root-controller',
     'pallets/map-svm-evm',
@@ -177,3 +180,4 @@ stability-test-runtime = { path = "./test-utils/stability-runtime", default-feat
 stability-test-runtime-client = { path = "./test-utils/stability-runtime-client", default-features = false }
 pallet-user-fee-selector = { path = "./pallets/token-fee-controller/user-fee-selector", default-features = false }
 pallet-validator-fee-selector = { path = "./pallets/token-fee-controller/validator-fee-selector", default-features = false }
+pallet-supported-tokens-manager = { path = "./pallets/token-fee-controller/supported-tokens-manager", default-features = false }

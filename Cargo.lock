@@ -4494,6 +4494,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-supported-tokens-manager"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-timestamp"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
@@ -4561,6 +4575,7 @@ version = "0.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "pallet-supported-tokens-manager",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
@@ -4928,6 +4943,7 @@ dependencies = [
  "num_enum",
  "pallet-balances",
  "pallet-evm",
+ "pallet-supported-tokens-manager",
  "pallet-timestamp",
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
@@ -8059,6 +8075,7 @@ dependencies = [
  "pallet-map-svm-evm",
  "pallet-root-controller",
  "pallet-sudo",
+ "pallet-supported-tokens-manager",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
