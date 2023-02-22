@@ -4334,6 +4334,8 @@ dependencies = [
  "frame-system",
  "pallet-erc20-manager",
  "pallet-evm",
+ "pallet-user-fee-selector",
+ "pallet-validator-fee-selector",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
@@ -4551,6 +4553,34 @@ dependencies = [
  "sp-api",
  "sp-runtime",
  "sp-weights",
+]
+
+[[package]]
+name = "pallet-user-fee-selector"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-validator-fee-selector"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -4899,6 +4929,8 @@ dependencies = [
  "pallet-balances",
  "pallet-evm",
  "pallet-timestamp",
+ "pallet-user-fee-selector",
+ "pallet-validator-fee-selector",
  "parity-scale-codec",
  "paste",
  "precompile-utils",
@@ -4959,6 +4991,35 @@ dependencies = [
  "sp-std",
  "syn",
  "trybuild",
+]
+
+[[package]]
+name = "precompile-validator-fee-selector"
+version = "0.1.0"
+dependencies = [
+ "derive_more",
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "hex-literal",
+ "libsecp256k1",
+ "log",
+ "num_enum",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-timestamp",
+ "pallet-validator-fee-selector",
+ "parity-scale-codec",
+ "paste",
+ "precompile-utils",
+ "scale-info",
+ "serde",
+ "sha3",
+ "slices",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -8001,10 +8062,13 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-user-fee-selector",
+ "pallet-validator-fee-selector",
  "parity-scale-codec",
  "precompile-balances-erc20",
  "precompile-fee-token-selector",
  "precompile-utils",
+ "precompile-validator-fee-selector",
  "scale-info",
  "serde",
  "sp-api",
@@ -8121,7 +8185,6 @@ name = "stbl-tools"
 version = "0.1.0"
 dependencies = [
  "pallet-evm",
- "precompile-utils",
  "sp-core",
  "sp-runtime",
  "sp-std",
@@ -8863,34 +8926,6 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
-]
-
-[[package]]
-name = "validator-fee-manager"
-version = "0.1.0"
-dependencies = [
- "derive_more",
- "fp-evm",
- "frame-support",
- "frame-system",
- "hex-literal",
- "libsecp256k1",
- "log",
- "num_enum",
- "pallet-balances",
- "pallet-evm",
- "pallet-timestamp",
- "parity-scale-codec",
- "paste",
- "precompile-utils",
- "scale-info",
- "serde",
- "sha3",
- "slices",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]

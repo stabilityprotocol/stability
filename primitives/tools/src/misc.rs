@@ -1,8 +1,8 @@
 #[macro_export]
 macro_rules! map_err {
-	($result:expr, $err:expr) => {
+	($result:expr, $func:expr) => {
 		match $result {
-			Err(_) => return Err($err),
+			Err(e) => return Err($func(e)),
 			Ok(item) => item,
 		}
 	};

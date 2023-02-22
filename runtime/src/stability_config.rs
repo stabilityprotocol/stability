@@ -37,7 +37,7 @@ pub const COUNCIL_MAX_MEMBERS: u32 = 100;
 
 pub const DEFAULT_OWNER: &str = "0xA38395b264f232ffF4bb294b5947092E359dDE88";
 
-pub const DEFAULT_FEE_TOKEN: &str = "0x0000000000000000000000000000000000000800";
+pub const DEFAULT_FEE_TOKEN: &str = "0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43";
 
 /// Minimum deposit of an account to exist.
 /// Since this minimum deposit would be reduced

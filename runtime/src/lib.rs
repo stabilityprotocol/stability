@@ -60,6 +60,8 @@ pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 
+use pallet_user_fee_selector;
+
 mod stability_config;
 use stability_config::{
 	build_block_weights, COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS,
@@ -70,7 +72,19 @@ use stability_config::{
 mod precompiles;
 use precompiles::StabilityPrecompiles;
 
-pub type Precompiles = StabilityPrecompiles<Runtime>;
+pub trait FeeController {
+	type Validator: pallet_validator_fee_selector::ValidatorFeeTokenController;
+	type User: pallet_user_fee_selector::UserFeeTokenController;
+}
+
+pub struct StabilityFeeController;
+
+impl FeeController for StabilityFeeController {
+	type Validator = pallet_validator_fee_selector::Pallet<Runtime>;
+	type User = pallet_user_fee_selector::Pallet<Runtime>;
+}
+
+pub type Precompiles = StabilityPrecompiles<Runtime, StabilityFeeController>;
 
 /// Type of block number.
 pub type BlockNumber = u32;
@@ -315,7 +329,7 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
 
 const WEIGHT_PER_GAS: u64 = 20_000;
 parameter_types! {
-	pub PrecompilesValue: StabilityPrecompiles<Runtime> = StabilityPrecompiles::<_>::new();
+	pub PrecompilesValue: StabilityPrecompiles<Runtime, StabilityFeeController> = StabilityPrecompiles::<_, StabilityFeeController>::new();
 	pub WeightPerGas: Weight = Weight::from_ref_time(WEIGHT_PER_GAS);
 }
 
@@ -329,12 +343,12 @@ impl pallet_evm::Config for Runtime {
 	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
 	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
-	type PrecompilesType = StabilityPrecompiles<Self>;
+	type PrecompilesType = StabilityPrecompiles<Self, StabilityFeeController>;
 	type PrecompilesValue = PrecompilesValue;
 	type ChainId = EVMChainId;
 	type BlockGasLimit = BlockGasLimit;
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
-	type OnChargeTransaction = ();
+	type OnChargeTransaction = pallet_evm_fee_controller::Pallet<Self>;
 	type FindAuthor = FindAuthorTruncated<Aura>;
 }
 
@@ -343,15 +357,23 @@ impl pallet_ethereum::Config for Runtime {
 	type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
 }
 
-parameter_types! {
-	pub FeeTokenSelectorAddress: H160 = H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address");
-}
 impl pallet_evm_fee_controller::Config for Runtime {
-	type FeeTokenSelectorAddress = FeeTokenSelectorAddress;
 	type ERC20Manager = pallet_erc20_manager::Pallet<Self>;
+	type UserFeeTokenController = pallet_user_fee_selector::Pallet<Self>;
+	type ValidatorTokenController = pallet_validator_fee_selector::Pallet<Self>;
 }
 
 impl pallet_erc20_manager::Config for Runtime {}
+
+parameter_types! {
+	pub DefaultFeeToken: H160 = H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address");
+}
+impl pallet_user_fee_selector::Config for Runtime {
+	type DefaultFeeToken = DefaultFeeToken;
+}
+impl pallet_validator_fee_selector::Config for Runtime {
+	type DefaultFeeToken = DefaultFeeToken;
+}
 
 parameter_types! {
 	pub BoundDivision: U256 = U256::from(1024);
@@ -441,6 +463,8 @@ construct_runtime!(
 		DynamicFee: pallet_dynamic_fee,
 		BaseFee: pallet_base_fee,
 		HotfixSufficients: pallet_hotfix_sufficients,
+		UserFeeSelector: pallet_user_fee_selector,
+		ValidatorFeeSelector: pallet_validator_fee_selector,
 	}
 );
 
@@ -888,6 +912,7 @@ impl_runtime_apis! {
 						return false;
 					}
 				 */
+				 true
 			}
 			else {
 				// always return true for non-ethereum transactions

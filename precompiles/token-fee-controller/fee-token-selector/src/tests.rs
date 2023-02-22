@@ -6,7 +6,9 @@ use precompile_utils::{
 };
 use sp_core::{H160, H256};
 
-use crate::mock::{ExtBuilder, MockDefaultFeeToken, PCall, Precompiles, PrecompilesValue, Runtime};
+use crate::mock::{
+	ExtBuilder, MockDefaultFeeToken, PCall, Precompiles, PrecompilesValue, Runtime,
+};
 
 // No test of invalid selectors since we have a fallback behavior (deposit).
 fn precompiles() -> Precompiles<Runtime> {
