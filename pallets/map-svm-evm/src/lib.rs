@@ -44,7 +44,14 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A substrate account is linked to an EVM account
-		AccountLinked { substrate: T::AccountId, evm: H160 },
+		AccountLinked {
+			substrate: T::AccountId,
+			evm: H160,
+		},
+		AccountUnlinked {
+			substrate: T::AccountId,
+			evm: H160,
+		},
 	}
 
 	#[pallet::error]
@@ -177,6 +184,12 @@ pub mod pallet {
 			// mutate the storage for unset linked evm and substrate
 			SubstrateToEvm::<T>::remove(who.clone());
 			EvmToSubstrate::<T>::remove(evm_linked_account);
+
+			// emit event
+			Self::deposit_event(Event::AccountUnlinked {
+				substrate: who,
+				evm: evm_linked_account,
+			});
 
 			Ok(Pays::No.into())
 		}
