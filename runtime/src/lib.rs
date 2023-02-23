@@ -914,6 +914,8 @@ impl_runtime_apis! {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool {
 			if let RuntimeCall::Ethereum(transact { transaction }) = tx.0.function {
 
+				let validatorEthereumAddress = <pallet_map_svm_evm::Pallet<Runtime>>::get_linked_evm_account(validator);
+
 				/*
 					let validatorH160 = AddressMapping::into_ethereum(validator);
 					let validatorFees = pallet_fee::validator_fees(validator);

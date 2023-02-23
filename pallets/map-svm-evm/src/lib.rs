@@ -194,6 +194,16 @@ pub mod pallet {
 			Ok(Pays::No.into())
 		}
 	}
+
+	impl<T: Config> Pallet<T> {
+		pub fn get_linked_substrate_account(address: H160) -> Option<T::AccountId> {
+			EvmToSubstrate::<T>::get(address)
+		}
+
+		pub fn get_linked_evm_account(account: T::AccountId) -> Option<H160> {
+			SubstrateToEvm::<T>::get(account)
+		}
+	}
 }
 
 fn u64_to_buffer_in_ascii(u: u64) -> Vec<u8> {
