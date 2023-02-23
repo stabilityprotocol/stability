@@ -107,9 +107,9 @@ impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTo
 		vec![MockDefaultFeeToken::get(), MeaninglessTokenAddress::get()]
 	}
 
-	fn add_supported_token(token: H160) {}
+	fn add_supported_token(_token: H160) {}
 
-	fn remove_supported_token(token: H160) {}
+	fn remove_supported_token(_token: H160) {}
 }
 
 impl pallet_user_fee_selector::Config for Runtime {
