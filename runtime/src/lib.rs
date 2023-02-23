@@ -439,7 +439,9 @@ impl pallet_root_controller::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
-impl pallet_map_svm_evm::Config for Runtime {}
+impl pallet_map_svm_evm::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
