@@ -85,7 +85,7 @@ where
 			acceptance_value,
 		) {
 			Ok(_) => {}
-			Err(e) => {
+			Err(_) => {
 				return Err(revert("ValidatorFeeTokenController: token not supported"));
 			}
 		};

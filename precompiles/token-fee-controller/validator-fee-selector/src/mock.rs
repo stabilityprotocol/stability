@@ -107,9 +107,9 @@ impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTo
 		vec![MockDefaultFeeToken::get(), MeaninglessTokenAddress::get()]
 	}
 
-	fn add_supported_token(token: H160) {}
+	fn add_supported_token(_token: H160) {}
 
-	fn remove_supported_token(token: H160) {}
+	fn remove_supported_token(_token: H160) {}
 }
 
 impl pallet_validator_fee_selector::Config for Runtime {
@@ -119,10 +119,14 @@ impl pallet_validator_fee_selector::Config for Runtime {
 
 pub type Precompiles<R> = PrecompileSetBuilder<
 	R,
-	PrecompileAt<AddressU64<1>, ValidatorFeeManagerPrecompile<R, pallet_validator_fee_selector::Pallet<R>>>,
+	PrecompileAt<
+		AddressU64<1>,
+		ValidatorFeeManagerPrecompile<R, pallet_validator_fee_selector::Pallet<R>>,
+	>,
 >;
 
-pub type PCall = ValidatorFeeManagerPrecompileCall<Runtime, pallet_validator_fee_selector::Pallet<Runtime>, ()>;
+pub type PCall =
+	ValidatorFeeManagerPrecompileCall<Runtime, pallet_validator_fee_selector::Pallet<Runtime>, ()>;
 
 parameter_types! {
 		pub BlockGasLimit: U256 = U256::max_value();
