@@ -12,8 +12,7 @@ use sc_service::{error::Error as ServiceError, Configuration, PartialComponents,
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sp_api::{ConstructRuntimeApi, TransactionFor};
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
-use sp_core::{crypto::KeyTypeId, Encode, U256};
-use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
+use sp_core::U256;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
 // Runtime

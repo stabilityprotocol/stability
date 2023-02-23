@@ -138,3 +138,4 @@ pallet-collective = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true }
 pallet-erc20-manager = { workspace = true }
 pallet-map-svm-evm = { workspace = true }
+pallet-supported-tokens-manager = { workspace = true }

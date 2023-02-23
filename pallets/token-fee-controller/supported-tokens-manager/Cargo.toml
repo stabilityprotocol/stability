@@ -1,5 +1,5 @@
 [package]
-name = "pallet-validator-fee-selector"
+name = "pallet-supported-tokens-manager"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,4 +14,3 @@ codec = { package = "parity-scale-codec", workspace = true }
 scale-info = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
-pallet-supported-tokens-manager = { workspace = true }

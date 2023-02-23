@@ -370,9 +370,20 @@ parameter_types! {
 }
 impl pallet_user_fee_selector::Config for Runtime {
 	type DefaultFeeToken = DefaultFeeToken;
+	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
 }
 impl pallet_validator_fee_selector::Config for Runtime {
 	type DefaultFeeToken = DefaultFeeToken;
+	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+}
+
+parameter_types! {
+	pub InitialSupportedTokens: Vec<H160> = vec![
+		H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address"),
+	];
+}
+impl pallet_supported_tokens_manager::Config for Runtime {
+	type InitialSupportedTokens = InitialSupportedTokens;
 }
 
 parameter_types! {
@@ -467,6 +478,7 @@ construct_runtime!(
 		HotfixSufficients: pallet_hotfix_sufficients,
 		UserFeeSelector: pallet_user_fee_selector,
 		ValidatorFeeSelector: pallet_validator_fee_selector,
+		SupportedTokensManager: pallet_supported_tokens_manager
 	}
 );
 

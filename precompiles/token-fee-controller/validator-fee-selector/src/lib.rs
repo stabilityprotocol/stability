@@ -79,11 +79,16 @@ where
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		ValidatorFeeTokenController::update_fee_token_acceptance(
+		match ValidatorFeeTokenController::update_fee_token_acceptance(
 			msg_sender,
 			token_address.into(),
 			acceptance_value,
-		);
+		) {
+			Ok(_) => {}
+			Err(_) => {
+				return Err(revert("ValidatorFeeTokenController: token not supported"));
+			}
+		};
 
 		log3(
 			handle.context().address,

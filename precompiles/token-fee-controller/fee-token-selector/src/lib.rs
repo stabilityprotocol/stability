@@ -70,7 +70,12 @@ where
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		handle.record_log_costs_manual(2, 32)?;
 
-		UserFeeTokenController::set_user_fee_token(msg_sender.into(), token_address.into());
+		match UserFeeTokenController::set_user_fee_token(msg_sender.into(), token_address.into()) {
+			Err(_) => {
+				return Err(revert(b"UserFeeTokenController: token not supported"));
+			},
+			_ => {},
+		};
 
 		log2(
 			handle.context().address,
