@@ -374,6 +374,7 @@ impl pallet_user_fee_selector::Config for Runtime {
 }
 impl pallet_validator_fee_selector::Config for Runtime {
 	type DefaultFeeToken = DefaultFeeToken;
+	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
 }
 
 parameter_types! {

@@ -91,13 +91,30 @@ impl pallet_balances::Config for Runtime {
 	type WeightInfo = ();
 }
 
-
 parameter_types! {
 	pub MockDefaultFeeToken: H160 = H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
+	pub MeaninglessTokenAddress:H160 = H160::from_str("0xdAC17F958D2ee523a2206206994597C13D831ec7").expect("invalid address");
+}
+
+pub struct MockSupportedTokensManager;
+
+impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTokensManager {
+	fn is_supported_token(token: H160) -> bool {
+		token == MockDefaultFeeToken::get() || token == MeaninglessTokenAddress::get()
+	}
+
+	fn get_supported_tokens() -> Vec<H160> {
+		vec![MockDefaultFeeToken::get(), MeaninglessTokenAddress::get()]
+	}
+
+	fn add_supported_token(token: H160) {}
+
+	fn remove_supported_token(token: H160) {}
 }
 
 impl pallet_validator_fee_selector::Config for Runtime {
 	type DefaultFeeToken = MockDefaultFeeToken;
+	type SupportedTokensManager = MockSupportedTokensManager;
 }
 
 pub type Precompiles<R> = PrecompileSetBuilder<

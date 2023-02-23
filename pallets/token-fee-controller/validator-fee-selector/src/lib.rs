@@ -10,9 +10,10 @@ pub mod pallet {
 
 	use frame_support::{
 		pallet_prelude::{OptionQuery, ValueQuery},
-		storage::types::{StorageDoubleMap},
+		storage::types::StorageDoubleMap,
 		Blake2_128Concat,
 	};
+	use pallet_supported_tokens_manager::SupportedTokensManager;
 	use sp_core::{Get, H160, U256};
 
 	#[pallet::pallet]
@@ -22,6 +23,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type DefaultFeeToken: sp_core::Get<H160>;
+		type SupportedTokensManager: SupportedTokensManager;
 	}
 
 	#[pallet::error]
@@ -72,6 +74,7 @@ pub mod pallet {
 
 	pub enum ValidatorFeeTokenError {
 		NotMutableDefaultTokenConversionRate,
+		NotSupportedToken,
 	}
 
 	impl<T: Config> ValidatorFeeTokenController for Pallet<T> {
@@ -82,8 +85,18 @@ pub mod pallet {
 				.unwrap_or(token.eq(&T::DefaultFeeToken::get()))
 		}
 
-		fn update_fee_token_acceptance(validator: H160, token: H160, support: bool) {
-			ValidatorSupportFeeToken::<T>::insert(validator, token, support);
+		fn update_fee_token_acceptance(
+			validator: H160,
+			token: H160,
+			support: bool,
+		) -> Result<(), Self::Error> {
+			if !T::SupportedTokensManager::is_supported_token(token) {
+				Err(ValidatorFeeTokenError::NotSupportedToken)
+			} else {
+				ValidatorSupportFeeToken::<T>::insert(validator, token, support);
+
+				Ok(())
+			}
 		}
 
 		fn conversion_rate(validator: H160, token: H160) -> (U256, U256) {
@@ -112,7 +125,11 @@ pub mod pallet {
 pub trait ValidatorFeeTokenController {
 	type Error;
 	fn validator_supports_fee_token(validator: H160, token: H160) -> bool;
-	fn update_fee_token_acceptance(validator: H160, token: H160, support: bool);
+	fn update_fee_token_acceptance(
+		validator: H160,
+		token: H160,
+		support: bool,
+	) -> Result<(), Self::Error>;
 	fn conversion_rate(validator: H160, token: H160) -> (U256, U256);
 	fn update_conversion_rate(
 		validator: H160,

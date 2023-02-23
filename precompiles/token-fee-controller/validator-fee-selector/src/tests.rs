@@ -1,5 +1,3 @@
-use core::str::FromStr;
-use frame_support::parameter_types;
 use precompile_utils::{
 	prelude::{log3, Address},
 	testing::{CryptoAlith, Precompile1, PrecompileTesterExt},
@@ -18,9 +16,7 @@ fn precompiles() -> Precompiles<Runtime> {
 	PrecompilesValue::get()
 }
 
-parameter_types! {
-	pub MeaninglessTokenAddress:H160 = H160::from_str("0xdAC17F958D2ee523a2206206994597C13D831ec7").expect("invalid address");
-}
+use crate::mock::MeaninglessTokenAddress;
 
 // fee token acceptance management
 
@@ -58,6 +54,22 @@ fn non_default_token_address() {
 				},
 			)
 			.execute_returns_encoded(!DefaultAcceptance::get());
+	});
+}
+
+#[test]
+fn fail_to_set_for_unsupported_token() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				CryptoAlith,
+				Precompile1,
+				PCall::set_token_acceptance {
+					token_address: Address(CryptoAlith.into()),
+					acceptance_value: true,
+				},
+			)
+			.execute_reverts(|x| x == b"ValidatorFeeTokenController: token not supported");
 	});
 }
 
@@ -240,7 +252,6 @@ fn fail_to_update_conversion_rate_for_default_token() {
 			})
 	});
 }
-
 
 #[test]
 fn reverts_if_validator_dont_accepts_token() {

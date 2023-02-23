@@ -57,47 +57,6 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
-		pub fn link_evm_account(
-			origin: OriginFor<T>,
-			address: H160,
-			message: Vec<u8>,
-			signature: Vec<u8>,
-		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-
-			let linkedAccount = SubstrateToEvm::<T>::get(who);
-
-			if let Some(_) = linkedAccount {
-				return Err(Error::<T>::AlreadyLinked.into());
-			}
-
-			// check ethereum message
-			let expectedMessage = b"\x19Ethereum Signed Message:\n93"
-				.iter()
-				.chain(who.encode().iter())
-				.cloned()
-				.collect::<Vec<u8>>();
-
-			let signatureFixed: &[u8; 65] = signature[0..65]
-				.try_into()
-				.map_err(|_| Error::<T>::InvalidSignature)?;
-
-			let messageHash = blake2_256(message.as_slice());
-
-			let pubkey = secp256k1_ecdsa_recover(signatureFixed, &messageHash)
-				.map_err(|_| Error::<T>::RecoverFailed)?;
-
-			let addressRecovered = H160::from_slice(&keccak_256(&pubkey)[12..32]);
-
-			if address != addressRecovered {
-				return Err(Error::<T>::AddressNotMatch.into());
-			}
-
-			Ok(Pays::No.into())
-		}
-
 		#[pallet::call_index(1)]
 		#[pallet::weight(0)]
 		pub fn unlink_evm_account(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
