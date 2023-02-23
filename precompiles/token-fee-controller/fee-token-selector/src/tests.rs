@@ -1,10 +1,8 @@
-use core::str::FromStr;
-use frame_support::parameter_types;
 use precompile_utils::{
 	prelude::Address,
 	testing::{CryptoAlith, Precompile1, PrecompileTesterExt},
 };
-use sp_core::{H160, H256};
+use sp_core::H256;
 
 use crate::mock::{
 	ExtBuilder, MeaninglessTokenAddress, MockDefaultFeeToken, PCall, Precompiles, PrecompilesValue,
