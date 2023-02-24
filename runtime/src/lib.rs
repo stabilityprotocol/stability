@@ -416,7 +416,9 @@ impl pallet_evm_fee_controller::Config for Runtime {
 	type ValidatorTokenController = pallet_validator_fee_selector::Pallet<Self>;
 }
 
-impl pallet_erc20_manager::Config for Runtime {}
+impl pallet_erc20_manager::Config for Runtime {
+	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+}
 
 parameter_types! {
 	pub DefaultFeeToken: H160 = H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address");
@@ -531,7 +533,9 @@ construct_runtime!(
 		HotfixSufficients: pallet_hotfix_sufficients,
 		UserFeeSelector: pallet_user_fee_selector,
 		ValidatorFeeSelector: pallet_validator_fee_selector,
-		SupportedTokensManager: pallet_supported_tokens_manager
+		SupportedTokensManager: pallet_supported_tokens_manager,
+		ERC20Manager: pallet_erc20_manager,
+		EVMFeeController: pallet_evm_fee_controller,
 	}
 );
 

@@ -10,9 +10,9 @@ macro_rules! map_err {
 
 #[macro_export]
 macro_rules! some_or_err {
-	($result:expr, $err:expr) => {
+	($result:expr, $func:expr) => {
 		match $result {
-			None => return Err($err),
+			None => return Err($func()),
 			Some(item) => item,
 		}
 	};

@@ -8,12 +8,16 @@ pub mod pallet {
 
 	use super::*;
 
+	use frame_support::traits::Hooks;
 	use frame_support::{
-		storage::types::{StorageMap, ValueQuery},
+		pallet_prelude::OptionQuery,
+		storage::types::{StorageMap, StorageValue, ValueQuery},
 		Blake2_128Concat,
 	};
-	use sp_core::{Get, H160};
+	use frame_system::pallet_prelude::BlockNumberFor;
 	use pallet_supported_tokens_manager::SupportedTokensManager;
+	use sp_core::{Get, H160};
+	use sp_std::vec::Vec;
 
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
@@ -43,8 +47,12 @@ pub mod pallet {
 		T::DefaultFeeToken,
 	>;
 
-	impl<T: Config> UserFeeTokenController for Pallet<T> {
+	#[pallet::storage]
+	#[pallet::getter(fn pending_token_updates)]
+	pub type PendingTokenUpdatesStorage<T: Config> =
+		StorageValue<_, Vec<(H160, H160)>, OptionQuery>;
 
+	impl<T: Config> UserFeeTokenController for Pallet<T> {
 		type Error = Error<T>;
 
 		fn get_user_fee_token(account: H160) -> H160 {
@@ -54,10 +62,22 @@ pub mod pallet {
 		fn set_user_fee_token(account: H160, token: H160) -> Result<(), Self::Error> {
 			if !T::SupportedTokensManager::is_supported_token(token) {
 				return Err(Error::<T>::UnsupportedToken);
-			} else {
-				FeeTokenStorage::<T>::insert(account, token);
-				Ok(())
 			}
+			let mut pending_updates = PendingTokenUpdatesStorage::<T>::get().unwrap_or_default();
+			pending_updates.push((account, token));
+			PendingTokenUpdatesStorage::<T>::put(pending_updates);
+			Ok(())
+		}
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_finalize(_n: T::BlockNumber) {
+			let pending_updates = PendingTokenUpdatesStorage::<T>::get().unwrap_or_default();
+			for (account, token) in pending_updates {
+				FeeTokenStorage::<T>::insert(account, token);
+			}
+			PendingTokenUpdatesStorage::<T>::kill();
 		}
 	}
 }
