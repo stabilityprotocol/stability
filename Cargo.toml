@@ -55,6 +55,8 @@ async-trait = "0.1.57"
 cfg-if = "1.0"
 memory-db = { version = "0.31.0", default-features = false }
 trie-db = { version = "0.24.0", default-features = false }
+hex = "0.4"
+once_cell = "1.17.1"
 # Polkadot
 xcm = { git = "https://github.com/paritytech/polkadot", tag = "v0.9.36", default-features = false }
 # Substrate Client
