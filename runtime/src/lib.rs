@@ -11,11 +11,12 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode};
 use core::str::FromStr;
+use frame_system::RawOrigin;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
-	OpaqueMetadata, H160, H256, U256,
+	Hasher, OpaqueMetadata, H160, H256, U256,
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
@@ -40,9 +41,7 @@ use pallet_transaction_payment::CurrencyAdapter;
 // Frontier
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
-use pallet_evm::{
-	Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner,
-};
+use pallet_evm::{Account as EVMAccount, FeeCalculator, HashedAddressMapping, Runner};
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -313,17 +312,71 @@ impl pallet_transaction_payment::Config for Runtime {
 
 impl pallet_evm_chain_id::Config for Runtime {}
 
-pub struct FindAuthorTruncated<F>(PhantomData<F>);
-impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
+pub struct FindAuthorLinkedOrTruncated<F>(PhantomData<F>);
+impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 	fn find_author<'a, I>(digests: I) -> Option<H160>
 	where
 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{
 		if let Some(author_index) = F::find_author(digests) {
 			let authority_id = Aura::authorities()[author_index as usize].clone();
+			let authority_as_bytes: [u8; 32] = authority_id.as_slice()[0..32].try_into().unwrap();
+			let evmLinked = MapSvmEvm::get_linked_evm_account(AccountId::from(authority_as_bytes));
+
+			// if we have a linked EVM account, return it
+			if let Some(evmLinked) = evmLinked {
+				return Some(evmLinked);
+			}
+			// otherwise, return the default EVM account
 			return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
 		}
 		None
+	}
+}
+
+pub struct LinkedOrHashedAddressMapping<H>(sp_std::marker::PhantomData<H>);
+
+impl<H: Hasher<Out = H256>> pallet_evm::AddressMapping<AccountId>
+	for LinkedOrHashedAddressMapping<H>
+{
+	fn into_account_id(address: H160) -> AccountId {
+		let mut data = [0u8; 24];
+
+		let accountId = MapSvmEvm::get_linked_substrate_account(address);
+
+		// if we have a linked Substrate account, return it
+		if let Some(accountId) = accountId {
+			return accountId;
+		}
+		// otherwise, return the default Substrate account
+		data[0..4].copy_from_slice(b"evm:");
+		data[4..24].copy_from_slice(&address[..]);
+		let hash = H::hash(&data);
+
+		AccountId::from(Into::<[u8; 32]>::into(hash))
+	}
+}
+
+pub struct EnsureAddressLinkedOrTruncated;
+
+impl<OuterOrigin> pallet_evm::EnsureAddressOrigin<OuterOrigin> for EnsureAddressLinkedOrTruncated
+where
+	OuterOrigin: Into<Result<RawOrigin<AccountId>, OuterOrigin>> + From<RawOrigin<AccountId>>,
+{
+	type Success = AccountId;
+
+	fn try_address_origin(address: &H160, origin: OuterOrigin) -> Result<AccountId, OuterOrigin> {
+		origin.into().and_then(|o| match o {
+			RawOrigin::Signed(who)
+				if MapSvmEvm::get_linked_evm_account(who.clone()) == Some(*address) =>
+			{
+				Ok(who)
+			}
+			RawOrigin::Signed(who) if AsRef::<[u8; 32]>::as_ref(&who)[0..20] == address[0..20] => {
+				Ok(who)
+			}
+			r => Err(OuterOrigin::from(r)),
+		})
 	}
 }
 
@@ -338,9 +391,9 @@ impl pallet_evm::Config for Runtime {
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
 	type WeightPerGas = WeightPerGas;
 	type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
-	type CallOrigin = EnsureAddressTruncated;
-	type WithdrawOrigin = EnsureAddressTruncated;
-	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
+	type CallOrigin = EnsureAddressLinkedOrTruncated;
+	type WithdrawOrigin = EnsureAddressLinkedOrTruncated;
+	type AddressMapping = LinkedOrHashedAddressMapping<BlakeTwo256>;
 	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
 	type PrecompilesType = StabilityPrecompiles<Self, StabilityFeeController>;
@@ -349,7 +402,7 @@ impl pallet_evm::Config for Runtime {
 	type BlockGasLimit = BlockGasLimit;
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
 	type OnChargeTransaction = pallet_evm_fee_controller::Pallet<Self>;
-	type FindAuthor = FindAuthorTruncated<Aura>;
+	type FindAuthor = FindAuthorLinkedOrTruncated<Aura>;
 }
 
 impl pallet_ethereum::Config for Runtime {

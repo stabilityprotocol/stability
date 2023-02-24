@@ -7,15 +7,16 @@ mod tests;
 
 pub use pallet::*;
 
-use sp_runtime::AccountId32;
 use sp_std::prelude::*;
 
 use frame_support::dispatch::Pays;
 
-use sp_core::H160;
+use sp_core::{Hasher, H160, H256};
 
 use sp_io::crypto::secp256k1_ecdsa_recover;
 use sp_io::hashing::keccak_256;
+
+use sp_runtime::AccountId32;
 
 use frame_support::dispatch::DispatchResultWithPostInfo;
 
