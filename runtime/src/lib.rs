@@ -321,11 +321,11 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 		if let Some(author_index) = F::find_author(digests) {
 			let authority_id = Aura::authorities()[author_index as usize].clone();
 			let authority_as_bytes: [u8; 32] = authority_id.as_slice()[0..32].try_into().unwrap();
-			let evmLinked = MapSvmEvm::get_linked_evm_account(AccountId::from(authority_as_bytes));
+			let evm_linked = MapSvmEvm::get_linked_evm_account(AccountId::from(authority_as_bytes));
 
 			// if we have a linked EVM account, return it
-			if let Some(evmLinked) = evmLinked {
-				return Some(evmLinked);
+			if let Some(evm_linked) = evm_linked {
+				return Some(evm_linked);
 			}
 			// otherwise, return the default EVM account
 			return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
@@ -342,11 +342,11 @@ impl<H: Hasher<Out = H256>> pallet_evm::AddressMapping<AccountId>
 	fn into_account_id(address: H160) -> AccountId {
 		let mut data = [0u8; 24];
 
-		let accountId = MapSvmEvm::get_linked_substrate_account(address);
+		let account_id_option = MapSvmEvm::get_linked_substrate_account(address);
 
 		// if we have a linked Substrate account, return it
-		if let Some(accountId) = accountId {
-			return accountId;
+		if let Some(account_id) = account_id_option {
+			return account_id;
 		}
 		// otherwise, return the default Substrate account
 		data[0..4].copy_from_slice(b"evm:");
