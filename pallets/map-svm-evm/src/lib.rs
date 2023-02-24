@@ -15,15 +15,9 @@ use frame_support::dispatch::Pays;
 use sp_core::H160;
 
 use sp_io::crypto::secp256k1_ecdsa_recover;
-use sp_io::hashing::{blake2_256, keccak_256};
+use sp_io::hashing::keccak_256;
 
-use sp_runtime::traits::{MaybeDisplay, MaybeSerializeDeserialize, Member};
-
-use frame_support::{
-	dispatch::DispatchResultWithPostInfo,
-	traits::{Get, PalletInfo, StoredMap, TypedGet},
-	Parameter,
-};
+use frame_support::dispatch::DispatchResultWithPostInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -66,9 +60,7 @@ pub mod pallet {
 		AddressNotMatch,
 		/// Invalidad signature.
 		InvalidSignature,
-		/// The message is not valid.
-		InvalidMessage,
-		// Account not linked to any evm account
+		/// Account not linked to any evm account
 		AccountNotLinked,
 	}
 
@@ -136,6 +128,10 @@ pub mod pallet {
 				.collect::<Vec<u8>>();
 
 			let expected_message_hash = keccak_256(expected_message.as_slice());
+
+			if (signature.len() != 65) {
+				return Err(Error::<T>::InvalidSignature.into());
+			}
 
 			let signature_fixed: &[u8; 65] = signature[0..65]
 				.try_into()
@@ -210,7 +206,7 @@ fn u64_to_buffer_in_ascii(u: u64) -> Vec<u8> {
 	let mut buffer = Vec::new();
 	let mut u = u;
 
-	if (u == 0) {
+	if u == 0 {
 		buffer.push(48);
 		return buffer;
 	}
