@@ -7,7 +7,7 @@ pub mod pallet {
 
 	use super::*;
 
-	use frame_support::{storage::types::StorageValue, traits::FindAuthor};
+	use frame_support::traits::FindAuthor;
 	use pallet_erc20_manager::ERC20Manager;
 	use pallet_evm::OnChargeEVMTransaction;
 	use pallet_user_fee_selector::UserFeeTokenController;
