@@ -15,7 +15,7 @@ pub mod pallet {
 		Blake2_128Concat,
 	};
 	use pallet_supported_tokens_manager::SupportedTokensManager;
-	use sp_core::{Get, H160, U256};
+	use sp_core::{H160, U256};
 
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
@@ -23,7 +23,6 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type DefaultFeeToken: sp_core::Get<H160>;
 		type SupportedTokensManager: SupportedTokensManager;
 	}
 
@@ -80,7 +79,8 @@ pub mod pallet {
 
 	impl<T: Config> ValidatorSupportedTokens for Pallet<T> {
 		fn validator_supported_tokens(validator: H160) -> Vec<H160> {
-			T::SupportedTokensManager::get_supported_tokens().into_iter()
+			T::SupportedTokensManager::get_supported_tokens()
+				.into_iter()
 				.filter(|token| Self::validator_supports_fee_token(validator, *token))
 				.collect()
 		}
@@ -91,7 +91,7 @@ pub mod pallet {
 
 		fn validator_supports_fee_token(validator: H160, token: H160) -> bool {
 			ValidatorSupportFeeToken::<T>::get(validator, token)
-				.unwrap_or(token.eq(&T::DefaultFeeToken::get()))
+				.unwrap_or(token == T::SupportedTokensManager::get_default_token())
 		}
 
 		fn update_fee_token_acceptance(
@@ -109,6 +109,7 @@ pub mod pallet {
 		}
 
 		fn conversion_rate(validator: H160, token: H160) -> (U256, U256) {
+			// to be changed
 			ValidatorConversionRateToken::<T>::get(validator, token).into()
 		}
 
@@ -117,9 +118,6 @@ pub mod pallet {
 			token: H160,
 			conversion_rate: (U256, U256),
 		) -> Result<(), Self::Error> {
-			if token.eq(&T::DefaultFeeToken::get()) {
-				return Err(ValidatorFeeTokenError::NotMutableDefaultTokenConversionRate);
-			}
 			ValidatorConversionRateToken::<T>::set(
 				account,
 				token,
@@ -133,13 +131,17 @@ pub mod pallet {
 
 pub trait ValidatorFeeTokenController {
 	type Error;
+
 	fn validator_supports_fee_token(validator: H160, token: H160) -> bool;
+
 	fn update_fee_token_acceptance(
 		validator: H160,
 		token: H160,
 		support: bool,
 	) -> Result<(), Self::Error>;
+
 	fn conversion_rate(validator: H160, token: H160) -> (U256, U256);
+
 	fn update_conversion_rate(
 		validator: H160,
 		token: H160,

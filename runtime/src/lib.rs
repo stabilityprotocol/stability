@@ -371,11 +371,9 @@ parameter_types! {
 	pub DefaultFeeToken: H160 = H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address");
 }
 impl pallet_user_fee_selector::Config for Runtime {
-	type DefaultFeeToken = DefaultFeeToken;
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
 }
 impl pallet_validator_fee_selector::Config for Runtime {
-	type DefaultFeeToken = DefaultFeeToken;
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
 }
 
@@ -384,9 +382,7 @@ parameter_types! {
 		H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address"),
 	];
 }
-impl pallet_supported_tokens_manager::Config for Runtime {
-	type InitialSupportedTokens = InitialSupportedTokens;
-}
+impl pallet_supported_tokens_manager::Config for Runtime {}
 
 parameter_types! {
 	pub BoundDivision: U256 = U256::from(1024);
@@ -452,7 +448,9 @@ impl pallet_root_controller::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
-impl pallet_map_svm_evm::Config for Runtime {}
+impl pallet_map_svm_evm::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(

@@ -10,13 +10,12 @@ pub mod pallet {
 
 	use frame_support::traits::Hooks;
 	use frame_support::{
-		pallet_prelude::OptionQuery,
-		storage::types::{StorageMap, StorageValue, ValueQuery},
+		storage::types::{OptionQuery, StorageMap, StorageValue},
 		Blake2_128Concat,
 	};
 	use frame_system::pallet_prelude::BlockNumberFor;
 	use pallet_supported_tokens_manager::SupportedTokensManager;
-	use sp_core::{Get, H160};
+	use sp_core::H160;
 	use sp_std::vec::Vec;
 
 	#[pallet::pallet]
@@ -30,7 +29,6 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type DefaultFeeToken: Get<H160>;
 		type SupportedTokensManager: SupportedTokensManager;
 	}
 
@@ -43,8 +41,7 @@ pub mod pallet {
 		H160,
 		// Fee Token
 		H160,
-		ValueQuery,
-		T::DefaultFeeToken,
+		OptionQuery,
 	>;
 
 	#[pallet::storage]
@@ -57,6 +54,7 @@ pub mod pallet {
 
 		fn get_user_fee_token(account: H160) -> H160 {
 			FeeTokenStorage::<T>::get(account)
+				.unwrap_or(T::SupportedTokensManager::get_default_token())
 		}
 
 		fn set_user_fee_token(account: H160, token: H160) -> Result<(), Self::Error> {

@@ -245,10 +245,11 @@ fn testnet_genesis(
 	chain_id: u64,
 ) -> GenesisConfig {
 	use stabilty_runtime::{
-		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SystemConfig,
-		TechCommitteeCollectiveConfig,
+		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig,
+		SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig,
 	};
-
+	let initial_default_token =
+		H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
 	GenesisConfig {
 		// System
 		system: SystemConfig {
@@ -349,7 +350,7 @@ fn testnet_genesis(
 							},
 						);
 					});
-				map.insert(H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address"), fp_evm::GenesisAccount {
+				map.insert(initial_default_token, fp_evm::GenesisAccount {
 					nonce: Default::default(),
 					balance: Default::default(),
 					storage: {
@@ -369,5 +370,9 @@ fn testnet_genesis(
 		ethereum: Default::default(),
 		dynamic_fee: Default::default(),
 		base_fee: Default::default(),
+		supported_tokens_manager: SupportedTokensManagerConfig {
+			initial_default_token,
+			initial_default_token_slot: H256::zero(),
+		},
 	}
 }
