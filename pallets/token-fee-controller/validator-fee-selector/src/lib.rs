@@ -2,6 +2,7 @@
 
 pub use pallet::*;
 use sp_core::{H160, U256};
+use sp_std::vec::Vec;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -77,6 +78,14 @@ pub mod pallet {
 		NotSupportedToken,
 	}
 
+	impl<T: Config> ValidatorSupportedTokens for Pallet<T> {
+		fn validator_supported_tokens(validator: H160) -> Vec<H160> {
+			T::SupportedTokensManager::get_supported_tokens().into_iter()
+				.filter(|token| Self::validator_supports_fee_token(validator, *token))
+				.collect()
+		}
+	}
+
 	impl<T: Config> ValidatorFeeTokenController for Pallet<T> {
 		type Error = ValidatorFeeTokenError;
 
@@ -136,4 +145,8 @@ pub trait ValidatorFeeTokenController {
 		token: H160,
 		conversion_rate: (U256, U256),
 	) -> Result<(), Self::Error>;
+}
+
+pub trait ValidatorSupportedTokens {
+	fn validator_supported_tokens(validator: H160) -> Vec<H160>;
 }
