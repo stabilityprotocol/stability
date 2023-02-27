@@ -1,0 +1,12 @@
+[package]
+name = "pallet-delegate-transaction"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+
+[features]
+default = ["std"]
+std = [
+    "sp-api/std"
+]

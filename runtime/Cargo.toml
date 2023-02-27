@@ -136,3 +136,4 @@ precompile-validator-controller = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }
 pallet-validator-set = { workspace = true }
+# pallet-evm-precompile-delegate-transaction = { workspace = true }
