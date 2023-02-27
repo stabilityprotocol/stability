@@ -107,13 +107,26 @@ impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTo
 		vec![MockDefaultFeeToken::get(), MeaninglessTokenAddress::get()]
 	}
 
-	fn add_supported_token(_token: H160) {}
+	fn add_supported_token(_token: H160, _slot: H256) {}
 
 	fn remove_supported_token(_token: H160) {}
+
+	fn get_token_balance_slot(_token: H160) -> Option<H256> {
+		Some(H256::default())
+	}
+
+	type Error = ();
+
+	fn get_default_token() -> H160 {
+		H160::zero()
+	}
+
+	fn set_default_token(_token: H160) -> Result<(), Self::Error> {
+		Ok(())
+	}
 }
 
 impl pallet_user_fee_selector::Config for Runtime {
-	type DefaultFeeToken = MockDefaultFeeToken;
 	type SupportedTokensManager = MockSupportedTokensManager;
 }
 

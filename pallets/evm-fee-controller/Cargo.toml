@@ -17,6 +17,7 @@ stbl-tools = { workspace = true }
 pallet-erc20-manager = { workspace = true }
 pallet-user-fee-selector = { workspace = true }
 pallet-validator-fee-selector = { workspace = true }
+pallet-supported-tokens-manager = { workspace = true }
 
 [features]
 default = ["std"]

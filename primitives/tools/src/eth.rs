@@ -44,7 +44,7 @@ pub fn read_bytes32_from_output_into(
 	let chunks = &mut output_bytes.chunks(32);
 
 	for _ in 0..number_of_chunks {
-		let chunk = some_or_err!(chunks.next(), ());
+		let chunk = some_or_err!(chunks.next(), || ());
 
 		result.push(*H256::from_slice(chunk).as_fixed_bytes());
 	}

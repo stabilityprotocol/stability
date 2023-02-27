@@ -11,12 +11,11 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode};
 use core::str::FromStr;
-use frame_system::RawOrigin;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
-	Hasher, OpaqueMetadata, H160, H256, U256,
+	OpaqueMetadata, H160, H256, U256,
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
@@ -41,7 +40,9 @@ use pallet_transaction_payment::CurrencyAdapter;
 // Frontier
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
-use pallet_evm::{Account as EVMAccount, FeeCalculator, HashedAddressMapping, Runner};
+use pallet_evm::{
+	Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner,
+};
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -312,71 +313,17 @@ impl pallet_transaction_payment::Config for Runtime {
 
 impl pallet_evm_chain_id::Config for Runtime {}
 
-pub struct FindAuthorLinkedOrTruncated<F>(PhantomData<F>);
-impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
+pub struct FindAuthorTruncated<F>(PhantomData<F>);
+impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
 	fn find_author<'a, I>(digests: I) -> Option<H160>
 	where
 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{
 		if let Some(author_index) = F::find_author(digests) {
 			let authority_id = Aura::authorities()[author_index as usize].clone();
-			let authority_as_bytes: [u8; 32] = authority_id.as_slice()[0..32].try_into().unwrap();
-			let evm_linked = MapSvmEvm::get_linked_evm_account(AccountId::from(authority_as_bytes));
-
-			// if we have a linked EVM account, return it
-			if let Some(evm_linked) = evm_linked {
-				return Some(evm_linked);
-			}
-			// otherwise, return the default EVM account
 			return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
 		}
 		None
-	}
-}
-
-pub struct LinkedOrHashedAddressMapping<H>(sp_std::marker::PhantomData<H>);
-
-impl<H: Hasher<Out = H256>> pallet_evm::AddressMapping<AccountId>
-	for LinkedOrHashedAddressMapping<H>
-{
-	fn into_account_id(address: H160) -> AccountId {
-		let mut data = [0u8; 24];
-
-		let account_id_option = MapSvmEvm::get_linked_substrate_account(address);
-
-		// if we have a linked Substrate account, return it
-		if let Some(account_id) = account_id_option {
-			return account_id;
-		}
-		// otherwise, return the default Substrate account
-		data[0..4].copy_from_slice(b"evm:");
-		data[4..24].copy_from_slice(&address[..]);
-		let hash = H::hash(&data);
-
-		AccountId::from(Into::<[u8; 32]>::into(hash))
-	}
-}
-
-pub struct EnsureAddressLinkedOrTruncated;
-
-impl<OuterOrigin> pallet_evm::EnsureAddressOrigin<OuterOrigin> for EnsureAddressLinkedOrTruncated
-where
-	OuterOrigin: Into<Result<RawOrigin<AccountId>, OuterOrigin>> + From<RawOrigin<AccountId>>,
-{
-	type Success = AccountId;
-
-	fn try_address_origin(address: &H160, origin: OuterOrigin) -> Result<AccountId, OuterOrigin> {
-		origin.into().and_then(|o| match o {
-			RawOrigin::Signed(who)
-				if MapSvmEvm::get_linked_evm_account(who.clone()) == Some(*address) =>
-			{
-				Ok(who)
-			}
-			RawOrigin::Signed(who) if AsRef::<[u8; 32]>::as_ref(&who)[0..20] == address[0..20] => {
-				Ok(who)
-			}
-			r => Err(OuterOrigin::from(r)),
-		})
 	}
 }
 
@@ -391,9 +338,9 @@ impl pallet_evm::Config for Runtime {
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
 	type WeightPerGas = WeightPerGas;
 	type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
-	type CallOrigin = EnsureAddressLinkedOrTruncated;
-	type WithdrawOrigin = EnsureAddressLinkedOrTruncated;
-	type AddressMapping = LinkedOrHashedAddressMapping<BlakeTwo256>;
+	type CallOrigin = EnsureAddressTruncated;
+	type WithdrawOrigin = EnsureAddressTruncated;
+	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
 	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
 	type PrecompilesType = StabilityPrecompiles<Self, StabilityFeeController>;
@@ -402,7 +349,7 @@ impl pallet_evm::Config for Runtime {
 	type BlockGasLimit = BlockGasLimit;
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
 	type OnChargeTransaction = pallet_evm_fee_controller::Pallet<Self>;
-	type FindAuthor = FindAuthorLinkedOrTruncated<Aura>;
+	type FindAuthor = FindAuthorTruncated<Aura>;
 }
 
 impl pallet_ethereum::Config for Runtime {
@@ -416,17 +363,17 @@ impl pallet_evm_fee_controller::Config for Runtime {
 	type ValidatorTokenController = pallet_validator_fee_selector::Pallet<Self>;
 }
 
-impl pallet_erc20_manager::Config for Runtime {}
+impl pallet_erc20_manager::Config for Runtime {
+	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+}
 
 parameter_types! {
 	pub DefaultFeeToken: H160 = H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address");
 }
 impl pallet_user_fee_selector::Config for Runtime {
-	type DefaultFeeToken = DefaultFeeToken;
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
 }
 impl pallet_validator_fee_selector::Config for Runtime {
-	type DefaultFeeToken = DefaultFeeToken;
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
 }
 
@@ -435,9 +382,7 @@ parameter_types! {
 		H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address"),
 	];
 }
-impl pallet_supported_tokens_manager::Config for Runtime {
-	type InitialSupportedTokens = InitialSupportedTokens;
-}
+impl pallet_supported_tokens_manager::Config for Runtime {}
 
 parameter_types! {
 	pub BoundDivision: U256 = U256::from(1024);
@@ -531,7 +476,9 @@ construct_runtime!(
 		HotfixSufficients: pallet_hotfix_sufficients,
 		UserFeeSelector: pallet_user_fee_selector,
 		ValidatorFeeSelector: pallet_validator_fee_selector,
-		SupportedTokensManager: pallet_supported_tokens_manager
+		SupportedTokensManager: pallet_supported_tokens_manager,
+		ERC20Manager: pallet_erc20_manager,
+		EVMFeeController: pallet_evm_fee_controller,
 	}
 );
 
@@ -966,8 +913,6 @@ impl_runtime_apis! {
 	impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId> for Runtime {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool {
 			if let RuntimeCall::Ethereum(transact { transaction }) = tx.0.function {
-
-				let validatorEthereumAddress = <pallet_map_svm_evm::Pallet<Runtime>>::get_linked_evm_account(validator);
 
 				/*
 					let validatorH160 = AddressMapping::into_ethereum(validator);
