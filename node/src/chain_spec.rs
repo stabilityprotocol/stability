@@ -103,6 +103,11 @@ pub fn development_config(enable_manual_seal: Option<bool>) -> DevChainSpec {
 					],
 					// Initial PoA authorities
 					vec![authority_keys_from_seed("Alice")],
+					vec![(
+						get_account_id_from_seed::<sr25519::Public>("Alice"),
+						H160::from_str("0x76d2265F02C763Dc71A02f62B1Dce4d58b3bb7e2")
+							.expect("Bad account id format"),
+					)],
 					vec![get_account_id_from_seed::<sr25519::Public>("Alice")],
 					42,
 				),
@@ -154,6 +159,18 @@ pub fn local_testnet_config() -> ChainSpec {
 				vec![
 					authority_keys_from_seed("Alice"),
 					authority_keys_from_seed("Bob"),
+				],
+				vec![
+					(
+						get_account_id_from_seed::<sr25519::Public>("Alice"),
+						H160::from_str("0x76d2265F02C763Dc71A02f62B1Dce4d58b3bb7e2")
+							.expect("Bad account id format"),
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Bob"),
+						H160::from_str("0x6e63A65a87E24046167a2ce1971B6b765BaD3293")
+							.expect("Bad account id format"),
+					),
 				],
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -216,6 +233,38 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
 					),
 				],
 				vec![
+					(
+						AccountId::from_string("5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs")
+							.expect("Bad account id format"),
+						H160::from_str("0x76d2265F02C763Dc71A02f62B1Dce4d58b3bb7e2")
+							.expect("Bad account id format"),
+					),
+					(
+						AccountId::from_string("5G1wTFx3iLZCWejfaSGfxQtdKHRzDJ4ga7iabWVS1a9DND2L")
+							.expect("Bad account id format"),
+						H160::from_str("0x6e63A65a87E24046167a2ce1971B6b765BaD3293")
+							.expect("Bad account id format"),
+					),
+					(
+						AccountId::from_string("5Dnet7dgiMJBuAyizMH5EW9JYSXttNKFveQH5Miekrwb4GxJ")
+							.expect("Bad account id format"),
+						H160::from_str("0x3dbCC2fbe676037579A59fD2412AA4DcAe11db97")
+							.expect("Bad account id format"),
+					),
+					(
+						AccountId::from_string("5H639iD2JYtZbQN5sNNVRhVtpvzHyhXp5MwGBgW1FLz71zkp")
+							.expect("Bad account id format"),
+						H160::from_str("0x1db0Fd9B3Abf83C802869D0De696157e60b136e5")
+							.expect("Bad account id format"),
+					),
+					(
+						AccountId::from_string("5DtBoSGDHwH4aLJUA2LVYwprziGEyDopXc4YvdU8LRB1rzdv")
+							.expect("Bad account id format"),
+						H160::from_str("0xf349108C149a99C133c662A6779E07d0e68340d6")
+							.expect("Bad account id format"),
+					),
+				],
+				vec![
 					AccountId::from_string("5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs")
 						.expect("Bad account id format"),
 				],
@@ -241,12 +290,13 @@ fn testnet_genesis(
 	wasm_binary: &[u8],
 	endowed_accounts: Vec<AccountId>,
 	initial_authorities: Vec<(AuraId, GrandpaId)>,
+	linked_accounts: Vec<(AccountId, H160)>,
 	members: Vec<AccountId>,
 	chain_id: u64,
 ) -> GenesisConfig {
 	use stabilty_runtime::{
-		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SystemConfig,
-		TechCommitteeCollectiveConfig,
+		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, MapSvmEvmConfig,
+		SystemConfig, TechCommitteeCollectiveConfig,
 	};
 
 	GenesisConfig {
@@ -281,26 +331,15 @@ fn testnet_genesis(
 			phantom: Default::default(),
 			members: members.clone(),
 		},
+
+		map_svm_evm: MapSvmEvmConfig {
+			linked_accounts: linked_accounts.clone(),
+		},
 		// EVM compatibility
 		evm_chain_id: EVMChainIdConfig { chain_id },
 		evm: EVMConfig {
 			accounts: {
 				let mut map = BTreeMap::new();
-				map.insert(
-					// H160 address of Alice dev account
-					// Derived from SS58 (42 prefix) address
-					// SS58: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
-					// hex: 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d
-					// Using the full hex key, truncating to the first 20 bytes (the first 40 hex chars)
-					H160::from_str("d43593c715fdd31c61141abd04a99fd6822c8558")
-						.expect("internal H160 is valid; qed"),
-					fp_evm::GenesisAccount {
-						balance: U256::from(1_000_000_000_000_000_000_000_000u128),
-						code: Default::default(),
-						nonce: Default::default(),
-						storage: Default::default(),
-					},
-				);
 				// Stability testing account
 				map.insert(
 					H160::from_str("A38395b264f232ffF4bb294b5947092E359dDE88")

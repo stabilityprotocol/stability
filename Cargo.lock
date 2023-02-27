@@ -4964,6 +4964,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "precompile-map-svm-evm-controller"
+version = "0.1.0"
+dependencies = [
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "once_cell",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-map-svm-evm",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "precompile-utils",
+ "scale-info",
+ "sha3",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "precompile-utils"
 version = "0.1.0"
 dependencies = [
@@ -8088,6 +8111,7 @@ dependencies = [
  "parity-scale-codec",
  "precompile-balances-erc20",
  "precompile-fee-token-selector",
+ "precompile-map-svm-evm-controller",
  "precompile-utils",
  "precompile-validator-fee-selector",
  "scale-info",

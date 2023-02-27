@@ -9,6 +9,7 @@ members = [
     'precompiles/utils',
     'precompiles/token-fee-controller/fee-token-selector',
     'precompiles/token-fee-controller/validator-fee-selector',
+    'precompiles/map-svm-evm-controller',
     'primitives/tools',
     'primitives/fee-compatible-api',
     'pallets/erc20-manager',
@@ -57,6 +58,7 @@ memory-db = { version = "0.31.0", default-features = false }
 trie-db = { version = "0.24.0", default-features = false }
 hex = "0.4"
 once_cell = "1.17.1"
+hex-literal = "0.3.4"
 # Polkadot
 xcm = { git = "https://github.com/paritytech/polkadot", tag = "v0.9.36", default-features = false }
 # Substrate Client
@@ -175,6 +177,7 @@ stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api",
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
 pallet-map-svm-evm = { path = "./pallets/map-svm-evm", default-features = false }
 stbl-tools = { path = "./primitives/tools", default-features = false }
+precompile-map-svm-evm-controller = { path = "./precompiles/map-svm-evm-controller", default-features = false }
 
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }

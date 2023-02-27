@@ -8,6 +8,7 @@ use pallet_evm_precompile_sha3fips::Sha3FIPS256;
 use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256};
 use precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata};
 use precompile_fee_token_selector::FeeTokenPrecompile;
+use precompile_map_svm_evm_controller::MapSvmEvmControllerPrecompile;
 use precompile_utils::precompile_set::*;
 use precompile_validator_fee_selector::ValidatorFeeManagerPrecompile;
 use sp_core::H160;
@@ -95,6 +96,7 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 						<FeeController as StabilityFeeController>::Validator,
 					>,
 				>,
+				PrecompileAt<AddressU64<2051>, MapSvmEvmControllerPrecompile<R>>,
 			),
 		>,
 	),

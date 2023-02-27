@@ -192,6 +192,27 @@ pub mod pallet {
 		}
 	}
 
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub linked_accounts: Vec<(T::AccountId, H160)>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self {
+				linked_accounts: Vec::new(),
+			}
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			Pallet::<T>::initialize_linked_accounts(&self.linked_accounts);
+		}
+	}
+
 	impl<T: Config> Pallet<T> {
 		pub fn get_linked_substrate_account(address: H160) -> Option<T::AccountId> {
 			EvmToSubstrate::<T>::get(address)
@@ -199,6 +220,29 @@ pub mod pallet {
 
 		pub fn get_linked_evm_account(account: T::AccountId) -> Option<H160> {
 			SubstrateToEvm::<T>::get(account)
+		}
+
+		pub fn unlink_account_from_evm_account(
+			address: H160,
+		) -> Result<T::AccountId, pallet::Error<T>> {
+			let account = EvmToSubstrate::<T>::get(address);
+
+			if let None = account {
+				return Err(Error::<T>::AccountNotLinked.into());
+			}
+
+			EvmToSubstrate::<T>::remove(address);
+			SubstrateToEvm::<T>::remove(account.clone().unwrap());
+
+			Ok(account.unwrap())
+		}
+
+		pub fn initialize_linked_accounts(linked_accounts: &Vec<(T::AccountId, H160)>) {
+			for (account, address) in linked_accounts {
+				SubstrateToEvm::<T>::insert(account.clone(), address);
+				EvmToSubstrate::<T>::insert(address, account.clone());
+				EvmLinkNonce::<T>::insert(address, 1);
+			}
 		}
 	}
 }

@@ -3,7 +3,7 @@
 use super::*;
 use crate as map_svm_evm;
 
-use frame_support::traits::{ConstU32, ConstU64, Contains};
+use frame_support::traits::{ConstU32, ConstU64, Contains, GenesisBuild};
 use sp_core::H256;
 
 use sp_runtime::{
@@ -63,9 +63,12 @@ frame_support::construct_runtime!(
 		}
 );
 
-pub fn new_test_ext() -> sp_io::TestExternalities {
-	let t = frame_system::GenesisConfig::default()
+pub fn new_test_ext(linked_accounts: Vec<(u64, H160)>) -> sp_io::TestExternalities {
+	let mut t = frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
+		.unwrap();
+	map_svm_evm::GenesisConfig::<Test> { linked_accounts }
+		.assimilate_storage(&mut t)
 		.unwrap();
 	t.into()
 }

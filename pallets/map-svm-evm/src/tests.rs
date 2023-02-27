@@ -28,14 +28,30 @@ static BOB_LINK_MESSAGE_NONCE_0: Lazy<Vec<u8>> = Lazy::new(|| {
 
 #[test]
 fn test_setup_works() {
-	new_test_ext().execute_with(|| {
+	new_test_ext(vec![]).execute_with(|| {
 		assert!(MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE).is_none())
 	});
 }
 
 #[test]
+fn test_genesis_config() {
+	new_test_ext(vec![(
+		TEST_ACCOUNT_ALICE_SUBSTRATE,
+		TEST_ACCOUNT_ALICE_EVM.clone(),
+	)])
+	.execute_with(|| {
+		assert_eq!(
+			MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			Some(TEST_ACCOUNT_ALICE_EVM.clone())
+		);
+
+		assert_eq!(MapSvmEvm::evm_link_nonce(TEST_ACCOUNT_ALICE_EVM.clone()), 1);
+	});
+}
+
+#[test]
 fn test_link_evm_account() {
-	new_test_ext().execute_with(|| {
+	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
 			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
@@ -52,7 +68,7 @@ fn test_link_evm_account() {
 
 #[test]
 fn fails_if_substrate_account_is_already_linked() {
-	new_test_ext().execute_with(|| {
+	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
 			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
@@ -73,7 +89,7 @@ fn fails_if_substrate_account_is_already_linked() {
 
 #[test]
 fn fails_if_evm_account_is_already_linked() {
-	new_test_ext().execute_with(|| {
+	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
 			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
@@ -94,7 +110,7 @@ fn fails_if_evm_account_is_already_linked() {
 
 #[test]
 fn fails_if_nonce_of_message_is_not_the_expected() {
-	new_test_ext().execute_with(|| {
+	new_test_ext(vec![]).execute_with(|| {
 		let err = MapSvmEvm::link_evm_account(
 			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
@@ -108,7 +124,7 @@ fn fails_if_nonce_of_message_is_not_the_expected() {
 
 #[test]
 fn fails_if_signature_is_invalid() {
-	new_test_ext().execute_with(|| {
+	new_test_ext(vec![]).execute_with(|| {
 		let err = MapSvmEvm::link_evm_account(
 			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
@@ -122,7 +138,7 @@ fn fails_if_signature_is_invalid() {
 
 #[test]
 fn unlink_evm_account() {
-	new_test_ext().execute_with(|| {
+	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
 			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
@@ -138,7 +154,7 @@ fn unlink_evm_account() {
 
 #[test]
 fn fails_if_substrate_account_is_not_linked() {
-	new_test_ext().execute_with(|| {
+	new_test_ext(vec![]).execute_with(|| {
 		let err =
 			MapSvmEvm::unlink_evm_account(RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE))
 				.unwrap_err();
@@ -149,7 +165,7 @@ fn fails_if_substrate_account_is_not_linked() {
 
 #[test]
 fn unlink_evm_account_and_then_link_to_another_evm_account() {
-	new_test_ext().execute_with(|| {
+	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
 			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
@@ -175,7 +191,7 @@ fn unlink_evm_account_and_then_link_to_another_evm_account() {
 
 #[test]
 fn unlink_substrate_account_and_then_link_to_another_substrate_account() {
-	new_test_ext().execute_with(|| {
+	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
 			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
