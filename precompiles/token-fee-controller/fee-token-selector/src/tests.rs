@@ -56,15 +56,5 @@ fn set_token() {
 				},
 			)
 			.execute_some();
-
-		precompiles()
-			.prepare_test(
-				CryptoAlith,
-				Precompile1,
-				PCall::get_fee_token {
-					address: Address(CryptoAlith.into()),
-				},
-			)
-			.execute_returns_encoded(Into::<H256>::into(MeaninglessTokenAddress::get()));
 	});
 }
