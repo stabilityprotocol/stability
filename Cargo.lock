@@ -7850,6 +7850,7 @@ dependencies = [
  "pallet-hotfix-sufficients",
  "pallet-im-online",
  "pallet-root-controller",
+ "pallet-runner",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",

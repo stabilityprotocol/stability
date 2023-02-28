@@ -3,6 +3,7 @@
 pub use pallet::*;
 
 use pallet_evm::{runner::Runner as StabilityRunner, CreateInfo, RunnerError};
+use sp_std::vec::Vec;
 
 // This pallet wraps the pallet_evm::runner::stack::Runner trait to provide a custom runner for the EVM pallet.
 // Basically, it forces the EVM pallet to use the same runner as the Stability pallet and

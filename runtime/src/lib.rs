@@ -319,6 +319,8 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
 	}
 }
 
+impl pallet_runner::Config for Runtime {}
+
 const WEIGHT_PER_GAS: u64 = 20_000;
 parameter_types! {
 	pub PrecompilesValue: StabilityPrecompiles<Runtime> = StabilityPrecompiles::<_>::new();
@@ -339,7 +341,7 @@ impl pallet_evm::Config for Runtime {
 	type PrecompilesValue = PrecompilesValue;
 	type ChainId = EVMChainId;
 	type BlockGasLimit = BlockGasLimit;
-	type Runner = pallet_evm::runner::stack::Runner<Self>;
+	type Runner = pallet_runner::StabilityRunner<Self>;
 	type OnChargeTransaction = ();
 	type FindAuthor = FindAuthorTruncated<Aura>;
 }
