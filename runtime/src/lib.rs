@@ -75,6 +75,8 @@ use stability_config::{
 mod precompiles;
 use precompiles::StabilityPrecompiles;
 
+use pallet_runner::Pallet as StabilityRunner;
+
 pub type Precompiles = StabilityPrecompiles<Runtime>;
 
 /// Type of block number.
@@ -341,7 +343,7 @@ impl pallet_evm::Config for Runtime {
 	type PrecompilesValue = PrecompilesValue;
 	type ChainId = EVMChainId;
 	type BlockGasLimit = BlockGasLimit;
-	type Runner = pallet_runner::Pallet<Self>;
+	type Runner = StabilityRunner<Self>;
 	type OnChargeTransaction = ();
 	type FindAuthor = FindAuthorTruncated<Aura>;
 }

@@ -2,7 +2,7 @@
 
 pub use pallet::*;
 
-use pallet_evm::{runner::Runner as StabilityRunner, CreateInfo, RunnerError};
+use pallet_evm::{runner::Runner as RunnerT, CreateInfo, RunnerError};
 use sp_std::vec::Vec;
 
 // This pallet wraps the pallet_evm::runner::stack::Runner trait to provide a custom runner for the EVM pallet.
@@ -22,7 +22,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_evm::Config {}
 
-	impl<T: Config> StabilityRunner<T> for Pallet<T>
+	impl<T: Config> RunnerT<T> for Pallet<T>
 	where
 		pallet_evm::BalanceOf<T>: TryFrom<U256> + Into<U256>,
 	{
