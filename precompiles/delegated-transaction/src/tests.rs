@@ -1,3 +1,19 @@
+// Copyright 2023 Stability Solutions.
+// This file is part of Stability.
+
+// Stability is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Stability is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+
 use crate::{
 	mock::{DelegatedTransaction, ExtBuilder, PCall, Precompiles, PrecompilesValue, Runtime},
 	DelegatedTransactionPrecompile,
@@ -539,12 +555,16 @@ fn valid_delegated_transaction_returns_with_metamask_signed_data() {
 fn test_solidity_interface_has_all_function_selectors_documented_and_implemented() {
 	for file in ["DelegatedTransaction.sol"] {
 		for solidity_fn in solidity::get_selectors(file) {
+			println!("name: {} | hex: {} | selector: {} ", solidity_fn.name, solidity_fn.compute_selector_hex(), solidity_fn.docs_selector);
 			assert_eq!(
 				solidity_fn.compute_selector_hex(),
 				solidity_fn.docs_selector,
-				"documented selector for '{}' did not match for file '{}'",
+				"documented selector for '{}' did not match for file '{}' | fn name: {} | fn hex: {}. fn docs: {}",
 				solidity_fn.signature(),
 				file,
+				solidity_fn.name,
+				solidity_fn.compute_selector_hex(),
+				solidity_fn.docs_selector,
 			);
 
 			let selector = solidity_fn.compute_selector();
