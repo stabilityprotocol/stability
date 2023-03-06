@@ -1,9 +1,8 @@
 #![cfg(test)]
 
-use core::{char::MAX, str::FromStr};
+use core::str::FromStr;
 
 use super::*;
-use frame_support::traits::{fungible::Inspect, Currency};
 use mock::{new_test_ext, Balances, Runner};
 use pallet_evm::AddressMapping;
 use sp_core::{bytes::from_hex, H160, U256};
