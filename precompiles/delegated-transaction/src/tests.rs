@@ -1,6 +1,6 @@
 use crate::{
-	mock::{CallPermit, ExtBuilder, PCall, Precompiles, PrecompilesValue, Runtime},
-	CallPermitPrecompile,
+	mock::{DelegatedTransaction, ExtBuilder, PCall, Precompiles, PrecompilesValue, Runtime},
+	DelegatedTransactionPrecompile,
 };
 use evm::ExitReason;
 use fp_evm::{ExitRevert, ExitSucceed};
@@ -13,7 +13,7 @@ fn precompiles() -> Precompiles<Runtime> {
 }
 
 fn dispatch_cost() -> u64 {
-	CallPermitPrecompile::<Runtime>::dispatch_inherent_cost()
+	DelegatedTransactionPrecompile::<Runtime>::dispatch_inherent_cost()
 }
 
 #[test]
@@ -29,7 +29,7 @@ fn modifiers() {
 		.with_balances(vec![(CryptoAlith.into(), 1000)])
 		.build()
 		.execute_with(|| {
-			let mut tester = PrecompilesModifierTester::new(precompiles(), CryptoAlith, CallPermit);
+			let mut tester = PrecompilesModifierTester::new(precompiles(), CryptoAlith, DelegatedTransaction);
 
 			tester.test_default_modifier(PCall::dispatch_selectors());
 			tester.test_view_modifier(PCall::nonces_selectors());
@@ -38,7 +38,7 @@ fn modifiers() {
 }
 
 #[test]
-fn valid_permit_returns() {
+fn valid_delegated_transaction_returns() {
 	ExtBuilder::default()
 		.with_balances(vec![(CryptoAlith.into(), 1000)])
 		.build()
@@ -50,8 +50,8 @@ fn valid_permit_returns() {
 			let gas_limit = 100_000u64;
 			let nonce: U256 = 0u8.into();
 			let deadline: U256 = 1_000u32.into();
-			let permit = CallPermitPrecompile::<Runtime>::generate_permit(
-				CallPermit.into(),
+			let permit = DelegatedTransactionPrecompile::<Runtime>::generate_delegated_transaction(
+				DelegatedTransaction.into(),
 				from,
 				to,
 				value,
@@ -68,7 +68,7 @@ fn valid_permit_returns() {
 			precompiles()
 				.prepare_test(
 					CryptoAlith,
-					CallPermit,
+					DelegatedTransaction,
 					PCall::nonces {
 						owner: Address(CryptoAlith.into()),
 					},
@@ -82,7 +82,7 @@ fn valid_permit_returns() {
 			precompiles()
 				.prepare_test(
 					Charlie, // can be anyone
-					CallPermit,
+					DelegatedTransaction,
 					PCall::dispatch {
 						from: Address(from),
 						to: Address(to),
@@ -140,7 +140,7 @@ fn valid_permit_returns() {
 }
 
 #[test]
-fn valid_permit_reverts() {
+fn valid_delegated_transaction_reverts() {
 	ExtBuilder::default()
 		.with_balances(vec![(CryptoAlith.into(), 1000)])
 		.build()
@@ -153,8 +153,8 @@ fn valid_permit_reverts() {
 			let nonce: U256 = 0u8.into();
 			let deadline: U256 = 1_000u32.into();
 
-			let permit = CallPermitPrecompile::<Runtime>::generate_permit(
-				CallPermit.into(),
+			let permit = DelegatedTransactionPrecompile::<Runtime>::generate_delegated_transaction(
+				DelegatedTransaction.into(),
 				from,
 				to,
 				value,
@@ -171,7 +171,7 @@ fn valid_permit_reverts() {
 			precompiles()
 				.prepare_test(
 					CryptoAlith,
-					CallPermit,
+					DelegatedTransaction,
 					PCall::nonces {
 						owner: Address(CryptoAlith.into()),
 					},
@@ -185,7 +185,7 @@ fn valid_permit_reverts() {
 			precompiles()
 				.prepare_test(
 					Charlie, // can be anyone
-					CallPermit,
+					DelegatedTransaction,
 					PCall::dispatch {
 						from: Address(from),
 						to: Address(to),
@@ -239,7 +239,7 @@ fn valid_permit_reverts() {
 }
 
 #[test]
-fn invalid_permit_nonce() {
+fn invalid_delegated_transaction_nonce() {
 	ExtBuilder::default()
 		.with_balances(vec![(CryptoAlith.into(), 1000)])
 		.build()
@@ -252,8 +252,8 @@ fn invalid_permit_nonce() {
 			let nonce: U256 = 1u8.into(); // WRONG NONCE
 			let deadline: U256 = 1_000u32.into();
 
-			let permit = CallPermitPrecompile::<Runtime>::generate_permit(
-				CallPermit.into(),
+			let delegation = DelegatedTransactionPrecompile::<Runtime>::generate_delegated_transaction(
+				DelegatedTransaction.into(),
 				from,
 				to,
 				value,
@@ -264,13 +264,13 @@ fn invalid_permit_nonce() {
 			);
 
 			let secret_key = SecretKey::parse(&alith_secret_key()).unwrap();
-			let message = Message::parse(&permit);
+			let message = Message::parse(&delegation);
 			let (rs, v) = sign(&message, &secret_key);
 
 			precompiles()
 				.prepare_test(
 					CryptoAlith,
-					CallPermit,
+					DelegatedTransaction,
 					PCall::nonces {
 						owner: Address(CryptoAlith.into()),
 					},
@@ -284,7 +284,7 @@ fn invalid_permit_nonce() {
 			precompiles()
 				.prepare_test(
 					Charlie, // can be anyone
-					CallPermit,
+					DelegatedTransaction,
 					PCall::dispatch {
 						from: Address(from),
 						to: Address(to),
@@ -300,12 +300,12 @@ fn invalid_permit_nonce() {
 				.with_subcall_handle(move |_| panic!("should not perform subcall"))
 				.with_target_gas(Some(call_cost + 100_000 + dispatch_cost()))
 				.expect_cost(dispatch_cost())
-				.execute_reverts(|x| x == b"Invalid permit");
+				.execute_reverts(|x| x == b"Invalid delegated transaction");
 		})
 }
 
 #[test]
-fn invalid_permit_gas_limit_too_low() {
+fn invalid_delegated_transaction_gas_limit_too_low() {
 	ExtBuilder::default()
 		.with_balances(vec![(CryptoAlith.into(), 1000)])
 		.build()
@@ -318,8 +318,8 @@ fn invalid_permit_gas_limit_too_low() {
 			let nonce: U256 = 0u8.into();
 			let deadline: U256 = 1_000u32.into();
 
-			let permit = CallPermitPrecompile::<Runtime>::generate_permit(
-				CallPermit.into(),
+			let permit = DelegatedTransactionPrecompile::<Runtime>::generate_delegated_transaction(
+				DelegatedTransaction.into(),
 				from,
 				to,
 				value,
@@ -336,7 +336,7 @@ fn invalid_permit_gas_limit_too_low() {
 			precompiles()
 				.prepare_test(
 					CryptoAlith,
-					CallPermit,
+					DelegatedTransaction,
 					PCall::nonces {
 						owner: Address(CryptoAlith.into()),
 					},
@@ -350,7 +350,7 @@ fn invalid_permit_gas_limit_too_low() {
 			precompiles()
 				.prepare_test(
 					Charlie, // can be anyone
-					CallPermit,
+					DelegatedTransaction,
 					PCall::dispatch {
 						from: Address(from),
 						to: Address(to),
@@ -371,7 +371,7 @@ fn invalid_permit_gas_limit_too_low() {
 }
 
 #[test]
-fn invalid_permit_gas_limit_overflow() {
+fn invalid_delegated_transaction_gas_limit_overflow() {
 	ExtBuilder::default()
 		.with_balances(vec![(CryptoAlith.into(), 1000)])
 		.build()
@@ -384,8 +384,8 @@ fn invalid_permit_gas_limit_overflow() {
 			let nonce: U256 = 0u8.into();
 			let deadline: U256 = 1_000u32.into();
 
-			let permit = CallPermitPrecompile::<Runtime>::generate_permit(
-				CallPermit.into(),
+			let delegated_transaction = DelegatedTransactionPrecompile::<Runtime>::generate_delegated_transaction(
+				DelegatedTransaction.into(),
 				from,
 				to,
 				value,
@@ -395,16 +395,16 @@ fn invalid_permit_gas_limit_overflow() {
 				deadline,
 			);
 
-			dbg!(H256::from(permit));
+			dbg!(H256::from(delegated_transaction));
 
 			let secret_key = SecretKey::parse(&alith_secret_key()).unwrap();
-			let message = Message::parse(&permit);
+			let message = Message::parse(&delegated_transaction);
 			let (rs, v) = sign(&message, &secret_key);
 
 			precompiles()
 				.prepare_test(
 					CryptoAlith,
-					CallPermit,
+					DelegatedTransaction,
 					PCall::nonces {
 						owner: Address(CryptoAlith.into()),
 					},
@@ -416,7 +416,7 @@ fn invalid_permit_gas_limit_overflow() {
 			precompiles()
 				.prepare_test(
 					Charlie, // can be anyone
-					CallPermit,
+					DelegatedTransaction,
 					PCall::dispatch {
 						from: Address(from),
 						to: Address(to),
@@ -432,140 +432,12 @@ fn invalid_permit_gas_limit_overflow() {
 				.with_subcall_handle(move |_| panic!("should not perform subcall"))
 				.with_target_gas(Some(100_000 + dispatch_cost()))
 				.expect_cost(dispatch_cost())
-				.execute_reverts(|x| x == b"Call require too much gas (uint64 overflow)");
+				.execute_reverts(|x| x == b"Call requires too much gas (uint64 overflow)");
 		})
 }
 
-// // This test checks the validity of a metamask signed message against the permit precompile
-// // The code used to generate the signature is the following.
-// // You will need to import CryptoAlith_PRIV_KEY in metamask.
-// // If you put this code in the developer tools console, it will log the signature
-
-// await window.ethereum.enable();
-// const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-
-// const from = accounts[0];
-// const to = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-// const value = 42;
-// const data = "0xdeadbeef";
-// const gaslimit = 100000;
-// const nonce = 0;
-// const deadline = 1000;
-
-// const createPermitMessageData = function () {
-// 	const message = {
-// 	from: from,
-// 	to: to,
-// 	value: value,
-//    data: data,
-//    gaslimit: gaslimit,
-// 	nonce: nonce,
-// 	deadline: deadline,
-// 	};
-
-// 	const typedData = JSON.stringify({
-// 	types: {
-// 		EIP712Domain: [
-// 		{
-// 			name: "name",
-// 			type: "string",
-// 		},
-// 		{
-// 			name: "version",
-// 			type: "string",
-// 		},
-// 		{
-// 			name: "chainId",
-// 			type: "uint256",
-// 		},
-// 		{
-// 			name: "verifyingContract",
-// 			type: "address",
-// 		},
-// 		],
-// 		CallPermit: [
-// 		{
-// 			name: "from",
-// 			type: "address",
-// 		},
-// 		{
-// 			name: "to",
-// 			type: "address",
-// 		},
-// 		{
-// 			name: "value",
-// 			type: "uint256",
-// 		},
-//       {
-// 			name: "data",
-// 			type: "bytes",
-// 		},
-// 		{
-// 			name: "gaslimit",
-// 			type: "uint64",
-// 		},
-// 		{
-// 			name: "nonce",
-// 			type: "uint256",
-// 		},
-// 		{
-// 			name: "deadline",
-// 			type: "uint256",
-// 		},
-// 		],
-// 	},
-// 	primaryType: "CallPermit",
-// 	domain: {
-// 		name: "Call Permit CallPermit",
-// 		version: "1",
-// 		chainId: 0,
-// 		verifyingContract: "0x0000000000000000000000000000000000000001",
-// 	},
-// 	message: message,
-// 	});
-
-// 	return {
-// 		typedData,
-// 		message,
-// 	};
-// };
-
-// const method = "eth_signTypedData_v4"
-// const messageData = createPermitMessageData();
-// const params = [from, messageData.typedData];
-
-// web3.currentProvider.sendAsync(
-// 	{
-// 		method,
-// 		params,
-// 		from,
-// 	},
-// 	function (err, result) {
-// 		if (err) return console.dir(err);
-// 		if (result.error) {
-// 			alert(result.error.message);
-// 		}
-// 		if (result.error) return console.error('ERROR', result);
-// 		console.log('TYPED SIGNED:' + JSON.stringify(result.result));
-
-// 		const recovered = sigUtil.recoverTypedSignature_v4({
-// 			data: JSON.parse(msgParams),
-// 			sig: result.result,
-// 		});
-
-// 		if (
-// 			ethUtil.toChecksumAddress(recovered) === ethUtil.toChecksumAddress(from)
-// 		) {
-// 			alert('Successfully recovered signer as ' + from);
-// 		} else {
-// 			alert(
-// 				'Failed to verify signer when comparing ' + result + ' to ' + from
-// 			);
-// 		}
-// 	}
-// );
 #[test]
-fn valid_permit_returns_with_metamask_signed_data() {
+fn valid_delegated_transaction_returns_with_metamask_signed_data() {
 	ExtBuilder::default()
 		.with_balances(vec![(CryptoAlith.into(), 2000)])
 		.build()
@@ -592,7 +464,7 @@ fn valid_permit_returns_with_metamask_signed_data() {
 			precompiles()
 				.prepare_test(
 					CryptoAlith,
-					CallPermit,
+					DelegatedTransaction,
 					PCall::nonces {
 						owner: Address(CryptoAlith.into()),
 					},
@@ -606,7 +478,7 @@ fn valid_permit_returns_with_metamask_signed_data() {
 			precompiles()
 				.prepare_test(
 					Charlie, // can be anyone
-					CallPermit,
+					DelegatedTransaction,
 					PCall::dispatch {
 						from: Address(from),
 						to: Address(to),
@@ -665,7 +537,7 @@ fn valid_permit_returns_with_metamask_signed_data() {
 
 #[test]
 fn test_solidity_interface_has_all_function_selectors_documented_and_implemented() {
-	for file in ["CallPermit.sol"] {
+	for file in ["DelegatedTransaction.sol"] {
 		for solidity_fn in solidity::get_selectors(file) {
 			assert_eq!(
 				solidity_fn.compute_selector_hex(),

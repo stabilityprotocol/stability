@@ -81,18 +81,15 @@ impl pallet_balances::Config for Runtime {
 	type WeightInfo = ();
 }
 
-mock_account!(CallPermit, |_| MockAccount::from_u64(1));
+mock_account!(DelegatedTransaction, |_| MockAccount::from_u64(1));
 mock_account!(Revert, |_| MockAccount::from_u64(2));
 
 pub type Precompiles<R> = PrecompileSetBuilder<
 	R,
-	(
-		PrecompileAt<AddressU64<1>, CallPermitPrecompile<R>, SubcallWithMaxNesting<0>>,
-		RevertPrecompile<AddressU64<2>>,
-	),
+	PrecompileAt<AddressU64<1>, DelegatedTransactionPrecompile<R>>
 >;
 
-pub type PCall = CallPermitPrecompileCall<Runtime>;
+pub type PCall = DelegatedTransactionPrecompileCall<Runtime>;
 
 parameter_types! {
 	pub PrecompilesValue: Precompiles<Runtime> = Precompiles::new();

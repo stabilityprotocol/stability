@@ -19,6 +19,14 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+/* 
+DOMAIN:
+
+"Delegated Transaction": a meta transaction created by a delegator, and executed by a delegate.
+"Delegator": the user who creates a delegated transaction.
+"Delegate": the user who executes a delegated transaction.
+ */
+
 /// Storage prefix for nonces.
 pub struct Nonces;
 
@@ -26,7 +34,7 @@ impl StorageInstance for Nonces {
 	const STORAGE_PREFIX: &'static str = "Nonces";
 
 	fn pallet_prefix() -> &'static str {
-		"PrecompileCallPermit"
+		"PrecompileDelegatedTransaction"
 	}
 }
 
@@ -41,37 +49,36 @@ pub type NoncesStorage = StorageMap<
 	ValueQuery,
 >;
 
-/// EIP712 permit typehash.
-pub const PERMIT_TYPEHASH: [u8; 32] = keccak256!(
-	"CallPermit(address from,address to,uint256 value,bytes data,uint64 gaslimit\
+/// EIP712 tx typehash.
+pub const DELEGATED_TRANSACTION_TYPEHASH: [u8; 32] = keccak256!(
+	"DelegatedTransaction(address from,address to,uint256 value,bytes data,uint64 gaslimit\
 ,uint256 nonce,uint256 deadline)"
 );
 
-/// EIP712 permit domain used to compute an individualized domain separator.
-const PERMIT_DOMAIN: [u8; 32] = keccak256!(
+/// EIP712 delegated transaction domain used to compute an individualized domain separator.
+const DELEGATED_TRANSACTION_DOMAIN: [u8; 32] = keccak256!(
 	"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
 );
 
 pub const CALL_DATA_LIMIT: u32 = 2u32.pow(16);
 
-/// Precompile allowing to issue and dispatch call permits for gasless transactions.
-/// A user can sign a permit for a call that can be dispatched and paid by another user or
-/// smart contract.
-pub struct CallPermitPrecompile<Runtime>(PhantomData<Runtime>);
+/// Precompile allowing to issue and dispatch delegated transactions for gasless transactions.
+/// A user (delegator) can sign a transaction for a call that can be dispatched and paid for by another account (delegate).
+pub struct DelegatedTransactionPrecompile<Runtime>(PhantomData<Runtime>);
 
 #[precompile_utils::precompile]
-impl<Runtime> CallPermitPrecompile<Runtime>
+impl<Runtime> DelegatedTransactionPrecompile<Runtime>
 where
 	Runtime: pallet_evm::Config + pallet_timestamp::Config,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
 {
 	fn compute_domain_separator(address: H160) -> [u8; 32] {
-		let name: H256 = keccak_256(b"Call Permit Precompile").into();
+		let name: H256 = keccak_256(b"Delegated Transaction Precompile").into();
 		let version: H256 = keccak256!("1").into();
 		let chain_id: U256 = Runtime::ChainId::get().into();
 
 		let domain_separator_inner = EvmDataWriter::new()
-			.write(H256::from(PERMIT_DOMAIN))
+			.write(H256::from(DELEGATED_TRANSACTION_DOMAIN))
 			.write(name)
 			.write(version)
 			.write(chain_id)
@@ -81,7 +88,7 @@ where
 		keccak_256(&domain_separator_inner).into()
 	}
 
-	pub fn generate_permit(
+	pub fn generate_delegated_transaction(
 		address: H160,
 		from: H160,
 		to: H160,
@@ -93,8 +100,8 @@ where
 	) -> [u8; 32] {
 		let domain_separator = Self::compute_domain_separator(address);
 
-		let permit_content = EvmDataWriter::new()
-			.write(H256::from(PERMIT_TYPEHASH))
+		let delegated_transaction_content = EvmDataWriter::new()
+			.write(H256::from(DELEGATED_TRANSACTION_TYPEHASH))
 			.write(Address(from))
 			.write(Address(to))
 			.write(value)
@@ -104,11 +111,11 @@ where
 			.write(nonce)
 			.write(deadline)
 			.build();
-		let permit_content = keccak_256(&permit_content);
+		let delegated_transaction_content = keccak_256(&delegated_transaction_content);
 		let mut pre_digest = Vec::with_capacity(2 + 32 + 32);
 		pre_digest.extend_from_slice(b"\x19\x01");
 		pre_digest.extend_from_slice(&domain_separator);
-		pre_digest.extend_from_slice(&permit_content);
+		pre_digest.extend_from_slice(&delegated_transaction_content);
 		keccak_256(&pre_digest)
 	}
 
@@ -144,21 +151,21 @@ where
 
 		let total_cost = gas_limit
 			.checked_add(call_cost)
-			.ok_or_else(|| revert("Call require too much gas (uint64 overflow)"))?;
+			.ok_or_else(|| revert("Call requires too much gas (uint64 overflow)"))?;
 
 		if total_cost > handle.remaining_gas() {
 			return Err(revert("Gaslimit is too low to dispatch provided call"));
 		}
 
-		// VERIFY PERMIT
+		// VERIFY DELEGATED TRANSACTION
 
 		// pallet_timestamp is in ms while Ethereum use second timestamps.
 		let timestamp: U256 = (pallet_timestamp::Pallet::<Runtime>::get()).into() / 1000;
-		ensure!(deadline >= timestamp, revert("Permit expired"));
+		ensure!(deadline >= timestamp, revert("Delegated transaction expired"));
 
 		let nonce = NoncesStorage::get(from);
 
-		let permit = Self::generate_permit(
+		let delegated_transaction = Self::generate_delegated_transaction(
 			handle.context().address,
 			from,
 			to,
@@ -174,13 +181,13 @@ where
 		sig[32..64].copy_from_slice(&s.as_bytes());
 		sig[64] = v;
 
-		let signer = sp_io::crypto::secp256k1_ecdsa_recover(&sig, &permit)
-			.map_err(|_| revert("Invalid permit"))?;
-		let signer = H160::from(H256::from_slice(keccak_256(&signer).as_slice()));
+		let delegate = sp_io::crypto::secp256k1_ecdsa_recover(&sig, &delegated_transaction)
+			.map_err(|_| revert("Invalid delegated transaction"))?;
+		let delegate = H160::from(H256::from_slice(keccak_256(&delegate).as_slice()));
 
 		ensure!(
-			signer != H160::zero() && signer == from,
-			revert("Invalid permit")
+			delegate != H160::zero() && delegate == from,
+			revert("Invalid delegated transaction")
 		);
 
 		NoncesStorage::insert(from, nonce + U256::one());

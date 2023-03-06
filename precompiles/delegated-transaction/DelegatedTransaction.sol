@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.3;
 
-address constant DELEGATE_TRANSACTION_ADDRESS = 0x000000000000000000000000000000000000080a;
+address constant DELEGATED_TRANSACTION_ADDRESS = 0x000000000000000000000000000000000000080a;
 
-DelegateTransaction constant DELEGATE_TRANSACTION_CONTRACT = DelegateTransaction(DELEGATE_TRANSACTION_ADDRESS);
+DelegatedTransaction constant DELEGATED_TRANSACTION_CONTRACT = DelegatedTransaction(DELEGATED_TRANSACTION_ADDRESS);
 
-interface DelegateTransaction {
+interface DelegatedTransaction {
     function dispatch(
         address from,
         address to,

@@ -4835,6 +4835,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "precompile-delegated-transaction"
+version = "0.1.0"
+dependencies = [
+ "derive_more",
+ "evm",
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "hex-literal",
+ "libsecp256k1",
+ "log",
+ "num_enum",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "paste",
+ "precompile-utils",
+ "scale-info",
+ "serde",
+ "sha3",
+ "slices",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "precompile-utils"
 version = "0.1.0"
 dependencies = [
@@ -7843,6 +7872,7 @@ dependencies = [
  "pallet-validator-set",
  "parity-scale-codec",
  "precompile-balances-erc20",
+ "precompile-delegated-transaction",
  "precompile-utils",
  "precompile-validator-controller",
  "scale-info",
