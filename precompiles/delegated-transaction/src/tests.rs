@@ -461,7 +461,7 @@ fn valid_delegated_transaction_returns_with_metamask_signed_data() {
 			let from: H160 = CryptoAlith.into();
 			let to: H160 = Bob.into();
 			let value: U256 = 42u8.into();
-			let data: Vec<u8> = hex_literal::hex!("deadbeef").to_vec();
+			let data: Vec<u8> = hex_literal::hex!("abcdefed").to_vec();
 			let gas_limit = 100_000u64;
 			let deadline: U256 = 1_000u32.into();
 
@@ -555,16 +555,12 @@ fn valid_delegated_transaction_returns_with_metamask_signed_data() {
 fn test_solidity_interface_has_all_function_selectors_documented_and_implemented() {
 	for file in ["DelegatedTransaction.sol"] {
 		for solidity_fn in solidity::get_selectors(file) {
-			println!("name: {} | hex: {} | selector: {} ", solidity_fn.name, solidity_fn.compute_selector_hex(), solidity_fn.docs_selector);
 			assert_eq!(
 				solidity_fn.compute_selector_hex(),
 				solidity_fn.docs_selector,
-				"documented selector for '{}' did not match for file '{}' | fn name: {} | fn hex: {}. fn docs: {}",
+				"documented selector for '{}' did not match for file '{}'",
 				solidity_fn.signature(),
-				file,
-				solidity_fn.name,
-				solidity_fn.compute_selector_hex(),
-				solidity_fn.docs_selector,
+				file
 			);
 
 			let selector = solidity_fn.compute_selector();
