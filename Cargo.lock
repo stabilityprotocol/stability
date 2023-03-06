@@ -4441,6 +4441,7 @@ dependencies = [
  "frame-system",
  "hex",
  "once_cell",
+ "pallet-evm",
  "parity-scale-codec",
  "scale-info",
  "sp-core",

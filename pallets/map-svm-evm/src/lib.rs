@@ -11,12 +11,10 @@ use sp_std::prelude::*;
 
 use frame_support::dispatch::Pays;
 
-use sp_core::{Hasher, H160, H256};
+use sp_core::H160;
 
 use sp_io::crypto::secp256k1_ecdsa_recover;
 use sp_io::hashing::keccak_256;
-
-use sp_runtime::AccountId32;
 
 use frame_support::dispatch::DispatchResultWithPostInfo;
 
@@ -24,14 +22,15 @@ use frame_support::dispatch::DispatchResultWithPostInfo;
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
-	use frame_system::pallet_prelude::*;
+	use frame_system::{pallet, pallet_prelude::*};
+	use pallet_evm::Runner;
 
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_evm::Config {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
 
@@ -63,6 +62,8 @@ pub mod pallet {
 		InvalidSignature,
 		/// Account not linked to any evm account
 		AccountNotLinked,
+		/// Fail calling to ERC1271 smart contract
+		FailCallingErc1271,
 	}
 
 	#[pallet::storage]
@@ -107,30 +108,9 @@ pub mod pallet {
 				return Err(Error::<T>::EvmAlreadyLinked.into());
 			}
 
-			let nonce = EvmLinkNonce::<T>::get(address);
+			let expected_message_hash = Self::get_expected_message_hash(address);
 
-			let nonce_string = u64_to_buffer_in_ascii(nonce);
-
-			let message = b"I consent to bind my ETH address for time "
-				.iter()
-				.chain(nonce_string.iter())
-				.cloned()
-				.collect::<Vec<u8>>();
-
-			let message_len = message.len();
-
-			let message_len_string = u64_to_buffer_in_ascii(message_len.try_into().unwrap());
-
-			let expected_message = b"\x19Ethereum Signed Message:\n"
-				.iter()
-				.chain(message_len_string.iter())
-				.chain(message.iter())
-				.cloned()
-				.collect::<Vec<u8>>();
-
-			let expected_message_hash = keccak_256(expected_message.as_slice());
-
-			if (signature.len() != 65) {
+			if signature.len() != 65 {
 				return Err(Error::<T>::InvalidSignature.into());
 			}
 
@@ -138,15 +118,20 @@ pub mod pallet {
 				.try_into()
 				.map_err(|_| Error::<T>::InvalidSignature)?;
 
-			let pubkey = secp256k1_ecdsa_recover(signature_fixed, &expected_message_hash)
-				.map_err(|_| Error::<T>::RecoverFailed)?;
+			if pallet_evm::AccountCodes::<T>::get(address).is_empty() {
+				//Address is an EOA
+				let pubkey = secp256k1_ecdsa_recover(signature_fixed, &expected_message_hash)
+					.map_err(|_| Error::<T>::RecoverFailed)?;
 
-			let pubkey_hash = keccak_256(&pubkey);
+				let pubkey_hash = keccak_256(&pubkey);
 
-			let address_recovered = H160::from_slice(&pubkey_hash[12..32]);
+				let address_recovered = H160::from_slice(&pubkey_hash[12..32]);
 
-			if address != address_recovered {
-				return Err(Error::<T>::AddressNotMatch.into());
+				if address != address_recovered {
+					return Err(Error::<T>::AddressNotMatch.into());
+				}
+			} else {
+				Self::check_erc_1271(address, &expected_message_hash, signature_fixed)?;
 			}
 
 			// mutate the storage for set as linked evm and substrate
@@ -154,7 +139,7 @@ pub mod pallet {
 			EvmToSubstrate::<T>::insert(address, who.clone());
 
 			// mutate the nonce
-			EvmLinkNonce::<T>::insert(address, nonce + 1);
+			EvmLinkNonce::<T>::mutate(address, |nonce| *nonce += 1);
 
 			// emit event
 			Self::deposit_event(Event::AccountLinked {
@@ -222,13 +207,11 @@ pub mod pallet {
 			SubstrateToEvm::<T>::get(account)
 		}
 
-		pub fn unlink_account_from_evm_account(
-			address: H160,
-		) -> Result<T::AccountId, pallet::Error<T>> {
+		pub fn unlink_account_from_evm_account(address: H160) -> Result<T::AccountId, ()> {
 			let account = EvmToSubstrate::<T>::get(address);
 
 			if let None = account {
-				return Err(Error::<T>::AccountNotLinked.into());
+				return Err(());
 			}
 
 			EvmToSubstrate::<T>::remove(address);
@@ -243,6 +226,93 @@ pub mod pallet {
 				EvmToSubstrate::<T>::insert(address, account.clone());
 				EvmLinkNonce::<T>::insert(address, 1);
 			}
+		}
+
+		fn encode_abi_with_signature_erc_1271(message: &[u8; 32], signature: &[u8; 65]) -> Vec<u8> {
+			let mut encoded: Vec<u8> = Vec::new();
+
+			let method_signature_hash = keccak_256(b"isValidSignature(bytes32,bytes)");
+			let method_signature: &[u8; 4] = method_signature_hash[0..4].try_into().unwrap();
+
+			encoded.extend_from_slice(method_signature);
+			encoded.extend_from_slice(message);
+			encoded.extend_from_slice(
+				(vec![
+					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+					0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65,
+				])
+				.as_slice(),
+			);
+			encoded.extend_from_slice(signature);
+			encoded.extend_from_slice(
+				(vec![
+					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+					0, 0, 0, 0, 0,
+				])
+				.as_slice(),
+			);
+			encoded
+		}
+
+		fn check_erc_1271(
+			address: H160,
+			message: &[u8; 32],
+			signature: &[u8; 65],
+		) -> Result<(), Error<T>> {
+			let encoded_data = Self::encode_abi_with_signature_erc_1271(&message, signature);
+			let enconded_response = T::Runner::call(
+				Default::default(),
+				address,
+				encoded_data,
+				Default::default(),
+				u64::MAX,
+				None,
+				None,
+				None,
+				Default::default(),
+				false,
+				false,
+				&pallet_evm::EvmConfig::istanbul(),
+			)
+			.map_err(|_| Error::<T>::FailCallingErc1271)?;
+
+			if !Self::is_successful_response_erc_1271(&enconded_response.value) {
+				return Err(Error::<T>::InvalidSignature.into());
+			}
+			Ok(())
+		}
+
+		fn get_expected_message_hash(address: H160) -> [u8; 32] {
+			let nonce = EvmLinkNonce::<T>::get(address);
+
+			let nonce_string = u64_to_buffer_in_ascii(nonce);
+
+			let message = b"I consent to bind my ETH address for time "
+				.iter()
+				.chain(nonce_string.iter())
+				.cloned()
+				.collect::<Vec<u8>>();
+
+			let message_len = message.len();
+
+			let message_len_string = u64_to_buffer_in_ascii(message_len.try_into().unwrap());
+
+			let expected_message = b"\x19Ethereum Signed Message:\n"
+				.iter()
+				.chain(message_len_string.iter())
+				.chain(message.iter())
+				.cloned()
+				.collect::<Vec<u8>>();
+
+			keccak_256(expected_message.as_slice())
+		}
+
+		fn is_successful_response_erc_1271(response: &[u8]) -> bool {
+			let mut response = response.to_vec();
+			response.truncate(4);
+			let response = u64::from_be_bytes(response.try_into().unwrap());
+			response == 0x1626ba7e
 		}
 	}
 }
