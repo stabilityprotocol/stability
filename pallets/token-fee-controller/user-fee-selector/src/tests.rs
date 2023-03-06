@@ -2,10 +2,7 @@ use super::*;
 
 use sp_core::H160;
 
-use mock::{
-	AllowedAccountId, Logger, LoggerCall, NotAllowedAccountId, RootController, RuntimeCall,
-	RuntimeEvent as TestEvent, RuntimeOrigin, System, Test, MockDefaultFeeToken, MeaninglessTokenAddress
-};
+use mock::{new_test_ext, MockDefaultFeeToken, Test, MeaninglessAccount};
 
 parameter_types! {
 	pub const MeaninglessAccount: H160 = H160::from_low_u64_be(1);
