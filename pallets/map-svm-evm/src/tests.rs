@@ -1,11 +1,14 @@
 use core::str::FromStr;
 
+use crate::mock::{SmartcontractErc1271Fails, SmartcontractErc1271Success};
+
 use super::*;
 use hex::FromHex;
-use mock::{new_test_ext, MapSvmEvm, RuntimeOrigin, Test};
+use mock::{new_test_ext, AccountId, MapSvmEvm, RuntimeOrigin, Test};
 use once_cell::sync::Lazy;
 
-const TEST_ACCOUNT_ALICE_SUBSTRATE: u64 = 1;
+const TEST_ACCOUNT_ALICE_SUBSTRATE: Lazy<AccountId> =
+	Lazy::new(|| AccountId::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap());
 
 static TEST_ACCOUNT_ALICE_EVM: Lazy<H160> =
 	Lazy::new(|| H160::from_str("0x71A66452Ca097becB4a09e8Ec56F617cC8fc2860").unwrap());
@@ -17,7 +20,8 @@ static ALICE_LINK_MESSAGE_NONCE_1: Lazy<Vec<u8>> = Lazy::new(|| {
 	Vec::<u8>::from_hex("0e8132d50b5a5e242fddedf5c28234c761f8a19682f7191ef194b0b6e708451f4f67fafab2586d75690482dc6fc47365ef61289187dc7854073412eff2eeb2281b").unwrap()
 });
 
-const TEST_ACCOUNT_BOB_SUBSTRATE: u64 = 2;
+const TEST_ACCOUNT_BOB_SUBSTRATE: Lazy<AccountId> =
+	Lazy::new(|| AccountId::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").unwrap());
 
 static TEST_ACCOUNT_BOB_EVM: Lazy<H160> =
 	Lazy::new(|| H160::from_str("0x6716c927e927f1c258E82ff30aEc98E0EdC51994").unwrap());
@@ -29,19 +33,19 @@ static BOB_LINK_MESSAGE_NONCE_0: Lazy<Vec<u8>> = Lazy::new(|| {
 #[test]
 fn test_setup_works() {
 	new_test_ext(vec![]).execute_with(|| {
-		assert!(MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE).is_none())
+		assert!(MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()).is_none())
 	});
 }
 
 #[test]
 fn test_genesis_config() {
 	new_test_ext(vec![(
-		TEST_ACCOUNT_ALICE_SUBSTRATE,
+		TEST_ACCOUNT_ALICE_SUBSTRATE.clone(),
 		TEST_ACCOUNT_ALICE_EVM.clone(),
 	)])
 	.execute_with(|| {
 		assert_eq!(
-			MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			Some(TEST_ACCOUNT_ALICE_EVM.clone())
 		);
 
@@ -53,14 +57,14 @@ fn test_genesis_config() {
 fn test_link_evm_account() {
 	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
 			ALICE_LINK_MESSAGE_NONCE_0.clone(),
 		)
 		.unwrap();
 
 		assert_eq!(
-			MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			Some(TEST_ACCOUNT_ALICE_EVM.clone())
 		)
 	})
@@ -70,14 +74,14 @@ fn test_link_evm_account() {
 fn fails_if_substrate_account_is_already_linked() {
 	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
 			ALICE_LINK_MESSAGE_NONCE_0.clone(),
 		)
 		.unwrap();
 
 		let err = MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			TEST_ACCOUNT_BOB_EVM.clone(),
 			BOB_LINK_MESSAGE_NONCE_0.clone(),
 		)
@@ -91,14 +95,14 @@ fn fails_if_substrate_account_is_already_linked() {
 fn fails_if_evm_account_is_already_linked() {
 	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
 			ALICE_LINK_MESSAGE_NONCE_0.clone(),
 		)
 		.unwrap();
 
 		let err = MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_BOB_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_BOB_SUBSTRATE.clone()),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
 			ALICE_LINK_MESSAGE_NONCE_1.clone(),
 		)
@@ -112,7 +116,7 @@ fn fails_if_evm_account_is_already_linked() {
 fn fails_if_nonce_of_message_is_not_the_expected() {
 	new_test_ext(vec![]).execute_with(|| {
 		let err = MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
 			ALICE_LINK_MESSAGE_NONCE_1.clone(),
 		)
@@ -126,7 +130,7 @@ fn fails_if_nonce_of_message_is_not_the_expected() {
 fn fails_if_signature_is_invalid() {
 	new_test_ext(vec![]).execute_with(|| {
 		let err = MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
 			Vec::<u8>::from_hex("405045").unwrap(),
 		)
@@ -140,24 +144,26 @@ fn fails_if_signature_is_invalid() {
 fn unlink_evm_account() {
 	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
 			ALICE_LINK_MESSAGE_NONCE_0.clone(),
 		)
 		.unwrap();
 
-		MapSvmEvm::unlink_evm_account(RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE)).unwrap();
+		MapSvmEvm::unlink_evm_account(RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()))
+			.unwrap();
 
-		assert!(MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE).is_none())
+		assert!(MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()).is_none())
 	})
 }
 
 #[test]
 fn fails_if_substrate_account_is_not_linked() {
 	new_test_ext(vec![]).execute_with(|| {
-		let err =
-			MapSvmEvm::unlink_evm_account(RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE))
-				.unwrap_err();
+		let err = MapSvmEvm::unlink_evm_account(RuntimeOrigin::signed(
+			TEST_ACCOUNT_ALICE_SUBSTRATE.clone(),
+		))
+		.unwrap_err();
 
 		assert_eq!(err, Error::<Test>::AccountNotLinked.into());
 	})
@@ -167,23 +173,24 @@ fn fails_if_substrate_account_is_not_linked() {
 fn unlink_evm_account_and_then_link_to_another_evm_account() {
 	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
 			ALICE_LINK_MESSAGE_NONCE_0.clone(),
 		)
 		.unwrap();
 
-		MapSvmEvm::unlink_evm_account(RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE)).unwrap();
+		MapSvmEvm::unlink_evm_account(RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()))
+			.unwrap();
 
 		MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			TEST_ACCOUNT_BOB_EVM.clone(),
 			BOB_LINK_MESSAGE_NONCE_0.clone(),
 		)
 		.unwrap();
 
 		assert_eq!(
-			MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			Some(TEST_ACCOUNT_BOB_EVM.clone())
 		)
 	})
@@ -193,24 +200,56 @@ fn unlink_evm_account_and_then_link_to_another_evm_account() {
 fn unlink_substrate_account_and_then_link_to_another_substrate_account() {
 	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
 			ALICE_LINK_MESSAGE_NONCE_0.clone(),
 		)
 		.unwrap();
 
-		MapSvmEvm::unlink_evm_account(RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE)).unwrap();
+		MapSvmEvm::unlink_evm_account(RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()))
+			.unwrap();
 
 		MapSvmEvm::link_evm_account(
-			RuntimeOrigin::signed(TEST_ACCOUNT_BOB_SUBSTRATE),
+			RuntimeOrigin::signed(TEST_ACCOUNT_BOB_SUBSTRATE.clone()),
 			TEST_ACCOUNT_ALICE_EVM.clone(),
 			ALICE_LINK_MESSAGE_NONCE_1.clone(),
 		)
 		.unwrap();
 
 		assert_eq!(
-			MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_BOB_SUBSTRATE),
+			MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_BOB_SUBSTRATE.clone()),
 			Some(TEST_ACCOUNT_ALICE_EVM.clone())
 		)
+	})
+}
+
+#[test]
+fn link_to_evm_contract() {
+	new_test_ext(vec![]).execute_with(|| {
+		MapSvmEvm::link_evm_account(
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
+			SmartcontractErc1271Success::get(),
+			ALICE_LINK_MESSAGE_NONCE_0.clone(),
+		)
+		.unwrap();
+
+		assert_eq!(
+			MapSvmEvm::get_linked_evm_account(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
+			Some(SmartcontractErc1271Success::get())
+		)
+	})
+}
+
+#[test]
+fn link_to_evm_contract_fails() {
+	new_test_ext(vec![]).execute_with(|| {
+		let err = MapSvmEvm::link_evm_account(
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
+			SmartcontractErc1271Fails::get(),
+			ALICE_LINK_MESSAGE_NONCE_0.clone(),
+		)
+		.unwrap_err();
+
+		assert_eq!(err, Error::<Test>::InvalidSignature.into());
 	})
 }

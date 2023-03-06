@@ -309,10 +309,16 @@ pub mod pallet {
 		}
 
 		fn is_successful_response_erc_1271(response: &[u8]) -> bool {
-			let mut response = response.to_vec();
-			response.truncate(4);
-			let response = u64::from_be_bytes(response.try_into().unwrap());
-			response == 0x1626ba7e
+			let success_response: Vec<u8> = vec![
+				22, 38, 186, 126, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0,
+			];
+
+			if response.ne(&success_response) {
+				return false;
+			}
+
+			true
 		}
 	}
 }
