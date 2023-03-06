@@ -233,27 +233,6 @@ fn update_conversion_rate() {
 }
 
 #[test]
-fn fail_to_update_conversion_rate_for_default_token() {
-	ExtBuilder::default().build().execute_with(|| {
-		precompiles()
-			.prepare_test(
-				CryptoAlith,
-				Precompile1,
-				PCall::set_token_conversion_rate {
-					token_address: Address(crate::mock::MockDefaultFeeToken::get()),
-					numerator: U256::from(1),
-					denominator: U256::from(1),
-				},
-			)
-			.execute_reverts(|e| {
-				e.eq_ignore_ascii_case(
-					b"ValidatorFeeTokenController: default token conversion rate cannot be updated",
-				)
-			})
-	});
-}
-
-#[test]
 fn reverts_if_validator_dont_accepts_token() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()

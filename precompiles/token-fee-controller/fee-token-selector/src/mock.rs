@@ -118,7 +118,7 @@ impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTo
 	type Error = ();
 
 	fn get_default_token() -> H160 {
-		H160::zero()
+		MockDefaultFeeToken::get()
 	}
 
 	fn set_default_token(_token: H160) -> Result<(), Self::Error> {
