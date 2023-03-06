@@ -4391,12 +4391,16 @@ name = "pallet-runner"
 version = "0.1.0"
 dependencies = [
  "evm",
+ "fp-evm",
  "frame-support",
  "frame-system",
+ "pallet-balances",
  "pallet-evm",
+ "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]

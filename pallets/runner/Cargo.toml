@@ -13,6 +13,12 @@ evm = { workspace = true}
 sp-core = { workspace = true }
 codec = { package = "parity-scale-codec", workspace = true }
 scale-info = { workspace = true }
+sp-io = { workspace = true }
+pallet-balances = { workspace = true }
+pallet-timestamp = { workspace = true }
+
+[dev-dependencies]
+fp-evm = { workspace = true, features = ["std"] }
 
 [features]
 default = ["std"]
@@ -23,4 +29,9 @@ std = [
     "sp-std/std",
     "codec/std",
 	"scale-info/std",
+	"pallet-balances/std",
+	"pallet-evm/std",
+	"pallet-timestamp/std",
+	"sp-io/std",
+	"fp-evm/std",
 ]

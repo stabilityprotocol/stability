@@ -9,6 +9,9 @@ use sp_std::vec::Vec;
 // Basically, it forces the EVM pallet to use the same runner as the Stability pallet and
 // forces the value always to zero.
 
+mod mock;
+
+mod tests;
 #[frame_support::pallet]
 pub mod pallet {
 	use sp_core::{H160, H256, U256};
