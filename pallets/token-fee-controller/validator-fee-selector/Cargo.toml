@@ -15,3 +15,18 @@ scale-info = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
+
+[dev-dependencies]
+pallet-timestamp = { workspace = true }
+pallet-balances = { workspace = true, features = ["std"] }
+
+[features]
+default = ["std"]
+std = [
+    "codec/std",
+	"scale-info/std",
+	"frame-support/std",
+	"frame-system/std",
+    "sp-runtime/std",
+    "sp-std/std",
+]

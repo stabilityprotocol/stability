@@ -4,6 +4,11 @@ pub use pallet::*;
 use sp_core::{H160, U256};
 use sp_std::vec::Vec;
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -109,7 +114,6 @@ pub mod pallet {
 		}
 
 		fn conversion_rate(validator: H160, token: H160) -> (U256, U256) {
-			// to be changed
 			ValidatorConversionRateToken::<T>::get(validator, token).into()
 		}
 
