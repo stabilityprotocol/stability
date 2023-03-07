@@ -75,7 +75,7 @@ use stability_config::{
 mod precompiles;
 use precompiles::StabilityPrecompiles;
 
-use pallet_runner::Pallet as StabilityRunner;
+use pallet_runner::Runner as StabilityRunner;
 
 pub type Precompiles = StabilityPrecompiles<Runtime>;
 
@@ -320,8 +320,6 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
 		None
 	}
 }
-
-impl pallet_runner::Config for Runtime {}
 
 const WEIGHT_PER_GAS: u64 = 20_000;
 parameter_types! {

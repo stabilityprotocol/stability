@@ -18,10 +18,9 @@ sp-io = { workspace = true }
 log = { workspace = true, default-features = false }
 pallet-evm = { workspace = true }
 pallet-timestamp = { workspace = true }
-fp-evm = { workspace = true}
+fp-evm = { workspace = true }
 
 [dev-dependencies]
-
 pallet-balances = { workspace = true, features = ["std"] }
 
 [features]

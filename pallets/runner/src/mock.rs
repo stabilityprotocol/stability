@@ -20,15 +20,15 @@
 use core::str::FromStr;
 
 use super::*;
-use crate as pallet_runner;
+use crate as StabilityRunner;
 
+use evm::Runtime;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Everything, GenesisBuild},
 	weights::Weight,
 };
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
-use pallet_runner::Pallet as StabilityRunner;
 use sp_core::{H160, H256, U256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -45,8 +45,6 @@ type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>
 type Block = frame_system::mocking::MockBlock<Runtime>;
 
 parameter_types! {
-
-
 	pub const BlockHashCount: u32 = 250;
 	pub const SS58Prefix: u8 = 42;
 }
@@ -119,7 +117,7 @@ impl pallet_evm::Config for Runtime {
 	type AddressMapping = pallet_evm::HashedAddressMapping<BlakeTwo256>;
 	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
-	type Runner = StabilityRunner<Self>;
+	type Runner = StabilityRunner::Runner<Self>;
 	type PrecompilesType = ();
 	type PrecompilesValue = ();
 	type ChainId = ();
@@ -128,8 +126,6 @@ impl pallet_evm::Config for Runtime {
 	type BlockHashMapping = pallet_evm::SubstrateBlockHashMapping<Self>;
 	type FindAuthor = ();
 }
-
-impl pallet_runner::Config for Runtime {}
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
@@ -141,7 +137,7 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Evm: pallet_evm::{Pallet, Call, Storage, Event<T>},
-		Runner: pallet_runner::{Pallet},
+		Runner: StabilityRunner::Runner,
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 	}
 );
