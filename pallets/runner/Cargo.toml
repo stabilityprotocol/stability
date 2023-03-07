@@ -13,22 +13,25 @@ evm = { workspace = true, features = ["with-codec"] }
 sp-core = { workspace = true, default-features = false  }
 codec = { package = "parity-scale-codec", workspace = true }
 scale-info = { workspace = true}
+frame-benchmarking = { workspace = true, optional = true }
 sp-io = { workspace = true }
 log = { workspace = true, default-features = false }
 pallet-evm = { workspace = true }
 pallet-timestamp = { workspace = true }
-fp-evm = { workspace = true, features = ["std"] }
+fp-evm = { workspace = true}
 
 [dev-dependencies]
-# Substrate
+
 pallet-balances = { workspace = true, features = ["std"] }
 
 [features]
 default = ["std"]
+runtime-benchmarks = ['frame-benchmarking']
 std = [
 	"environmental?/std",
 	"frame-support/std",
 	"frame-system/std",
+	'frame-benchmarking/std',
     "sp-runtime/std",
     "sp-std/std",
 	"evm/std",
@@ -37,9 +40,9 @@ std = [
     "codec/std",
 	"scale-info/std",
 	"sp-io/std",
-	"log/std",
 	"pallet-evm/std",
 	"pallet-timestamp/std",
 	"fp-evm/std",
 ]
 forbid-evm-reentrancy = ["dep:environmental"]
+try-runtime = ['frame-support/try-runtime']
