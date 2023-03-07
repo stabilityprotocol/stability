@@ -60,6 +60,7 @@ std = [
     'pallet-validator-set/std',
     'pallet-session/std',
     'pallet-im-online/std',
+    'pallet-runner/std',
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []

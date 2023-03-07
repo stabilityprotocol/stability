@@ -4,34 +4,42 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+environmental = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
-pallet-evm = { workspace = true }
-evm = { workspace = true}
-sp-core = { workspace = true }
+evm = { workspace = true, features = ["with-codec"] }
+sp-core = { workspace = true, default-features = false  }
 codec = { package = "parity-scale-codec", workspace = true }
-scale-info = { workspace = true }
+scale-info = { workspace = true}
 sp-io = { workspace = true }
-pallet-balances = { workspace = true }
+log = { workspace = true, default-features = false }
+pallet-evm = { workspace = true }
 pallet-timestamp = { workspace = true }
+fp-evm = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
-fp-evm = { workspace = true, features = ["std"] }
+# Substrate
+pallet-balances = { workspace = true, features = ["std"] }
 
 [features]
 default = ["std"]
 std = [
+	"environmental?/std",
 	"frame-support/std",
 	"frame-system/std",
     "sp-runtime/std",
     "sp-std/std",
+	"evm/std",
+	"evm/with-serde",
+	"sp-core/std",
     "codec/std",
 	"scale-info/std",
-	"pallet-balances/std",
+	"sp-io/std",
+	"log/std",
 	"pallet-evm/std",
 	"pallet-timestamp/std",
-	"sp-io/std",
 	"fp-evm/std",
 ]
+forbid-evm-reentrancy = ["dep:environmental"]

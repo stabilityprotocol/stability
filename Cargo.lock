@@ -4390,10 +4390,12 @@ dependencies = [
 name = "pallet-runner"
 version = "0.1.0"
 dependencies = [
+ "environmental",
  "evm",
  "fp-evm",
  "frame-support",
  "frame-system",
+ "log",
  "pallet-balances",
  "pallet-evm",
  "pallet-timestamp",

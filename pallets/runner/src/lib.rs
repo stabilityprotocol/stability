@@ -12,6 +12,9 @@ use sp_std::vec::Vec;
 mod mock;
 
 mod tests;
+
+mod lib2;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use sp_core::{H160, H256, U256};
