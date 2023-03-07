@@ -141,6 +141,7 @@ frame_support::construct_runtime!(
 parameter_types! {
 	pub SmartcontractErc1271Success: H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
 	pub SmartcontractErc1271Fails: H160 = H160::from_str("0xdf1dAbfc88Fdb4Bac77eDBcDd6608d1dAeEd02E0").unwrap();
+	pub SmartcontractWithoutErc721: H160 = H160::from_str("0xba29c6A61bf8Ff7E1d77bF1B9858010cE6756725").unwrap();
 	pub ChainId: u64 = 20180427;
 }
 
@@ -172,6 +173,16 @@ pub fn new_test_ext(linked_accounts: Vec<(AccountId, H160)>) -> sp_io::TestExter
 					storage: Default::default(),
 				},
 			);
+			map.insert(
+				SmartcontractWithoutErc721::get(),
+				fp_evm::GenesisAccount {
+					balance: Default::default(),
+					code: Vec::<u8>::from_hex("6080604052348015600f57600080fd5b506004361060285760003560e01c80639476f92214602d575b600080fd5b60336047565b604051603e91906069565b60405180910390f35b60006001905090565b60008115159050919050565b6063816050565b82525050565b6000602082019050607c6000830184605c565b9291505056fea2646970667358221220a07ef20d077b5efde86c3f322a5c2ef6ec0a181b6b84a4f564d1485ec066f4b164736f6c63430008120033").unwrap(),
+					nonce: Default::default(),
+					storage: Default::default(),
+				},
+			);
+			
 			map
 		},
 	};

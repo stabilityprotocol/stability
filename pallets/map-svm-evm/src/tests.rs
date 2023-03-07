@@ -1,6 +1,6 @@
 use core::str::FromStr;
 
-use crate::mock::{SmartcontractErc1271Fails, SmartcontractErc1271Success};
+use crate::mock::{SmartcontractErc1271Fails, SmartcontractErc1271Success, SmartcontractWithoutErc721};
 
 use super::*;
 use hex::FromHex;
@@ -246,6 +246,20 @@ fn link_to_evm_contract_fails() {
 		let err = MapSvmEvm::link_evm_account(
 			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
 			SmartcontractErc1271Fails::get(),
+			ALICE_LINK_MESSAGE_NONCE_0.clone(),
+		)
+		.unwrap_err();
+
+		assert_eq!(err, Error::<Test>::InvalidSignature.into());
+	})
+}
+
+#[test]
+fn link_to_evm_contract_fails_if_contract_doesnt_implement_erc1271() {
+	new_test_ext(vec![]).execute_with(|| {
+		let err = MapSvmEvm::link_evm_account(
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
+			SmartcontractWithoutErc721::get(),
 			ALICE_LINK_MESSAGE_NONCE_0.clone(),
 		)
 		.unwrap_err();
