@@ -9,6 +9,7 @@ members = [
     'precompiles/utils',
     'precompiles/token-fee-controller/fee-token-selector',
     'precompiles/token-fee-controller/validator-fee-selector',
+    'precompiles/token-fee-controller/supported-tokens-manager',
     'precompiles/map-svm-evm-controller',
     'primitives/tools',
     'primitives/fee-compatible-api',
@@ -178,6 +179,7 @@ pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = fa
 pallet-map-svm-evm = { path = "./pallets/map-svm-evm", default-features = false }
 stbl-tools = { path = "./primitives/tools", default-features = false }
 precompile-map-svm-evm-controller = { path = "./precompiles/map-svm-evm-controller", default-features = false }
+precompile-supported-tokens-manager = { path = "./precompiles/token-fee-controller/supported-tokens-manager", default-features = false }
 
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }

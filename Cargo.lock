@@ -5001,6 +5001,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "precompile-supported-tokens-manager"
+version = "0.1.0"
+dependencies = [
+ "derive_more",
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "hex-literal",
+ "libsecp256k1",
+ "log",
+ "num_enum",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-supported-tokens-manager",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "paste",
+ "precompile-utils",
+ "scale-info",
+ "serde",
+ "sha3",
+ "slices",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "precompile-utils"
 version = "0.1.0"
 dependencies = [
@@ -8126,6 +8155,7 @@ dependencies = [
  "precompile-balances-erc20",
  "precompile-fee-token-selector",
  "precompile-map-svm-evm-controller",
+ "precompile-supported-tokens-manager",
  "precompile-utils",
  "precompile-validator-fee-selector",
  "scale-info",

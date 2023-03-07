@@ -25,16 +25,12 @@ mod tests;
 
 use codec::Encode;
 
-use codec::Decode;
-use sp_core::{H160, H256, U256};
+use sp_core::{H256, U256};
 
 use precompile_utils::prelude::*;
 
 use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
-use sp_std::{
-	convert::{TryFrom, TryInto},
-	marker::PhantomData,
-};
+use sp_std::marker::PhantomData;
 
 /// Solidity selector of the Transfer log, which is the Keccak of the Log signature.
 pub const SELECTOR_LOG_ACCOUNT_UNLINKED: [u8; 32] = keccak256!("AccountUnlinked(address,bytes32)");

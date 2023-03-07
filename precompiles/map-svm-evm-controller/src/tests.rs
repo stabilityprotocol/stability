@@ -3,6 +3,7 @@ use codec::Encode;
 use once_cell::sync::Lazy;
 use precompile_utils::testing::*;
 use sha3::{Digest, Keccak256};
+use sp_core::H160;
 use std::str::FromStr;
 
 fn precompiles() -> Precompiles<Runtime> {

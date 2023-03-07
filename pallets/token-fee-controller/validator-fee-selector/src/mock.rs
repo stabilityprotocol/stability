@@ -162,7 +162,7 @@ impl Default for ExtBuilder {
 
 impl ExtBuilder {
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
-		let mut t = frame_system::GenesisConfig::default()
+		let t = frame_system::GenesisConfig::default()
 			.build_storage::<Runtime>()
 			.expect("Frame system builds valid default genesis config");
 
