@@ -22,7 +22,7 @@ use frame_support::dispatch::DispatchResultWithPostInfo;
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
-	use frame_system::{pallet, pallet_prelude::*};
+	use frame_system::{pallet_prelude::*};
 	use pallet_evm::Runner;
 
 	#[pallet::pallet]
@@ -288,9 +288,15 @@ pub mod pallet {
 
 			let nonce_string = u64_to_buffer_in_ascii(nonce);
 
+			let chain_id = T::ChainId::get();
+			let chain_id_string = u64_to_buffer_in_ascii(chain_id);
+
+
 			let message = b"I consent to bind my ETH address for time "
 				.iter()
 				.chain(nonce_string.iter())
+				.chain(b" in chain: ".iter())
+				.chain(chain_id_string.iter())
 				.cloned()
 				.collect::<Vec<u8>>();
 

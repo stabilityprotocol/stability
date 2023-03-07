@@ -4437,11 +4437,15 @@ dependencies = [
 name = "pallet-map-svm-evm"
 version = "1.0.0"
 dependencies = [
+ "fp-evm",
  "frame-support",
  "frame-system",
  "hex",
  "once_cell",
+ "pallet-balances",
  "pallet-evm",
+ "pallet-evm-chain-id",
+ "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "sp-core",

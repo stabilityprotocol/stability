@@ -4,13 +4,12 @@ use super::*;
 use crate as map_svm_evm;
 
 use frame_support::pallet_prelude::Weight;
-use frame_support::traits::{ConstU32, ConstU64, Contains, Everything, GenesisBuild};
+use frame_support::traits::{Contains, Everything, GenesisBuild};
 use hex::FromHex;
 use sp_core::{H256, U256};
 use std::str::FromStr;
 
 use sp_runtime::{
-	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
 };
@@ -98,6 +97,8 @@ parameter_types! {
 	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
 }
 
+impl pallet_evm_chain_id::Config for Test {}
+
 impl pallet_evm::Config for Test {
 	type FeeCalculator = ();
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
@@ -110,12 +111,13 @@ impl pallet_evm::Config for Test {
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
 	type PrecompilesType = ();
 	type PrecompilesValue = ();
-	type ChainId = ();
+	type ChainId = EVMChainId;
 	type OnChargeTransaction = ();
 	type BlockGasLimit = BlockGasLimit;
 	type BlockHashMapping = pallet_evm::SubstrateBlockHashMapping<Self>;
 	type FindAuthor = ();
 }
+
 
 impl Config for Test {
 	type RuntimeEvent = RuntimeEvent;
@@ -131,13 +133,15 @@ frame_support::construct_runtime!(
 			Timestamp: pallet_timestamp,
 			Balances: pallet_balances,
 			EVM: pallet_evm,
-			MapSvmEvm: map_svm_evm
+			MapSvmEvm: map_svm_evm,
+			EVMChainId: pallet_evm_chain_id
 		}
 );
 
 parameter_types! {
 	pub SmartcontractErc1271Success: H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
 	pub SmartcontractErc1271Fails: H160 = H160::from_str("0xdf1dAbfc88Fdb4Bac77eDBcDd6608d1dAeEd02E0").unwrap();
+	pub ChainId: u64 = 20180427;
 }
 
 pub fn new_test_ext(linked_accounts: Vec<(AccountId, H160)>) -> sp_io::TestExternalities {
@@ -147,7 +151,7 @@ pub fn new_test_ext(linked_accounts: Vec<(AccountId, H160)>) -> sp_io::TestExter
 	map_svm_evm::GenesisConfig::<Test> { linked_accounts }
 		.assimilate_storage(&mut t)
 		.unwrap();
-	let config = pallet_evm::GenesisConfig {
+	let evm_config = pallet_evm::GenesisConfig {
 		accounts: {
 			let mut map = BTreeMap::new();
 			map.insert(
@@ -171,7 +175,13 @@ pub fn new_test_ext(linked_accounts: Vec<(AccountId, H160)>) -> sp_io::TestExter
 			map
 		},
 	};
-	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&config, &mut t).unwrap();
+	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t).unwrap();
+
+	let chain_id_config = pallet_evm_chain_id::GenesisConfig {
+		chain_id: ChainId::get()
+	};
+
+	<pallet_evm_chain_id::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&chain_id_config, &mut t).unwrap();
 
 	t.into()
 }

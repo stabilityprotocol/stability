@@ -21,6 +21,8 @@ once_cell = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-balances = { workspace = true }
 fp-evm = { workspace = true, features = ["std"] }
+pallet-evm-chain-id = { workspace = true }
+
 
 [features]
 default = ["std"]
@@ -33,5 +35,6 @@ std = [
     "sp-std/std",
     "pallet-timestamp/std",
     "pallet-balances/std",
-    "pallet-evm/std"
+    "pallet-evm/std",
+    "pallet-evm-chain-id/std"
 ]

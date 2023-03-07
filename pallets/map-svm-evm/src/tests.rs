@@ -11,23 +11,23 @@ const TEST_ACCOUNT_ALICE_SUBSTRATE: Lazy<AccountId> =
 	Lazy::new(|| AccountId::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap());
 
 static TEST_ACCOUNT_ALICE_EVM: Lazy<H160> =
-	Lazy::new(|| H160::from_str("0x71A66452Ca097becB4a09e8Ec56F617cC8fc2860").unwrap());
+	Lazy::new(|| H160::from_str("0xce165b22a1f815e8b703fcb25d188cd648d7e91e").unwrap());
 
 static ALICE_LINK_MESSAGE_NONCE_0: Lazy<Vec<u8>> = Lazy::new(|| {
-	Vec::<u8>::from_hex("647e3b223a551b583170defc55e6904115a74a9aa6a9ca2a90499ed8e9107e12667ff322473ca09cef7ea946104abf2818075e827b102a274c8ff059ad3caf291b").unwrap()
+	Vec::<u8>::from_hex("779c35319c85884017413a8a4d3ccc0de35842699d3010c914af2fc1eb0e94223cdcad1e503ee31654da002eac14d8015c406c31cd8c29d24afaf28d9aebe77b1c").unwrap()
 });
 static ALICE_LINK_MESSAGE_NONCE_1: Lazy<Vec<u8>> = Lazy::new(|| {
-	Vec::<u8>::from_hex("0e8132d50b5a5e242fddedf5c28234c761f8a19682f7191ef194b0b6e708451f4f67fafab2586d75690482dc6fc47365ef61289187dc7854073412eff2eeb2281b").unwrap()
+	Vec::<u8>::from_hex("fbf77ed983e24d9e6f0af223bae81b915dc6eec215430113929f772f5bb74e4744fe1f0fddbf28ecdbbe03559ef81cdb2c31aa9702e819c4a47ad50d94b27f601b").unwrap()
 });
 
 const TEST_ACCOUNT_BOB_SUBSTRATE: Lazy<AccountId> =
 	Lazy::new(|| AccountId::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").unwrap());
 
 static TEST_ACCOUNT_BOB_EVM: Lazy<H160> =
-	Lazy::new(|| H160::from_str("0x6716c927e927f1c258E82ff30aEc98E0EdC51994").unwrap());
+	Lazy::new(|| H160::from_str("0x8eb92711aa4fa5d54fd41db4a47c012bd66783cf").unwrap());
 
 static BOB_LINK_MESSAGE_NONCE_0: Lazy<Vec<u8>> = Lazy::new(|| {
-	Vec::<u8>::from_hex("3045bd99debf25cbcf9d7a6aef7e7f1ca808cfce3d1f188e56c52260169a9f83564841dd126636a0dac7cb775e54a467cd7295ba4178b83c3a8d94c75930f9b81b").unwrap()
+	Vec::<u8>::from_hex("b0e928803ee2c4ab63b28062b0015f74c812f3be878152437bf3425de372fd8549152776e7e0c0702ecbcb4c7c4e60cba40ece061e5ae13d2228c3cc285ef0551b").unwrap()
 });
 
 #[test]
