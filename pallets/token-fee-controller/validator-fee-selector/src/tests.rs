@@ -68,7 +68,7 @@ fn fail_update_not_supported_token_acceptance() {
 }
 
 #[test]
-fn updated_token_acceptance() {
+fn updated_token_conversion_rate() {
     ExtBuilder::default().build().execute_with(|| {
         let conversion_rate : (U256, U256) = (2.into(), 1.into());
         assert!(<ValidatorFeeSelector as crate::ValidatorFeeTokenController>::update_conversion_rate(
