@@ -16,6 +16,10 @@ sp-core = { workspace = true }
 sp-io = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
 
+[dev-dependencies]
+pallet-timestamp = { workspace = true }
+pallet-balances = { workspace = true, features = ["std"] }
+
 [features]
 default = ["std"]
 std = [

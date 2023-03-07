@@ -306,7 +306,6 @@ fn testnet_genesis(
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
 		},
-
 		// Monetary
 		balances: BalancesConfig {
 			// Configure endowed accounts with initial balance of 1 << 60.

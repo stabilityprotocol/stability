@@ -20,13 +20,17 @@ use super::*;
 
 use std::str::FromStr;
 
-use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::Weight};
-use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
-use precompile_utils::{precompile_set::*, testing::MockAccount};
-use sp_core::{H160, H256, U256};
-use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
+use frame_support::{
+	construct_runtime, parameter_types,
+	traits::{Everything, GenesisBuild},
+};
+use sp_core::{H160, H256};
+use sp_runtime::{
+	traits::{BlakeTwo256, IdentityLookup},
+	AccountId32,
+};
 
-pub type AccountId = MockAccount;
+pub type AccountId = AccountId32;
 pub type Balance = u128;
 pub type BlockNumber = u32;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
@@ -94,77 +98,10 @@ impl pallet_balances::Config for Runtime {
 parameter_types! {
 	pub MockDefaultFeeToken: H160 = H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
 	pub MeaninglessTokenAddress:H160 = H160::from_str("0xdAC17F958D2ee523a2206206994597C13D831ec7").expect("invalid address");
+	pub MockDefaultTokenBalanceSlot:H256 = H256::from_low_u64_be(0);
 }
 
-pub struct MockSupportedTokensManager;
-
-impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTokensManager {
-	fn is_supported_token(token: H160) -> bool {
-		token == MockDefaultFeeToken::get() || token == MeaninglessTokenAddress::get()
-	}
-
-	fn get_supported_tokens() -> Vec<H160> {
-		vec![MockDefaultFeeToken::get(), MeaninglessTokenAddress::get()]
-	}
-
-	fn add_supported_token(_token: H160, _slot: H256) -> Result<(), Self::Error> {
-		Ok(())
-	}
-
-	fn remove_supported_token(_token: H160) -> Result<(), Self::Error> {
-		Ok(())
-	}
-
-	fn get_token_balance_slot(_token: H160) -> Option<H256> {
-		Some(H256::default())
-	}
-
-	type Error = ();
-
-	fn get_default_token() -> H160 {
-		MockDefaultFeeToken::get()
-	}
-
-	fn set_default_token(_token: H160) -> Result<(), Self::Error> {
-		Ok(())
-	}
-}
-
-impl pallet_user_fee_selector::Config for Runtime {
-	type SupportedTokensManager = MockSupportedTokensManager;
-}
-
-pub type Precompiles<R> = PrecompileSetBuilder<
-	R,
-	PrecompileAt<AddressU64<1>, FeeTokenPrecompile<R, pallet_user_fee_selector::Pallet<R>>>,
->;
-
-pub type PCall = FeeTokenPrecompileCall<Runtime, pallet_user_fee_selector::Pallet<Runtime>, ()>;
-
-parameter_types! {
-		pub BlockGasLimit: U256 = U256::max_value();
-		pub PrecompilesValue: Precompiles<Runtime> = Precompiles::new();
-		pub const WeightPerGas: Weight = Weight::from_ref_time(1);
-}
-
-impl pallet_evm::Config for Runtime {
-	type FeeCalculator = ();
-	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
-	type WeightPerGas = WeightPerGas;
-	type CallOrigin = EnsureAddressRoot<AccountId>;
-	type WithdrawOrigin = EnsureAddressNever<AccountId>;
-	type AddressMapping = AccountId;
-	type Currency = Balances;
-	type RuntimeEvent = RuntimeEvent;
-	type Runner = pallet_evm::runner::stack::Runner<Self>;
-	type PrecompilesType = Precompiles<Self>;
-	type PrecompilesValue = PrecompilesValue;
-	type ChainId = ();
-	type OnChargeTransaction = ();
-	type BlockGasLimit = BlockGasLimit;
-	type BlockHashMapping = pallet_evm::SubstrateBlockHashMapping<Self>;
-	type FindAuthor = ();
-}
+impl crate::Config for Runtime {}
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
@@ -175,21 +112,17 @@ construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Evm: pallet_evm::{Pallet, Call, Storage, Event<T>},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
-		UserFeeTokenSelector: pallet_user_fee_selector,
+		SupportedTokensManager: crate,
 	}
 );
 
 /// ERC20 metadata for the native token.
-pub(crate) struct ExtBuilder {
-	// endowed accounts with balances
-	balances: Vec<(AccountId, Balance)>,
-}
+pub(crate) struct ExtBuilder {}
 
 impl Default for ExtBuilder {
 	fn default() -> ExtBuilder {
-		ExtBuilder { balances: vec![] }
+		ExtBuilder {}
 	}
 }
 
@@ -199,11 +132,14 @@ impl ExtBuilder {
 			.build_storage::<Runtime>()
 			.expect("Frame system builds valid default genesis config");
 
-		pallet_balances::GenesisConfig::<Runtime> {
-			balances: self.balances,
-		}
-		.assimilate_storage(&mut t)
-		.expect("Pallet balances storage can be assimilated");
+		GenesisBuild::<Runtime>::assimilate_storage(
+			&crate::GenesisConfig {
+				initial_default_token: MockDefaultFeeToken::get(),
+				initial_default_token_slot: MockDefaultTokenBalanceSlot::get(),
+			},
+			&mut t,
+		)
+		.expect("genesis config can be assimilated");
 
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));

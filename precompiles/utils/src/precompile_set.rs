@@ -21,6 +21,7 @@ use crate::{revert, StatefulPrecompile};
 use fp_evm::{Precompile, PrecompileHandle, PrecompileResult, PrecompileSet};
 use frame_support::pallet_prelude::Get;
 use impl_trait_for_tuples::impl_for_tuples;
+use sha3::digest::typenum::{U160, U256};
 use sp_core::H160;
 use sp_std::{
 	cell::RefCell, collections::btree_map::BTreeMap, marker::PhantomData, ops::RangeInclusive, vec,
@@ -506,7 +507,10 @@ where
 	}
 
 	fn used_addresses(&self) -> Vec<H160> {
-		self.inner.used_addresses()
+		let start = self.range.start().to_low_u64_be();
+		let end = self.range.end().to_low_u64_be();
+
+		{ start..=end }.map(H160::from_low_u64_be).collect()
 	}
 }
 

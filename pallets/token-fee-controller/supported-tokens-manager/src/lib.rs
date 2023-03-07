@@ -4,6 +4,11 @@ pub use pallet::*;
 use sp_core::{H160, H256};
 use sp_std::vec::Vec;
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -23,6 +28,9 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		DefaultTokenNotSupported,
+		DefaultTokenCannotBeRemoved,
+		AlreadySupportedToken,
+		TokenNotSupported,
 	}
 
 	#[pallet::config]
@@ -45,11 +53,15 @@ pub mod pallet {
 			SupportedTokens::<T>::get()
 		}
 
-		fn add_supported_token(token: H160, slot: H256) {
+		fn add_supported_token(token: H160, slot: H256) -> Result<(), Self::Error> {
+			if Self::is_supported_token(token) {
+				return Err(Error::<T>::AlreadySupportedToken);
+			}
 			let mut tokens = SupportedTokens::<T>::get();
 			tokens.push(token);
 			TokenBalanceSlot::<T>::insert(token, slot);
 			SupportedTokens::<T>::put(tokens);
+			Ok(())
 		}
 
 		fn is_supported_token(token: H160) -> bool {
@@ -57,11 +69,20 @@ pub mod pallet {
 			tokens.contains(&token)
 		}
 
-		fn remove_supported_token(token: H160) {
-			let mut tokens = SupportedTokens::<T>::get();
-			tokens.retain(|t| token.eq(t));
-			TokenBalanceSlot::<T>::remove(token);
-			SupportedTokens::<T>::put(tokens);
+		fn remove_supported_token(token: H160) -> Result<(), Self::Error> {
+			match token {
+				token if token.eq(&Self::get_default_token()) => {
+					Err(Error::<T>::DefaultTokenCannotBeRemoved)
+				}
+				token if !Self::is_supported_token(token) => Err(Error::<T>::TokenNotSupported),
+				token => {
+					let mut tokens = SupportedTokens::<T>::get();
+					tokens.retain(|t| token.ne(t));
+					TokenBalanceSlot::<T>::remove(token);
+					SupportedTokens::<T>::put(tokens);
+					Ok(())
+				}
+			}
 		}
 
 		fn get_token_balance_slot(token: H160) -> Option<H256> {
@@ -104,7 +125,10 @@ pub mod pallet {
 		fn build(&self) {
 			DefaultTokenStorage::<T>::put(self.initial_default_token);
 			SupportedTokens::<T>::put(vec![self.initial_default_token]);
-			TokenBalanceSlot::<T>::insert(self.initial_default_token, self.initial_default_token_slot);
+			TokenBalanceSlot::<T>::insert(
+				self.initial_default_token,
+				self.initial_default_token_slot,
+			);
 		}
 	}
 }
@@ -114,11 +138,11 @@ pub trait SupportedTokensManager {
 
 	fn get_supported_tokens() -> Vec<H160>;
 
-	fn add_supported_token(token: H160, slot: H256);
+	fn add_supported_token(token: H160, slot: H256) -> Result<(), Self::Error>;
 
 	fn is_supported_token(token: H160) -> bool;
 
-	fn remove_supported_token(token: H160);
+	fn remove_supported_token(token: H160) -> Result<(), Self::Error>;
 
 	fn get_token_balance_slot(token: H160) -> Option<H256>;
 

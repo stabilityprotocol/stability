@@ -1,44 +1,95 @@
-#![cfg(test)]
+// Copyright 2019-2022 Stability Solutions.
+// This file is part of Stability.
+
+// Stability is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Stability is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+
+//! Testing utilities.
 
 use super::*;
 
-use frame_support::traits::{ConstU32, ConstU64, Contains};
-use sp_core::H256;
-use sp_io;
+use std::str::FromStr;
+
+use frame_support::{construct_runtime, parameter_types, traits::Everything};
+use sp_core::{H160, H256};
 use sp_runtime::{
-	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
+	AccountId32,
 };
 
-type Block = frame_system::mocking::MockBlock<Test>;
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+pub type AccountId = AccountId32;
+pub type Balance = u128;
+pub type BlockNumber = u32;
+pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+pub type Block = frame_system::mocking::MockBlock<Runtime>;
 
+parameter_types! {
+	pub const BlockHashCount: u32 = 250;
+	pub const SS58Prefix: u8 = 42;
+}
 
-impl frame_system::Config for Test {
-	type BaseCallFilter = ();
-	type BlockWeights = ();
-	type BlockLength = ();
+impl frame_system::Config for Runtime {
+	type BaseCallFilter = Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type RuntimeCall = RuntimeCall;
 	type Index = u64;
-	type BlockNumber = u64;
+	type BlockNumber = BlockNumber;
+	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = u64;
+	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
+	type Header = sp_runtime::generic::Header<BlockNumber, BlakeTwo256>;
 	type RuntimeEvent = RuntimeEvent;
-	type BlockHashCount = ConstU64<250>;
+	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
-	type SS58Prefix = ();
+	type BlockWeights = ();
+	type BlockLength = ();
+	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
-	type MaxConsumers = ConstU32<16>;
+	type MaxConsumers = frame_support::traits::ConstU32<16>;
+}
+
+parameter_types! {
+	pub const MinimumPeriod: u64 = 5;
+}
+
+impl pallet_timestamp::Config for Runtime {
+	type Moment = u64;
+	type OnTimestampSet = ();
+	type MinimumPeriod = MinimumPeriod;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const ExistentialDeposit: u128 = 0;
+}
+
+impl pallet_balances::Config for Runtime {
+	type MaxReserves = ();
+	type ReserveIdentifier = ();
+	type MaxLocks = ();
+	type Balance = Balance;
+	type RuntimeEvent = RuntimeEvent;
+	type DustRemoval = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -57,9 +108,13 @@ impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTo
 		vec![MockDefaultFeeToken::get(), MeaninglessTokenAddress::get()]
 	}
 
-	fn add_supported_token(_token: H160, _slot: H256) {}
+	fn add_supported_token(_token: H160, _slot: H256) -> Result<(), Self::Error> {
+		Ok(())
+	}
 
-	fn remove_supported_token(_token: H160) {}
+	fn remove_supported_token(_token: H160) -> Result<(), Self::Error> {
+		Ok(())
+	}
 
 	fn get_token_balance_slot(_token: H160) -> Option<H256> {
 		Some(H256::default())
@@ -76,27 +131,44 @@ impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTo
 	}
 }
 
-impl Config for Test {
+impl crate::Config for Runtime {
 	type SupportedTokensManager = MockSupportedTokensManager;
 }
 
-frame_support::construct_runtime!(
-	pub enum Test
-	where
+// Configure a mock runtime to test the pallet.
+construct_runtime!(
+	pub enum Runtime where
 		Block = Block,
 		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic, {
-			System: frame_system,
-			UserFeeSelector: pallet_user_fee_selector,
-			Logger: logger,
-		}
+		UncheckedExtrinsic = UncheckedExtrinsic,
+	{
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+		UserFeeTokenSelector: crate,
+	}
 );
 
-pub fn new_test_ext() -> sp_io::TestExternalities {
-	let t = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap();
-	t.into()
+/// ERC20 metadata for the native token.
+pub(crate) struct ExtBuilder {
+	// endowed accounts with balances
+	balances: Vec<(AccountId, Balance)>,
 }
 
-pub type LoggerCall = logger::Call<Test>;
+impl Default for ExtBuilder {
+	fn default() -> ExtBuilder {
+		ExtBuilder { balances: vec![] }
+	}
+}
+
+impl ExtBuilder {
+	pub(crate) fn build(self) -> sp_io::TestExternalities {
+		let mut t = frame_system::GenesisConfig::default()
+			.build_storage::<Runtime>()
+			.expect("Frame system builds valid default genesis config");
+
+		let mut ext = sp_io::TestExternalities::new(t);
+		ext.execute_with(|| System::set_block_number(1));
+		ext
+	}
+}
