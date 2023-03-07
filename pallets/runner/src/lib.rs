@@ -26,9 +26,10 @@ use sp_std::{
 	vec::Vec,
 };
 
-// mod mock;
-
-// mod tests;
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
 
 #[cfg(feature = "forbid-evm-reentrancy")]
 environmental::thread_local_impl!(static IN_EVM: environmental::RefCell<bool> = environmental::RefCell::new(false));
@@ -291,7 +292,7 @@ where
 		source: H160,
 		target: Option<H160>,
 		input: Vec<u8>,
-		value: U256,
+		_value: U256,
 		gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
 		max_priority_fee_per_gas: Option<U256>,
@@ -300,6 +301,8 @@ where
 		is_transactional: bool,
 		evm_config: &evm::Config,
 	) -> Result<(), RunnerError<Self::Error>> {
+		// we force the value to be zero because we don't support value transfer in EVM
+		let value = U256::from(0);
 		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
 		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
 		weight = weight.saturating_add(inner_weight);
@@ -336,7 +339,7 @@ where
 		source: H160,
 		target: H160,
 		input: Vec<u8>,
-		value: U256,
+		_value: U256,
 		gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
 		max_priority_fee_per_gas: Option<U256>,
@@ -346,6 +349,8 @@ where
 		validate: bool,
 		config: &evm::Config,
 	) -> Result<CallInfo, RunnerError<Self::Error>> {
+		// we force the value to be zero because we don't support value transfer in EVM
+		let value = U256::from(0);
 		if validate {
 			Self::validate(
 				source,
@@ -378,7 +383,7 @@ where
 	fn create(
 		source: H160,
 		init: Vec<u8>,
-		value: U256,
+		_value: U256,
 		gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
 		max_priority_fee_per_gas: Option<U256>,
@@ -388,6 +393,8 @@ where
 		validate: bool,
 		config: &evm::Config,
 	) -> Result<CreateInfo, RunnerError<Self::Error>> {
+		// we force the value to be zero because we don't support value transfer in EVM
+		let value = U256::from(0);
 		if validate {
 			Self::validate(
 				source,
@@ -426,7 +433,7 @@ where
 		source: H160,
 		init: Vec<u8>,
 		salt: H256,
-		value: U256,
+		_value: U256,
 		gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
 		max_priority_fee_per_gas: Option<U256>,
@@ -436,6 +443,8 @@ where
 		validate: bool,
 		config: &evm::Config,
 	) -> Result<CreateInfo, RunnerError<Self::Error>> {
+		// we force the value to be zero because we don't support value transfer in EVM
+		let value = U256::from(0);
 		if validate {
 			Self::validate(
 				source,

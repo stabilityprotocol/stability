@@ -22,7 +22,6 @@ use core::str::FromStr;
 use super::*;
 use crate as StabilityRunner;
 
-use evm::Runtime;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Everything, GenesisBuild},
@@ -59,7 +58,7 @@ impl frame_system::Config for Runtime {
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
-	type Lookup = IdentityLookup<Self::AccountId>;
+	type Lookup = IdentityLookup<AccountId>;
 	type Header = sp_runtime::generic::Header<BlockNumber, BlakeTwo256>;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
@@ -137,7 +136,6 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Evm: pallet_evm::{Pallet, Call, Storage, Event<T>},
-		Runner: StabilityRunner::Runner,
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 	}
 );

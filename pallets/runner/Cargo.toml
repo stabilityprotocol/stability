@@ -21,7 +21,7 @@ pallet-timestamp = { workspace = true }
 fp-evm = { workspace = true }
 
 [dev-dependencies]
-pallet-balances = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = ["default"] }
 
 [features]
 default = ["std"]
