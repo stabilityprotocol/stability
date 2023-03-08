@@ -529,6 +529,7 @@ impl pallet_im_online::Config for Runtime {
 	type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
 }
 
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
