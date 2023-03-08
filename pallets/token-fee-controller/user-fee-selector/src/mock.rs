@@ -16,8 +16,6 @@
 
 //! Testing utilities.
 
-use super::*;
-
 use std::str::FromStr;
 
 use frame_support::{construct_runtime, parameter_types, traits::Everything};
@@ -150,20 +148,17 @@ construct_runtime!(
 );
 
 /// ERC20 metadata for the native token.
-pub(crate) struct ExtBuilder {
-	// endowed accounts with balances
-	balances: Vec<(AccountId, Balance)>,
-}
+pub(crate) struct ExtBuilder {}
 
 impl Default for ExtBuilder {
 	fn default() -> ExtBuilder {
-		ExtBuilder { balances: vec![] }
+		ExtBuilder {}
 	}
 }
 
 impl ExtBuilder {
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
-		let mut t = frame_system::GenesisConfig::default()
+		let t = frame_system::GenesisConfig::default()
 			.build_storage::<Runtime>()
 			.expect("Frame system builds valid default genesis config");
 
