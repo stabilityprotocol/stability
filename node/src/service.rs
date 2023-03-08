@@ -16,7 +16,7 @@ use sp_core::U256;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
 // Runtime
-use stabilty_runtime::{opaque::Block, Hash, TransactionConverter};
+use stability_runtime::{opaque::Block, Hash, TransactionConverter};
 
 use crate::{
 	cli::Sealing,
@@ -570,7 +570,7 @@ where
 			inherent_data: &mut sp_inherents::InherentData,
 		) -> Result<(), sp_inherents::Error> {
 			TIMESTAMP.with(|x| {
-				*x.borrow_mut() += stabilty_runtime::SLOT_DURATION;
+				*x.borrow_mut() += stability_runtime::SLOT_DURATION;
 				inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
 			})
 		}
@@ -630,7 +630,7 @@ pub fn build_full(
 	eth_config: EthConfiguration,
 	sealing: Option<Sealing>,
 ) -> Result<TaskManager, ServiceError> {
-	new_full::<stabilty_runtime::RuntimeApi, TemplateRuntimeExecutor>(config, eth_config, sealing)
+	new_full::<stability_runtime::RuntimeApi, TemplateRuntimeExecutor>(config, eth_config, sealing)
 }
 
 pub fn new_chain_ops(
@@ -654,7 +654,7 @@ pub fn new_chain_ops(
 		task_manager,
 		other,
 		..
-	} = new_partial::<stabilty_runtime::RuntimeApi, TemplateRuntimeExecutor, _>(
+	} = new_partial::<stability_runtime::RuntimeApi, TemplateRuntimeExecutor, _>(
 		config,
 		eth_config,
 		build_aura_grandpa_import_queue,
