@@ -7821,14 +7821,14 @@ dependencies = [
  "sp-timestamp",
  "sp-transaction-pool",
  "sp-trie",
- "stabilty-runtime",
+ "stability-runtime",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
 ]
 
 [[package]]
-name = "stabilty-runtime"
+name = "stability-runtime"
 version = "0.0.0"
 dependencies = [
  "fp-rpc",

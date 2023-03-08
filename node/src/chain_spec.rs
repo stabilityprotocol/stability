@@ -10,7 +10,7 @@ use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_state_machine::BasicExternalities;
 // Frontier
-use stabilty_runtime::{
+use stability_runtime::{
 	opaque::SessionKeys, AccountId, EnableManualSeal, GenesisConfig, Precompiles, Signature,
 	WASM_BINARY,
 };
@@ -262,7 +262,7 @@ fn testnet_genesis(
 	members: Vec<AccountId>,
 	chain_id: u64,
 ) -> GenesisConfig {
-	use stabilty_runtime::{
+	use stability_runtime::{
 		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig,
 		SessionConfig, SystemConfig, TechCommitteeCollectiveConfig, ValidatorSetConfig,
 	};
