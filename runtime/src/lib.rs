@@ -75,7 +75,7 @@ use stability_config::{
 mod precompiles;
 use precompiles::StabilityPrecompiles;
 
-use pallet_runner::Runner as StabilityRunner;
+use runner::Runner as StabilityRunner;
 
 pub type Precompiles = StabilityPrecompiles<Runtime>;
 

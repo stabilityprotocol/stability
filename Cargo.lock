@@ -4387,28 +4387,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-runner"
-version = "0.1.0"
-dependencies = [
- "environmental",
- "evm",
- "fp-evm",
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "pallet-balances",
- "pallet-evm",
- "pallet-timestamp",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-session"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
@@ -5484,6 +5462,28 @@ dependencies = [
  "netlink-proto",
  "nix",
  "thiserror",
+]
+
+[[package]]
+name = "runner"
+version = "0.1.0"
+dependencies = [
+ "environmental",
+ "evm",
+ "fp-evm",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -7857,7 +7857,6 @@ dependencies = [
  "pallet-hotfix-sufficients",
  "pallet-im-online",
  "pallet-root-controller",
- "pallet-runner",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
@@ -7868,6 +7867,7 @@ dependencies = [
  "precompile-balances-erc20",
  "precompile-utils",
  "precompile-validator-controller",
+ "runner",
  "scale-info",
  "serde",
  "sp-api",

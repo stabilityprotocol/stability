@@ -60,7 +60,7 @@ std = [
     'pallet-validator-set/std',
     'pallet-session/std',
     'pallet-im-online/std',
-    'pallet-runner/std',
+    'runner/std',
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
@@ -137,4 +137,4 @@ precompile-validator-controller = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }
 pallet-validator-set = { workspace = true }
-pallet-runner = { workspace = true }
+runner = { workspace = true }

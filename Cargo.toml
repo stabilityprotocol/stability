@@ -10,7 +10,7 @@ members = [
     'precompiles/utils',
     'pallets/root-controller',
     'pallets/validator-set',
-    'pallets/runner',
+    'primitives/runner',
 ]
 
 [workspace.package]
@@ -142,4 +142,4 @@ precompile-balances-erc20 = { path = "./precompiles/balances-erc20", default-fea
 precompile-validator-controller = { path = "./precompiles/validator-controller", default-features = false }
 pallet-root-controller = { path = "./pallets/root-controller", default-features = false }
 pallet-validator-set = { path = "./pallets/validator-set", default-features = false }
-pallet-runner = { path = "./pallets/runner", default-features = false }
+runner = { path = "./primitives/runner", default-features = false }
