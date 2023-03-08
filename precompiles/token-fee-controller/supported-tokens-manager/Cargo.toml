@@ -28,7 +28,7 @@ sp-std = { workspace = true }
 fp-evm = { workspace = true }
 pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
 
-pallet-supported-tokens-manager = { workspace = true, features = [ "std" ] }
+pallet-supported-tokens-manager = { workspace = true }
 
 [dev-dependencies]
 derive_more = { version = "0.99" }
@@ -37,6 +37,7 @@ libsecp256k1 = "0.7"
 serde = { version = "1.0.100" }
 sha3 = "0.10"
 
+pallet-supported-tokens-manager = { workspace = true, features = [ "std" ] }
 precompile-utils = { workspace = true, features = [ "testing" ] }
 
 pallet-timestamp ={ workspace = true }
@@ -46,15 +47,14 @@ sp-runtime = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
-	"codec/std",
-	"fp-evm/std",
-	"frame-support/std",
-	"frame-system/std",
-	"pallet-balances/std",
-	"pallet-evm/std",
-	"precompile-utils/std",
-	"sp-core/std",
-	"sp-io/std",
-	"sp-std/std",
+    "precompile-utils/std",
+    "sp-core/std",
+    "fp-evm/std",
+    "pallet-evm/std",
+    "precompile-utils/std",
+    "frame-system/std",
+    "frame-support/std",
+    "sp-std/std",
+    "pallet-timestamp/std",
+    "pallet-balances/std",
 ]
-

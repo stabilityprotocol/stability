@@ -1,5 +1,5 @@
 use crate::mock::{
-	ExtBuilder, MeaninglessTokenAddress, MockDefaultFeeToken, Runtime, SupportedTokensManager,
+	ExtBuilder, MeaninglessTokenAddress, MockDefaultFeeToken, SupportedTokensManager,
 };
 
 use super::*;

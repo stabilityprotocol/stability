@@ -216,3 +216,49 @@ fn fail_remove_token_if_not_added() {
 			})
 	});
 }
+
+#[test]
+fn add_token_and_remove_after() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::add_token {
+					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+					slot: H256::from_low_u64_be(0),
+				},
+			)
+			.execute_some();
+
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::is_token_supported {
+					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+				},
+			)
+			.execute_returns_encoded(true);
+
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::remove_token {
+					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+				},
+			)
+			.execute_some();
+
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::is_token_supported {
+					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+				},
+			)
+			.execute_returns_encoded(false);
+	});
+}

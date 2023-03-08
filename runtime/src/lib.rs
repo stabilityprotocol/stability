@@ -73,17 +73,17 @@ mod precompiles;
 use precompiles::StabilityPrecompiles;
 
 pub trait FeeController {
+	type Token: pallet_supported_tokens_manager::SupportedTokensManager;
 	type Validator: pallet_validator_fee_selector::ValidatorFeeTokenController;
 	type User: pallet_user_fee_selector::UserFeeTokenController;
-	type Token: pallet_supported_tokens_manager::SupportedTokensManager;
 }
 
 pub struct StabilityFeeController;
 
 impl FeeController for StabilityFeeController {
+	type Token = pallet_supported_tokens_manager::Pallet<Runtime>;
 	type Validator = pallet_validator_fee_selector::Pallet<Runtime>;
 	type User = pallet_user_fee_selector::Pallet<Runtime>;
-	type Token = pallet_supported_tokens_manager::Pallet<Runtime>;
 }
 
 pub type Precompiles = StabilityPrecompiles<Runtime, StabilityFeeController>;

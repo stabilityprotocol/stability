@@ -9,6 +9,7 @@ use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripe
 use precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata};
 use precompile_fee_token_selector::FeeTokenPrecompile;
 use precompile_map_svm_evm_controller::MapSvmEvmControllerPrecompile;
+use precompile_supported_tokens_manager::SupportedTokensManagerPrecompile;
 use precompile_utils::precompile_set::*;
 use precompile_validator_fee_selector::ValidatorFeeManagerPrecompile;
 use sp_core::H160;
@@ -87,7 +88,11 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 				>,
 				PrecompileAt<
 					AddressU64<2049>,
-					FeeTokenPrecompile<R, <FeeController as StabilityFeeController>::User>,
+					SupportedTokensManagerPrecompile<
+						R,
+						<FeeController as StabilityFeeController>::Token,
+						DefaultOwner,
+					>,
 				>,
 				PrecompileAt<
 					AddressU64<2050>,
@@ -96,7 +101,11 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 						<FeeController as StabilityFeeController>::Validator,
 					>,
 				>,
-				PrecompileAt<AddressU64<2051>, MapSvmEvmControllerPrecompile<R>>,
+				PrecompileAt<
+					AddressU64<2051>,
+					FeeTokenPrecompile<R, <FeeController as StabilityFeeController>::User>,
+				>,
+				PrecompileAt<AddressU64<2052>, MapSvmEvmControllerPrecompile<R>>,
 			),
 		>,
 	),

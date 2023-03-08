@@ -18,8 +18,6 @@
 
 use super::*;
 
-use std::str::FromStr;
-
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Everything, GenesisBuild},

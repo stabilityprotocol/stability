@@ -170,6 +170,13 @@ where
 		}
 	}
 
+	#[precompile::public("isTokenSupported(address)")]
+	fn is_token_supported(handle: &mut impl PrecompileHandle, token: Address) -> EvmResult<bool> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+		
+		Ok(SupportedTokensManager::is_supported_token(token.into()))
+	}
+
 	#[precompile::public("removeToken(address)")]
 	#[precompile::view]
 	fn remove_token(handle: &mut impl PrecompileHandle, token: Address) -> EvmResult<()> {
