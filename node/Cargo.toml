@@ -76,19 +76,19 @@ fp-dynamic-fee = { workspace = true, features = ["std"] }
 fp-evm = { workspace = true, features = ["std"] }
 fp-rpc = { workspace = true, features = ["std"] }
 fp-storage = { workspace = true, features = ["std"] }
-stabilty-runtime = { path = "./../runtime", features = ["std"] }
+stability-runtime = { path = "./../runtime", features = ["std"] }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 
 [features]
 default = ["with-rocksdb-weights"]
-with-rocksdb-weights = ["stabilty-runtime/with-rocksdb-weights"]
-with-paritydb-weights = ["stabilty-runtime/with-paritydb-weights"]
+with-rocksdb-weights = ["stability-runtime/with-rocksdb-weights"]
+with-paritydb-weights = ["stability-runtime/with-paritydb-weights"]
 rpc-binary-search-estimate = ["fc-rpc/rpc-binary-search-estimate"]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
-	"stabilty-runtime/runtime-benchmarks",
+	"stability-runtime/runtime-benchmarks",
 ]
