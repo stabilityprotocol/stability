@@ -1,5 +1,3 @@
-use core::str::FromStr;
-
 use crate::mock::{
 	ExtBuilder, MeaninglessTokenAddress, MockDefaultFeeToken, MockSupportedTokensManager, Runtime,
 	UserFeeTokenSelector,
