@@ -4434,6 +4434,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-im-online"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-authorship",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-map-svm-evm"
 version = "1.0.0"
 dependencies = [
@@ -4613,6 +4633,26 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-validator-set"
+version = "1.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-session",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "syn",
 ]
 
 [[package]]
@@ -5076,6 +5116,28 @@ dependencies = [
  "sp-std",
  "syn",
  "trybuild",
+]
+
+[[package]]
+name = "precompile-validator-controller"
+version = "0.1.0"
+dependencies = [
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-session",
+ "pallet-timestamp",
+ "pallet-validator-set",
+ "parity-scale-codec",
+ "precompile-utils",
+ "scale-info",
+ "sha3",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -5665,6 +5727,28 @@ dependencies = [
  "netlink-proto",
  "nix",
  "thiserror",
+]
+
+[[package]]
+name = "runner"
+version = "0.1.0"
+dependencies = [
+ "environmental",
+ "evm",
+ "fp-evm",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -7978,6 +8062,7 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "log",
+ "pallet-im-online",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -8013,12 +8098,82 @@ dependencies = [
  "sp-timestamp",
  "sp-transaction-pool",
  "sp-trie",
- "stabilty-runtime",
+ "stability-runtime",
  "stbl-cli-authorship",
  "stbl-primitives-fee-compatible-api",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
+]
+
+[[package]]
+name = "stability-runtime"
+version = "0.0.0"
+dependencies = [
+ "fp-rpc",
+ "fp-self-contained",
+ "frame-benchmarking",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-benchmarking",
+ "frame-system-rpc-runtime-api",
+ "log",
+ "pallet-aura",
+ "pallet-balances",
+ "pallet-base-fee",
+ "pallet-collective",
+ "pallet-dynamic-fee",
+ "pallet-erc20-manager",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-evm-chain-id",
+ "pallet-evm-fee-controller",
+ "pallet-evm-precompile-blake2",
+ "pallet-evm-precompile-bn128",
+ "pallet-evm-precompile-modexp",
+ "pallet-evm-precompile-sha3fips",
+ "pallet-evm-precompile-simple",
+ "pallet-grandpa",
+ "pallet-hotfix-sufficients",
+ "pallet-im-online",
+ "pallet-map-svm-evm",
+ "pallet-root-controller",
+ "pallet-session",
+ "pallet-sudo",
+ "pallet-supported-tokens-manager",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-user-fee-selector",
+ "pallet-validator-fee-selector",
+ "pallet-validator-set",
+ "parity-scale-codec",
+ "precompile-balances-erc20",
+ "precompile-fee-token-selector",
+ "precompile-map-svm-evm-controller",
+ "precompile-supported-tokens-manager",
+ "precompile-utils",
+ "precompile-validator-controller",
+ "precompile-validator-fee-selector",
+ "runner",
+ "scale-info",
+ "serde",
+ "sp-api",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-version",
+ "stbl-primitives-fee-compatible-api",
+ "stbl-tools",
+ "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -8113,71 +8268,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stabilty-runtime"
-version = "0.0.0"
-dependencies = [
- "fp-rpc",
- "fp-self-contained",
- "frame-benchmarking",
- "frame-executive",
- "frame-support",
- "frame-system",
- "frame-system-benchmarking",
- "frame-system-rpc-runtime-api",
- "log",
- "pallet-aura",
- "pallet-balances",
- "pallet-base-fee",
- "pallet-collective",
- "pallet-dynamic-fee",
- "pallet-erc20-manager",
- "pallet-ethereum",
- "pallet-evm",
- "pallet-evm-chain-id",
- "pallet-evm-fee-controller",
- "pallet-evm-precompile-blake2",
- "pallet-evm-precompile-bn128",
- "pallet-evm-precompile-modexp",
- "pallet-evm-precompile-sha3fips",
- "pallet-evm-precompile-simple",
- "pallet-grandpa",
- "pallet-hotfix-sufficients",
- "pallet-map-svm-evm",
- "pallet-root-controller",
- "pallet-sudo",
- "pallet-supported-tokens-manager",
- "pallet-timestamp",
- "pallet-transaction-payment",
- "pallet-transaction-payment-rpc-runtime-api",
- "pallet-user-fee-selector",
- "pallet-validator-fee-selector",
- "parity-scale-codec",
- "precompile-balances-erc20",
- "precompile-fee-token-selector",
- "precompile-map-svm-evm-controller",
- "precompile-supported-tokens-manager",
- "precompile-utils",
- "precompile-validator-fee-selector",
- "scale-info",
- "serde",
- "sp-api",
- "sp-block-builder",
- "sp-consensus-aura",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-std",
- "sp-transaction-pool",
- "sp-version",
- "stbl-primitives-fee-compatible-api",
- "stbl-tools",
- "substrate-wasm-builder",
-]
-
-[[package]]
 name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8254,8 +8344,8 @@ dependencies = [
  "sp-keyring",
  "sp-keystore",
  "sp-runtime",
+ "stability-runtime",
  "stability-test-runtime-client",
- "stabilty-runtime",
  "stbl-primitives-fee-compatible-api",
  "substrate-prometheus-endpoint",
 ]

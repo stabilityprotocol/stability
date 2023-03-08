@@ -59,6 +59,10 @@ std = [
     'pallet-root-controller/std',
     'pallet-map-svm-evm/std',
     'pallet-supported-tokens-manager/std',
+    'pallet-validator-set/std',
+    'pallet-session/std',
+    'pallet-im-online/std',
+    'runner/std',
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
@@ -71,7 +75,7 @@ authors = ['Stability Solutions']
 description = 'Stability protocol Substrate based blockchain'
 edition = '2021'
 license = 'Unlicense'
-name = 'stabilty-runtime'
+name = 'stability-runtime'
 publish = false
 version = '0.0.0'
 
@@ -111,6 +115,8 @@ pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-evm-fee-controller = { workspace = true }
+pallet-session = { workspace = true }
+pallet-im-online = { workspace = true }
 # Frontier
 fp-rpc = { workspace = true }
 fp-self-contained = { workspace = true }
@@ -134,6 +140,7 @@ precompile-validator-fee-selector = { workspace = true }
 pallet-user-fee-selector = { workspace = true }
 pallet-validator-fee-selector = { workspace = true }
 stbl-tools = { workspace = true }
+precompile-validator-controller = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true }
@@ -142,4 +149,6 @@ pallet-map-svm-evm = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
 precompile-map-svm-evm-controller = { workspace = true }
 precompile-supported-tokens-manager = { workspace = true }
+pallet-validator-set = { workspace = true }
+runner = { workspace = true }
 

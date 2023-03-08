@@ -36,5 +36,5 @@ For building this chain, the next pallets have been imported:
 
 - Consensus: _AuRa, GRANDPA_
 - EVM: _pallet-evm, pallet-ethereum, pallet-dynamic-fee_
-- Substrate: _balances, session, timestamp, collectible_
+- Substrate: _balances, session, timestamp, collective, im-online_
 - Moonbeam: _precompile-utils, balances-erc20_

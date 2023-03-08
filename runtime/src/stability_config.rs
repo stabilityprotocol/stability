@@ -44,6 +44,13 @@ pub const DEFAULT_FEE_TOKEN: &str = "0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43"
 /// from the actual account balance we set it to zero
 pub const EXISTENTIAL_DEPOSIT: u128 = 0u128;
 
+// Session
+pub const SESSION_MINUTES_DURATION: u32 = 2;
+
+// VALIDATOR SET
+
+pub const VALIDATOR_SET_MIN_VALIDATORS: u32 = 1;
+
 pub const TARGET_BLOCK_GAS_LIMIT: u64 = 50_000_000u64;
 
 // Since BlockWeights::builder is not a const function we have to embed into a function

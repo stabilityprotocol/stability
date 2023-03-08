@@ -6,7 +6,11 @@ members = [
     'node',
     'runtime',
     'precompiles/balances-erc20',
+    'precompiles/validator-controller',
     'precompiles/utils',
+    'pallets/root-controller',
+    'pallets/validator-set',
+    'primitives/runner',
     'precompiles/token-fee-controller/fee-token-selector',
     'precompiles/token-fee-controller/validator-fee-selector',
     'precompiles/token-fee-controller/supported-tokens-manager',
@@ -60,6 +64,7 @@ trie-db = { version = "0.24.0", default-features = false }
 hex = "0.4"
 once_cell = "1.17.1"
 hex-literal = "0.3.4"
+syn = "1.0.98"
 # Polkadot
 xcm = { git = "https://github.com/paritytech/polkadot", tag = "v0.9.36", default-features = false }
 # Substrate Client
@@ -130,6 +135,8 @@ pallet-utility = { version = "4.0.0-dev", git = "https://github.com/paritytech/s
 pallet-collective = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 beefy-merkle-tree  = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
+pallet-session =  { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
+pallet-im-online =  { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 # Substrate Utility
 frame-benchmarking-cli = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
@@ -137,6 +144,7 @@ substrate-build-script-utils = { version = "3.0.0", git = "https://github.com/pa
 substrate-frame-rpc-system = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 substrate-test-runtime-client = { version = "2.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+sp-staking = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 # Frontier Client
 fc-cli = { version = "1.0.0-dev", git = "https://github.com/paritytech/frontier", branch = "polkadot-v0.9.36" }
 fc-consensus = { version = "2.0.0-dev", git = "https://github.com/paritytech/frontier", branch = "polkadot-v0.9.36" }
@@ -172,6 +180,7 @@ precompile-utils = { path = "./precompiles/utils", default-features = false }
 precompile-balances-erc20 = { path = "./precompiles/balances-erc20", default-features = false }
 precompile-fee-token-selector = { path = "./precompiles/token-fee-controller/fee-token-selector", default-features = false }
 precompile-validator-fee-selector = { path = "./precompiles/token-fee-controller/validator-fee-selector", default-features = false }
+precompile-validator-controller = { path = "./precompiles/validator-controller", default-features = false }
 pallet-root-controller = { path = "./pallets/root-controller", default-features = false }
 pallet-evm-fee-controller = { path = "./pallets/evm-fee-controller", default-features = false }
 stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api", default-features = false }
@@ -188,3 +197,5 @@ stability-test-runtime-client = { path = "./test-utils/stability-runtime-client"
 pallet-user-fee-selector = { path = "./pallets/token-fee-controller/user-fee-selector", default-features = false }
 pallet-validator-fee-selector = { path = "./pallets/token-fee-controller/validator-fee-selector", default-features = false }
 pallet-supported-tokens-manager = { path = "./pallets/token-fee-controller/supported-tokens-manager", default-features = false }
+pallet-validator-set = { path = "./pallets/validator-set", default-features = false }
+runner = { path = "./primitives/runner", default-features = false }

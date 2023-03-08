@@ -40,7 +40,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT},
 	Digest, Percent, SaturatedConversion,
 };
-use stabilty_runtime::AccountId;
+use stability_runtime::AccountId;
 use std::{marker::PhantomData, pin::Pin, sync::Arc, time};
 
 use prometheus_endpoint::Registry as PrometheusRegistry;
