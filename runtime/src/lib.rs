@@ -28,6 +28,8 @@ use sp_runtime::{
 };
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
+use pallet_validator_fee_selector::ValidatorFeeTokenController;
+use pallet_user_fee_selector::UserFeeTokenController;
 // Substrate FRAME
 #[cfg(feature = "with-paritydb-weights")]
 use frame_support::weights::constants::ParityDbWeight as RuntimeDbWeight;
@@ -43,6 +45,7 @@ use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use pallet_evm::{
 	Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner,
 };
+
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -915,20 +918,24 @@ impl_runtime_apis! {
 	impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId> for Runtime {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool {
 			if let RuntimeCall::Ethereum(transact { transaction }) = tx.0.function {
+				let source_address_option =  stbl_tools::eth::recover_signer(&transaction);
+				let validator_address_option = <pallet_map_svm_evm::Pallet<Runtime>>::get_linked_evm_account(validator);
+				
+				if validator_address_option.is_none() {
+					return false
+				}
 
-				/*
-					let validatorH160 = AddressMapping::into_ethereum(validator);
-					let validatorFees = pallet_fee::validator_fees(validator);
-					let defaultTokenFromUser = pallet_fee::default_token_from_user(transaction.from);
+				if source_address_option.is_none() {
+					return true
+				}
 
-					if validatorFees.includes(defaultTokenFromUser) {
-						return true;
-					}
-					else {
-						return false;
-					}
-				 */
-				 true
+				let source_address = source_address_option.unwrap();
+				let validator_address = source_address_option.unwrap();
+
+
+				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
+
+				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator_address, source_fee_token)
 			}
 			else {
 				// always return true for non-ethereum transactions

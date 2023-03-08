@@ -8273,8 +8273,10 @@ dependencies = [
 name = "stbl-tools"
 version = "0.1.0"
 dependencies = [
+ "ethereum",
  "pallet-evm",
  "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
