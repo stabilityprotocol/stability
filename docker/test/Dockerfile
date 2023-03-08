@@ -18,6 +18,7 @@ COPY node ./node
 COPY runtime ./runtime
 COPY precompiles ./precompiles
 COPY pallets ./pallets
+COPY primitives ./primitives
 COPY Cargo.lock Cargo.toml rust-toolchain ./
 
 RUN cargo build --release --tests

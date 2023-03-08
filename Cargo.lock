@@ -5465,6 +5465,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "runner"
+version = "0.1.0"
+dependencies = [
+ "environmental",
+ "evm",
+ "fp-evm",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7845,6 +7867,7 @@ dependencies = [
  "precompile-balances-erc20",
  "precompile-utils",
  "precompile-validator-controller",
+ "runner",
  "scale-info",
  "serde",
  "sp-api",
