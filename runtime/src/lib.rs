@@ -1113,7 +1113,7 @@ impl_runtime_apis! {
 				}
 
 				let source_address = source_address_option.unwrap();
-				let validator_address = source_address_option.unwrap();
+				let validator_address = validator_address_option.unwrap();
 
 
 				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
