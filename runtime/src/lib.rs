@@ -13,13 +13,15 @@ use codec::{Decode, Encode};
 use core::str::FromStr;
 use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
+use frame_system::RawOrigin;
+use pallet_user_fee_selector::UserFeeTokenController;
+use pallet_validator_fee_selector::ValidatorFeeTokenController;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
-	OpaqueMetadata, H160, H256, U256, Hasher
+	Hasher, OpaqueMetadata, H160, H256, U256,
 };
-use frame_system::RawOrigin;
 use sp_runtime::{
 	create_runtime_str, generic,
 	generic::Era,
@@ -35,8 +37,6 @@ use sp_runtime::{
 };
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
-use pallet_validator_fee_selector::ValidatorFeeTokenController;
-use pallet_user_fee_selector::UserFeeTokenController;
 // Substrate FRAME
 #[cfg(feature = "with-paritydb-weights")]
 use frame_support::weights::constants::ParityDbWeight as RuntimeDbWeight;
@@ -49,9 +49,7 @@ use pallet_transaction_payment::CurrencyAdapter;
 // Frontier
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
-use pallet_evm::{
-	Account as EVMAccount, FeeCalculator, Runner,
-};
+use pallet_evm::{Account as EVMAccount, FeeCalculator, Runner};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -74,8 +72,8 @@ use pallet_user_fee_selector;
 mod stability_config;
 use stability_config::{
 	build_block_weights, COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS,
-	COUNCIL_MOTION_MINUTES_DURATION, EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH,
-	MILLISECS_PER_BLOCK, SESSION_MINUTES_DURATION, VALIDATOR_SET_MIN_VALIDATORS, DEFAULT_FEE_TOKEN
+	COUNCIL_MOTION_MINUTES_DURATION, DEFAULT_FEE_TOKEN, EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH,
+	MILLISECS_PER_BLOCK, SESSION_MINUTES_DURATION, VALIDATOR_SET_MIN_VALIDATORS,
 };
 
 mod precompiles;
@@ -98,7 +96,6 @@ impl FeeController for StabilityFeeController {
 pub type Precompiles = StabilityPrecompiles<Runtime, StabilityFeeController>;
 
 use runner::Runner as StabilityRunner;
-
 
 /// Type of block number.
 pub type BlockNumber = u32;
@@ -446,11 +443,6 @@ impl pallet_validator_fee_selector::Config for Runtime {
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
 }
 
-parameter_types! {
-	pub InitialSupportedTokens: Vec<H160> = vec![
-		H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address"),
-	];
-}
 impl pallet_supported_tokens_manager::Config for Runtime {}
 
 parameter_types! {
@@ -1103,7 +1095,7 @@ impl_runtime_apis! {
 			if let RuntimeCall::Ethereum(transact { transaction }) = tx.0.function {
 				let source_address_option =  stbl_tools::eth::recover_signer(&transaction);
 				let validator_address_option = <pallet_map_svm_evm::Pallet<Runtime>>::get_linked_evm_account(validator);
-				
+
 				if validator_address_option.is_none() {
 					return false
 				}
@@ -1113,7 +1105,7 @@ impl_runtime_apis! {
 				}
 
 				let source_address = source_address_option.unwrap();
-				let validator_address = validator_address_option.unwrap();
+				let validator_address = source_address_option.unwrap();
 
 
 				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
