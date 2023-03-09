@@ -34,6 +34,7 @@ pub mod pallet {
 		type ERC20Manager: ERC20Manager;
 	}
 
+	// todo: create other trait for token fee controller
 	impl<R: pallet_evm::Config, T: Config> OnChargeEVMTransaction<R> for Pallet<T> {
 		type LiquidityInfo = U256;
 
