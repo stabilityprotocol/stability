@@ -607,7 +607,6 @@ mod tests {
 	use sp_blockchain::HeaderBackend;
 	use sp_consensus::{BlockOrigin, Environment, Proposer};
 	use sp_core::Pair;
-	use sp_keyring::sr25519::Keyring;
 	use sp_runtime::traits::NumberFor;
 	use stability_test_runtime_client::{
 		prelude::*,
@@ -681,7 +680,7 @@ mod tests {
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(BlockId::Hash((client.info().genesis_hash)))
+					.expect_header(BlockId::Hash(client.info().genesis_hash))
 					.expect("there should be header"),
 			)),
 		);
@@ -708,7 +707,7 @@ mod tests {
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
 			&client
-				.expect_header(BlockId::Hash((client.info().genesis_hash)))
+				.expect_header(BlockId::Hash(client.info().genesis_hash))
 				.unwrap(),
 			Box::new(move || {
 				let mut value = cell.lock();
@@ -770,7 +769,7 @@ mod tests {
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
 			&client
-				.expect_header(BlockId::Hash((client.info().genesis_hash)))
+				.expect_header(BlockId::Hash(client.info().genesis_hash))
 				.unwrap(),
 			Box::new(move || {
 				let mut value = cell.lock();
@@ -837,7 +836,7 @@ mod tests {
 
 		let proposer = proposer_factory.init_with_now(
 			&client
-				.header(&BlockId::Hash((client.info().genesis_hash)))
+				.header(&BlockId::Hash(client.info().genesis_hash))
 				.unwrap()
 				.unwrap(),
 			Box::new(move || time::Instant::now()),
@@ -929,7 +928,7 @@ mod tests {
 				.expect_block_hash_from_id(&BlockId::Number(number))
 				.unwrap();
 			let proposer = proposer_factory.init_with_now(
-				&client.expect_header(BlockId::Hash((hash))).unwrap(),
+				&client.expect_header(BlockId::Hash(hash)).unwrap(),
 				Box::new(move || time::Instant::now()),
 			);
 
@@ -988,7 +987,7 @@ mod tests {
 			client.clone(),
 		);
 		let genesis_header = client
-			.expect_header(BlockId::Hash((client.info().genesis_hash)))
+			.expect_header(BlockId::Hash(client.info().genesis_hash))
 			.expect("there should be header");
 
 		let extrinsics_num = 5;

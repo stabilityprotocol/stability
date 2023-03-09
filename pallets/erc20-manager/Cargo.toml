@@ -19,7 +19,7 @@ pallet-supported-tokens-manager = { workspace = true }
 sha3 ={ version = "0.10.6", default-features = false}
 
 [dev-dependencies]
-hex = { worspace = true }
+hex = "0.4"
 pallet-evm = { workspace = true, features = ["std"] }
 fp-evm = { workspace = true, features = ["std"] }
 pallet-evm-chain-id = { workspace = true, features = ["std"] }
