@@ -1,10 +1,8 @@
-use sp_core::{H256, H160};
+use sp_core::{H160, H256};
 use sp_runtime::traits::Keccak256;
 use sp_std::vec::Vec;
 
-pub use ethereum::{
- TransactionV2 as Transaction,
-};
+pub use ethereum::TransactionV2 as Transaction;
 
 use crate::some_or_err;
 
@@ -31,7 +29,7 @@ pub fn generate_calldata_from_encoded_args(signature: &str, args: &Vec<u8>) -> V
 
 	let mut u8_array: Vec<u8> = Vec::default();
 
-	hash.as_bytes().iter().for_each(|byte| {
+	hash.as_bytes().split_at(4).0.iter().for_each(|byte| {
 		u8_array.push(*byte);
 	});
 
@@ -64,25 +62,19 @@ pub fn recover_signer(transaction: &Transaction) -> Option<H160> {
 			sig[0..32].copy_from_slice(&t.signature.r()[..]);
 			sig[32..64].copy_from_slice(&t.signature.s()[..]);
 			sig[64] = t.signature.standard_v();
-			msg.copy_from_slice(
-				&ethereum::LegacyTransactionMessage::from(t.clone()).hash()[..],
-			);
+			msg.copy_from_slice(&ethereum::LegacyTransactionMessage::from(t.clone()).hash()[..]);
 		}
 		Transaction::EIP2930(t) => {
 			sig[0..32].copy_from_slice(&t.r[..]);
 			sig[32..64].copy_from_slice(&t.s[..]);
 			sig[64] = t.odd_y_parity as u8;
-			msg.copy_from_slice(
-				&ethereum::EIP2930TransactionMessage::from(t.clone()).hash()[..],
-			);
+			msg.copy_from_slice(&ethereum::EIP2930TransactionMessage::from(t.clone()).hash()[..]);
 		}
 		Transaction::EIP1559(t) => {
 			sig[0..32].copy_from_slice(&t.r[..]);
 			sig[32..64].copy_from_slice(&t.s[..]);
 			sig[64] = t.odd_y_parity as u8;
-			msg.copy_from_slice(
-				&ethereum::EIP1559TransactionMessage::from(t.clone()).hash()[..],
-			);
+			msg.copy_from_slice(&ethereum::EIP1559TransactionMessage::from(t.clone()).hash()[..]);
 		}
 	}
 	let pubkey = sp_io::crypto::secp256k1_ecdsa_recover(&sig, &msg).ok()?;

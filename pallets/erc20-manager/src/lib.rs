@@ -4,6 +4,11 @@ pub use pallet::*;
 
 use sp_core::{H160, U256};
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 pub trait ERC20Manager {
 	type Error;
 	fn withdraw_amount(token: &H160, payer: &H160, fee: U256) -> Result<U256, Self::Error>;
