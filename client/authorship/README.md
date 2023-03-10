@@ -1,4 +1,4 @@
-Basic implementation of block-authoring logic.
+Basic implementation of block-authoring logic. This is a modified version of the [sc-basic-authorship](https://github.com/paritytech/substrate/tree/master/client/basic-authorship) crate. Stability modified this because a stability validator only accepts transactions where the origin of these transactions pays fees in an accepted token for the given validator.
 
 # Example
 
