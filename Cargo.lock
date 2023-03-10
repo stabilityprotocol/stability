@@ -4472,6 +4472,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "stbl-tools",
 ]
 
 [[package]]

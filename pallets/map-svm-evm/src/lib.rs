@@ -18,6 +18,8 @@ use sp_io::hashing::keccak_256;
 
 use frame_support::dispatch::DispatchResultWithPostInfo;
 
+use stbl_tools::none_or_err;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -98,15 +100,11 @@ pub mod pallet {
 
 			let evm_linked_account = SubstrateToEvm::<T>::get(who.clone());
 
-			if let Some(_) = evm_linked_account {
-				return Err(Error::<T>::SubstrateAlreadyLinked.into());
-			}
+			none_or_err!(evm_linked_account, |_| { Error::<T>::SubstrateAlreadyLinked.into() });
 
 			let substrate_linked_account = EvmToSubstrate::<T>::get(address);
 
-			if let Some(_) = substrate_linked_account {
-				return Err(Error::<T>::EvmAlreadyLinked.into());
-			}
+			none_or_err!(substrate_linked_account, |_| { Error::<T>::EvmAlreadyLinked.into() });
 
 			let expected_message_hash = Self::get_expected_message_hash(address);
 
