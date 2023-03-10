@@ -61,7 +61,7 @@ fn test_link_of() {
 }
 
 #[test]
-fn test_link_of_fails_if_account_is_not_linked() {
+fn test_link_of_returns_zero_account_if_account_is_not_linked() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(
@@ -71,7 +71,9 @@ fn test_link_of_fails_if_account_is_not_linked() {
 					address: TEST_ACCOUNT_ALICE_EVM.clone().into(),
 				},
 			)
-			.execute_reverts(|output| output == b"EVM account not linked")
+			.execute_returns_encoded(H256::from(
+				SUBSTRATE_ZERO_ACCOUNT,
+			))
 	});
 }
 

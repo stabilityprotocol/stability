@@ -23,7 +23,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-use codec::Encode;
+use codec::{Encode};
 
 use sp_core::{H256, U256};
 
@@ -35,6 +35,7 @@ use sp_std::marker::PhantomData;
 /// Solidity selector of the Transfer log, which is the Keccak of the Log signature.
 pub const SELECTOR_LOG_ACCOUNT_UNLINKED: [u8; 32] = keccak256!("AccountUnlinked(address,bytes32)");
 
+pub const SUBSTRATE_ZERO_ACCOUNT: [u8; 32] = [0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0];
 pub struct MapSvmEvmControllerPrecompile<Runtime>(PhantomData<Runtime>);
 
 #[precompile_utils::precompile]
@@ -53,10 +54,12 @@ where
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
 		let substrate_account =
-			pallet_map_svm_evm::Pallet::<Runtime>::get_linked_substrate_account(address.into())
-				.ok_or(revert("EVM account not linked"))?;
-
-		Ok(H256::from_slice(substrate_account.encode().as_slice()))
+			pallet_map_svm_evm::Pallet::<Runtime>::get_linked_substrate_account(address.into());
+		
+		match substrate_account {
+			None => Ok(H256::from(SUBSTRATE_ZERO_ACCOUNT)),
+			Some(account) => Ok(H256::from_slice(account.encode().as_slice()))
+		}
 	}
 
 	#[precompile::public("unLink()")]
