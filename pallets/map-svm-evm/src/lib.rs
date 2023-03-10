@@ -10,6 +10,7 @@ pub use pallet::*;
 use sp_std::prelude::*;
 
 use frame_support::dispatch::Pays;
+use frame_support::parameter_types;
 
 use sp_core::H160;
 
@@ -19,6 +20,10 @@ use sp_io::hashing::keccak_256;
 use frame_support::dispatch::DispatchResultWithPostInfo;
 
 use stbl_tools::{none_or_err, some_or_err};
+
+parameter_types! {
+	pub ZeroAddress:H160 = H160::from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] as [u8; 20]);
+}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -52,6 +57,8 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
+		/// The address received is invalid
+		InvalidAddress,
 		/// The Substrate account is already linked to an EVM account.
 		SubstrateAlreadyLinked,
 		/// The Evm account is already linked to an Substrate account.
@@ -97,6 +104,10 @@ pub mod pallet {
 			signature: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
+
+			if address == ZeroAddress::get() {
+				return Err(Error::<T>::InvalidAddress.into());
+			}
 
 			let evm_linked_account = SubstrateToEvm::<T>::get(who.clone());
 

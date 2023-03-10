@@ -71,6 +71,21 @@ fn test_link_evm_account() {
 }
 
 #[test]
+fn fails_if_received_zero_address() {
+	new_test_ext(vec![]).execute_with(|| {
+		let err = MapSvmEvm::link_evm_account(
+			RuntimeOrigin::signed(TEST_ACCOUNT_ALICE_SUBSTRATE.clone()),
+			ZeroAddress::get(),
+			ALICE_LINK_MESSAGE_NONCE_0.clone(),
+		)
+		.unwrap_err();
+
+
+		assert_eq!(err, Error::<Test>::InvalidAddress.into());
+	})
+}
+
+#[test]
 fn fails_if_substrate_account_is_already_linked() {
 	new_test_ext(vec![]).execute_with(|| {
 		MapSvmEvm::link_evm_account(
