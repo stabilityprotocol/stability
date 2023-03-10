@@ -31,7 +31,8 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		InsufficientBalance,
+		UnderflowBalance,
+		OverflowBalance,
 		FailedTokenConfiguration,
 	}
 
@@ -55,7 +56,7 @@ pub mod pallet {
 			pallet_evm::AccountStorages::<T>::try_mutate(&token, &slot, |stored_value| {
 				let current_balance = U256::from_big_endian(stored_value.as_bytes());
 				let new_balance = some_or_err!(current_balance.checked_sub(fee), || {
-					Error::<T>::InsufficientBalance
+					Error::<T>::UnderflowBalance
 				});
 
 				let mut new_balance_bytes: [u8; 32] = [0; 32];
@@ -81,7 +82,7 @@ pub mod pallet {
 			pallet_evm::AccountStorages::<T>::try_mutate(&token, &slot, |stored_value| {
 				let current_balance = U256::from_big_endian(stored_value.as_bytes());
 				let new_balance = some_or_err!(current_balance.checked_add(amount), || {
-					Error::<T>::InsufficientBalance
+					Error::<T>::OverflowBalance
 				});
 
 				let mut new_balance_bytes: [u8; 32] = [0; 32];
