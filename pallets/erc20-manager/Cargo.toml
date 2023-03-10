@@ -18,6 +18,14 @@ stbl-tools = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
 sha3 ={ version = "0.10.6", default-features = false}
 
+[dev-dependencies]
+hex = "0.4"
+pallet-evm = { workspace = true, features = ["std"] }
+fp-evm = { workspace = true, features = ["std"] }
+pallet-evm-chain-id = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = ["std"] }
+pallet-timestamp = { workspace = true, features = ["std"] }
+
 [features]
 default = ["std"]
 std = [

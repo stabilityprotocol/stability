@@ -34,6 +34,7 @@ pub mod pallet {
 		type ERC20Manager: ERC20Manager;
 	}
 
+	// todo: create other trait for token fee controller
 	impl<R: pallet_evm::Config, T: Config> OnChargeEVMTransaction<R> for Pallet<T> {
 		type LiquidityInfo = U256;
 
@@ -71,9 +72,6 @@ pub mod pallet {
 
 			let excess_fee_token_amount =
 				already_withdrawn_token_amount - corrected_fee_token_amount;
-
-			frame_support::log::info!("refunded fees: {:?}", excess_fee_token_amount);
-			frame_support::log::info!("paid fees: {:?}", corrected_fee_token_amount);
 
 			T::ERC20Manager::deposit_amount(&fee_token, who, excess_fee_token_amount)
 				.or(Err(pallet_evm::Error::<T>::Undefined))

@@ -4254,10 +4254,15 @@ dependencies = [
 name = "pallet-erc20-manager"
 version = "0.1.0"
 dependencies = [
+ "fp-evm",
  "frame-support",
  "frame-system",
+ "hex",
+ "pallet-balances",
  "pallet-evm",
+ "pallet-evm-chain-id",
  "pallet-supported-tokens-manager",
+ "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "sha3",

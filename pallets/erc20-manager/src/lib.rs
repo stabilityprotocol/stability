@@ -4,6 +4,11 @@ pub use pallet::*;
 
 use sp_core::{H160, U256};
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 pub trait ERC20Manager {
 	type Error;
 	fn withdraw_amount(token: &H160, payer: &H160, fee: U256) -> Result<U256, Self::Error>;
@@ -26,7 +31,8 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		InsufficientBalance,
+		UnderflowBalance,
+		OverflowBalance,
 		FailedTokenConfiguration,
 	}
 
@@ -47,12 +53,10 @@ pub mod pallet {
 				Error::<T>::FailedTokenConfiguration
 			});
 
-			frame_support::log::info!("{:?} sends {:?}", payer, fee);
-
 			pallet_evm::AccountStorages::<T>::try_mutate(&token, &slot, |stored_value| {
 				let current_balance = U256::from_big_endian(stored_value.as_bytes());
 				let new_balance = some_or_err!(current_balance.checked_sub(fee), || {
-					Error::<T>::InsufficientBalance
+					Error::<T>::UnderflowBalance
 				});
 
 				let mut new_balance_bytes: [u8; 32] = [0; 32];
@@ -71,8 +75,6 @@ pub mod pallet {
 				return Ok(U256::from(0));
 			};
 
-			frame_support::log::info!("{:?} receives {:?}", payee, amount);
-
 			let slot = map_err!(Self::get_address_balance_storage_slot(token, payee), |_| {
 				Error::<T>::FailedTokenConfiguration
 			});
@@ -80,7 +82,7 @@ pub mod pallet {
 			pallet_evm::AccountStorages::<T>::try_mutate(&token, &slot, |stored_value| {
 				let current_balance = U256::from_big_endian(stored_value.as_bytes());
 				let new_balance = some_or_err!(current_balance.checked_add(amount), || {
-					Error::<T>::InsufficientBalance
+					Error::<T>::OverflowBalance
 				});
 
 				let mut new_balance_bytes: [u8; 32] = [0; 32];

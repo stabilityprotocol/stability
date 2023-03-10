@@ -49,6 +49,7 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
+	// todo: remove this logic
 	#[pallet::storage]
 	#[pallet::getter(fn pending_token_updates)]
 	pub type PendingTokenUpdatesStorage<T: Config> =
