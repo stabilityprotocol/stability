@@ -1,6 +1,6 @@
-// This file is part of Substrate.
+// This file is part of Stability.
 
-// Copyright (C) 2017-2022 Parity Technologies (UK) Ltd.
+// Copyright 2023 Stability Solutions.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
