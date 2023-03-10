@@ -52,8 +52,6 @@ pub mod pallet {
 				Error::<T>::FailedTokenConfiguration
 			});
 
-			frame_support::log::info!("{:?} sends {:?}", payer, fee);
-
 			pallet_evm::AccountStorages::<T>::try_mutate(&token, &slot, |stored_value| {
 				let current_balance = U256::from_big_endian(stored_value.as_bytes());
 				let new_balance = some_or_err!(current_balance.checked_sub(fee), || {
@@ -75,8 +73,6 @@ pub mod pallet {
 			if amount.is_zero() {
 				return Ok(U256::from(0));
 			};
-
-			frame_support::log::info!("{:?} receives {:?}", payee, amount);
 
 			let slot = map_err!(Self::get_address_balance_storage_slot(token, payee), |_| {
 				Error::<T>::FailedTokenConfiguration
