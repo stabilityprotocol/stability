@@ -29,7 +29,7 @@ parameter_types! {
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
-	use frame_system::{pallet_prelude::*};
+	use frame_system::pallet_prelude::*;
 	use pallet_evm::Runner;
 
 	#[pallet::pallet]
@@ -111,11 +111,15 @@ pub mod pallet {
 
 			let evm_linked_account = SubstrateToEvm::<T>::get(who.clone());
 
-			none_or_err!(evm_linked_account, |_| { Error::<T>::SubstrateAlreadyLinked.into() });
+			none_or_err!(evm_linked_account, |_| {
+				Error::<T>::SubstrateAlreadyLinked.into()
+			});
 
 			let substrate_linked_account = EvmToSubstrate::<T>::get(address);
 
-			none_or_err!(substrate_linked_account, |_| { Error::<T>::EvmAlreadyLinked.into() });
+			none_or_err!(substrate_linked_account, |_| {
+				Error::<T>::EvmAlreadyLinked.into()
+			});
 
 			let expected_message_hash = Self::get_expected_message_hash(address);
 
@@ -163,9 +167,10 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn unlink_evm_account(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
- 
 
-			let evm_linked_account = some_or_err!(SubstrateToEvm::<T>::get(who.clone()), || {Error::<T>::AccountNotLinked.into()});
+			let evm_linked_account = some_or_err!(SubstrateToEvm::<T>::get(who.clone()), || {
+				Error::<T>::AccountNotLinked.into()
+			});
 
 			// mutate the storage for unset linked evm and substrate
 			SubstrateToEvm::<T>::remove(who.clone());
@@ -212,7 +217,6 @@ pub mod pallet {
 		}
 
 		pub fn unlink_account_from_evm_account(address: H160) -> Result<T::AccountId, ()> {
-
 			let account = some_or_err!(EvmToSubstrate::<T>::get(address), || { () });
 
 			EvmToSubstrate::<T>::remove(address);
@@ -291,7 +295,6 @@ pub mod pallet {
 
 			let chain_id = T::ChainId::get();
 			let chain_id_string = u64_to_buffer_in_ascii(chain_id);
-
 
 			let message = b"I consent to bind my ETH address for time "
 				.iter()

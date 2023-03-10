@@ -59,7 +59,11 @@ pub mod pallet {
 		type Error = Error<T>;
 
 		fn get_user_fee_token(account: H160) -> H160 {
-			FeeTokenStorage::<T>::get(account)
+			let user_token = FeeTokenStorage::<T>::get(account)
+				.unwrap_or(T::SupportedTokensManager::get_default_token());
+
+			T::SupportedTokensManager::is_supported_token(user_token)
+				.then(|| user_token)
 				.unwrap_or(T::SupportedTokensManager::get_default_token())
 		}
 

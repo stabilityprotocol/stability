@@ -97,6 +97,7 @@ pub mod pallet {
 		fn validator_supports_fee_token(validator: H160, token: H160) -> bool {
 			ValidatorSupportFeeToken::<T>::get(validator, token)
 				.unwrap_or(token == T::SupportedTokensManager::get_default_token())
+				&& T::SupportedTokensManager::is_supported_token(token)
 		}
 
 		fn update_fee_token_acceptance(
