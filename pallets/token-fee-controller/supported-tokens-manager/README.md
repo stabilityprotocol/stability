@@ -2,6 +2,8 @@
 
 Manages the list of tokens in which fees can be paid and establish one of this list as a default token.
 
+The functions in the pallet are exported so the other pallets and precompiles can access them. This gives support to the `SupportedTokensManagerPrecompile`.
+
 ## Responsible for
 
 - Managing fee tokens on-boarding and off-boarding
