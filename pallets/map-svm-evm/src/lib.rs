@@ -18,7 +18,7 @@ use sp_io::hashing::keccak_256;
 
 use frame_support::dispatch::DispatchResultWithPostInfo;
 
-use stbl_tools::none_or_err;
+use stbl_tools::{none_or_err, some_or_err};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -152,14 +152,9 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn unlink_evm_account(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
+ 
 
-			let evm_linked_account_option = SubstrateToEvm::<T>::get(who.clone());
-
-			if let None = evm_linked_account_option {
-				return Err(Error::<T>::AccountNotLinked.into());
-			}
-
-			let evm_linked_account = evm_linked_account_option.unwrap();
+			let evm_linked_account = some_or_err!(SubstrateToEvm::<T>::get(who.clone()), || {Error::<T>::AccountNotLinked.into()});
 
 			// mutate the storage for unset linked evm and substrate
 			SubstrateToEvm::<T>::remove(who.clone());
@@ -206,16 +201,13 @@ pub mod pallet {
 		}
 
 		pub fn unlink_account_from_evm_account(address: H160) -> Result<T::AccountId, ()> {
-			let account = EvmToSubstrate::<T>::get(address);
 
-			if let None = account {
-				return Err(());
-			}
+			let account = some_or_err!(EvmToSubstrate::<T>::get(address), || { () });
 
 			EvmToSubstrate::<T>::remove(address);
-			SubstrateToEvm::<T>::remove(account.clone().unwrap());
+			SubstrateToEvm::<T>::remove(account.clone());
 
-			Ok(account.unwrap())
+			Ok(account)
 		}
 
 		pub fn initialize_linked_accounts(linked_accounts: &Vec<(T::AccountId, H160)>) {
