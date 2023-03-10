@@ -20,7 +20,12 @@ use super::*;
 
 use core::str::FromStr;
 
-use frame_support::{construct_runtime, parameter_types, traits::Everything};
+use frame_support::{
+	construct_runtime,
+	pallet_prelude::{StorageValue, ValueQuery},
+	parameter_types,
+	traits::{Everything, StorageInstance},
+};
 use sp_core::{H160, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
@@ -101,20 +106,38 @@ parameter_types! {
 
 pub struct MockSupportedTokensManager;
 
+struct MockStorageInstance;
+
+impl StorageInstance for MockStorageInstance {
+	fn pallet_prefix() -> &'static str {
+		"MockSupportedTokensManager"
+	}
+
+	const STORAGE_PREFIX: &'static str = "Tokens";
+}
+
+parameter_types! {
+	pub MockInitialTokens:Vec<H160> = vec![MockDefaultFeeToken::get(), MeaninglessTokenAddress::get()];
+}
+type MockStorageTokens =
+	StorageValue<MockStorageInstance, Vec<H160>, ValueQuery, MockInitialTokens>;
+
 impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTokensManager {
 	fn is_supported_token(token: H160) -> bool {
-		token == MockDefaultFeeToken::get() || token == MeaninglessTokenAddress::get()
+		MockStorageTokens::get().contains(&token)
 	}
 
 	fn get_supported_tokens() -> Vec<H160> {
-		vec![MockDefaultFeeToken::get(), MeaninglessTokenAddress::get()]
+		MockStorageTokens::get()
 	}
 
 	fn add_supported_token(_token: H160, _slot: H256) -> Result<(), Self::Error> {
+		MockStorageTokens::mutate(|x| x.push(_token));
 		Ok(())
 	}
 
 	fn remove_supported_token(_token: H160) -> Result<(), Self::Error> {
+		MockStorageTokens::mutate(|x| x.retain(|t| t != &_token));
 		Ok(())
 	}
 

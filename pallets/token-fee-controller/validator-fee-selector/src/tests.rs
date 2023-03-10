@@ -83,3 +83,23 @@ fn updated_token_conversion_rate() {
         ), conversion_rate);
     });
 }
+
+#[test]
+fn not_supported_by_validator_if_not_supported_by_chain() {
+    ExtBuilder::default().build().execute_with(|| {
+        let token = MeaninglessTokenAddress::get();
+
+        assert!(<ValidatorFeeSelector as crate::ValidatorFeeTokenController>::update_fee_token_acceptance(
+            MeaninglessAccount::get(),
+            token,
+            true,
+        ).is_ok());
+
+        assert!(MockSupportedTokensManager::remove_supported_token(MeaninglessTokenAddress::get()).is_ok());
+
+        assert_eq!(<ValidatorFeeSelector as crate::ValidatorFeeTokenController>::validator_supports_fee_token(
+            MeaninglessAccount::get(),
+            token,
+        ), false);
+    });
+}
