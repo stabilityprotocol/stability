@@ -4191,6 +4191,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-custom"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-dynamic-fee"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/frontier?branch=polkadot-v0.9.36#a032072a623417d3febdcd060464f885bd76103e"
@@ -7822,6 +7836,7 @@ dependencies = [
  "pallet-balances",
  "pallet-base-fee",
  "pallet-collective",
+ "pallet-custom",
  "pallet-dynamic-fee",
  "pallet-ethereum",
  "pallet-evm",
