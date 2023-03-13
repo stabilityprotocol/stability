@@ -132,10 +132,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("node-stabilty"),
 	impl_name: create_runtime_str!("node-stabilty"),
 	authoring_version: 1,
-	spec_version: 2,
+	spec_version: 3,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 1,
+	transaction_version: 2,
 	state_version: 1,
 };
 
@@ -162,6 +162,23 @@ parameter_types! {
 		::max(MAXIMUM_BLOCK_LENGTH);
 	pub const SS58Prefix: u8 = 42;
 }
+
+
+mod custom_migration {
+	use super::*;
+
+	use frame_support::{traits::OnRuntimeUpgrade, weights::Weight};
+	use pallet_custom::migrations::migrate_to_v2;
+
+	pub struct Upgrade;
+	impl OnRuntimeUpgrade for Upgrade {
+		fn on_runtime_upgrade() -> Weight {
+			migrate_to_v2::<Runtime>();
+			Weight::default()
+		}
+	}
+}
+
 
 // Configure FRAME pallets to include in runtime.
 
@@ -621,6 +638,7 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
+	custom_migration::Upgrade
 >;
 
 impl fp_self_contained::SelfContainedCall for RuntimeCall {

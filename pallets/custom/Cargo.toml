@@ -12,6 +12,7 @@ codec = { package = "parity-scale-codec", workspace = true }
 scale-info = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
+log = { workspace = true }
 
 [features]
 default = ["std"]
@@ -21,5 +22,6 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
     "sp-runtime/std",
+    "log/std",
     "sp-std/std",
 ]
