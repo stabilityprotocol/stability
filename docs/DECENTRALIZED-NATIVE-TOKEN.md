@@ -18,4 +18,25 @@ To select the token and its conversion rate, the user has to interact with `Vali
 
 ## Map validators address to EVM address
 
-todo gabi
+Stability validators have to sign the message: 
+
+`I consent to bind my ETH address for time ${nonce} in chain: ${chainId}`
+
+- *nonce*: Number of times the account has been linked in this chain.
+- *chainId*: Identifier of the chain. You can get it by calling the RPC method `eth_chainId`
+
+Once the message is signed, validators must submit the signature using the extrinsic `MapSvmEvm.link_evm_account`.
+
+If the extrinsic execution succeeds, the validator account is linked to the EVM account.
+
+If the validators wish to change the linked EVM address, it has two options: 
+
+The first is a call to the extrinsic `MapSvmEvm.unlink_evm_account`.
+
+The second option is to call the method `unLink` in the `MapSvmEvmController` EVM contract at `0x0000000000000000000000000000000000000804` with your EVM linked account.
+
+If the validator wants to link a smart contract, it is possible using the ERC1271.
+
+If you want to read a more detailed guide about how to link a substrate account to an EVM account, you can read the pallet `map-svm-evm` docs.
+
+
