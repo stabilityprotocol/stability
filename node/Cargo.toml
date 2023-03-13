@@ -23,7 +23,6 @@ serde = { workspace = true }
 
 # Substrate
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", workspace = true }
-sc-basic-authorship = { workspace = true }
 sc-cli = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
@@ -53,6 +52,7 @@ sp-state-machine = { workspace = true, features = ["std"] }
 sp-timestamp = { workspace = true, features = ["std"] }
 sp-transaction-pool = { workspace = true, features = ["std"] }
 sp-trie = { workspace = true, features = ["std"] }
+sp-keystore = { workspace = true, features = ["std"] }
 pallet-im-online = { workspace = true }
 # These dependencies are used for RPC
 frame-system-rpc-runtime-api = { workspace = true }
@@ -77,6 +77,10 @@ fp-evm = { workspace = true, features = ["std"] }
 fp-rpc = { workspace = true, features = ["std"] }
 fp-storage = { workspace = true, features = ["std"] }
 stability-runtime = { path = "./../runtime", features = ["std"] }
+
+# Stability
+stbl-cli-authorship = { workspace = true }
+stbl-primitives-fee-compatible-api = { workspace = true, features = ["std"] }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }

@@ -7,11 +7,18 @@ use pallet_evm_precompile_modexp::Modexp;
 use pallet_evm_precompile_sha3fips::Sha3FIPS256;
 use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256};
 use precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata};
+use precompile_fee_token_selector::FeeTokenPrecompile;
+use precompile_map_svm_evm_controller::MapSvmEvmControllerPrecompile;
+use precompile_supported_tokens_manager::SupportedTokensManagerPrecompile;
 use precompile_utils::precompile_set::*;
+use precompile_validator_fee_selector::ValidatorFeeManagerPrecompile;
 use precompile_validator_controller::ValidatorControllerPrecompile;
 use sp_core::H160;
 
-use crate::stability_config::DEFAULT_OWNER;
+use crate::{
+	stability_config::{DEFAULT_FEE_TOKEN, DEFAULT_OWNER},
+	FeeController as StabilityFeeController,
+};
 
 pub struct NativeErc20Metadata;
 
@@ -50,10 +57,11 @@ parameter_types! {
 	pub ForeignAssetPrefix: &'static [u8] = FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX;
 	pub LocalAssetPrefix: &'static [u8] = LOCAL_ASSET_PRECOMPILE_ADDRESS_PREFIX;
 	pub DefaultOwner:H160 = H160::from_str(DEFAULT_OWNER).expect("invalid address");
+	pub DefaultToken:H160 = H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address");
 }
 
 // Set of Stability precompiles
-pub type StabilityPrecompiles<R> = PrecompileSetBuilder<
+pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 	R,
 	(
 		// Skip precompiles if out of range.
@@ -79,7 +87,27 @@ pub type StabilityPrecompiles<R> = PrecompileSetBuilder<
 					AddressU64<2048>,
 					Erc20BalancesPrecompile<R, NativeErc20Metadata, DefaultOwner>,
 				>,
-				PrecompileAt<AddressU64<2049>, ValidatorControllerPrecompile<R, DefaultOwner>>,
+				PrecompileAt<
+					AddressU64<2049>,
+					SupportedTokensManagerPrecompile<
+						R,
+						<FeeController as StabilityFeeController>::Token,
+						DefaultOwner,
+					>,
+				>,
+				PrecompileAt<
+					AddressU64<2050>,
+					ValidatorFeeManagerPrecompile<
+						R,
+						<FeeController as StabilityFeeController>::Validator,
+					>,
+				>,
+				PrecompileAt<
+					AddressU64<2051>,
+					FeeTokenPrecompile<R, <FeeController as StabilityFeeController>::User>,
+				>,
+				PrecompileAt<AddressU64<2052>, MapSvmEvmControllerPrecompile<R>>,
+				PrecompileAt<AddressU64<2053>, ValidatorControllerPrecompile<R, DefaultOwner>>,
 			),
 		>,
 	),

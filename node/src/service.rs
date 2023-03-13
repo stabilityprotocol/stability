@@ -16,6 +16,7 @@ use sp_core::U256;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
 // Runtime
+use sc_service::KeystoreContainer;
 use stability_runtime::{opaque::Block, Hash, TransactionConverter};
 
 use crate::{
@@ -422,6 +423,7 @@ where
 				sealing,
 				client,
 				transaction_pool,
+				keystore_container,
 				select_chain,
 				block_import,
 				&task_manager,
@@ -435,10 +437,11 @@ where
 			return Ok(task_manager);
 		}
 
-		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+		let proposer_factory = stbl_cli_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool,
+			keystore_container.sync_keystore(),
 			prometheus_registry.as_ref(),
 			telemetry.as_ref().map(|x| x.handle()),
 		);
@@ -535,6 +538,7 @@ fn run_manual_seal_authorship<RuntimeApi, Executor>(
 	sealing: Sealing,
 	client: Arc<FullClient<RuntimeApi, Executor>>,
 	transaction_pool: Arc<FullPool<FullClient<RuntimeApi, Executor>>>,
+	keystore: KeystoreContainer,
 	select_chain: FullSelectChain,
 	block_import: BoxBlockImport<FullClient<RuntimeApi, Executor>>,
 	task_manager: &TaskManager,
@@ -549,10 +553,11 @@ where
 		RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
 	Executor: NativeExecutionDispatch + 'static,
 {
-	let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+	let proposer_factory = stbl_cli_authorship::ProposerFactory::new(
 		task_manager.spawn_handle(),
 		client.clone(),
 		transaction_pool.clone(),
+		keystore.sync_keystore(),
 		prometheus_registry,
 		telemetry.as_ref().map(|x| x.handle()),
 	);
