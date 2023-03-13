@@ -1,4 +1,4 @@
-// Copyright 2019-2022 Stability Solutions.
+// Copyright 2023 Stability Solutions.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -22,10 +22,8 @@
 use core::str::FromStr;
 
 use fp_evm::PrecompileHandle;
+use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
 use frame_support::parameter_types;
-use frame_support::{
-	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
-};
 
 use precompile_utils::prelude::*;
 use sp_core::H256;
@@ -73,8 +71,8 @@ where
 		match UserFeeTokenController::set_user_fee_token(msg_sender.into(), token_address.into()) {
 			Err(_) => {
 				return Err(revert(b"UserFeeTokenController: token not supported"));
-			},
-			_ => {},
+			}
+			_ => {}
 		};
 
 		log2(

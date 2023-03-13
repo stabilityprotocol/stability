@@ -1,4 +1,4 @@
-// Copyright 2019-2022 Stability Solutions.
+// Copyright 2023 Stability Solutions.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -173,7 +173,7 @@ where
 	#[precompile::public("isTokenSupported(address)")]
 	fn is_token_supported(handle: &mut impl PrecompileHandle, token: Address) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		
+
 		Ok(SupportedTokensManager::is_supported_token(token.into()))
 	}
 
