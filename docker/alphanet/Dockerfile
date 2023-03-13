@@ -18,6 +18,7 @@ COPY precompiles ./precompiles
 COPY pallets ./pallets
 COPY primitives ./primitives
 COPY client ./client
+COPY test-utils ./test-utils
 COPY Cargo.lock Cargo.toml ./
 
 
