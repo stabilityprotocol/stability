@@ -134,6 +134,7 @@ pallet-evm-precompile-bn128 = { workspace = true }
 precompile-utils = { workspace = true }
 precompile-balances-erc20 = { workspace = true }
 precompile-validator-controller = { workspace = true }
+precompile-validator-controller-2 = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }
 pallet-validator-set = { workspace = true }

@@ -7,6 +7,7 @@ members = [
     'runtime',
     'precompiles/balances-erc20',
     'precompiles/validator-controller',
+    'precompiles/validator-controller-2',
     'precompiles/utils',
     'pallets/root-controller',
     'pallets/validator-set',
@@ -140,6 +141,7 @@ pallet-evm-precompile-bn128 = { git = "https://github.com/paritytech/frontier", 
 precompile-utils = { path = "./precompiles/utils", default-features = false }
 precompile-balances-erc20 = { path = "./precompiles/balances-erc20", default-features = false }
 precompile-validator-controller = { path = "./precompiles/validator-controller", default-features = false }
+precompile-validator-controller-2 = { path = "./precompiles/validator-controller-2", default-features = false }
 pallet-root-controller = { path = "./pallets/root-controller", default-features = false }
 pallet-validator-set = { path = "./pallets/validator-set", default-features = false }
 pallet-custom = { path = "./pallets/custom", default-features = false }
