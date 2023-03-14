@@ -1,7 +1,7 @@
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde::{Deserialize, Serialize};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{H160, U256};
+use sp_core::{bytes::from_hex, H160, H256, U256};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use stability_runtime::{AccountId, GenesisConfig, Precompiles};
 use std::{collections::BTreeMap, str::FromStr, vec};
@@ -158,11 +158,10 @@ pub fn base_genesis(
 			phantom: Default::default(),
 			members: members.clone(),
 		},
-
+		// EVM compatibility
 		map_svm_evm: MapSvmEvmConfig {
 			linked_accounts: linked_accounts.clone(),
 		},
-		// EVM compatibility
 		evm_chain_id: EVMChainIdConfig { chain_id },
 		evm: EVMConfig {
 			accounts: {
