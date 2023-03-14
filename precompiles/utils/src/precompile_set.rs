@@ -506,7 +506,10 @@ where
 	}
 
 	fn used_addresses(&self) -> Vec<H160> {
-		self.inner.used_addresses()
+		let start = self.range.start().to_low_u64_be();
+		let end = self.range.end().to_low_u64_be();
+
+		{ start..=end }.map(H160::from_low_u64_be).collect()
 	}
 }
 

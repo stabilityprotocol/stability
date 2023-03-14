@@ -1,4 +1,4 @@
-// Copyright 2019-2022 Stability Solutions.
+// Copyright 2023 Stability Solutions.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
