@@ -22,6 +22,7 @@ members = [
     'pallets/token-fee-controller/supported-tokens-manager',
     'pallets/token-fee-controller/user-fee-selector',
     'pallets/token-fee-controller/validator-fee-selector',
+    'pallets/upgrade-runtime-proposal',
     'primitives/tools',
 	'pallets/root-controller',
     'pallets/map-svm-evm',
