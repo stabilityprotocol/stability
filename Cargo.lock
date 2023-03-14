@@ -4608,6 +4608,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-upgrade-runtime-proposal"
+version = "1.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-tools",
+ "syn",
+]
+
+[[package]]
 name = "pallet-user-fee-selector"
 version = "0.1.0"
 dependencies = [
@@ -8151,6 +8169,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-upgrade-runtime-proposal",
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
  "pallet-validator-set",
@@ -9102,23 +9121,6 @@ name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
-
-[[package]]
-name = "upgrade-runtime-proposal"
-version = "1.0.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "stbl-tools",
- "syn",
-]
 
 [[package]]
 name = "url"

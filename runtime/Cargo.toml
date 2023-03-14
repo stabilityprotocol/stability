@@ -62,6 +62,8 @@ std = [
     'pallet-validator-set/std',
     'pallet-session/std',
     'pallet-im-online/std',
+    'pallet-upgrade-runtime-proposal/std',
+    'stbl-primitives-fee-compatible-api/std',
     'runner/std',
 ]
 with-paritydb-weights = []
@@ -150,5 +152,6 @@ pallet-supported-tokens-manager = { workspace = true }
 precompile-map-svm-evm-controller = { workspace = true }
 precompile-supported-tokens-manager = { workspace = true }
 pallet-validator-set = { workspace = true }
+pallet-upgrade-runtime-proposal = { workspace = true }
 runner = { workspace = true }
 
