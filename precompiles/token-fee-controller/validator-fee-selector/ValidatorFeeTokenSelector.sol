@@ -2,17 +2,21 @@
 pragma solidity >=0.8.3;
 
 interface ValidatorFeeTokenSelector {
-    function setTokenAcceptance(address, bool) external;
+    function setTokenAcceptance(address tokenAddress, bool acceptance) external;
 
     function validatorSupportsToken(
-        address,
-        address
+        address validator,
+        address tokenAddress
     ) external view returns (bool);
 
-    function setTokenConversionRate(address, uint256, uint256) external;
+    function setTokenConversionRate(
+        address tokenAddress,
+        uint256 numerator,
+        uint256 denominator
+    ) external;
 
     function tokenConversionRate(
-        address,
-        address
+        address validator,
+        address tokenAddress
     ) external view returns (uint256, uint256);
 }
