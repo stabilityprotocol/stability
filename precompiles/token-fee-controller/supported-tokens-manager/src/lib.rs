@@ -30,6 +30,7 @@ use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
 use sp_core::{Get, H160, H256, U256};
 use sp_std::marker::PhantomData;
+use sp_std::vec::Vec;
 
 use pallet_balances::pallet::{
 	Instance1, Instance10, Instance11, Instance12, Instance13, Instance14, Instance15, Instance16,
@@ -168,6 +169,29 @@ where
 			Ok(_) => Ok(()),
 			Err(_) => Err(revert("SupportedTokensManager: Token is already supported")),
 		}
+	}
+
+	#[precompile::public("supportedTokens()")]
+	fn supported_tokens(handle: &mut impl PrecompileHandle) -> EvmResult<UnboundedBytes> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let supported_tokens = SupportedTokensManager::get_supported_tokens();
+
+		let bytes = UnboundedBytes::from(
+			supported_tokens
+				.len()
+				.as_bytes()
+				.iter()
+				.chain(
+					supported_tokens
+						.iter()
+						.flat_map(|token| token.as_bytes().iter()),
+				)
+				.cloned()
+				.collect::<Vec<_>>(),
+		);
+
+		Ok(bytes)
 	}
 
 	#[precompile::public("isTokenSupported(address)")]
