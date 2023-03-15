@@ -656,10 +656,13 @@ impl<O: Into<Result<RawOrigin<AccountId>, O>> + From<RawOrigin<AccountId>>, Acco
 
 }
 
-
+type EnsureRootOrMemberOfTechCollective= EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	EnsureMemberOfTechCollective<AccountId>,
+>;
 
 impl pallet_upgrade_runtime_proposal::Config for Runtime {
-	type ControlOrigin = EnsureMemberOfTechCollective<AccountId>;
+	type ControlOrigin = EnsureRootOrMemberOfTechCollective;
 	type MaxSizeOfCode = MaxSizeOfCode;
 }
 

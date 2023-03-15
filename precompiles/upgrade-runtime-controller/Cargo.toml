@@ -1,0 +1,48 @@
+[package]
+name = "precompile-upgrade-runtime-controller"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Substrate
+sp-core = { workspace = true }
+codec = { package = "parity-scale-codec", workspace = true }
+frame-system = { workspace = true }
+frame-support = { workspace = true }
+sp-std = { workspace = true }
+pallet-timestamp ={ workspace = true }
+
+# Frontier
+fp-evm = { workspace = true }
+pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
+
+# Stability
+pallet-upgrade-runtime-proposal = { workspace = true }
+precompile-utils = { workspace = true }
+
+[dev-dependencies]
+pallet-balances = { workspace = true }
+pallet-session = { workspace = true }
+sp-runtime = { workspace = true }
+precompile-utils = { path = "../utils", features = [ "testing" ] }
+scale-info = { version = "2.0", default-features = false, features = [ "derive" ] }
+sha3 = "0.10"
+sp-io = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+    "precompile-utils/std",
+    "sp-core/std",
+    "fp-evm/std",
+    "precompile-utils/std",
+    "pallet-upgrade-runtime-proposal/std",
+    "frame-system/std",
+    "frame-support/std",
+    "sp-std/std",
+    "sp-runtime/std",
+    "pallet-balances/std",
+    "pallet-session/std",
+]
