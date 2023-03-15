@@ -47,6 +47,8 @@ use frame_system::ensure_root;
 		NoProposedCode,
 		/// The block number to apply the code must be greater than the current block number
 		BlockNumberMustBeGreaterThanCurrentBlockNumber,
+		// Invalid code
+		InvalidCode,
 
 	}
 
@@ -65,6 +67,8 @@ use frame_system::ensure_root;
 			if !code_saved.is_empty() {
 				return Err(Error::<T>::ProposalInProgress.into());
 			}
+
+
 
 			<ProposedCode<T>>::try_mutate::<(), Error<T>, _>(|code_saved|  {
 				*code_saved =  BoundedVec::<u8, T::MaxSizeOfCode>::try_from(code).map_err(|_| Error::<T>::FailedToSaveCode)?;
@@ -88,6 +92,8 @@ use frame_system::ensure_root;
 				return Err(Error::<T>::NoProposedCode.into());
 			}
 
+			frame_system::Pallet::<T>::can_set_code(&code_saved.to_vec()).map_err(|_| Error::<T>::InvalidCode)?;
+
 			let current_block = frame_system::Pallet::<T>::block_number();
 
 			if current_block >= block_number {
@@ -109,7 +115,6 @@ use frame_system::ensure_root;
 			if <ProposedCode<T>>::get().is_empty() {
 				return Err(Error::<T>::NoProposedCode.into());
 			}
-
 
 			<ProposedCode<T>>::kill();
 			<ApplicationBlockNumber<T>>::kill();
