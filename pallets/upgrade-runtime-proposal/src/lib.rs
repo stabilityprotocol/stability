@@ -15,6 +15,7 @@ use frame_support::dispatch::UnfilteredDispatchable;
 pub mod pallet {
 	use super::*;
 	use frame_support::{pallet_prelude::{*}, BoundedVec};
+use frame_system::ensure_root;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -42,6 +43,10 @@ pub mod pallet {
 		ProposalInProgress,
 		/// Fail when trying to save the code
 		FailedToSaveCode,
+		/// Must be a proposed code to set the block number to apply
+		NoProposedCode,
+		/// The block number to apply the code must be greater than the current block number
+		BlockNumberMustBeGreaterThanCurrentBlockNumber,
 
 	}
 
@@ -75,10 +80,40 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			block_number: T::BlockNumber
 		) -> DispatchResultWithPostInfo {
-			T::ControlOrigin::ensure_origin(origin)?;
+			ensure_root(origin)?;
+
+			let code_saved =  <ProposedCode<T>>::get();
+
+			if code_saved.is_empty() {
+				return Err(Error::<T>::NoProposedCode.into());
+			}
+
+			let current_block = frame_system::Pallet::<T>::block_number();
+
+			if current_block >= block_number {
+				return Err(Error::<T>::BlockNumberMustBeGreaterThanCurrentBlockNumber.into());
+			}
 
 			<ApplicationBlockNumber<T>>::put(block_number);
 
+			Ok(Pays::No.into())
+		}
+
+		#[pallet::call_index(2)]
+		#[pallet::weight(0)]
+		pub fn reject_proposed_code(
+			origin: OriginFor<T>
+		) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+
+			if <ProposedCode<T>>::get().is_empty() {
+				return Err(Error::<T>::NoProposedCode.into());
+			}
+
+
+			<ProposedCode<T>>::kill();
+			<ApplicationBlockNumber<T>>::kill();
+	
 			Ok(Pays::No.into())
 		}
 	}
@@ -92,10 +127,6 @@ pub mod pallet {
 				if n == application_block_number {
 					let code = code_saved.to_vec();
 
-					Pallet::<T>::clear_proposed_code();
-					Pallet::<T>::clear_application_block_number();
-
-
 					let call = frame_system::Call::<T>::set_code {
 						code: code.into()
 					};
@@ -108,6 +139,9 @@ pub mod pallet {
 					else {
 						log::info!("Runtime upgraded");
 					}
+
+					Pallet::<T>::clear_proposed_code();
+					Pallet::<T>::clear_application_block_number();
 
 				}
 			}

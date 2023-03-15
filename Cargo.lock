@@ -5094,6 +5094,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "precompile-upgrade-runtime-controller"
+version = "0.1.0"
+dependencies = [
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-session",
+ "pallet-timestamp",
+ "pallet-upgrade-runtime-proposal",
+ "parity-scale-codec",
+ "precompile-utils",
+ "scale-info",
+ "sha3",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "precompile-utils"
 version = "0.1.0"
 dependencies = [
@@ -8178,6 +8200,7 @@ dependencies = [
  "precompile-fee-token-selector",
  "precompile-map-svm-evm-controller",
  "precompile-supported-tokens-manager",
+ "precompile-upgrade-runtime-controller",
  "precompile-utils",
  "precompile-validator-controller",
  "precompile-validator-fee-selector",

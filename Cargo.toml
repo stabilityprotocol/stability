@@ -15,6 +15,7 @@ members = [
     'precompiles/token-fee-controller/validator-fee-selector',
     'precompiles/token-fee-controller/supported-tokens-manager',
     'precompiles/map-svm-evm-controller',
+    'precompiles/upgrade-runtime-controller',
     'primitives/tools',
     'primitives/fee-compatible-api',
     'pallets/erc20-manager',
@@ -191,6 +192,8 @@ pallet-upgrade-runtime-proposal = { path = "./pallets/upgrade-runtime-proposal",
 stbl-tools = { path = "./primitives/tools", default-features = false }
 precompile-map-svm-evm-controller = { path = "./precompiles/map-svm-evm-controller", default-features = false }
 precompile-supported-tokens-manager = { path = "./precompiles/token-fee-controller/supported-tokens-manager", default-features = false }
+precompile-upgrade-runtime-controller = { path = "./precompiles/upgrade-runtime-controller", default-features = false }
+
 
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }
