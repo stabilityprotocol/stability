@@ -883,7 +883,33 @@ impl_runtime_apis! {
 
 		fn account_basic(address: H160) -> EVMAccount {
 			let (account, _) = EVM::account_basic(&address);
-			account
+			// we get the user fee token address
+			let address_erc20 = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(address);
+			// call to the EVM for getting the balance of the user
+			let balance = <Runtime as pallet_evm::Config>::Runner::call(
+				address,
+				address_erc20,
+				stbl_tools::eth::generate_calldata("balanceOf(address)", &vec![address.into()]),
+				0.into(),
+				u64::MAX,
+				None,
+				None,
+				None,
+				Default::default(),
+				false,
+				false,
+				&pallet_evm::EvmConfig::istanbul(),
+			)
+			.unwrap()
+			.value
+			.as_slice()
+			.try_into()
+			.unwrap();
+
+			EVMAccount {
+				nonce: account.nonce,
+				balance,
+			}
 		}
 
 		fn gas_price() -> U256 {
