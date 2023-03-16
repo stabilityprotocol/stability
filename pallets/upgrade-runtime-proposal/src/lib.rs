@@ -4,18 +4,23 @@ pub use pallet::*;
 
 use sp_std::prelude::*;
 
+#[cfg(test)]
+mod mock;
 
-use frame_support::traits::EnsureOrigin;
-use frame_system::pallet_prelude::OriginFor;
-use frame_system::pallet_prelude::BlockNumberFor;
+#[cfg(test)]
+mod tests;
+
 use frame_support::dispatch::UnfilteredDispatchable;
-
+use frame_support::traits::EnsureOrigin;
+use frame_system::pallet_prelude::BlockNumberFor;
+use frame_system::pallet_prelude::OriginFor;
+use sp_runtime::traits::BadOrigin;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{pallet_prelude::{*}, BoundedVec};
-use frame_system::ensure_root;
+	use frame_support::{pallet_prelude::*, BoundedVec};
+	use frame_system::ensure_root;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -31,11 +36,12 @@ use frame_system::ensure_root;
 
 	#[pallet::storage]
 	#[pallet::getter(fn proposed_code)]
-	pub type ProposedCode<T: Config> = StorageValue<_, BoundedVec<u8, T::MaxSizeOfCode>, ValueQuery>;
+	pub type ProposedCode<T: Config> =
+		StorageValue<_, BoundedVec<u8, T::MaxSizeOfCode>, OptionQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn application_block_number)]
-	pub type ApplicationBlockNumber<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
+	pub type ApplicationBlockNumber<T: Config> = StorageValue<_, T::BlockNumber, OptionQuery>;
 
 	#[pallet::error]
 	pub enum Error<T> {
@@ -49,32 +55,29 @@ use frame_system::ensure_root;
 		BlockNumberMustBeGreaterThanCurrentBlockNumber,
 		// Invalid code
 		InvalidCode,
-
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
-		pub fn propose_code(
-			origin: OriginFor<T>,
-			code: Vec<u8>
-		) -> DispatchResultWithPostInfo {
+		pub fn propose_code(origin: OriginFor<T>, code: Vec<u8>) -> DispatchResultWithPostInfo {
 			T::ControlOrigin::ensure_origin(origin)?;
 
-			let code_saved =  <ProposedCode<T>>::get();
-			
-			if !code_saved.is_empty() {
-				return Err(Error::<T>::ProposalInProgress.into());
-			}
+			stbl_tools::none_or_err!(<ProposedCode<T>>::get(), |_| {
+				Error::<T>::ProposalInProgress.into()
+			});
 
+			frame_system::Pallet::<T>::can_set_code(&code).map_err(|_| Error::<T>::InvalidCode)?;
 
-
-			<ProposedCode<T>>::try_mutate::<(), Error<T>, _>(|code_saved|  {
-				*code_saved =  BoundedVec::<u8, T::MaxSizeOfCode>::try_from(code).map_err(|_| Error::<T>::FailedToSaveCode)?;
+			<ProposedCode<T>>::try_mutate::<(), Error<T>, _>(|code_saved| {
+				*code_saved = Some(
+					BoundedVec::<u8, T::MaxSizeOfCode>::try_from(code)
+						.map_err(|_| Error::<T>::FailedToSaveCode)?,
+				);
 				Ok(())
 			})?;
-	
+
 			Ok(Pays::No.into())
 		}
 
@@ -82,17 +85,13 @@ use frame_system::ensure_root;
 		#[pallet::weight(0)]
 		pub fn set_block_application(
 			origin: OriginFor<T>,
-			block_number: T::BlockNumber
+			block_number: T::BlockNumber,
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			let code_saved =  <ProposedCode<T>>::get();
+			let code_saved = <ProposedCode<T>>::get();
 
-			if code_saved.is_empty() {
-				return Err(Error::<T>::NoProposedCode.into());
-			}
-
-			frame_system::Pallet::<T>::can_set_code(&code_saved.to_vec()).map_err(|_| Error::<T>::InvalidCode)?;
+			stbl_tools::some_or_err!(code_saved, || { Error::<T>::NoProposedCode.into() });
 
 			let current_block = frame_system::Pallet::<T>::block_number();
 
@@ -107,18 +106,16 @@ use frame_system::ensure_root;
 
 		#[pallet::call_index(2)]
 		#[pallet::weight(0)]
-		pub fn reject_proposed_code(
-			origin: OriginFor<T>
-		) -> DispatchResultWithPostInfo {
+		pub fn reject_proposed_code(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			if <ProposedCode<T>>::get().is_empty() {
-				return Err(Error::<T>::NoProposedCode.into());
-			}
+			stbl_tools::some_or_err!(<ProposedCode<T>>::get(), || {
+				Error::<T>::NoProposedCode.into()
+			});
 
 			<ProposedCode<T>>::kill();
 			<ApplicationBlockNumber<T>>::kill();
-	
+
 			Ok(Pays::No.into())
 		}
 	}
@@ -126,40 +123,46 @@ use frame_system::ensure_root;
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(n: T::BlockNumber) -> Weight {
-			let code_saved =  <ProposedCode<T>>::get();
-			if !code_saved.is_empty() {
-				let application_block_number = <ApplicationBlockNumber<T>>::get();
-				if n == application_block_number {
-					let code = code_saved.to_vec();
+			let code_saved_option = <ProposedCode<T>>::get();
+			let application_block_number_option = <ApplicationBlockNumber<T>>::get();
 
-					let call = frame_system::Call::<T>::set_code {
-						code: code.into()
-					};
-					
-					let result = call.dispatch_bypass_filter(frame_system::RawOrigin::Root.into());
-
-					if result.is_err() {
-						log::error!("Failed to upgrade runtime");
-					}
-					else {
-						log::info!("Runtime upgraded");
-					}
-
-					Pallet::<T>::clear_proposed_code();
-					Pallet::<T>::clear_application_block_number();
-
-				}
+			if code_saved_option.is_none() {
+				return Weight::zero();
 			}
+			let code = code_saved_option.unwrap().to_vec();
+
+			if application_block_number_option.is_none() {
+				return Weight::zero();
+			}
+			let application_block_number = application_block_number_option.unwrap();
+
+			if n != application_block_number {
+				return Weight::zero();
+			}
+
+			let call = frame_system::Call::<T>::set_code { code: code.into() };
+
+			let result = call.dispatch_bypass_filter(frame_system::RawOrigin::Root.into());
+
+			if result.is_err() {
+				log::error!("Failed to upgrade runtime");
+			} else {
+				log::info!("Runtime upgraded");
+			}
+
+			Pallet::<T>::clear_proposed_code();
+			Pallet::<T>::clear_application_block_number();
+
 			Weight::zero()
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
-		pub fn get_proposed_code() -> Vec<u8> {
-			<ProposedCode<T>>::get().to_vec()
+		pub fn get_proposed_code() -> Option<Vec<u8>> {
+			<ProposedCode<T>>::get().map(|code| code.to_vec())
 		}
 
-		pub fn get_application_block_number() -> T::BlockNumber {
+		pub fn get_application_block_number() -> Option<T::BlockNumber> {
 			<ApplicationBlockNumber<T>>::get()
 		}
 
@@ -174,7 +177,5 @@ use frame_system::ensure_root;
 		pub fn clear_application_block_number() {
 			<ApplicationBlockNumber<T>>::kill();
 		}
-
 	}
-
 }
