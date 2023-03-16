@@ -4,7 +4,7 @@ Stability has no native token in the way that there is no emitted token by Stabi
 
 # How does the user select the token?
 
-Stability users should select the token in which the fees are to be paid. If no token is specified, the default token will be chosen. For calculating the transaction fee in the fee token, a conversion rate decided by the validator is applied to the native units. For example, the native gas price is 50 gwei, and the fee will be paid in USDC. The total fee would be `total_fees = (validator_USDT_conversion_rate * native_gas_price)`.
+Stability users should select the token in which the fees are to be paid. If no token is specified, the default token will be chosen. For calculating the transaction fee in the fee token, a conversion rate decided by the validator is applied to the native units. For example, the native gas price is 50 gwei, and the fee will be paid in USDC with a 1.2x of conversion rate, so `gas_price = 50 * 1.2 / 1e18 = 0.00000006 USDC`. The total fee would be `total fee = gas_price * (total_gas_used + priority_fee)` where `gas_price = (validator_USDC_conversion_rate * native_gas_price)`.
 
 To select the token, the user has to interact with `FeeTokenPrecompile` at `0x0000000000000000000000000000000000000803`.
 
@@ -18,18 +18,18 @@ To select the token and its conversion rate, the user has to interact with `Vali
 
 ## Map validators address to EVM address
 
-Stability validators have to sign the message: 
+Stability validators have to sign the message:
 
 `I consent to bind my ETH address for time ${nonce} in chain: ${chainId}`
 
-- *nonce*: Number of times the account has been linked in this chain.
-- *chainId*: Identifier of the chain. You can get it by calling the RPC method `eth_chainId`
+- _nonce_: Number of times the account has been linked in this chain.
+- _chainId_: Identifier of the chain. You can get it by calling the RPC method `eth_chainId`
 
 Once the message is signed, validators must submit the signature using the extrinsic `MapSvmEvm.link_evm_account`.
 
 If the extrinsic execution succeeds, the validator account is linked to the EVM account.
 
-If the validators wish to change the linked EVM address, it has two options: 
+If the validators wish to change the linked EVM address, it has two options:
 
 The first is a call to the extrinsic `MapSvmEvm.unlink_evm_account`.
 
@@ -38,5 +38,3 @@ The second option is to call the method `unLink` in the `MapSvmEvmController` EV
 If the validator wants to link a smart contract, it is possible using the ERC1271.
 
 If you want to read a more detailed guide about how to link a substrate account to an EVM account, you can read the pallet `map-svm-evm` docs.
-
-
