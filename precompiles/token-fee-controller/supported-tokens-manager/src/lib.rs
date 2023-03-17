@@ -20,6 +20,7 @@
 #![cfg_attr(test, feature(assert_matches))]
 
 use core::str::FromStr;
+use sp_std::vec::Vec;
 
 use fp_evm::PrecompileHandle;
 use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
@@ -168,6 +169,15 @@ where
 			Ok(_) => Ok(()),
 			Err(_) => Err(revert("SupportedTokensManager: Token is already supported")),
 		}
+	}
+
+	#[precompile::public("supportedTokens()")]
+	fn supported_tokens(handle: &mut impl PrecompileHandle) -> EvmResult<Vec<Address>> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let supported_tokens = SupportedTokensManager::get_supported_tokens();
+
+		Ok(supported_tokens.iter().map(|x| Address(*x)).collect())
 	}
 
 	#[precompile::public("isTokenSupported(address)")]
