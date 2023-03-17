@@ -13,6 +13,7 @@ frame-system = { workspace = true }
 frame-support = { workspace = true }
 sp-std = { workspace = true }
 pallet-timestamp ={ workspace = true }
+sp-version = { workspace = true }
 
 # Frontier
 fp-evm = { workspace = true }
@@ -30,6 +31,7 @@ precompile-utils = { path = "../utils", features = [ "testing" ] }
 scale-info = { version = "2.0", default-features = false, features = [ "derive" ] }
 sha3 = "0.10"
 sp-io = { workspace = true }
+substrate-test-runtime-client = { workspace = true }
 
 [features]
 default = [ "std" ]

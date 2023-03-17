@@ -14,7 +14,6 @@ use frame_support::dispatch::UnfilteredDispatchable;
 use frame_support::traits::EnsureOrigin;
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::pallet_prelude::OriginFor;
-use sp_runtime::traits::BadOrigin;
 
 #[frame_support::pallet]
 pub mod pallet {
