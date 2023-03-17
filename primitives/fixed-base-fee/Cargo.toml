@@ -1,0 +1,21 @@
+[package]
+name = "stbl-primitives-fixed-base-fee"
+version = "1.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sp-runtime = { workspace = true}
+sp-api = { workspace = true }
+sp-core = { workspace = true }
+frame-support = { workspace = true }
+fp-evm = { workspace = true }
+pallet-base-fee = { workspace = true }
+
+[features]
+default = ['std']
+std = [
+    'sp-runtime/std',
+    'sp-api/std',
+]

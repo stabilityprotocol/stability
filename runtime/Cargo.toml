@@ -45,7 +45,6 @@ std = [
     'pallet-transaction-payment-rpc-runtime-api/std',
     'fp-rpc/std',
     'fp-self-contained/std',
-    'pallet-base-fee/std',
     'pallet-dynamic-fee/std',
     'pallet-ethereum/std',
     'pallet-evm/std',
@@ -121,7 +120,6 @@ pallet-im-online = { workspace = true }
 fp-rpc = { workspace = true }
 fp-self-contained = { workspace = true }
 # Frontier FRAME
-pallet-base-fee = { workspace = true }
 pallet-dynamic-fee = { workspace = true }
 pallet-ethereum = { workspace = true }
 pallet-evm = { workspace = true }
@@ -140,6 +138,7 @@ precompile-validator-fee-selector = { workspace = true }
 pallet-user-fee-selector = { workspace = true }
 pallet-validator-fee-selector = { workspace = true }
 stbl-tools = { workspace = true }
+stbl-primitives-fixed-base-fee = { workspace = true }
 precompile-validator-controller = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }

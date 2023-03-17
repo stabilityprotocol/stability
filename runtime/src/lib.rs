@@ -397,10 +397,12 @@ const WEIGHT_PER_GAS: u64 = 20_000;
 parameter_types! {
 	pub PrecompilesValue: StabilityPrecompiles<Runtime, StabilityFeeController> = StabilityPrecompiles::<_, StabilityFeeController>::new();
 	pub WeightPerGas: Weight = Weight::from_ref_time(WEIGHT_PER_GAS);
+	pub WeightBaseFee: Weight = RuntimeDbWeight::get().reads(1);
+	pub GasBaseFee: U256 = U256::from(1_000_000_000u128);
 }
 
 impl pallet_evm::Config for Runtime {
-	type FeeCalculator = BaseFee;
+	type FeeCalculator = stbl_primitives_fixed_base_fee::FixedBaseFee<GasBaseFee, WeightBaseFee>;
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
 	type WeightPerGas = WeightPerGas;
 	type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
@@ -451,31 +453,6 @@ parameter_types! {
 
 impl pallet_dynamic_fee::Config for Runtime {
 	type MinGasPriceBoundDivisor = BoundDivision;
-}
-
-parameter_types! {
-	pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
-	pub DefaultElasticity: Permill = Permill::from_parts(125_000);
-}
-
-pub struct BaseFeeThreshold;
-impl pallet_base_fee::BaseFeeThreshold for BaseFeeThreshold {
-	fn lower() -> Permill {
-		Permill::zero()
-	}
-	fn ideal() -> Permill {
-		Permill::from_parts(500_000)
-	}
-	fn upper() -> Permill {
-		Permill::from_parts(1_000_000)
-	}
-}
-
-impl pallet_base_fee::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Threshold = BaseFeeThreshold;
-	type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
-	type DefaultElasticity = DefaultElasticity;
 }
 
 impl pallet_hotfix_sufficients::Config for Runtime {
@@ -652,7 +629,6 @@ construct_runtime!(
 		EVM: pallet_evm,
 		EVMChainId: pallet_evm_chain_id,
 		DynamicFee: pallet_dynamic_fee,
-		BaseFee: pallet_base_fee,
 		HotfixSufficients: pallet_hotfix_sufficients,
 		UserFeeSelector: pallet_user_fee_selector,
 		ValidatorFeeSelector: pallet_validator_fee_selector,
@@ -1015,7 +991,7 @@ impl_runtime_apis! {
 		}
 
 		fn elasticity() -> Option<Permill> {
-			Some(BaseFee::elasticity())
+			Some(Permill::from_percent(0))
 		}
 
 		fn gas_limit_multiplier_support() {}
