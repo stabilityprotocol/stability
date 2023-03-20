@@ -4,7 +4,7 @@ Stability has no native token in the way that there is no emitted token by Stabi
 
 # How does the user select the token?
 
-Stability users should select the token in which the fees are to be paid. If no token is specified, the default token will be chosen. For calculating the transaction fee in the fee token, a conversion rate decided by the validator is applied to the native units. For example, the native gas price is 50 gwei, and the fee will be paid in USDC with a 1.2x of conversion rate, so `gas_price = 50 * 1.2 / 1e18 = 0.00000006 USDC`. The total fee would be `total fee = gas_price * (total_gas_used + priority_fee)` where `gas_price = (validator_USDC_conversion_rate * native_gas_price)`.
+Stability users should select the token in which the fees are to be paid. If no token is specified, the default token will be chosen. For calculating the transaction fee in the fee token, a conversion rate decided by the validator is applied to the native units. For example, the native gas price is 50 gwei, and the fee will be paid in USDC with a 1.2x of conversion rate, so `gas_price = 50 * 1.2 / 1e18 = 0.00000006 USDC`. The Total Fee math would be `total_fee = gas_used * (base_fee + priority_fee) * conversion_rate`, and for the Gas Price `gas_price = (base_fee + priority_fee) * conversion_rate`.
 
 To select the token, the user has to interact with `FeeTokenPrecompile` at `0x0000000000000000000000000000000000000803`.
 
