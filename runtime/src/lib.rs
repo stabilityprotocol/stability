@@ -397,6 +397,8 @@ const WEIGHT_PER_GAS: u64 = 20_000;
 parameter_types! {
 	pub PrecompilesValue: StabilityPrecompiles<Runtime, StabilityFeeController> = StabilityPrecompiles::<_, StabilityFeeController>::new();
 	pub WeightPerGas: Weight = Weight::from_ref_time(WEIGHT_PER_GAS);
+	pub FeeTokenController: UserFeeTokenController = pallet_user_fee_selector::Pallet<Runtime>;
+	pub Runner = StabilityRunner<Runtime, FeeTokenController>;
 }
 
 impl pallet_evm::Config for Runtime {
@@ -413,7 +415,7 @@ impl pallet_evm::Config for Runtime {
 	type PrecompilesValue = PrecompilesValue;
 	type ChainId = EVMChainId;
 	type BlockGasLimit = BlockGasLimit;
-	type Runner = StabilityRunner<Self>;
+	type Runner = StabilityRunner<Self, UserFeeTokenController>;
 	type OnChargeTransaction = pallet_evm_fee_controller::Pallet<Self>;
 	type FindAuthor = FindAuthorLinkedOrTruncated<Aura>;
 }

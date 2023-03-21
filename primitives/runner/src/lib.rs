@@ -18,13 +18,15 @@ use pallet_evm::{
 	AccountCodes, AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, Error,
 	Event, FeeCalculator, OnChargeEVMTransaction, PrecompileSet, Runner as RunnerT, RunnerError,
 };
+use pallet_user_fee_selector::UserFeeTokenController;
 use sp_core::{Get, H160, H256, U256};
 use sp_std::{
 	boxed::Box,
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-	mem,
+	mem, vec,
 	vec::Vec,
 };
+use stbl_tools;
 
 #[cfg(test)]
 mod mock;
@@ -35,11 +37,11 @@ mod tests;
 environmental::thread_local_impl!(static IN_EVM: environmental::RefCell<bool> = environmental::RefCell::new(false));
 
 #[derive(Default)]
-pub struct Runner<T: Config> {
-	_marker: PhantomData<T>,
+pub struct Runner<T: Config, U: UserFeeTokenController> {
+	_marker: PhantomData<(T, U)>,
 }
 
-impl<T: Config> Runner<T>
+impl<T: Config, U: UserFeeTokenController> Runner<T, U>
 where
 	BalanceOf<T>: TryFrom<U256> + Into<U256>,
 {
@@ -282,7 +284,7 @@ where
 	}
 }
 
-impl<T: Config> RunnerT<T> for Runner<T>
+impl<T: Config, U: UserFeeTokenController> RunnerT<T> for Runner<T, U>
 where
 	BalanceOf<T>: TryFrom<U256> + Into<U256>,
 {
@@ -366,18 +368,46 @@ where
 				config,
 			)?;
 		}
-		let precompiles = T::PrecompilesValue::get();
-		Self::execute(
-			source,
-			value,
-			gas_limit,
-			max_fee_per_gas,
-			max_priority_fee_per_gas,
-			config,
-			&precompiles,
-			is_transactional,
-			|executor| executor.transact_call(source, target, value, input, gas_limit, access_list),
-		)
+		if input.len() > 2 {
+			let precompiles = T::PrecompilesValue::get();
+			Self::execute(
+				source,
+				value,
+				gas_limit,
+				max_fee_per_gas,
+				max_priority_fee_per_gas,
+				config,
+				&precompiles,
+				is_transactional,
+				|executor| {
+					executor.transact_call(source, target, value, input, gas_limit, access_list)
+				},
+			)
+		} else {
+			// we get the user fee token address from the source account
+			let user_token_address = U::get_user_fee_token(source);
+			// substract the value from the user
+			let mut tmp = [0u8; 32];
+			_value.to_big_endian(&mut tmp);
+
+			Self::call(
+				source,
+				user_token_address,
+				stbl_tools::eth::generate_calldata(
+					"transfer(address,uint256)",
+					&vec![target.into(), H256::from_slice(&tmp[..])],
+				),
+				0.into(),
+				u64::MAX,
+				None,
+				None,
+				None,
+				Default::default(),
+				false,
+				false,
+				&pallet_evm::EvmConfig::istanbul(),
+			)
+		}
 	}
 
 	fn create(
