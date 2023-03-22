@@ -219,7 +219,7 @@ pub fn base_genesis(
 					balance: Default::default(),
 					storage: {
 						let mut storage = BTreeMap::new();
-						let initial_default_token_balance = H256::from_str("0x444f4c5200000000000000000000000000000000000000000000000000000008").expect("invalid hex storage value");
+						let initial_default_token_balance = H256::from_str("0x000000000000000000000000000000000000000000084595161401484a000000").expect("invalid hex storage value"); // 10M
 						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000002").expect("invalid hex storage key"), initial_default_token_balance);
 						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000003").expect("invalid hex storage key"), initial_default_token_balance);
 						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000004").expect("invalid hex storage key"), initial_default_token_balance);
