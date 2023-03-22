@@ -3,8 +3,7 @@ use crate::mock::UpgradeRuntimeProposal;
 use super::*;
 use frame_support::{assert_noop, assert_ok, dispatch::DispatchError};
 use mock::{
-	new_test_ext, RuntimeCall, RuntimeEvent as TestEvent, RuntimeOrigin, System, Test,
-	UpgradeRuntimeCall, assert_runtime_updated_digest
+	new_test_ext, Test, assert_runtime_updated_digest
 };
 use sp_core::keccak_256;
 use frame_support::traits::Hooks;

@@ -1,5 +1,4 @@
 use super::*;
-use crate as upgrade_runtime_controller;
 
 use frame_support::{parameter_types, weights::Weight};
 use frame_support::traits::{ConstU32, ConstU64, Contains};
@@ -10,7 +9,6 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 };
 use sp_version::RuntimeVersion;
-use sp_runtime::generic;
 use precompile_utils::precompile_set::*;
 use pallet_evm::{EnsureAddressRoot, EnsureAddressNever, AddressMapping};
 
@@ -162,21 +160,6 @@ frame_support::construct_runtime!(
 			Balances: pallet_balances,
 		}
 );
-
-
-
-pub fn assert_runtime_updated_digest(num: usize) {
-	assert_eq!(
-		System::digest()
-			.logs
-			.into_iter()
-			.filter(|item| *item == generic::DigestItem::RuntimeEnvironmentUpdated)
-			.count(),
-		num,
-		"Incorrect number of Runtime Updated digest items",
-	);
-}
-
 
 pub(crate) struct ExtBuilder {
 	// endowed accounts with balances

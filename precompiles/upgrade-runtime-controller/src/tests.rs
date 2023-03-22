@@ -1,6 +1,5 @@
 use crate::{mock::*, *};
 
-use codec::Encode;
 use precompile_utils::testing::*;
 use sha3::{Digest, Keccak256};
 use substrate_test_runtime_client::runtime::BlockNumber;
