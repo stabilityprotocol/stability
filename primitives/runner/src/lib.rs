@@ -26,7 +26,7 @@ use sp_std::{
 	mem, vec,
 	vec::Vec,
 };
-use stbl_tools;
+use stbl_tools::{self, misc::u256_to_h256};
 
 #[cfg(test)]
 mod mock;
@@ -387,15 +387,14 @@ where
 			// we get the user fee token address from the source account
 			let user_token_address = U::get_user_fee_token(source);
 			// substract the value from the user
-			let mut tmp = [0u8; 32];
-			_value.to_big_endian(&mut tmp);
+			let transfer_value = stbl_tools::misc::u256_to_h256(_value);
 
 			Self::call(
 				source,
 				user_token_address,
 				stbl_tools::eth::generate_calldata(
 					"transfer(address,uint256)",
-					&vec![target.into(), H256::from_slice(&tmp[..])],
+					&vec![target.into(), transfer_value],
 				),
 				0.into(),
 				u64::MAX,
