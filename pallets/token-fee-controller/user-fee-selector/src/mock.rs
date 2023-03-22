@@ -151,8 +151,35 @@ impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTo
 	}
 }
 
+pub struct MockERC20Manager;
+
+impl pallet_erc20_manager::ERC20Manager for MockERC20Manager {
+	type Error = ();
+
+	fn balance_of(token: &H160, payer: &H160) -> sp_core::U256 {
+		Default::default()
+	}
+
+	fn withdraw_amount(
+		token: &H160,
+		payer: &H160,
+		amount: sp_core::U256,
+	) -> Result<sp_core::U256, Self::Error> {
+		Ok(Default::default())
+	}
+
+	fn deposit_amount(
+		token: &H160,
+		payee: &H160,
+		amount: sp_core::U256,
+	) -> Result<sp_core::U256, Self::Error> {
+		Ok(Default::default())
+	}
+}
+
 impl crate::Config for Runtime {
 	type SupportedTokensManager = MockSupportedTokensManager;
+	type ERC20Manager = MockERC20Manager;
 }
 
 // Configure a mock runtime to test the pallet.

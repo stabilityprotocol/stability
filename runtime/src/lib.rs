@@ -438,6 +438,7 @@ parameter_types! {
 }
 impl pallet_user_fee_selector::Config for Runtime {
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+	type ERC20Manager = pallet_erc20_manager::Pallet<Self>;
 }
 impl pallet_validator_fee_selector::Config for Runtime {
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
