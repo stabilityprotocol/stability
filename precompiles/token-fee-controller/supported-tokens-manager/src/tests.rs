@@ -2,14 +2,17 @@ use core::str::FromStr;
 
 use frame_support::parameter_types;
 use precompile_utils::{
-	prelude::log1,
+	prelude::{log1, Address},
 	testing::{Precompile1, PrecompileTesterExt},
 	EvmDataWriter,
 };
 use sp_core::{H160, H256};
 
 use crate::{
-	mock::{DefaultOwner, ExtBuilder, PCall, Precompiles, PrecompilesValue, Runtime},
+	mock::{
+		DefaultOwner, ExtBuilder, InitialDefaultTokenFee, PCall, Precompiles, PrecompilesValue,
+		Runtime,
+	},
 	SELECTOR_LOG_NEW_OWNER,
 };
 
@@ -240,6 +243,13 @@ fn add_token_and_remove_after() {
 				},
 			)
 			.execute_returns_encoded(true);
+
+		precompiles()
+			.prepare_test(DefaultOwner::get(), Precompile1, PCall::supported_tokens {})
+			.execute_returns_encoded(vec![
+				Address(InitialDefaultTokenFee::get()),
+				Address(MeaninglessTokenAddress::get()),
+			]);
 
 		precompiles()
 			.prepare_test(

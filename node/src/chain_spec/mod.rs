@@ -1,21 +1,19 @@
-use std::{collections::BTreeMap, str::FromStr, vec};
-
-use serde::{Deserialize, Serialize};
-// Substrate
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use sc_service::ChainType;
+use serde::{Deserialize, Serialize};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{
-	bytes::from_hex, crypto::Ss58Codec, sr25519, storage::Storage, Pair, Public, H160, H256, U256,
-};
+use sp_core::{bytes::from_hex, H160, H256, U256};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
+use stability_runtime::{AccountId, GenesisConfig, Precompiles};
+use std::{collections::BTreeMap, str::FromStr, vec};
+// Substrate
+use sp_core::{crypto::Ss58Codec, sr25519, storage::Storage, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_state_machine::BasicExternalities;
 // Frontier
-use stability_runtime::{
-	opaque::SessionKeys, AccountId, EnableManualSeal, GenesisConfig, Precompiles, Signature,
-	WASM_BINARY,
-};
+use stability_runtime::{opaque::SessionKeys, EnableManualSeal, Signature};
+
+pub mod alphanet;
+pub mod dev;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -30,9 +28,9 @@ pub type DevChainSpec = sc_service::GenericChainSpec<DevGenesisExt>;
 #[derive(Serialize, Deserialize)]
 pub struct DevGenesisExt {
 	/// Genesis config.
-	genesis_config: GenesisConfig,
+	pub genesis_config: GenesisConfig,
 	/// The flag that if enable manual-seal mode.
-	enable_manual_seal: Option<bool>,
+	pub enable_manual_seal: Option<bool>,
 }
 
 impl sp_runtime::BuildStorage for DevGenesisExt {
@@ -73,7 +71,7 @@ pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, ImOnl
 	)
 }
 
-fn session_keys(aura: AuraId, grandpa: GrandpaId, im_online: ImOnlineId) -> SessionKeys {
+pub fn session_keys(aura: AuraId, grandpa: GrandpaId, im_online: ImOnlineId) -> SessionKeys {
 	SessionKeys {
 		aura,
 		grandpa,
@@ -81,14 +79,14 @@ fn session_keys(aura: AuraId, grandpa: GrandpaId, im_online: ImOnlineId) -> Sess
 	}
 }
 
-fn get_key_sr(pubkey: &str) -> sr25519::Public {
+pub fn get_key_sr(pubkey: &str) -> sr25519::Public {
 	match sr25519::Public::from_str(pubkey) {
 		Ok(sr_pubkey) => sr_pubkey,
 		Err(_) => panic!("sr pubkey bad formatted"),
 	}
 }
 
-fn get_authority_from_pubkeys(
+pub fn get_authority_from_pubkeys(
 	sr_pubkey: &str,
 	ed_pubkey: &str,
 ) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
@@ -100,213 +98,8 @@ fn get_authority_from_pubkeys(
 	)
 }
 
-pub fn development_config(enable_manual_seal: Option<bool>) -> DevChainSpec {
-	let wasm_binary = WASM_BINARY.expect("WASM not available");
-
-	DevChainSpec::from_genesis(
-		// Name
-		"Development",
-		// ID
-		"dev",
-		ChainType::Development,
-		move || {
-			DevGenesisExt {
-				genesis_config: testnet_genesis(
-					wasm_binary,
-					// Sudo account
-					// Pre-funded accounts
-					vec![
-						get_account_id_from_seed::<sr25519::Public>("Alice"),
-						get_account_id_from_seed::<sr25519::Public>("Bob"),
-						get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-						get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-					],
-					// Initial PoA authorities
-					vec![authority_keys_from_seed("Alice")],
-					vec![(
-						get_account_id_from_seed::<sr25519::Public>("Alice"),
-						H160::from_str("0x76d2265F02C763Dc71A02f62B1Dce4d58b3bb7e2")
-							.expect("Bad account id format"),
-					)],
-					vec![get_account_id_from_seed::<sr25519::Public>("Alice")],
-					42,
-				),
-				enable_manual_seal,
-			}
-		},
-		// Bootnodes
-		vec![],
-		// Telemetry
-		None,
-		// Protocol ID
-		None,
-		None,
-		// Properties
-		None,
-		// Extensions
-		None,
-	)
-}
-
-pub fn local_testnet_config() -> ChainSpec {
-	let wasm_binary = WASM_BINARY.expect("WASM not available");
-
-	ChainSpec::from_genesis(
-		// Name
-		"Local Testnet",
-		// ID
-		"local_testnet",
-		ChainType::Local,
-		move || {
-			testnet_genesis(
-				wasm_binary,
-				// Initial PoA authorities
-				// Pre-funded accounts
-				vec![
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_account_id_from_seed::<sr25519::Public>("Bob"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-					get_account_id_from_seed::<sr25519::Public>("Dave"),
-					get_account_id_from_seed::<sr25519::Public>("Eve"),
-					get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-				],
-				vec![
-					authority_keys_from_seed("Alice"),
-					authority_keys_from_seed("Bob"),
-				],
-				vec![
-					(
-						get_account_id_from_seed::<sr25519::Public>("Alice"),
-						H160::from_str("0x76d2265F02C763Dc71A02f62B1Dce4d58b3bb7e2")
-							.expect("Bad account id format"),
-					),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Bob"),
-						H160::from_str("0x6e63A65a87E24046167a2ce1971B6b765BaD3293")
-							.expect("Bad account id format"),
-					),
-				],
-				vec![
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_account_id_from_seed::<sr25519::Public>("Bob"),
-				],
-				20180427,
-			)
-		},
-		// Bootnodes
-		vec![],
-		// Telemetry
-		None,
-		// Protocol ID
-		None,
-		None,
-		// Properties
-		None,
-		// Extensions
-		None,
-	)
-}
-
-pub fn alphanet_config() -> Result<ChainSpec, String> {
-	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
-	let pubkey_sr = get_key_sr("5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs");
-	let main_account = AccountPublic::from(pubkey_sr).into_account();
-
-	Ok(ChainSpec::from_genesis(
-		// Name
-		"Alphanet",
-		// ID
-		"alphanet",
-		ChainType::Live,
-		move || {
-			testnet_genesis(
-				wasm_binary,
-				// Initial PoA authorities
-				// Pre-funded accounts
-				vec![main_account.clone()],
-				vec![
-					get_authority_from_pubkeys(
-						"5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs",
-						"5FviP577ihFCP4n8jCnrd38dQDCn2VeM5DAoYNEHbPy7JtWz",
-					),
-					get_authority_from_pubkeys(
-						"5G1wTFx3iLZCWejfaSGfxQtdKHRzDJ4ga7iabWVS1a9DND2L",
-						"5FqDv66PJL7TtC49CitcfGNokKJjbL3nwDRmYnQ66BJttUrw",
-					),
-					get_authority_from_pubkeys(
-						"5Dnet7dgiMJBuAyizMH5EW9JYSXttNKFveQH5Miekrwb4GxJ",
-						"5GUVATr2DwH51tnqaUEuBtuHA4bLnoWBAkauDxDafMukpZAZ",
-					),
-					get_authority_from_pubkeys(
-						"5H639iD2JYtZbQN5sNNVRhVtpvzHyhXp5MwGBgW1FLz71zkp",
-						"5FiEnbnj7VV5CWAtbJXtZjCkiQTBBRqyb8MgXEkydW1SfLiJ",
-					),
-					get_authority_from_pubkeys(
-						"5DtBoSGDHwH4aLJUA2LVYwprziGEyDopXc4YvdU8LRB1rzdv",
-						"5GzRrcmG4kztd31FPWEcr51B3Jd2GZPh6ZjpxwzymopHuViN",
-					),
-				],
-				vec![
-					(
-						AccountId::from_string("5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs")
-							.expect("Bad account id format"),
-						H160::from_str("0x76d2265F02C763Dc71A02f62B1Dce4d58b3bb7e2")
-							.expect("Bad account id format"),
-					),
-					(
-						AccountId::from_string("5G1wTFx3iLZCWejfaSGfxQtdKHRzDJ4ga7iabWVS1a9DND2L")
-							.expect("Bad account id format"),
-						H160::from_str("0x6e63A65a87E24046167a2ce1971B6b765BaD3293")
-							.expect("Bad account id format"),
-					),
-					(
-						AccountId::from_string("5Dnet7dgiMJBuAyizMH5EW9JYSXttNKFveQH5Miekrwb4GxJ")
-							.expect("Bad account id format"),
-						H160::from_str("0x3dbCC2fbe676037579A59fD2412AA4DcAe11db97")
-							.expect("Bad account id format"),
-					),
-					(
-						AccountId::from_string("5H639iD2JYtZbQN5sNNVRhVtpvzHyhXp5MwGBgW1FLz71zkp")
-							.expect("Bad account id format"),
-						H160::from_str("0x1db0Fd9B3Abf83C802869D0De696157e60b136e5")
-							.expect("Bad account id format"),
-					),
-					(
-						AccountId::from_string("5DtBoSGDHwH4aLJUA2LVYwprziGEyDopXc4YvdU8LRB1rzdv")
-							.expect("Bad account id format"),
-						H160::from_str("0xf349108C149a99C133c662A6779E07d0e68340d6")
-							.expect("Bad account id format"),
-					),
-				],
-				vec![
-					AccountId::from_string("5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs")
-						.expect("Bad account id format"),
-				],
-				20180427,
-			)
-		},
-		// Bootnodes
-		vec![],
-		// Telemetry
-		None,
-		// Protocol ID
-		None,
-		None,
-		// Properties
-		None,
-		// Extensions
-		None,
-	))
-}
-
 /// Configure initial storage state for FRAME modules.
-fn testnet_genesis(
+pub fn base_genesis(
 	wasm_binary: &[u8],
 	endowed_accounts: Vec<AccountId>,
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId, ImOnlineId)>,
@@ -315,8 +108,9 @@ fn testnet_genesis(
 	chain_id: u64,
 ) -> GenesisConfig {
 	use stability_runtime::{
-		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, MapSvmEvmConfig, ImOnlineConfig,
-		SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig, ValidatorSetConfig, SessionConfig
+		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig,
+		MapSvmEvmConfig, SessionConfig, SupportedTokensManagerConfig, SystemConfig,
+		TechCommitteeCollectiveConfig, ValidatorSetConfig,
 	};
 	let initial_default_token =
 		H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
@@ -364,11 +158,10 @@ fn testnet_genesis(
 			phantom: Default::default(),
 			members: members.clone(),
 		},
-
+		// EVM compatibility
 		map_svm_evm: MapSvmEvmConfig {
 			linked_accounts: linked_accounts.clone(),
 		},
-		// EVM compatibility
 		evm_chain_id: EVMChainIdConfig { chain_id },
 		evm: EVMConfig {
 			accounts: {
