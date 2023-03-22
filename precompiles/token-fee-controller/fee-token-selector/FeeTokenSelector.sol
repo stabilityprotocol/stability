@@ -2,7 +2,7 @@
 pragma solidity >=0.8.3;
 
 interface FeeTokenSelector {
-    function setFeeToken(address) external;
+    function setFeeToken(address tokenAddress) external;
 
-    function getFeeToken(address) external returns (address);
+    function getFeeToken(address user) external view returns (address);
 }
