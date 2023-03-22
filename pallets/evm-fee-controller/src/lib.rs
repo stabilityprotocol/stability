@@ -90,6 +90,12 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		pub fn balance(user: &H160) -> U256 {
+			let fee_token = T::UserFeeTokenController::get_user_fee_token(*user);
+
+			T::ERC20Manager::balance_of(&fee_token, user)
+		}
+
 		fn convert_fee_to_user_token(token: H160, author: H160, fee: U256) -> U256 {
 			let (numerator, denominator) =
 				T::ValidatorTokenController::conversion_rate(author, token);
