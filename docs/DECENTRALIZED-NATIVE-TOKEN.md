@@ -12,7 +12,7 @@ Though a user can select the token in which the fees are paid, this doesn't mean
 
 # How does the validator select the token?
 
-Stability validators have to select which tokens want to accept as fees. The validators can accept all the allowed fee tokens though they will only accept the default token` at first. There is no need for the validators to accept the default token, but they should update their acceptance of this token. Along with the token acceptance, the validator should set up the conversion rate of the token that be used when a user selects this token to pay the fees.
+Stability validators have to select which tokens want to accept as fees. The validators can accept all the allowed fee tokens though they will only accept the default token` at first. There is no need for the validators to accept the default token, but they should update their acceptance of this token. Along with the token acceptance, the validator should set up the conversion rate of the token that be used when a user selects this token to pay the fees. This conversion rate is used for mapping from our internal fee units to the selected fee token.
 
 To select the token and its conversion rate, the user has to interact with `ValidatorFeeManagerPrecompile` at `0x0000000000000000000000000000000000000802`. Since validators have their keys in the `sr25519` format, they cannot interact directly with the EVM (uses `ed25519` format). Validators should link their `sr25519` key with an EVM address.
 
