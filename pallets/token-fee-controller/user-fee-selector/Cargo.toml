@@ -15,6 +15,7 @@ scale-info = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
+pallet-erc20-manager = { workspace = true }
 
 [dev-dependencies]
 pallet-timestamp = { workspace = true }
