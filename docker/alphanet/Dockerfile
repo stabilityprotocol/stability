@@ -1,4 +1,4 @@
-FROM rustlang/rust:nightly
+FROM ghcr.io/stabilityprotocol/stability:latest
 
 LABEL org.opencontainers.image.source https://github.com/stabilityprotocol/stability
 ARG PROFILE=release
