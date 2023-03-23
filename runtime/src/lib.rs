@@ -75,8 +75,9 @@ use pallet_user_fee_selector;
 mod stability_config;
 use stability_config::{
 	build_block_weights, COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS,
-	COUNCIL_MOTION_MINUTES_DURATION, DEFAULT_FEE_TOKEN, EXISTENTIAL_DEPOSIT, MAXIMUM_BLOCK_LENGTH,
-	MILLISECS_PER_BLOCK, SESSION_MINUTES_DURATION, VALIDATOR_SET_MIN_VALIDATORS,
+	COUNCIL_MOTION_MINUTES_DURATION, DEFAULT_ELASTICITY, DEFAULT_FEE_TOKEN, EXISTENTIAL_DEPOSIT,
+	GAS_BASE_FEE, MAXIMUM_BLOCK_LENGTH, MILLISECS_PER_BLOCK, SESSION_MINUTES_DURATION,
+	VALIDATOR_SET_MIN_VALIDATORS,
 };
 
 mod precompiles;
@@ -441,6 +442,7 @@ parameter_types! {
 }
 impl pallet_user_fee_selector::Config for Runtime {
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+	type ERC20Manager = pallet_erc20_manager::Pallet<Self>;
 }
 impl pallet_validator_fee_selector::Config for Runtime {
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
@@ -457,8 +459,8 @@ impl pallet_dynamic_fee::Config for Runtime {
 }
 
 parameter_types! {
-	pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
-	pub DefaultElasticity: Permill = Permill::from_parts(125_000);
+	pub DefaultBaseFeePerGas: U256 = U256::from(GAS_BASE_FEE);
+	pub DefaultElasticity: Permill = DEFAULT_ELASTICITY;
 }
 
 pub struct BaseFeeThreshold;

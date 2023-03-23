@@ -6,7 +6,7 @@ mod mock;
 mod tests;
 
 pub use pallet::*;
-use sp_core::H160;
+use sp_core::{H160, U256};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -19,6 +19,7 @@ pub mod pallet {
 		Blake2_128Concat,
 	};
 	use frame_system::pallet_prelude::BlockNumberFor;
+	use pallet_erc20_manager::ERC20Manager;
 	use pallet_supported_tokens_manager::SupportedTokensManager;
 	use sp_core::H160;
 	use sp_std::vec::Vec;
@@ -35,6 +36,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type SupportedTokensManager: SupportedTokensManager;
+		type ERC20Manager: ERC20Manager;
 	}
 
 	#[pallet::storage]
@@ -76,6 +78,11 @@ pub mod pallet {
 			PendingTokenUpdatesStorage::<T>::put(pending_updates);
 			Ok(())
 		}
+
+		fn balance_of(account: H160) -> U256 {
+			let token = Self::get_user_fee_token(account);
+			T::ERC20Manager::balance_of(&token, &account)
+		}
 	}
 
 	#[pallet::hooks]
@@ -94,4 +101,5 @@ pub trait UserFeeTokenController {
 	type Error;
 	fn get_user_fee_token(account: H160) -> H160;
 	fn set_user_fee_token(account: H160, token: H160) -> Result<(), Self::Error>;
+	fn balance_of(account: H160) -> U256;
 }

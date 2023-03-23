@@ -32,6 +32,13 @@ fn default_balance_is_zero() {
 		let balance = get_balance_of(ERC20SlotZero::get(), MeaninglessAddress::get());
 
 		assert_eq!(balance, 0.into());
+
+		let storage_balance = <crate::Pallet<Test> as crate::ERC20Manager>::balance_of(
+			&ERC20SlotZero::get(),
+			&MeaninglessAddress::get(),
+		);
+
+		assert_eq!(storage_balance, 0.into());
 	});
 }
 
@@ -52,6 +59,13 @@ fn deposit_and_withdraw() {
 		let mut balance = get_balance_of(ERC20SlotZero::get(), MeaninglessAddress::get());
 
 		assert_eq!(balance, value_minted);
+
+		let storage_balance = <crate::Pallet<Test> as crate::ERC20Manager>::balance_of(
+			&ERC20SlotZero::get(),
+			&MeaninglessAddress::get(),
+		);
+
+		assert_eq!(storage_balance, value_minted);
 
 		assert!(
 			<crate::Pallet<Test> as crate::ERC20Manager>::withdraw_amount(
