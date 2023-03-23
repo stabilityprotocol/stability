@@ -26,7 +26,6 @@ jobs:
           context: .
           file: ./docker/test/Dockerfile
           push: true
-          load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest, ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{github.sha}}
