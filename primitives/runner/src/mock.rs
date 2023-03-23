@@ -43,6 +43,23 @@ pub type BlockNumber = u32;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
 
+pub struct MockUserFeeTokenController;
+impl pallet_user_fee_selector::UserFeeTokenController for MockUserFeeTokenController {
+	type Error = ();
+
+	fn balance_of(_token: H160) -> sp_core::U256 {
+		return U256::from(1000000);
+	}
+
+	fn get_user_fee_token(_account: H160) -> H160 {
+		Default::default()
+	}
+
+	fn set_user_fee_token(_account: H160, _token: H160) -> Result<(), Self::Error> {
+		Ok(())
+	}
+}
+
 parameter_types! {
 	pub const BlockHashCount: u32 = 250;
 	pub const SS58Prefix: u8 = 42;
@@ -116,7 +133,7 @@ impl pallet_evm::Config for Runtime {
 	type AddressMapping = pallet_evm::HashedAddressMapping<BlakeTwo256>;
 	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
-	type Runner = StabilityRunner::Runner<Self>;
+	type Runner = StabilityRunner::Runner<Self, MockUserFeeTokenController>;
 	type PrecompilesType = ();
 	type PrecompilesValue = ();
 	type ChainId = ();
