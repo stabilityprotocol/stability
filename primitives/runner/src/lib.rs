@@ -832,10 +832,10 @@ pub trait OnChargeDecentralizedNativeTokenFee {
 	type Error: Error;
 
 	// Get the fee token of the user.
-	fn get_user_fee_token(from: &H160) -> H160;
+	fn get_transaction_fee_token(from: &H160) -> H160;
 
 	// Get the fee token of the validator and its conversion rate.
-	fn get_validator_fee_token_setup(validator: &H160) -> (H160, (U256, U256));
+	fn get_transaction_conversion_rate(validator: &H160) -> (U256, U256);
 
 	// Withdraws the fee from the user.
 	fn withdraw_fee(
