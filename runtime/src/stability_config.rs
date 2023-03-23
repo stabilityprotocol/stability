@@ -5,7 +5,7 @@ use frame_support::{
 		Weight,
 	},
 };
-use sp_runtime::Perbill;
+use sp_runtime::{Perbill, Permill};
 
 use crate::WEIGHT_PER_GAS;
 
@@ -91,3 +91,7 @@ pub fn build_block_weights() -> frame_system::limits::BlockWeights {
 
 	weights
 }
+
+// Gas Base Fee
+pub const GAS_BASE_FEE: u128 = 1_000_000_000;
+pub const DEFAULT_ELASTICITY: Permill = Permill::from_parts(0);
