@@ -6,6 +6,8 @@ There are various parameters that can be adjusted to configure a blockchain and 
 
 - **Block Time**: 2s
 - **Existential Deposit**: Minimum deposit of an account to exist. Since this minimum deposit would be reduced from the actual account balance we set it to zero.
+- **Default Base Fee**: The fixed value of the base fee in terms of internal fee units. For further info, check [DNT](./DECENTRALIZED-NATIVE-TOKEN.md).
+- **Default Elasticity**: How much does the base fee vary with network demand. Since base fee is fixed then `elasticity = 0`.
 
 ### Block size limiting
 
