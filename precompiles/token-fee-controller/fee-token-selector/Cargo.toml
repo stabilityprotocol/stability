@@ -31,6 +31,7 @@ pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
 pallet-user-fee-selector = { workspace = true }
 pallet-validator-fee-selector = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
+pallet-erc20-manager = { workspace = true }
 
 [dev-dependencies]
 derive_more = { version = "0.99" }

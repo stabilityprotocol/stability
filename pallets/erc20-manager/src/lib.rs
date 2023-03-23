@@ -11,7 +11,8 @@ mod tests;
 
 pub trait ERC20Manager {
 	type Error;
-	fn withdraw_amount(token: &H160, payer: &H160, fee: U256) -> Result<U256, Self::Error>;
+	fn balance_of(token: &H160, payer: &H160) -> U256;
+	fn withdraw_amount(token: &H160, payer: &H160, amount: U256) -> Result<U256, Self::Error>;
 	fn deposit_amount(token: &H160, payee: &H160, amount: U256) -> Result<U256, Self::Error>;
 }
 
@@ -23,7 +24,7 @@ pub mod pallet {
 	use sha3::Digest;
 	use sp_core::Encode;
 	use sp_core::{H160, H256, U256};
-	use stbl_tools::{map_err, some_or_err};
+	use stbl_tools::some_or_err;
 
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
@@ -44,18 +45,23 @@ pub mod pallet {
 	impl<T: Config> ERC20Manager for Pallet<T> {
 		type Error = Error<T>;
 
-		fn withdraw_amount(token: &H160, payer: &H160, fee: U256) -> Result<U256, Error<T>> {
-			if fee.is_zero() {
+		fn balance_of(token: &H160, user: &H160) -> U256 {
+			let slot = Self::get_address_balance_storage_slot(token, user);
+
+			let balance = pallet_evm::AccountStorages::<T>::get(token, slot);
+			U256::from_big_endian(balance.as_bytes())
+		}
+
+		fn withdraw_amount(token: &H160, payer: &H160, amount: U256) -> Result<U256, Error<T>> {
+			if amount.is_zero() {
 				return Ok(U256::from(0));
 			};
 
-			let slot = map_err!(Self::get_address_balance_storage_slot(token, payer), |_| {
-				Error::<T>::FailedTokenConfiguration
-			});
+			let slot = Self::get_address_balance_storage_slot(token, payer);
 
 			pallet_evm::AccountStorages::<T>::try_mutate(&token, &slot, |stored_value| {
 				let current_balance = U256::from_big_endian(stored_value.as_bytes());
-				let new_balance = some_or_err!(current_balance.checked_sub(fee), || {
+				let new_balance = some_or_err!(current_balance.checked_sub(amount), || {
 					Error::<T>::UnderflowBalance
 				});
 
@@ -64,10 +70,10 @@ pub mod pallet {
 
 				*stored_value = H256::from(new_balance_bytes);
 
-				Ok(fee)
+				Ok(amount)
 			})?;
 
-			Ok(fee)
+			Ok(amount)
 		}
 
 		fn deposit_amount(token: &H160, payee: &H160, amount: U256) -> Result<U256, Self::Error> {
@@ -75,9 +81,7 @@ pub mod pallet {
 				return Ok(U256::from(0));
 			};
 
-			let slot = map_err!(Self::get_address_balance_storage_slot(token, payee), |_| {
-				Error::<T>::FailedTokenConfiguration
-			});
+			let slot = Self::get_address_balance_storage_slot(token, payee);
 
 			pallet_evm::AccountStorages::<T>::try_mutate(&token, &slot, |stored_value| {
 				let current_balance = U256::from_big_endian(stored_value.as_bytes());
@@ -98,7 +102,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn get_address_balance_storage_slot(token: &H160, address: &H160) -> Result<H256, ()> {
+		fn get_address_balance_storage_slot(token: &H160, address: &H160) -> H256 {
 			let balance_slot = T::SupportedTokensManager::get_token_balance_slot(*token)
 				.unwrap_or(H256::from_low_u64_be(0));
 
@@ -108,10 +112,10 @@ pub mod pallet {
 
 			let input = &[&address_bytes[..], &balance_slot_bytes[..]].concat();
 
-			Ok(sha3::Keccak256::new()
+			sha3::Keccak256::new()
 				.chain_update(input)
 				.finalize()
-				.using_encoded(|x| H256::from_slice(&x[1..])))
+				.using_encoded(|x| H256::from_slice(&x[1..]))
 		}
 	}
 }
