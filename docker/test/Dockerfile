@@ -1,4 +1,4 @@
-FROM rustlang/rust:nightly
+FROM ghcr.io/stabilityprotocol/stability:latest
 
 WORKDIR /stability
 
