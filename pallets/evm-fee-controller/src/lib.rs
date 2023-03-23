@@ -35,7 +35,7 @@ pub mod pallet {
 	}
 
 	// todo: create other trait for token fee controller
-	impl<R: pallet_evm::Config, T: Config> OnChargeEVMTransaction<R> for Pallet<T> {
+	impl<T: Config> OnChargeDNTTransaction for Pallet<T> {
 		type LiquidityInfo = U256;
 
 		fn withdraw_fee(

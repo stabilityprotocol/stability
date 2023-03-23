@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use core::marker::PhantomData;
+use core::{error::Error, marker::PhantomData};
 
 use evm::{
 	backend::Backend as BackendT,
@@ -826,4 +826,34 @@ where
 		self.substate
 			.recursive_is_cold(&|a: &Accessed| a.accessed_storage.contains(&(address, key)))
 	}
+}
+
+pub trait OnChargeDecentralizedNativeTokenFee {
+	type Error: Error;
+
+	// Get the fee token of the user.
+	fn get_user_fee_token(from: &H160) -> H160;
+
+	// Get the fee token of the validator and its conversion rate.
+	fn get_validator_fee_token_setup(validator: &H160) -> (H160, (U256, U256));
+
+	// Withdraws the fee from the user.
+	fn withdraw_fee(
+		from: &H160,
+		token: &H160,
+		conversion_rate: (U256, U256),
+		amount: U256,
+	) -> Result<(), Self::Error>;
+
+	// Corrects the fee if the actual amount is different from the paid amount.
+	fn correct_fee(
+		from: &H160,
+		token: &H160,
+		conversion_rate: (U256, U256),
+		paid_amount: U256,
+		actual_amount: U256,
+	) -> Result<(), Self::Error>;
+
+	// Distributes the fee to the validator and dApp.
+	fn pay_fees(actual_amount: U256, validator: &H160, to: &H160) -> Result<(), Self::Error>;
 }
