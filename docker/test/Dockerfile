@@ -1,4 +1,4 @@
-FROM ghcr.io/stabilityprotocol/stability:latest
+FROM rustlang/rust:nightly
 
 WORKDIR /stability
 
@@ -8,7 +8,6 @@ RUN apt-get update -y && \
 
 # Install rust wasm. Needed for substrate wasm engine
 RUN rustup target add wasm32-unknown-unknown
-
 
 # Install cargo expand. Needed for testing
 RUN cargo install cargo-expand
@@ -24,5 +23,3 @@ COPY client ./client
 COPY Cargo.lock Cargo.toml rust-toolchain ./
 
 RUN cargo build --release --tests
-
-CMD [ "cargo", "test", "--release", "--verbose" ]
