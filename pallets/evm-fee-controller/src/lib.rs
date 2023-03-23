@@ -12,6 +12,7 @@ pub mod pallet {
 	use pallet_evm::OnChargeEVMTransaction;
 	use pallet_user_fee_selector::UserFeeTokenController;
 	use pallet_validator_fee_selector::ValidatorFeeTokenController;
+	use runner::OnChargeDecentralizedNativeTokenFee;
 	use sp_core::{H160, U256};
 	use stbl_tools::{map_err, some_or_err};
 
@@ -35,57 +36,38 @@ pub mod pallet {
 	}
 
 	// todo: create other trait for token fee controller
-	impl<T: Config> OnChargeDNTTransaction for Pallet<T> {
-		type LiquidityInfo = U256;
+	impl<T: Config> OnChargeDecentralizedNativeTokenFee for Pallet<T> {
+		type Error = ();
+
+		fn get_transaction_fee_token(from: &H160) -> H160 {
+			todo!()
+		}
+
+		fn get_transaction_conversion_rate(validator: &H160) -> (U256, U256) {
+			todo!()
+		}
 
 		fn withdraw_fee(
-			payer: &H160,
-			fee: U256,
-		) -> Result<Self::LiquidityInfo, pallet_evm::Error<R>> {
-			let fee_token = T::UserFeeTokenController::get_user_fee_token(*payer);
-
-			let author = map_err!(Self::get_author(), |_| {
-				pallet_evm::Error::<R>::WithdrawFailed
-			});
-
-			let corrected_fee_token_amount =
-				Self::convert_fee_to_user_token(fee_token, author, fee);
-
-			T::ERC20Manager::withdraw_amount(&fee_token, payer, corrected_fee_token_amount)
-				.map_err(|_| pallet_evm::Error::<R>::WithdrawFailed)
+			from: &H160,
+			token: &H160,
+			conversion_rate: (U256, U256),
+			amount: U256,
+		) -> Result<(), Self::Error> {
+			todo!()
 		}
 
-		fn correct_and_deposit_fee(
-			who: &H160,
-			corrected_fee: U256,
-			_base_fee: U256,
-			already_withdrawn: Self::LiquidityInfo,
-		) -> Self::LiquidityInfo {
-			let fee_token = T::UserFeeTokenController::get_user_fee_token(*who);
-
-			let author = Self::get_author().expect("author must be available");
-
-			let corrected_fee_token_amount =
-				Self::convert_fee_to_user_token(fee_token, author, corrected_fee);
-			let already_withdrawn_token_amount =
-				Self::convert_fee_to_user_token(fee_token, author, already_withdrawn);
-
-			let excess_fee_token_amount =
-				already_withdrawn_token_amount - corrected_fee_token_amount;
-
-			T::ERC20Manager::deposit_amount(&fee_token, who, excess_fee_token_amount)
-				.or(Err(pallet_evm::Error::<T>::Undefined))
-				.expect("deposit must succeed since has been withdrawn before");
-
-			T::ERC20Manager::deposit_amount(&fee_token, &author, corrected_fee_token_amount)
-				.or(Err(pallet_evm::Error::<T>::Undefined))
-				.expect("deposit must succeed");
-
-			U256::from(0)
+		fn correct_fee(
+			from: &H160,
+			token: &H160,
+			conversion_rate: (U256, U256),
+			paid_amount: U256,
+			actual_amount: U256,
+		) -> Result<(), Self::Error> {
+			todo!()
 		}
 
-		fn pay_priority_fee(_priority_fee: Self::LiquidityInfo) {
-			// priority fee is paid along the correct_and_deposit_fee
+		fn pay_fees(actual_amount: U256, validator: &H160, to: &H160) -> Result<(), Self::Error> {
+			todo!()
 		}
 	}
 

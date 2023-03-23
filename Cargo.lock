@@ -4345,6 +4345,7 @@ dependencies = [
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
  "parity-scale-codec",
+ "runner",
  "scale-info",
  "sp-core",
  "sp-io",
