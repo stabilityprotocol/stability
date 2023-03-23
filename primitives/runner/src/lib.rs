@@ -26,7 +26,7 @@ use sp_std::{
 	mem, vec,
 	vec::Vec,
 };
-use stbl_tools::{self, misc::u256_to_h256};
+use stbl_tools;
 
 #[cfg(test)]
 mod mock;
@@ -306,7 +306,12 @@ where
 		// we force the value to be zero because we don't support value transfer in EVM
 		let value = U256::from(0);
 		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
-		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
+		let (mut source_account, inner_weight) = Pallet::<T>::account_basic(&source);
+
+		// TODO: REMOVE THIS LINES ONCE WE UPDATE THE BALANCES PALLET
+		// Update the balance with the actual one.
+		source_account.balance = U::balance_of(source);
+		// END OF TODO
 		weight = weight.saturating_add(inner_weight);
 
 		let _ = fp_evm::CheckEvmTransaction::<Self::Error>::new(
