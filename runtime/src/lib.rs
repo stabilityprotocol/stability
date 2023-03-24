@@ -10,6 +10,8 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode};
+use pallet_balances::Instance1;
+use sp_runtime::AccountId32;
 use core::str::FromStr;
 use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
@@ -35,6 +37,7 @@ use sp_runtime::{
 	},
 	ApplyExtrinsicResult, MultiSignature, Permill, SaturatedConversion,
 };
+use frame_support::pallet_prelude::EnsureOrigin;
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
 // Substrate FRAME
@@ -631,6 +634,40 @@ impl pallet_map_svm_evm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
+parameter_types! {
+	pub const MaxSizeOfCode: u32 = 10 * 1024 * 1024; // 10 MB
+}
+
+
+pub struct EnsureMemberOfTechCollective<AccountId>(sp_std::marker::PhantomData<AccountId>);
+impl<O: Into<Result<RawOrigin<AccountId>, O>> + From<RawOrigin<AccountId>>, AccountId: core::clone::Clone>
+	EnsureOrigin<O> for EnsureMemberOfTechCollective<AccountId>
+	where AccountId32: From<AccountId>
+{
+	type Success = ();
+	fn try_origin(o: O) -> Result<Self::Success, O> {
+		o.into().and_then(|o| match o {
+			RawOrigin::Signed(account) => if <pallet_collective::Pallet<Runtime, Instance1>>::is_member(&account.clone().into()) {
+				Ok(())
+			} else {
+				Err(O::from(RawOrigin::Signed(account.clone())))
+			},
+			r => Err(O::from(r)),
+		})
+	}
+
+}
+
+type EnsureRootOrMemberOfTechCollective= EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	EnsureMemberOfTechCollective<AccountId>,
+>;
+
+impl pallet_upgrade_runtime_proposal::Config for Runtime {
+	type ControlOrigin = EnsureRootOrMemberOfTechCollective;
+	type MaxSizeOfCode = MaxSizeOfCode;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -661,6 +698,7 @@ construct_runtime!(
 		SupportedTokensManager: pallet_supported_tokens_manager,
 		ERC20Manager: pallet_erc20_manager,
 		EVMFeeController: pallet_evm_fee_controller,
+		UpgradeRuntimeProposal: pallet_upgrade_runtime_proposal,
 	}
 );
 
