@@ -3,7 +3,7 @@ name: Build Test Image
 on:
   workflow_dispatch:
   push:
-    branches: ["test-uses-latest"]
+    branches: ["main"]
   pull_request:
     branches: ["main"]
 
