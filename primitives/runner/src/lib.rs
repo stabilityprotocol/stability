@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use core::{error::Error, marker::PhantomData};
+use core::marker::PhantomData;
 
 use evm::{
 	backend::Backend as BackendT,
@@ -16,15 +16,17 @@ use frame_support::{
 use pallet_evm::Pallet;
 use pallet_evm::{
 	AccountCodes, AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, Error,
-	Event, FeeCalculator, OnChargeEVMTransaction, PrecompileSet, Runner as RunnerT, RunnerError,
+	Event, FeeCalculator, PrecompileSet, Runner as RunnerT, RunnerError,
 };
+use pallet_user_fee_selector::UserFeeTokenController;
 use sp_core::{Get, H160, H256, U256};
 use sp_std::{
 	boxed::Box,
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-	mem,
+	mem, vec,
 	vec::Vec,
 };
+use stbl_tools;
 
 #[cfg(test)]
 mod mock;
@@ -35,11 +37,11 @@ mod tests;
 environmental::thread_local_impl!(static IN_EVM: environmental::RefCell<bool> = environmental::RefCell::new(false));
 
 #[derive(Default)]
-pub struct Runner<T: Config> {
-	_marker: PhantomData<T>,
+pub struct Runner<T: Config, FC: OnChargeDecentralizedNativeTokenFee, U: UserFeeTokenController> {
+	_marker: PhantomData<(T, FC, U)>,
 }
 
-impl<T: Config> Runner<T>
+impl<T: Config, FC: OnChargeDecentralizedNativeTokenFee, U: UserFeeTokenController> Runner<T, FC, U>
 where
 	BalanceOf<T>: TryFrom<U256> + Into<U256>,
 {
@@ -175,9 +177,16 @@ where
 					weight,
 				})?;
 
+		let token = FC::get_transaction_fee_token(source);
+		let validator = <pallet_evm::Pallet<T>>::find_author();
+
+		let conversion_rate = FC::get_transaction_conversion_rate(validator, token);
+
 		// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
-		let fee = T::OnChargeTransaction::withdraw_fee(&source, total_fee)
-			.map_err(|e| RunnerError { error: e, weight })?;
+		FC::withdraw_fee(source, token, conversion_rate, total_fee).map_err(|_| RunnerError {
+			error: Error::<T>::FeeOverflow,
+			weight,
+		})?;
 
 		// Execute the EVM call.
 		let vicinity = Vicinity {
@@ -194,47 +203,31 @@ where
 		// Post execution.
 		let used_gas = U256::from(executor.used_gas());
 		let actual_fee = executor.fee(total_fee_per_gas);
+
 		log::debug!(
 			target: "evm",
-			"Execution {:?} [source: {:?}, value: {}, gas_limit: {}, actual_fee: {}, is_transactional: {}]",
+			"Execution {:?} [source: {:?}, value: {}, gas_limit: {}, token: {}, validator: {}, actual_fee: {}, is_transactional: {}]",
 			reason,
 			source,
 			value,
 			gas_limit,
+			token,
+			validator,
 			actual_fee,
 			is_transactional
 		);
-		// The difference between initially withdrawn and the actual cost is refunded.
-		//
-		// Considered the following request:
-		// +-----------+---------+--------------+
-		// | Gas_limit | Max_Fee | Max_Priority |
-		// +-----------+---------+--------------+
-		// |        20 |      10 |            6 |
-		// +-----------+---------+--------------+
-		//
-		// And execution:
-		// +----------+----------+
-		// | Gas_used | Base_Fee |
-		// +----------+----------+
-		// |        5 |        2 |
-		// +----------+----------+
-		//
-		// Initially withdrawn 10 * 20 = 200.
-		// Actual cost (2 + 6) * 5 = 40.
-		// Refunded 200 - 40 = 160.
-		// Tip 5 * 6 = 30.
-		// Burned 200 - (160 + 30) = 10. Which is equivalent to gas_used * base_fee.
-		let actual_priority_fee = T::OnChargeTransaction::correct_and_deposit_fee(
-			&source,
-			// Actual fee after evm execution, including tip.
-			actual_fee,
-			// Base fee.
-			executor.fee(base_fee),
-			// Fee initially withdrawn.
-			fee,
-		);
-		T::OnChargeTransaction::pay_priority_fee(actual_priority_fee);
+
+		FC::correct_fee(source, token, conversion_rate, total_fee, actual_fee).map_err(|_| {
+			RunnerError {
+				error: Error::<T>::FeeOverflow,
+				weight,
+			}
+		})?;
+
+		FC::pay_fees(actual_fee, validator, source).map_err(|_| RunnerError {
+			error: Error::<T>::FeeOverflow,
+			weight,
+		})?;
 
 		let state = executor.into_state();
 
@@ -282,7 +275,8 @@ where
 	}
 }
 
-impl<T: Config> RunnerT<T> for Runner<T>
+impl<T: Config, FC: OnChargeDecentralizedNativeTokenFee, U: UserFeeTokenController> RunnerT<T>
+	for Runner<T, FC, U>
 where
 	BalanceOf<T>: TryFrom<U256> + Into<U256>,
 {
@@ -304,7 +298,12 @@ where
 		// we force the value to be zero because we don't support value transfer in EVM
 		let value = U256::from(0);
 		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
-		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
+		let (mut source_account, inner_weight) = Pallet::<T>::account_basic(&source);
+
+		// TODO: REMOVE THIS LINES ONCE WE UPDATE THE BALANCES PALLET
+		// Update the balance with the actual one.
+		source_account.balance = U::balance_of(source);
+		// END OF TODO
 		weight = weight.saturating_add(inner_weight);
 
 		let _ = fp_evm::CheckEvmTransaction::<Self::Error>::new(
@@ -366,18 +365,48 @@ where
 				config,
 			)?;
 		}
-		let precompiles = T::PrecompilesValue::get();
-		Self::execute(
-			source,
-			value,
-			gas_limit,
-			max_fee_per_gas,
-			max_priority_fee_per_gas,
-			config,
-			&precompiles,
-			is_transactional,
-			|executor| executor.transact_call(source, target, value, input, gas_limit, access_list),
-		)
+		// input length greater than 2 means that we are calling a contract
+		// where only the first two bytes are just the 0x prefix
+		if input.len() > 0 {
+			let precompiles = T::PrecompilesValue::get();
+			Self::execute(
+				source,
+				value,
+				gas_limit,
+				max_fee_per_gas,
+				max_priority_fee_per_gas,
+				config,
+				&precompiles,
+				is_transactional,
+				|executor| {
+					executor.transact_call(source, target, value, input, gas_limit, access_list)
+				},
+			)
+		} else {
+			// input less than 2 (0x) means that we are doing a regular ETH transfer
+			// we get the user fee token address from the source account
+			let user_token_address = U::get_user_fee_token(source);
+			// substract the value from the user
+			let transfer_value = stbl_tools::misc::u256_to_h256(_value);
+
+			Self::call(
+				source,
+				user_token_address,
+				stbl_tools::eth::generate_calldata(
+					"transfer(address,uint256)",
+					&vec![target.into(), transfer_value],
+				),
+				0.into(),
+				u64::MAX,
+				None,
+				None,
+				None,
+				Default::default(),
+				false,
+				false,
+				&pallet_evm::EvmConfig::istanbul(),
+			)
+		}
 	}
 
 	fn create(
@@ -829,31 +858,31 @@ where
 }
 
 pub trait OnChargeDecentralizedNativeTokenFee {
-	type Error: Error;
+	type Error;
 
 	// Get the fee token of the user.
-	fn get_transaction_fee_token(from: &H160) -> H160;
+	fn get_transaction_fee_token(from: H160) -> H160;
 
 	// Get the fee token of the validator and its conversion rate.
-	fn get_transaction_conversion_rate(validator: &H160) -> (U256, U256);
+	fn get_transaction_conversion_rate(validator: H160, token: H160) -> (U256, U256);
 
 	// Withdraws the fee from the user.
 	fn withdraw_fee(
-		from: &H160,
-		token: &H160,
+		from: H160,
+		token: H160,
 		conversion_rate: (U256, U256),
 		amount: U256,
 	) -> Result<(), Self::Error>;
 
 	// Corrects the fee if the actual amount is different from the paid amount.
 	fn correct_fee(
-		from: &H160,
-		token: &H160,
+		from: H160,
+		token: H160,
 		conversion_rate: (U256, U256),
 		paid_amount: U256,
 		actual_amount: U256,
 	) -> Result<(), Self::Error>;
 
 	// Distributes the fee to the validator and dApp.
-	fn pay_fees(actual_amount: U256, validator: &H160, to: &H160) -> Result<(), Self::Error>;
+	fn pay_fees(actual_amount: U256, validator: H160, to: H160) -> Result<(), Self::Error>;
 }

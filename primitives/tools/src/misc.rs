@@ -1,3 +1,5 @@
+use sp_core::{H256, U256};
+
 #[macro_export]
 macro_rules! map_err {
 	($result:expr, $func:expr) => {

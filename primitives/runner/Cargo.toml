@@ -19,9 +19,16 @@ log = { workspace = true, default-features = false }
 pallet-evm = { workspace = true }
 pallet-timestamp = { workspace = true }
 fp-evm = { workspace = true }
+stbl-tools = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
 
 [dev-dependencies]
+hex = "0.4"
 pallet-balances = { workspace = true, features = ["default"] }
+pallet-dnt-fee-controller = { workspace = true }
+pallet-erc20-manager = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
+pallet-validator-fee-selector ={ workspace = true }
 
 [features]
 default = ["std"]
@@ -41,7 +48,9 @@ std = [
 	"sp-io/std",
 	"pallet-evm/std",
 	"pallet-timestamp/std",
+	"pallet-dnt-fee-controller/std",
 	"fp-evm/std",
+	"pallet-user-fee-selector/std"
 ]
 forbid-evm-reentrancy = ["dep:environmental"]
 try-runtime = ['frame-support/try-runtime']
