@@ -373,8 +373,8 @@ where
 				config,
 			)?;
 		}
-		// input lenght greater than 2 means that we are calling a contract
-		// where only the first two bytes are just the 0x prefix, a regular transfer of ETH
+		// input length greater than 2 means that we are calling a contract
+		// where only the first two bytes are just the 0x prefix
 		if input.len() > 2 {
 			let precompiles = T::PrecompilesValue::get();
 			Self::execute(
@@ -391,6 +391,7 @@ where
 				},
 			)
 		} else {
+			// input less than 2 (0x) means that we are doing a regular ETH transfer
 			// we get the user fee token address from the source account
 			let user_token_address = U::get_user_fee_token(source);
 			// substract the value from the user
