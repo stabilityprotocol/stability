@@ -414,8 +414,8 @@ impl pallet_evm::Config for Runtime {
 	type PrecompilesValue = PrecompilesValue;
 	type ChainId = EVMChainId;
 	type BlockGasLimit = BlockGasLimit;
-	type Runner = StabilityRunner<Self>;
-	type OnChargeTransaction = pallet_evm_fee_controller::Pallet<Self>;
+	type Runner = StabilityRunner<Self, DNTFeeController>;
+	type OnChargeTransaction = ();
 	type FindAuthor = FindAuthorLinkedOrTruncated<Aura>;
 }
 
@@ -424,7 +424,7 @@ impl pallet_ethereum::Config for Runtime {
 	type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
 }
 
-impl pallet_evm_fee_controller::Config for Runtime {
+impl pallet_dnt_fee_controller::Config for Runtime {
 	type ERC20Manager = pallet_erc20_manager::Pallet<Self>;
 	type UserFeeTokenController = pallet_user_fee_selector::Pallet<Self>;
 	type ValidatorTokenController = pallet_validator_fee_selector::Pallet<Self>;
@@ -660,7 +660,7 @@ construct_runtime!(
 		ValidatorFeeSelector: pallet_validator_fee_selector,
 		SupportedTokensManager: pallet_supported_tokens_manager,
 		ERC20Manager: pallet_erc20_manager,
-		EVMFeeController: pallet_evm_fee_controller,
+		DNTFeeController: pallet_dnt_fee_controller,
 	}
 );
 

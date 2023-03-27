@@ -114,7 +114,7 @@ pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
-pallet-evm-fee-controller = { workspace = true }
+pallet-dnt-fee-controller = { workspace = true }
 pallet-session = { workspace = true }
 pallet-im-online = { workspace = true }
 # Frontier

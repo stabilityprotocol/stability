@@ -22,6 +22,10 @@ fp-evm = { workspace = true }
 
 [dev-dependencies]
 pallet-balances = { workspace = true, features = ["default"] }
+pallet-dnt-fee-controller = { workspace = true }
+pallet-erc20-manager = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
+pallet-validator-fee-selector ={ workspace = true }
 
 [features]
 default = ["std"]
@@ -41,6 +45,7 @@ std = [
 	"sp-io/std",
 	"pallet-evm/std",
 	"pallet-timestamp/std",
+	"pallet-dnt-fee-controller/std",
 	"fp-evm/std",
 ]
 forbid-evm-reentrancy = ["dep:environmental"]
