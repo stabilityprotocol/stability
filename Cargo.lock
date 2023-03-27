@@ -5791,16 +5791,19 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "hex",
  "log",
  "pallet-balances",
  "pallet-evm",
  "pallet-timestamp",
+ "pallet-user-fee-selector",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "stbl-tools",
 ]
 
 [[package]]
