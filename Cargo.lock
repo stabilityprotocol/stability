@@ -4609,6 +4609,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-upgrade-runtime-proposal"
+version = "1.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "sp-version",
+ "stbl-tools",
+ "substrate-test-runtime-client",
+ "syn",
+]
+
+[[package]]
 name = "pallet-user-fee-selector"
 version = "0.1.0"
 dependencies = [
@@ -5076,6 +5096,30 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "precompile-upgrade-runtime-controller"
+version = "0.1.0"
+dependencies = [
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-session",
+ "pallet-timestamp",
+ "pallet-upgrade-runtime-proposal",
+ "parity-scale-codec",
+ "precompile-utils",
+ "scale-info",
+ "sha3",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "sp-version",
+ "substrate-test-runtime-client",
 ]
 
 [[package]]
@@ -5748,16 +5792,19 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "hex",
  "log",
  "pallet-balances",
  "pallet-evm",
  "pallet-timestamp",
+ "pallet-user-fee-selector",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "stbl-tools",
 ]
 
 [[package]]
@@ -8154,6 +8201,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-upgrade-runtime-proposal",
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
  "pallet-validator-set",
@@ -8162,6 +8210,7 @@ dependencies = [
  "precompile-fee-token-selector",
  "precompile-map-svm-evm-controller",
  "precompile-supported-tokens-manager",
+ "precompile-upgrade-runtime-controller",
  "precompile-utils",
  "precompile-validator-controller",
  "precompile-validator-fee-selector",
@@ -8474,6 +8523,94 @@ dependencies = [
  "prometheus",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "substrate-test-client"
+version = "2.0.1"
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+dependencies = [
+ "array-bytes",
+ "async-trait",
+ "futures",
+ "parity-scale-codec",
+ "sc-client-api",
+ "sc-client-db",
+ "sc-consensus",
+ "sc-executor",
+ "sc-offchain",
+ "sc-service",
+ "serde",
+ "serde_json",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-keyring",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-state-machine",
+]
+
+[[package]]
+name = "substrate-test-runtime"
+version = "2.0.0"
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+dependencies = [
+ "beefy-merkle-tree",
+ "cfg-if",
+ "frame-support",
+ "frame-system",
+ "frame-system-rpc-runtime-api",
+ "log",
+ "memory-db",
+ "pallet-babe",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "sc-service",
+ "scale-info",
+ "serde",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-beefy",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-consensus-babe",
+ "sp-core",
+ "sp-externalities",
+ "sp-finality-grandpa",
+ "sp-inherents",
+ "sp-io",
+ "sp-keyring",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-runtime-interface",
+ "sp-session",
+ "sp-state-machine",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-trie",
+ "sp-version",
+ "substrate-wasm-builder",
+ "trie-db",
+]
+
+[[package]]
+name = "substrate-test-runtime-client"
+version = "2.0.0"
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
+dependencies = [
+ "futures",
+ "parity-scale-codec",
+ "sc-block-builder",
+ "sc-client-api",
+ "sc-consensus",
+ "sp-api",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-runtime",
+ "substrate-test-client",
+ "substrate-test-runtime",
 ]
 
 [[package]]
