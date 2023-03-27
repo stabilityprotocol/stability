@@ -5,6 +5,7 @@ use core::str::FromStr;
 use crate::mock::MockUserFeeTokenController;
 
 use super::*;
+use evm::ExitSucceed;
 use mock::{new_test_ext, Balances, Runtime};
 use pallet_evm::AddressMapping;
 use sp_core::{bytes::from_hex, H160, U256};
@@ -35,6 +36,62 @@ fn test_forwards_a_call_op() {
 		let acc_balance = Balances::free_balance(&account_id);
 		assert!(res.is_ok());
 		assert_eq!(acc_balance, 1_000_000_000_000_000_000u128);
+	});
+}
+
+#[test]
+fn test_sends_users_token_on_call() {
+	let config = evm::Config::istanbul();
+	let acc = H160::from_str("A38395b264f232ffF4bb294b5947092E359dDE88")
+		.expect("internal H160 is valid; qed");
+	let token_addr = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
+
+	new_test_ext().execute_with(|| {
+		let res = Runner::<Runtime, MockUserFeeTokenController>::call(
+			acc,
+			token_addr,
+			vec![],
+			U256::from(100_u128),
+			u64::MAX,
+			None,
+			None,
+			None,
+			vec![],
+			false,
+			false,
+			&config,
+		);
+		assert!(res.is_ok());
+		// pallet_balances
+		let account_id = pallet_evm::HashedAddressMapping::<BlakeTwo256>::into_account_id(acc);
+		let acc_balance = Balances::free_balance(&account_id);
+		assert_eq!(acc_balance, 1_000_000_000_000_000_000u128);
+		// end pallet_balances
+
+		let target = Runner::<Runtime, MockUserFeeTokenController>::call(
+			acc,
+			token_addr,
+			stbl_tools::eth::generate_calldata("balanceOf(address)", &vec![token_addr.into()]),
+			U256::from(0),
+			u64::MAX,
+			None,
+			None,
+			None,
+			vec![],
+			false,
+			false,
+			&config,
+		);
+		assert!(target.is_ok());
+		let target_res = target.unwrap();
+		assert_eq!(
+			target_res.exit_reason,
+			ExitReason::Succeed(ExitSucceed::Returned)
+		);
+
+		let mut expected_value = [0u8; 32];
+		U256::from(100_u128).to_big_endian(&mut expected_value);
+		assert_eq!(target_res.value, expected_value);
 	});
 }
 

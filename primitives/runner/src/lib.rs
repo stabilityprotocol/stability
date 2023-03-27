@@ -373,6 +373,8 @@ where
 				config,
 			)?;
 		}
+		// input lenght greater than 2 means that we are calling a contract
+		// where only the first two bytes are just the 0x prefix, a regular transfer of ETH
 		if input.len() > 2 {
 			let precompiles = T::PrecompilesValue::get();
 			Self::execute(
