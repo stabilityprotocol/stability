@@ -375,7 +375,7 @@ where
 		}
 		// input length greater than 2 means that we are calling a contract
 		// where only the first two bytes are just the 0x prefix
-		if input.len() > 2 {
+		if input.len() > 0 {
 			let precompiles = T::PrecompilesValue::get();
 			Self::execute(
 				source,
