@@ -151,4 +151,5 @@ precompile-map-svm-evm-controller = { workspace = true }
 precompile-supported-tokens-manager = { workspace = true }
 pallet-validator-set = { workspace = true }
 runner = { workspace = true }
+precompile-fee-rewards-vault-controller = { workspace = true }
 

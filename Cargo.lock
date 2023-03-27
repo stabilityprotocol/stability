@@ -4401,6 +4401,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-fee-rewards-vault"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-evm",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-tools",
+]
+
+[[package]]
 name = "pallet-grandpa"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
@@ -4992,6 +5008,30 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "precompile-fee-rewards-vault-controller"
+version = "0.1.0"
+dependencies = [
+ "evm",
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-fee-rewards-vault",
+ "pallet-session",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "precompile-utils",
+ "scale-info",
+ "sha3",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-tools",
 ]
 
 [[package]]
@@ -8159,6 +8199,7 @@ dependencies = [
  "pallet-validator-set",
  "parity-scale-codec",
  "precompile-balances-erc20",
+ "precompile-fee-rewards-vault-controller",
  "precompile-fee-token-selector",
  "precompile-map-svm-evm-controller",
  "precompile-supported-tokens-manager",

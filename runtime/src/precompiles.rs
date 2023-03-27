@@ -13,6 +13,7 @@ use precompile_supported_tokens_manager::SupportedTokensManagerPrecompile;
 use precompile_utils::precompile_set::*;
 use precompile_validator_fee_selector::ValidatorFeeManagerPrecompile;
 use precompile_validator_controller::ValidatorControllerPrecompile;
+use precompile_fee_rewards_vault_controller::FeeRewardsVaultControllerPrecompile;
 use sp_core::H160;
 
 use crate::{
@@ -108,6 +109,7 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 				>,
 				PrecompileAt<AddressU64<2052>, MapSvmEvmControllerPrecompile<R>>,
 				PrecompileAt<AddressU64<2053>, ValidatorControllerPrecompile<R, DefaultOwner>>,
+				PrecompileAt<AddressU64<2054>, FeeRewardsVaultControllerPrecompile<R, DefaultOwner>>
 			),
 		>,
 	),

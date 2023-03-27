@@ -27,3 +27,9 @@ macro_rules! none_or_err {
 		}
 	};
 }
+
+pub fn u256_to_h256(value: U256) -> H256 {
+	let mut tmp = [0u8; 32];
+	value.to_big_endian(&mut tmp);
+	H256::from(tmp)
+}

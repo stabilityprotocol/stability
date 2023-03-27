@@ -15,6 +15,7 @@ members = [
     'precompiles/token-fee-controller/validator-fee-selector',
     'precompiles/token-fee-controller/supported-tokens-manager',
     'precompiles/map-svm-evm-controller',
+    'precompiles/fee-rewards-vault-controller',
     'primitives/tools',
     'primitives/fee-compatible-api',
     'pallets/erc20-manager',
@@ -22,6 +23,7 @@ members = [
     'pallets/token-fee-controller/supported-tokens-manager',
     'pallets/token-fee-controller/user-fee-selector',
     'pallets/token-fee-controller/validator-fee-selector',
+    'pallets/fee-rewards-vault',
     'primitives/tools',
 	'pallets/root-controller',
     'pallets/map-svm-evm',
@@ -189,7 +191,8 @@ pallet-map-svm-evm = { path = "./pallets/map-svm-evm", default-features = false 
 stbl-tools = { path = "./primitives/tools", default-features = false }
 precompile-map-svm-evm-controller = { path = "./precompiles/map-svm-evm-controller", default-features = false }
 precompile-supported-tokens-manager = { path = "./precompiles/token-fee-controller/supported-tokens-manager", default-features = false }
-
+pallet-fee-rewards-vault = { path = "./pallets/fee-rewards-vault", default-features = false }
+precompile-fee-rewards-vault-controller = { path = "./precompiles/fee-rewards-vault-controller", default-features = false }
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }
 stability-test-runtime = { path = "./test-utils/stability-runtime", default-features = false }

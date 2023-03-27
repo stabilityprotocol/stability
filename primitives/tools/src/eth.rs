@@ -1,6 +1,8 @@
 use sp_core::{H160, H256};
 use sp_runtime::traits::Keccak256;
 use sp_std::vec::Vec;
+use sp_std::prelude::*;
+use sp_std::vec;
 
 pub use ethereum::TransactionV2 as Transaction;
 
@@ -79,4 +81,15 @@ pub fn recover_signer(transaction: &Transaction) -> Option<H160> {
 	}
 	let pubkey = sp_io::crypto::secp256k1_ecdsa_recover(&sig, &msg).ok()?;
 	Some(H160::from(H256::from(sp_io::hashing::keccak_256(&pubkey))))
+}
+
+
+pub fn code_implements_function(code: &[u8], function: &str) -> bool {
+	let hash = <Keccak256 as sp_core::Hasher>::hash(function.as_bytes());
+	let selector = &hash.as_bytes()[0..4];
+
+    let mut encodedByteCodeFunction =  vec![63];
+	encodedByteCodeFunction.extend_from_slice(selector);
+	
+	code.windows(selector.len()).any(|window| window == selector)
 }
