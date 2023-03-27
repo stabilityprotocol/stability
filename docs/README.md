@@ -4,3 +4,4 @@
 - [Council](COUNCIL.md)
 - [Parameters](PARAMETERS.md)
 - [Run with Docker](../docker/README.md)
+- [Upgrade runtime](UPGRADE-RUNTIME.md)

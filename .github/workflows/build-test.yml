@@ -1,16 +1,14 @@
-name: Cargo Test
+name: Build Test Image
 
 on:
   workflow_dispatch:
   push:
     branches: ["main"]
-  pull_request:
-    branches: ["main"]
 
 env:
   CARGO_TERM_COLOR: always
-  IMAGE_NAME: stability-test
   REGISTRY: ghcr.io
+  IMAGE_NAME: stability-test
 jobs:
   test:
     runs-on: self-hosted
@@ -32,10 +30,8 @@ jobs:
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           context: .
-          file: ./docker/test/optimized.Dockerfile
-          load: true
+          file: ./docker/test/Dockerfile
+          push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          tags: ${{env.IMAGE_NAME}}:${{github.sha}}
-      - name: Run tests
-        run: docker run ${{env.IMAGE_NAME}}:${{github.sha}}
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest, ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{github.sha}}

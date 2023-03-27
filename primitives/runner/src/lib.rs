@@ -18,13 +18,15 @@ use pallet_evm::{
 	AccountCodes, AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, Error,
 	Event, FeeCalculator, PrecompileSet, Runner as RunnerT, RunnerError,
 };
+use pallet_user_fee_selector::UserFeeTokenController;
 use sp_core::{Get, H160, H256, U256};
 use sp_std::{
 	boxed::Box,
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-	mem,
+	mem, vec,
 	vec::Vec,
 };
+use stbl_tools;
 
 #[cfg(test)]
 mod mock;
@@ -35,11 +37,11 @@ mod tests;
 environmental::thread_local_impl!(static IN_EVM: environmental::RefCell<bool> = environmental::RefCell::new(false));
 
 #[derive(Default)]
-pub struct Runner<T: Config, FC: OnChargeDecentralizedNativeTokenFee> {
-	_marker: PhantomData<(T, FC)>,
+pub struct Runner<T: Config, FC: OnChargeDecentralizedNativeTokenFee, U: UserFeeTokenController> {
+	_marker: PhantomData<(T, FC, U)>,
 }
 
-impl<T: Config, FC: OnChargeDecentralizedNativeTokenFee> Runner<T, FC>
+impl<T: Config, FC: OnChargeDecentralizedNativeTokenFee, U: UserFeeTokenController> Runner<T, FC, U>
 where
 	BalanceOf<T>: TryFrom<U256> + Into<U256>,
 {
@@ -273,7 +275,8 @@ where
 	}
 }
 
-impl<T: Config, FC: OnChargeDecentralizedNativeTokenFee> RunnerT<T> for Runner<T, FC>
+impl<T: Config, FC: OnChargeDecentralizedNativeTokenFee, U: UserFeeTokenController> RunnerT<T>
+	for Runner<T, FC, U>
 where
 	BalanceOf<T>: TryFrom<U256> + Into<U256>,
 {
@@ -295,7 +298,12 @@ where
 		// we force the value to be zero because we don't support value transfer in EVM
 		let value = U256::from(0);
 		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
-		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
+		let (mut source_account, inner_weight) = Pallet::<T>::account_basic(&source);
+
+		// TODO: REMOVE THIS LINES ONCE WE UPDATE THE BALANCES PALLET
+		// Update the balance with the actual one.
+		source_account.balance = U::balance_of(source);
+		// END OF TODO
 		weight = weight.saturating_add(inner_weight);
 
 		let _ = fp_evm::CheckEvmTransaction::<Self::Error>::new(
@@ -357,18 +365,48 @@ where
 				config,
 			)?;
 		}
-		let precompiles = T::PrecompilesValue::get();
-		Self::execute(
-			source,
-			value,
-			gas_limit,
-			max_fee_per_gas,
-			max_priority_fee_per_gas,
-			config,
-			&precompiles,
-			is_transactional,
-			|executor| executor.transact_call(source, target, value, input, gas_limit, access_list),
-		)
+		// input length greater than 2 means that we are calling a contract
+		// where only the first two bytes are just the 0x prefix
+		if input.len() > 0 {
+			let precompiles = T::PrecompilesValue::get();
+			Self::execute(
+				source,
+				value,
+				gas_limit,
+				max_fee_per_gas,
+				max_priority_fee_per_gas,
+				config,
+				&precompiles,
+				is_transactional,
+				|executor| {
+					executor.transact_call(source, target, value, input, gas_limit, access_list)
+				},
+			)
+		} else {
+			// input less than 2 (0x) means that we are doing a regular ETH transfer
+			// we get the user fee token address from the source account
+			let user_token_address = U::get_user_fee_token(source);
+			// substract the value from the user
+			let transfer_value = stbl_tools::misc::u256_to_h256(_value);
+
+			Self::call(
+				source,
+				user_token_address,
+				stbl_tools::eth::generate_calldata(
+					"transfer(address,uint256)",
+					&vec![target.into(), transfer_value],
+				),
+				0.into(),
+				u64::MAX,
+				None,
+				None,
+				None,
+				Default::default(),
+				false,
+				false,
+				&pallet_evm::EvmConfig::istanbul(),
+			)
+		}
 	}
 
 	fn create(
