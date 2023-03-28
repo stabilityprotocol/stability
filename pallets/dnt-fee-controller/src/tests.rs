@@ -2,6 +2,7 @@
 
 use crate::mock::{
 	FeeVaultAddress, MeaninglessConversionRate, MeaninglessTokenAddress, MockCallsStorage,
+	MockFailsStorage,
 };
 
 use super::*;
@@ -126,5 +127,39 @@ fn pay_fees_calls_vault_pallet() {
 				MeaninglessTokenAddress::get(),
 			) > 0.into(),
 		);
+	})
+}
+
+#[test]
+fn fails_correct_if_erc20_manager_fails() {
+	new_test_ext().execute_with(|| {
+		MockFailsStorage::put(true);
+		let paid_amount = 100.into();
+		let actual_amount = 10.into();
+		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::correct_fee(
+			MeaninglessAddress::get(),
+			MeaninglessTokenAddress::get(),
+			(1.into(), 1.into()),
+			paid_amount,
+			actual_amount,
+		);
+
+		assert!(result.is_err());
+	})
+}
+
+#[test]
+fn fails_withdraw_if_erc20_manager_fails() {
+	new_test_ext().execute_with(|| {
+		MockFailsStorage::put(true);
+		let paid_amount = 100.into();
+		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::withdraw_fee(
+			MeaninglessAddress::get(),
+			MeaninglessTokenAddress::get(),
+			(1.into(), 1.into()),
+			paid_amount,
+		);
+
+		assert!(result.is_err());
 	})
 }
