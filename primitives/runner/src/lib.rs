@@ -224,9 +224,11 @@ where
 			}
 		})?;
 
-		FC::pay_fees(actual_fee, validator, source).map_err(|_| RunnerError {
-			error: Error::<T>::FeeOverflow,
-			weight,
+		FC::pay_fees(token, conversion_rate, actual_fee, validator, source).map_err(|_| {
+			RunnerError {
+				error: Error::<T>::FeeOverflow,
+				weight,
+			}
 		})?;
 
 		let state = executor.into_state();
@@ -884,5 +886,11 @@ pub trait OnChargeDecentralizedNativeTokenFee {
 	) -> Result<(), Self::Error>;
 
 	// Distributes the fee to the validator and dApp.
-	fn pay_fees(actual_amount: U256, validator: H160, to: H160) -> Result<(), Self::Error>;
+	fn pay_fees(
+		token: H160,
+		conversion_rate: (U256, U256),
+		actual_amount: U256,
+		validator: H160,
+		to: H160,
+	) -> Result<(), Self::Error>;
 }

@@ -33,7 +33,9 @@ pub mod pallet {
 	pub type FeeVaultPrecompileAddressStorage<T: Config> = StorageValue<_, H160, OptionQuery>;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_evm::Config {
+	pub trait Config:
+		frame_system::Config + pallet_evm::Config + pallet_fee_rewards_vault::Config
+	{
 		type UserFeeTokenController: UserFeeTokenController;
 		type ValidatorTokenController: ValidatorFeeTokenController;
 		type ERC20Manager: ERC20Manager;
@@ -111,16 +113,28 @@ pub mod pallet {
 			Ok(())
 		}
 
-		fn pay_fees(actual_amount: U256, validator: H160, to: H160) -> Result<(), Self::Error> {
+		fn pay_fees(
+			token: H160,
+			conversion_rate: (U256, U256),
+			actual_amount: U256,
+			validator: H160,
+			to: H160,
+		) -> Result<(), Self::Error> {
+			let mapped_amount = actual_amount
+				.saturating_mul(conversion_rate.0)
+				.div_mod(conversion_rate.1)
+				.0;
+			let amount_validator = mapped_amount.saturating_sub(mapped_amount / 2);
+
 			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
 				validator,
 				token,
-				actual_amount / 2,
+				amount_validator,
 			);
 			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
 				to,
 				token,
-				actual_amount / 2,
+				mapped_amount - amount_validator,
 			);
 
 			Ok(())
