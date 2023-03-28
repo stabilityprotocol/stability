@@ -4241,6 +4241,7 @@ dependencies = [
  "frame-system",
  "pallet-erc20-manager",
  "pallet-evm",
+ "pallet-fee-rewards-vault",
  "pallet-supported-tokens-manager",
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
