@@ -112,7 +112,6 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 				PrecompileAt<AddressU64<2053>, ValidatorControllerPrecompile<R, DefaultOwner>>,
 				PrecompileAt<AddressU64<2054>, UpgradeRuntimeControllerPrecompile<R, DefaultOwner>>,
 				PrecompileAt<AddressU64<2055>, FeeRewardsVaultControllerPrecompile<R, DefaultOwner>>
-
 			),
 		>,
 	),

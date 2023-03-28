@@ -161,23 +161,27 @@ where
 			return Err(revert("sender is not allowed to claim reward"));
 		}
 
-		pallet_fee_rewards_vault::Pallet::<Runtime>::add_claimable_reward(dapp.into(), token.into(), U256::from(100000000));
 		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(dapp.into(), token.into());
 
 		let encoded_data = stbl_tools::eth::generate_calldata(&"transfer(address,uint256)", &vec![sender.into(), stbl_tools::misc::u256_to_h256(reward)]);
 	
-		handle.call(dapp.into(), None, encoded_data, Some(handle.remaining_gas()), false, &Context {
-			address: dapp.into(),
+		let (reason, _) =  handle.call(token.into(), None, encoded_data, Some(handle.remaining_gas()), false, &Context {
+			address: token.into(),
 			caller: handle.context().address, 
 			apparent_value: U256::zero()
 		});
 		
+		if reason != ExitReason::Succeed(ExitSucceed::Returned) {
+			return Err(revert("fail trying to transfer reward"));
+		}
+
 		pallet_fee_rewards_vault::Pallet::<Runtime>::sub_claimable_reward(dapp.into(), token.into(), reward);
 
 		Ok(())
 	}
 
 	#[precompile::public("canClaimReward(address,address)")]
+	#[precompile::view]
     fn can_claim_reward(handle: &mut impl PrecompileHandle, claimant: Address, dapp: Address) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
@@ -219,6 +223,7 @@ where
 	}
 
 	#[precompile::public("getClaimableReward(address,address)")]
+	#[precompile::view]
 	fn get_claimable_reward(handle: &mut impl PrecompileHandle, dapp: Address, token: Address) -> EvmResult<U256> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
@@ -229,6 +234,7 @@ where
 	}
 
 	#[precompile::public("isWhitelisted(address)")]
+	#[precompile::view]
 	fn is_whitelisted(handle: &mut impl PrecompileHandle, dapp: Address) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
@@ -238,7 +244,7 @@ where
 		Ok(whitelisted)
 	}
 
-	#[precompile::public("setWhitelisted(address)")]
+	#[precompile::public("setWhitelisted(address,bool)")]
 	fn set_whitelist(handle: &mut impl PrecompileHandle, dapp: Address, is_whitelisted: bool) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
