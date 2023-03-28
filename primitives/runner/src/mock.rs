@@ -124,34 +124,34 @@ pub struct MockDNTFeeController;
 impl crate::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 	type Error = ();
 
-	fn get_transaction_fee_token(from: H160) -> H160 {
+	fn get_transaction_fee_token(_from: H160) -> H160 {
 		Default::default()
 	}
 
-	fn get_transaction_conversion_rate(validator: H160, token: H160) -> (U256, U256) {
+	fn get_transaction_conversion_rate(_validator: H160, _token: H160) -> (U256, U256) {
 		(Default::default(), Default::default())
 	}
 
 	fn withdraw_fee(
-		from: H160,
-		token: H160,
-		conversion_rate: (U256, U256),
-		amount: U256,
+		_from: H160,
+		_token: H160,
+		_conversion_rate: (U256, U256),
+		_amount: U256,
 	) -> Result<(), Self::Error> {
 		Ok(())
 	}
 
 	fn correct_fee(
-		from: H160,
-		token: H160,
-		conversion_rate: (U256, U256),
-		paid_amount: U256,
-		actual_amount: U256,
+		_from: H160,
+		_token: H160,
+		_conversion_rate: (U256, U256),
+		_paid_amount: U256,
+		_actual_amount: U256,
 	) -> Result<(), Self::Error> {
 		Ok(())
 	}
 
-	fn pay_fees(actual_amount: U256, validator: H160, to: H160) -> Result<(), Self::Error> {
+	fn pay_fees(_actual_amount: U256, _validator: H160, _to: H160) -> Result<(), Self::Error> {
 		Ok(())
 	}
 }

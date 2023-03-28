@@ -91,17 +91,39 @@ pub mod pallet {
 		}
 
 		fn correct_fee(
-			_from: H160,
-			_token: H160,
-			_conversion_rate: (U256, U256),
-			_paid_amount: U256,
-			_actual_amount: U256,
+			from: H160,
+			token: H160,
+			conversion_rate: (U256, U256),
+			paid_amount: U256,
+			actual_amount: U256,
 		) -> Result<(), Self::Error> {
-			todo!()
+			let over_fee = paid_amount.saturating_sub(actual_amount);
+			let mapped_amount = over_fee
+				.saturating_mul(conversion_rate.0)
+				.div_mod(conversion_rate.1)
+				.0;
+			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get().unwrap();
+			T::ERC20Manager::withdraw_amount(token, fee_vault, mapped_amount)
+				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
+			T::ERC20Manager::deposit_amount(token, from, mapped_amount)
+				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
+
+			Ok(())
 		}
 
-		fn pay_fees(_actual_amount: U256, _validator: H160, _to: H160) -> Result<(), Self::Error> {
-			todo!()
+		fn pay_fees(actual_amount: U256, validator: H160, to: H160) -> Result<(), Self::Error> {
+			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
+				validator,
+				token,
+				actual_amount / 2,
+			);
+			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
+				to,
+				token,
+				actual_amount / 2,
+			);
+
+			Ok(())
 		}
 	}
 
