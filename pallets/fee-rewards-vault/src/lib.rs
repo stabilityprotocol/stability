@@ -1,15 +1,19 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 pub use pallet::*;
 
 use sp_core::{H160, U256};
-use sp_std::prelude::*;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
-	use frame_system::pallet_prelude::*;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -18,7 +22,7 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config  + pallet_evm::Config {
+	pub trait Config: frame_system::Config {
 	}
 
 	// double map
@@ -53,14 +57,24 @@ pub mod pallet {
 			Self::claimable_reward(address, token)
 		}
 
-		pub fn add_claimable_reward(address: H160, token: H160, amount: U256) {
+		pub fn add_claimable_reward(address: H160, token: H160, amount: U256) -> Result<(), &'static str> {
 			let current_amount = Self::claimable_reward(address, token);
-			ClaimableReward::<T>::insert(address, token, current_amount + amount);
+
+			let new_amount = current_amount.checked_add(amount)
+				.ok_or("Overflow adding a new claimable reward")?;
+	
+			ClaimableReward::<T>::insert(address, token, new_amount);
+			Ok(())
 		}
 		
-		pub fn sub_claimable_reward(address: H160, token: H160, amount: U256) {
+		pub fn sub_claimable_reward(address: H160, token: H160, amount: U256)-> Result<(), &'static str> {
 			let current_amount = Self::claimable_reward(address, token);
-			ClaimableReward::<T>::insert(address, token, current_amount - amount);
+
+			let new_amount = current_amount.checked_sub(amount)
+				.ok_or("Insufficient balance")?;
+
+			ClaimableReward::<T>::insert(address, token, new_amount);
+			Ok(())
 		}
 	}
 }
