@@ -953,7 +953,7 @@ impl_runtime_apis! {
 			let address_erc20 = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(address);
 			// call to the EVM for getting the balance of the user
 			let balance = <Runtime as pallet_evm::Config>::Runner::call(
-				address,
+				H160::zero(),
 				address_erc20,
 				stbl_tools::eth::generate_calldata("balanceOf(address)", &vec![address.into()]),
 				0.into(),
