@@ -671,6 +671,8 @@ impl pallet_upgrade_runtime_proposal::Config for Runtime {
 	type MaxSizeOfCode = MaxSizeOfCode;
 }
 
+impl pallet_fee_rewards_vault::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -702,6 +704,7 @@ construct_runtime!(
 		ERC20Manager: pallet_erc20_manager,
 		DNTFeeController: pallet_dnt_fee_controller,
 		UpgradeRuntimeProposal: pallet_upgrade_runtime_proposal,
+		FeeRewardsVault: pallet_fee_rewards_vault,
 	}
 );
 

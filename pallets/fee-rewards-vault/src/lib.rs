@@ -63,7 +63,4 @@ pub mod pallet {
 			ClaimableReward::<T>::insert(address, token, current_amount - amount);
 		}
 	}
-
-
-
 }

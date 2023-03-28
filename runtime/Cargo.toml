@@ -157,4 +157,5 @@ pallet-upgrade-runtime-proposal = { workspace = true }
 precompile-upgrade-runtime-controller = { workspace = true }
 runner = { workspace = true }
 precompile-fee-rewards-vault-controller = { workspace = true }
+pallet-fee-rewards-vault = { workspace = true }
 
