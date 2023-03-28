@@ -29,6 +29,8 @@ pub mod pallet {
 		NoAuthorFound,
 		CachedTokenNotAvailable,
 		ERC20WithdrawFailed,
+		ERC20DepositFailed,
+		FeeVaultOverflow,
 	}
 
 	#[pallet::storage]
@@ -90,7 +92,7 @@ pub mod pallet {
 			T::ERC20Manager::withdraw_amount(token, from, mapped_amount)
 				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
 			T::ERC20Manager::deposit_amount(token, fee_vault, mapped_amount)
-				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
+				.map_err(|_| Error::<T>::ERC20DepositFailed)?;
 
 			Ok(())
 		}
@@ -111,7 +113,7 @@ pub mod pallet {
 			T::ERC20Manager::withdraw_amount(token, fee_vault, mapped_amount)
 				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
 			T::ERC20Manager::deposit_amount(token, from, mapped_amount)
-				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
+				.map_err(|_| Error::<T>::ERC20DepositFailed)?;
 
 			Ok(())
 		}
@@ -133,12 +135,15 @@ pub mod pallet {
 				validator,
 				token,
 				amount_validator,
-			);
+			)
+			.map_err(|_| Error::<T>::FeeVaultOverflow)?;
+
 			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
 				to,
 				token,
 				mapped_amount - amount_validator,
-			);
+			)
+			.map_err(|_| Error::<T>::FeeVaultOverflow)?;
 
 			Ok(())
 		}
