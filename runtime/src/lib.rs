@@ -12,6 +12,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode};
 use core::str::FromStr;
 use frame_support::pallet_prelude::EnsureOrigin;
+use frame_support::pallet_prelude::ValidTransaction;
 use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
@@ -24,6 +25,7 @@ use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
 	Hasher, OpaqueMetadata, H160, H256, U256,
 };
+use sp_runtime::transaction_validity::ValidTransactionBuilder;
 use sp_runtime::AccountId32;
 use sp_runtime::{
 	create_runtime_str, generic,
@@ -795,7 +797,25 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 		len: usize,
 	) -> Option<TransactionValidity> {
 		match self {
-			RuntimeCall::Ethereum(call) => call.validate_self_contained(info, dispatch_info, len),
+			// IMPORTANT: TO REMOVE BEFORE MERGING
+			RuntimeCall::Ethereum(call) => {
+				if let RuntimeCall::Ethereum(transact { transaction }) = self {
+					let nonce = match transaction {
+						pallet_ethereum::Transaction::Legacy(tx) => tx.nonce,
+						pallet_ethereum::Transaction::EIP1559(tx) => tx.nonce,
+						pallet_ethereum::Transaction::EIP2930(tx) => tx.nonce,
+					};
+					Some(
+						ValidTransactionBuilder::default()
+							.and_provides((*info, nonce))
+							.priority(dispatch_info.weight.ref_time())
+							.build(),
+					)
+				} else {
+					None
+				}
+			}
+			// IMPORTANT: TO REMOVE BEFORE MERGING
 			_ => None,
 		}
 	}
