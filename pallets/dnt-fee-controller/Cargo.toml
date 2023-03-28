@@ -21,6 +21,12 @@ pallet-supported-tokens-manager = { workspace = true }
 runner = { workspace = true }
 pallet-fee-rewards-vault = { workspace = true }
 
+[dev-dependencies]
+pallet-timestamp = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = ["std"] }
+pallet-evm-chain-id = { workspace = true, features = ["std"] }
+pallet-evm = { workspace = true, features = ["std"]}
+
 [features]
 default = ["std"]
 std = [
