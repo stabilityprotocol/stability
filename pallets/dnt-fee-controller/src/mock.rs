@@ -262,6 +262,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	<crate::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(
 		&crate::GenesisConfig {
 			fee_vault_precompile_address: FeeVaultAddress::get(),
+			validator_percentage: 50.into(),
 		},
 		&mut t,
 	)
