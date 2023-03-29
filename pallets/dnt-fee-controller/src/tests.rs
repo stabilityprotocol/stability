@@ -1,7 +1,8 @@
 #![cfg(test)]
 
 use crate::mock::{
-	FeeVaultAddress, MeaninglessConversionRate, MeaninglessTokenAddress, MockCallsStorage,
+	DNTFeeController, FeeVaultAddress, MeaninglessConversionRate, MeaninglessTokenAddress,
+	MockCallsStorage, MockFailsStorage,
 };
 
 use super::*;
@@ -103,6 +104,8 @@ fn transaction_fee_cr_returns_validator_cr() {
 fn pay_fees_calls_vault_pallet() {
 	new_test_ext().execute_with(|| {
 		let meaningless_amount = 100.into();
+		let validator_amount =
+			DNTFeeController::validator_percentage().unwrap() * meaningless_amount / 100;
 		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::pay_fees(
 			MeaninglessTokenAddress::get(),
 			(1.into(), 1.into()),
@@ -113,18 +116,103 @@ fn pay_fees_calls_vault_pallet() {
 
 		assert!(result.is_ok());
 
-		assert!(
+		assert_eq!(
 			pallet_fee_rewards_vault::Pallet::<Test>::claimable_reward(
 				MeaninglessAddress::get(),
 				MeaninglessTokenAddress::get(),
-			) > 0.into(),
+			),
+			validator_amount,
 		);
 
-		assert!(
+		assert_eq!(
 			pallet_fee_rewards_vault::Pallet::<Test>::claimable_reward(
 				MeaninglessAddress2::get(),
 				MeaninglessTokenAddress::get(),
-			) > 0.into(),
+			),
+			meaningless_amount - validator_amount,
 		);
 	})
+}
+
+#[test]
+fn pay_fees_calls_with_updated_percentages() {
+	new_test_ext().execute_with(|| {
+		let new_percentage = 10.into();
+
+		assert!(DNTFeeController::set_validator_percentage(new_percentage).is_ok());
+
+		let meaningless_amount = 100.into();
+		let validator_amount = new_percentage * meaningless_amount / 100;
+
+		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::pay_fees(
+			MeaninglessTokenAddress::get(),
+			(1.into(), 1.into()),
+			meaningless_amount,
+			MeaninglessAddress::get(),
+			MeaninglessAddress2::get(),
+		);
+
+		assert!(result.is_ok());
+
+		assert_eq!(
+			pallet_fee_rewards_vault::Pallet::<Test>::claimable_reward(
+				MeaninglessAddress::get(),
+				MeaninglessTokenAddress::get(),
+			),
+			validator_amount,
+		);
+
+		assert_eq!(
+			pallet_fee_rewards_vault::Pallet::<Test>::claimable_reward(
+				MeaninglessAddress2::get(),
+				MeaninglessTokenAddress::get(),
+			),
+			meaningless_amount - validator_amount,
+		);
+	})
+}
+
+#[test]
+fn fails_correct_if_erc20_manager_fails() {
+	new_test_ext().execute_with(|| {
+		MockFailsStorage::put(true);
+		let paid_amount = 100.into();
+		let actual_amount = 10.into();
+		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::correct_fee(
+			MeaninglessAddress::get(),
+			MeaninglessTokenAddress::get(),
+			(1.into(), 1.into()),
+			paid_amount,
+			actual_amount,
+		);
+
+		assert!(result.is_err());
+	})
+}
+
+#[test]
+fn fails_withdraw_if_erc20_manager_fails() {
+	new_test_ext().execute_with(|| {
+		MockFailsStorage::put(true);
+		let paid_amount = 100.into();
+		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::withdraw_fee(
+			MeaninglessAddress::get(),
+			MeaninglessTokenAddress::get(),
+			(1.into(), 1.into()),
+			paid_amount,
+		);
+
+		assert!(result.is_err());
+	})
+}
+
+#[test]
+fn validator_percentage_updates() {
+	new_test_ext().execute_with(|| {
+		assert_eq!(DNTFeeController::validator_percentage().unwrap(), 50.into());
+
+		assert!(DNTFeeController::set_validator_percentage(10.into()).is_ok());
+
+		assert_eq!(DNTFeeController::validator_percentage().unwrap(), 10.into());
+	});
 }

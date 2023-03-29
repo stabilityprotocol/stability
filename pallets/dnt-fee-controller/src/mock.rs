@@ -190,6 +190,7 @@ impl StorageInstance for MockPrefix {
 
 parameter_types! {
 	pub DefaultMockCallsVec: Vec<(H160, H160, U256)> = Vec::new();
+	pub DefaultFails: bool = false;
 }
 
 pub type MockCallsStorage = frame_support::pallet_prelude::StorageMap<
@@ -201,6 +202,9 @@ pub type MockCallsStorage = frame_support::pallet_prelude::StorageMap<
 	DefaultMockCallsVec,
 >;
 
+pub type MockFailsStorage =
+	frame_support::pallet_prelude::StorageValue<MockPrefix, bool, ValueQuery, DefaultFails>;
+
 pub struct MockERC20Manager;
 impl pallet_erc20_manager::ERC20Manager for MockERC20Manager {
 	type Error = ();
@@ -210,6 +214,9 @@ impl pallet_erc20_manager::ERC20Manager for MockERC20Manager {
 	}
 
 	fn withdraw_amount(token: H160, payer: H160, amount: U256) -> Result<U256, Self::Error> {
+		if MockFailsStorage::get() {
+			return Err(());
+		}
 		let mut array = MockCallsStorage::get("withdraw_amount");
 		array.push((token, payer, amount));
 		MockCallsStorage::insert("withdraw_amount", array);
@@ -217,6 +224,9 @@ impl pallet_erc20_manager::ERC20Manager for MockERC20Manager {
 	}
 
 	fn deposit_amount(token: H160, payee: H160, amount: U256) -> Result<U256, Self::Error> {
+		if MockFailsStorage::get() {
+			return Err(());
+		}
 		let mut array = MockCallsStorage::get("deposit_amount");
 		array.push((token, payee, amount));
 		MockCallsStorage::insert("deposit_amount", array);
@@ -252,6 +262,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	<crate::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(
 		&crate::GenesisConfig {
 			fee_vault_precompile_address: FeeVaultAddress::get(),
+			validator_percentage: 50.into(),
 		},
 		&mut t,
 	)

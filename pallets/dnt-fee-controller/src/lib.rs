@@ -29,11 +29,18 @@ pub mod pallet {
 		NoAuthorFound,
 		CachedTokenNotAvailable,
 		ERC20WithdrawFailed,
+		ERC20DepositFailed,
+		FeeVaultOverflow,
+		InvalidPercentage,
 	}
 
 	#[pallet::storage]
 	#[pallet::getter(fn fee_vault_precompile_address)]
 	pub type FeeVaultPrecompileAddressStorage<T: Config> = StorageValue<_, H160, OptionQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn validator_percentage)]
+	pub type ValidatorPercentageStorage<T: Config> = StorageValue<_, U256, OptionQuery>;
 
 	#[pallet::config]
 	pub trait Config:
@@ -47,6 +54,7 @@ pub mod pallet {
 	#[pallet::genesis_config]
 	pub struct GenesisConfig {
 		pub fee_vault_precompile_address: H160,
+		pub validator_percentage: U256,
 	}
 
 	#[cfg(feature = "std")]
@@ -54,6 +62,7 @@ pub mod pallet {
 		fn default() -> Self {
 			Self {
 				fee_vault_precompile_address: H160::from_low_u64_be(0),
+				validator_percentage: 50.into(),
 			}
 		}
 	}
@@ -62,6 +71,7 @@ pub mod pallet {
 	impl<T: Config> GenesisBuild<T> for GenesisConfig {
 		fn build(&self) {
 			FeeVaultPrecompileAddressStorage::<T>::put(self.fee_vault_precompile_address);
+			ValidatorPercentageStorage::<T>::put(self.validator_percentage);
 		}
 	}
 
@@ -90,7 +100,7 @@ pub mod pallet {
 			T::ERC20Manager::withdraw_amount(token, from, mapped_amount)
 				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
 			T::ERC20Manager::deposit_amount(token, fee_vault, mapped_amount)
-				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
+				.map_err(|_| Error::<T>::ERC20DepositFailed)?;
 
 			Ok(())
 		}
@@ -111,7 +121,7 @@ pub mod pallet {
 			T::ERC20Manager::withdraw_amount(token, fee_vault, mapped_amount)
 				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
 			T::ERC20Manager::deposit_amount(token, from, mapped_amount)
-				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
+				.map_err(|_| Error::<T>::ERC20DepositFailed)?;
 
 			Ok(())
 		}
@@ -127,19 +137,35 @@ pub mod pallet {
 				.saturating_mul(conversion_rate.0)
 				.div_mod(conversion_rate.1)
 				.0;
-			let amount_validator = mapped_amount.saturating_sub(mapped_amount / 2);
+			let amount_validator = mapped_amount
+				.saturating_mul(ValidatorPercentageStorage::<T>::get().unwrap().into())
+				.div_mod(U256::from(100))
+				.0;
 
 			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
 				validator,
 				token,
 				amount_validator,
-			);
+			)
+			.map_err(|_| Error::<T>::FeeVaultOverflow)?;
+
 			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
 				to,
 				token,
 				mapped_amount - amount_validator,
-			);
+			)
+			.map_err(|_| Error::<T>::FeeVaultOverflow)?;
 
+			Ok(())
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		pub fn set_validator_percentage(percentage: U256) -> Result<(), Error<T>> {
+			if percentage > 100.into() {
+				return Err(Error::<T>::InvalidPercentage);
+			}
+			ValidatorPercentageStorage::<T>::put(percentage);
 			Ok(())
 		}
 	}
