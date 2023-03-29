@@ -2,6 +2,9 @@
 pragma solidity >=0.8.3;
 
 interface FeeRewardsVaultController {
+    event RewardClaimed(address dapp, address claimer, address token);
+    event WhitelistStatusUpdated(address dapp, bool isWhitelisted);
+
     function claimReward(address dapp, address token) external;
     function setWhitelisted(address dapp, bool isWhitelisted) external; // onlyOwner
     function canClaimReward(address,address) external view returns (bool);

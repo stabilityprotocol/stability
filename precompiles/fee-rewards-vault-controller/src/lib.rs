@@ -17,23 +17,29 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(test, feature(assert_matches))]
 
+#[cfg(test)]
+mod mock;
 
-use codec::Decode;
-use sp_std::vec;
+#[cfg(test)]
+mod tests;
+
 use core::str::FromStr;
 use fp_evm::PrecompileHandle;
 use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
-use evm::ExitReason;
-use evm::ExitSucceed;
+
 use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};
 
 use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
 
+use evm::ExitReason;
+use evm::ExitSucceed;
+use evm::Context;
 use sp_core::Get;
 use sp_core::{H160, H256, U256};
-use fp_evm::Context;
+use sp_std::vec::Vec;
+
 use sp_std::marker::PhantomData;
 
 pub const CALL_DATA_LIMIT: u32 = 2u32.pow(16);
@@ -43,6 +49,10 @@ parameter_types! {
 }
 
 pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
+
+pub const SELECTOR_REWARD_CLAIMED: [u8; 32] = keccak256!("RewardClaimed(address,address,address)");
+pub const SELECTOR_WHITELIST_STATUS_UPDATED: [u8; 32] = keccak256!("WhitelistStatusUpdated(address,bool)");
+
 
 /// Storage prefix for owner.
 pub struct OwnerPrefix;
@@ -71,6 +81,7 @@ pub type ClaimableOwnerStorage = StorageValue<ClaimableOwner, H160, ValueQuery, 
 pub struct FeeRewardsVaultControllerPrecompile<Runtime, DefaultOwner: Get<H160> + 'static>(
 	PhantomData<(Runtime, DefaultOwner)>,
 );
+
 
 #[precompile_utils::precompile]
 impl<Runtime, DefaultOwner> FeeRewardsVaultControllerPrecompile<Runtime, DefaultOwner>
@@ -163,6 +174,8 @@ where
 
 		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(dapp.into(), token.into());
 
+		pallet_fee_rewards_vault::Pallet::<Runtime>::sub_claimable_reward(dapp.into(), token.into(), reward);
+	
 		let encoded_data = stbl_tools::eth::generate_calldata(&"transfer(address,uint256)", &vec![sender.into(), stbl_tools::misc::u256_to_h256(reward)]);
 	
 		let (reason, _) =  handle.call(token.into(), None, encoded_data, Some(handle.remaining_gas()), false, &Context {
@@ -175,8 +188,8 @@ where
 			return Err(revert("fail trying to transfer reward"));
 		}
 
-		pallet_fee_rewards_vault::Pallet::<Runtime>::sub_claimable_reward(dapp.into(), token.into(), reward);
-
+		log3(handle.context().address, SELECTOR_REWARD_CLAIMED, dapp.0, sender, Vec::from(token.0.to_fixed_bytes())).record(handle)?;
+		
 		Ok(())
 	}
 
@@ -190,14 +203,14 @@ where
 			return Ok(false);
 		}
 
-		if claimant == dapp {
-			return Ok(true);
-		}
-
 		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(dapp.into());
 
 		if code.is_empty() {
 			return Ok(false);
+		}
+
+		if claimant == dapp {
+			return Ok(true);
 		}
 
 		if !stbl_tools::eth::code_implements_function(code.as_slice(), &"owner()") {
@@ -207,7 +220,7 @@ where
 		let call_data = stbl_tools::eth::generate_calldata(&"owner()", &vec![]);
 
 		
-		let (reason, output) = handle.call(dapp.into(), None, call_data, Some(handle.remaining_gas()), false, &Context {
+		let (reason, output) = handle.call(dapp.into(), None, call_data, Some(handle.remaining_gas()), true, &Context {
 			address: dapp.into(),
 			caller: handle.context().address, 
 			apparent_value: U256::zero()
@@ -258,6 +271,15 @@ where
 
 		pallet_fee_rewards_vault::Pallet::<Runtime>::set_whitelist(dapp.into(), is_whitelisted);
 
+
+		log2(handle.context().address, SELECTOR_WHITELIST_STATUS_UPDATED, dapp.0, bool_to_vec_u8(is_whitelisted)).record(handle)?;
+		
 		Ok(true)
 	}
+}
+
+fn bool_to_vec_u8(value: bool) -> Vec<u8> {
+    let mut vec = Vec::new();
+    vec.push(value as u8);
+    vec
 }
