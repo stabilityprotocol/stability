@@ -88,8 +88,10 @@ pub fn code_implements_function(code: &[u8], function: &str) -> bool {
 	let hash = <Keccak256 as sp_core::Hasher>::hash(function.as_bytes());
 	let selector = &hash.as_bytes()[0..4];
 
-    let mut encodedByteCodeFunction =  vec![63];
-	encodedByteCodeFunction.extend_from_slice(selector);
+    let mut encoded_byte_code_function =  vec![99]; // PUSH4 OP_CODE
+	encoded_byte_code_function.extend_from_slice(selector);
+
+	let encoded_byte_code_function_slice = encoded_byte_code_function.as_slice();
 	
-	code.windows(selector.len()).any(|window| window == selector)
+	code.windows(encoded_byte_code_function_slice.len()).any(|window| window == encoded_byte_code_function_slice)
 }
