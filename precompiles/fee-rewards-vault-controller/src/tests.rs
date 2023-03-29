@@ -164,6 +164,45 @@ fn claim_ownership_if_claimable() {
 	});
 }
 
+#[test]
+fn test_set_whitelisted() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+		.prepare_test(DefaultOwner::get(), Precompile1, PCall::is_whitelisted { dapp: SmartContratWithoutOwner::get().into() } )
+		.execute_returns_encoded(false);
+
+		precompiles()
+			.prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { dapp: SmartContratWithoutOwner::get().into(), is_whitelisted: true } )
+			.execute_returns_encoded(true);
+	
+		precompiles()
+			.prepare_test(DefaultOwner::get(), Precompile1, PCall::is_whitelisted { dapp: SmartContratWithoutOwner::get().into() } )
+			.execute_returns_encoded(true);
+	});
+}
+
+#[test]
+fn test_set_whitelisted_should_fail_if_address_is_not_smartcontract() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+		.prepare_test(DefaultOwner::get(), Precompile1, PCall::is_whitelisted { dapp: NotOwner::get().into() } )
+		.execute_returns_encoded(false);
+
+		precompiles()
+			.prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { dapp: NotOwner::get().into(), is_whitelisted: true } )
+			.execute_reverts(|x| x.eq_ignore_ascii_case(b"address is not a smartcontract"));
+	});
+}
+
+#[test]
+fn test_set_whitelisted_fails_if_sender_is_not_owner() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(NotOwner::get(), Precompile1, PCall::set_whitelist { dapp: SmartContratWithoutOwner::get().into(), is_whitelisted: true } )
+			.execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
+	});
+}
+
 parameter_types! {
 	pub Dapp1:H160 = H160::from_str("0x3000000000000000000000000000000000000000").expect("invalid address");
 	pub Dapp2:H160 = H160::from_str("0x4000000000000000000000000000000000000000").expect("invalid address");
@@ -300,20 +339,59 @@ fn test_can_claim_reward_should_return_false_if_dapp_not_implement_owner_functio
 }
 
 #[test]
-fn test_can_claim_reward_should_return_false_if_dapp_is_not_smart_contract() {
+fn test_get_claimable_reward() {
 	ExtBuilder::default().build().execute_with(|| {
-	precompiles()
-		.prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { dapp: NotOwner::get().into(), is_whitelisted: true } )
-		.execute_returns_encoded(true);
-    precompiles()
-            .prepare_test(OwnerOfDapp::get(), Precompile1, PCall::can_claim_reward {
-                claimant: NotOwner::get().into(),
-                dapp: NotOwner::get().into(),
-            }).with_subcall_handle(move |_| {
-				
-				panic!("should not be called");
+		assert_eq!(FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()), sp_core::U256::from(0));
+		
+		FeeRewardsVault::add_claimable_reward(SmartContratWithoutOwner::get(), Token1::get(), sp_core::U256::from(100)).unwrap();
 
-			}).execute_returns_encoded(false);
+		precompiles().prepare_test(DefaultOwner::get(), Precompile1, PCall::get_claimable_reward { dapp: SmartContratWithoutOwner::get().into(), token: Token1::get().into() }).execute_returns_encoded(sp_core::U256::from(100));
 	});
 }
 
+#[test]
+fn test_claim_reward() {
+	ExtBuilder::default().build().execute_with(|| {
+
+		let precompile_address:H160 = Precompile1.into();
+
+		precompiles()
+			.prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { dapp: SmartContratWithoutOwner::get().into(), is_whitelisted: true } )
+			.execute_returns_encoded(true);
+
+		assert_eq!(FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()), sp_core::U256::from(0));
+		
+		FeeRewardsVault::add_claimable_reward(SmartContratWithoutOwner::get(), Token1::get(), sp_core::U256::from(100)).unwrap();
+		FeeRewardsVault::add_claimable_reward(SmartContratWithoutOwner::get(), Token2::get(), sp_core::U256::from(100)).unwrap();
+
+		precompiles().prepare_test(SmartContratWithoutOwner::get(), Precompile1, PCall::claim_reward { dapp: SmartContratWithoutOwner::get().into(), token: Token1::get().into() }).with_subcall_handle(move |subcall| {
+			let Subcall {
+				address,
+				transfer: _,
+				input,
+				target_gas: _,
+				is_static,
+				context,
+			} = subcall;
+
+			// Called on the behalf of the permit maker.
+			assert_eq!(context.caller, precompile_address);
+			assert_eq!(address, Token1::get());
+			assert_eq!(is_static, false);
+			
+			assert_eq!(input, stbl_tools::eth::generate_calldata(&"transfer(address,uint256)", &vec![SmartContratWithoutOwner::get().into(), stbl_tools::misc::u256_to_h256(sp_core::U256::from(100))]));
+	
+			let  output =  vec![];
+
+			SubcallOutput {
+				reason: ExitReason::Succeed(ExitSucceed::Returned),
+				output: output,
+				cost: 1,
+				logs: vec![],
+			}
+		}).expect_log(log3(precompile_address, SELECTOR_REWARD_CLAIMED, SmartContratWithoutOwner::get(), SmartContratWithoutOwner::get(), Vec::from(Token1::get().to_fixed_bytes()))).execute_some();
+
+		assert_eq!(FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()), sp_core::U256::from(0));
+		assert_eq!(FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token2::get()), sp_core::U256::from(100));
+	});
+}

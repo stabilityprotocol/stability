@@ -269,6 +269,12 @@ where
 			return Err(revert("sender is not owner"));
 		}
 
+		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(dapp.into());
+
+		if code.is_empty() {
+			return Err(revert("address is not a smartcontract"));
+		}
+
 		pallet_fee_rewards_vault::Pallet::<Runtime>::set_whitelist(dapp.into(), is_whitelisted);
 
 
