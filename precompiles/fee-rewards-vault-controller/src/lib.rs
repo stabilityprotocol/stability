@@ -52,7 +52,7 @@ pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
 
 pub const SELECTOR_REWARD_CLAIMED: [u8; 32] = keccak256!("RewardClaimed(address,address,address)");
 pub const SELECTOR_WHITELIST_STATUS_UPDATED: [u8; 32] = keccak256!("WhitelistStatusUpdated(address,bool)");
-
+pub const SELECTOR_VALIDATOR_PERCENTAGE_UPDATED: [u8; 32] = keccak256!("ValidatorPercentageUpdated(uint256)");
 
 /// Storage prefix for owner.
 pub struct OwnerPrefix;
@@ -87,7 +87,7 @@ pub struct FeeRewardsVaultControllerPrecompile<Runtime, DefaultOwner: Get<H160> 
 impl<Runtime, DefaultOwner> FeeRewardsVaultControllerPrecompile<Runtime, DefaultOwner>
 where
 	DefaultOwner: Get<H160> + 'static,
-	Runtime: pallet_fee_rewards_vault::Config + pallet_timestamp::Config + pallet_evm::Config,
+	Runtime: pallet_fee_rewards_vault::Config + pallet_timestamp::Config + pallet_evm::Config + pallet_dnt_fee_controller::Config,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
@@ -174,7 +174,7 @@ where
 
 		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(dapp.into(), token.into());
 
-		pallet_fee_rewards_vault::Pallet::<Runtime>::sub_claimable_reward(dapp.into(), token.into(), reward);
+		pallet_fee_rewards_vault::Pallet::<Runtime>::sub_claimable_reward(dapp.into(), token.into(), reward).map_err(|_| revert("fail trying to sub claimable reward"))?;
 	
 		let encoded_data = stbl_tools::eth::generate_calldata(&"transfer(address,uint256)", &vec![sender.into(), stbl_tools::misc::u256_to_h256(reward)]);
 	
@@ -282,10 +282,53 @@ where
 		
 		Ok(true)
 	}
+
+	#[precompile::public("getValidatorPercentage()")]
+	fn get_validator_percentage(handle: &mut impl PrecompileHandle) -> EvmResult<U256> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+
+		let percentage = pallet_dnt_fee_controller::Pallet::<Runtime>::get_validator_percentage();
+
+		Ok(percentage)
+	}
+
+	#[precompile::public("setValidatorPercentage(uint256)")]
+	fn set_validator_percentage(handle: &mut impl PrecompileHandle, percentage: U256) -> EvmResult<bool> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+
+		let sender = handle.context().caller;
+		let owner = OwnerStorage::<DefaultOwner>::get();
+
+		if sender != owner {
+			return Err(revert("sender is not owner"));
+		}
+
+		if percentage > U256::from(100) {
+			return Err(revert("percentage is too high"));
+		}
+	
+		pallet_dnt_fee_controller::Pallet::<Runtime>::set_validator_percentage(percentage).unwrap();
+
+		log1(handle.context().address, SELECTOR_VALIDATOR_PERCENTAGE_UPDATED, u256_to_vec_u8(percentage)).record(handle)?;
+		
+		Ok(true)
+	}
+
 }
 
 fn bool_to_vec_u8(value: bool) -> Vec<u8> {
     let mut vec = Vec::new();
     vec.push(value as u8);
     vec
+}
+
+fn u256_to_vec_u8(value: U256) -> Vec<u8> {
+	let mut bytes = [0u8; 32];
+	let bytes_slice = bytes.as_mut_slice();
+
+    value.to_big_endian(bytes_slice);
+
+	bytes_slice.to_vec()
 }

@@ -249,9 +249,9 @@ fn test_can_claim_reward_should_return_true_if_claimant_are_the_owner_of_the_dap
             }).with_subcall_handle(move |subcall| {
 				let Subcall {
 					address,
-					transfer,
+					transfer: _,
 					input,
-					target_gas,
+					target_gas: _,
 					is_static,
 					context,
 				} = subcall;
@@ -291,9 +291,9 @@ fn test_can_claim_reward_should_return_false_if_claimant_are_not_the_owner_of_th
             }).with_subcall_handle(move |subcall| {
 				let Subcall {
 					address,
-					transfer,
+					transfer: _,
 					input,
-					target_gas,
+					target_gas: _,
 					is_static,
 					context,
 				} = subcall;
@@ -395,3 +395,27 @@ fn test_claim_reward() {
 		assert_eq!(FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token2::get()), sp_core::U256::from(100));
 	});
 }
+
+#[test]
+fn test_set_validator_percentage() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles().prepare_test(DefaultOwner::get(), Precompile1, PCall::get_validator_percentage {}).execute_returns_encoded(sp_core::U256::from(0));
+		precompiles().prepare_test(DefaultOwner::get(), Precompile1, PCall::set_validator_percentage { percentage: sp_core::U256::from(10) }).execute_some();
+		precompiles().prepare_test(DefaultOwner::get(), Precompile1, PCall::get_validator_percentage {}).execute_returns_encoded(sp_core::U256::from(10));
+	});
+}
+
+#[test]
+fn test_set_validator_percentage_fails_if_not_owner() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles().prepare_test(SmartContratWithoutOwner::get(), Precompile1, PCall::set_validator_percentage { percentage: sp_core::U256::from(10) }).execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
+	});
+}
+
+#[test]
+fn test_set_validator_percentage_fails_if_greater() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles().prepare_test(DefaultOwner::get(), Precompile1, PCall::set_validator_percentage { percentage: sp_core::U256::from(110) }).execute_reverts(|x| x.eq_ignore_ascii_case(b"percentage is too high"));
+	});
+}
+

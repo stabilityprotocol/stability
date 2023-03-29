@@ -24,6 +24,11 @@ evm = { workspace = true }
 pallet-fee-rewards-vault = { workspace = true }
 precompile-utils = { workspace = true }
 stbl-tools = { workspace = true }
+pallet-dnt-fee-controller = { workspace = true }
+pallet-erc20-manager = { workspace = true }
+pallet-supported-tokens-manager = { workspace = true }
+pallet-validator-fee-selector = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
@@ -50,5 +55,8 @@ std = [
     "sp-runtime/std",
     "pallet-balances/std",
     "pallet-session/std",
-    "evm/std"
+    "evm/std",
+    "pallet-dnt-fee-controller/std",
+    "pallet-supported-tokens-manager/std",
+    "pallet-user-fee-selector/std",
 ]

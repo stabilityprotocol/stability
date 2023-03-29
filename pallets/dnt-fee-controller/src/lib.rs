@@ -168,5 +168,9 @@ pub mod pallet {
 			ValidatorPercentageStorage::<T>::put(percentage);
 			Ok(())
 		}
+
+		pub fn get_validator_percentage() -> U256 {
+			ValidatorPercentageStorage::<T>::get().unwrap()
+		}
 	}
 }

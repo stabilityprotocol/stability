@@ -144,6 +144,30 @@ impl pallet_balances::Config for Test {
 impl pallet_fee_rewards_vault::Config for Test {
 }
 
+impl pallet_dnt_fee_controller::Config for Test {
+	type ERC20Manager = pallet_erc20_manager::Pallet<Self>;
+	type UserFeeTokenController = pallet_user_fee_selector::Pallet<Self>;
+	type ValidatorTokenController = pallet_validator_fee_selector::Pallet<Self>;
+}
+
+impl pallet_erc20_manager::Config for Test {
+	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+}
+
+parameter_types! {
+	pub DefaultFeeToken: H160 = H160::from_str("0x0000000000000000000000000000000000000000").expect("invalid address");
+}
+impl pallet_user_fee_selector::Config for Test {
+	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+	type ERC20Manager = pallet_erc20_manager::Pallet<Self>;
+}
+
+impl pallet_validator_fee_selector::Config for Test {
+	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+}
+
+impl pallet_supported_tokens_manager::Config for Test {}
+
 frame_support::construct_runtime!(
 	pub enum Test
 	where
@@ -152,7 +176,12 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic, {
 			System: frame_system,
 			FeeRewardsVault: pallet_fee_rewards_vault,
+			DNTFeeController: pallet_dnt_fee_controller,
 			Timestamp: pallet_timestamp,
+			UserFeeSelector: pallet_user_fee_selector,
+			ValidatorFeeSelector: pallet_validator_fee_selector,
+			SupportedTokensManager: pallet_supported_tokens_manager,
+			ERC20Manager: pallet_erc20_manager,
 			EVM: pallet_evm,
 			Balances: pallet_balances,
 		}
@@ -215,6 +244,14 @@ impl ExtBuilder {
 			map
 		},
 	};
+
+	let dnt_config = pallet_dnt_fee_controller::GenesisConfig {
+		fee_vault_precompile_address: SmartContractWithOwner::get(),
+		validator_percentage: U256::from(0),
+	};
+	
+	<pallet_dnt_fee_controller::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&dnt_config, &mut t).unwrap();
+
 	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t).unwrap();
 
 		let mut ext = sp_io::TestExternalities::new(t);
