@@ -156,9 +156,9 @@ impl crate::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 		_conversion_rate: (U256, U256),
 		_actual_amount: U256,
 		_validator: H160,
-		_to: H160,
-	) -> Result<(), Self::Error> {
-		Ok(())
+		_to: Option<H160>,
+	) -> Result<(U256, U256), Self::Error> {
+		Ok((Default::default(), Default::default()))
 	}
 }
 

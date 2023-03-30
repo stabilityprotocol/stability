@@ -131,32 +131,41 @@ pub mod pallet {
 			conversion_rate: (U256, U256),
 			actual_amount: U256,
 			validator: H160,
-			to: H160,
-		) -> Result<(), Self::Error> {
-			let mapped_amount = actual_amount
+			to: Option<H160>,
+		) -> Result<(U256, U256), Self::Error> {
+			let fee_in_user_token = actual_amount
 				.saturating_mul(conversion_rate.0)
 				.div_mod(conversion_rate.1)
 				.0;
-			let amount_validator = mapped_amount
-				.saturating_mul(ValidatorPercentageStorage::<T>::get().unwrap().into())
+
+			let validator_share = match to {
+				None => 100.into(),
+				Some(_) => ValidatorPercentageStorage::<T>::get().unwrap(),
+			};
+
+			let validator_fee = fee_in_user_token
+				.saturating_mul(validator_share.into())
 				.div_mod(U256::from(100))
 				.0;
+			let dapp_fee = fee_in_user_token - validator_fee;
 
 			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
 				validator,
 				token,
-				amount_validator,
+				validator_fee,
 			)
 			.map_err(|_| Error::<T>::FeeVaultOverflow)?;
 
-			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
-				to,
-				token,
-				mapped_amount - amount_validator,
-			)
-			.map_err(|_| Error::<T>::FeeVaultOverflow)?;
+			if to.is_some() {
+				pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
+					to.unwrap(),
+					token,
+					dapp_fee,
+				)
+				.map_err(|_| Error::<T>::FeeVaultOverflow)?;
+			}
 
-			Ok(())
+			Ok((validator_fee, dapp_fee))
 		}
 	}
 

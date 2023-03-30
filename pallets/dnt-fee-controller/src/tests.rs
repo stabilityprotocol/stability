@@ -111,7 +111,7 @@ fn pay_fees_calls_vault_pallet() {
 			(1.into(), 1.into()),
 			meaningless_amount,
 			MeaninglessAddress::get(),
-			MeaninglessAddress2::get(),
+			Some(MeaninglessAddress2::get()),
 		);
 
 		assert!(result.is_ok());
@@ -135,6 +135,46 @@ fn pay_fees_calls_vault_pallet() {
 }
 
 #[test]
+fn pay_fees_calls_to_none_address() {
+	new_test_ext().execute_with(|| {
+		let meaningless_amount = 100.into();
+		let validator_amount = meaningless_amount;
+
+		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::pay_fees(
+			MeaninglessTokenAddress::get(),
+			(1.into(), 1.into()),
+			meaningless_amount,
+			MeaninglessAddress::get(),
+			None,
+		);
+
+		assert!(result.is_ok());
+
+		let (returned_validator_amount, returned_dapp_amount) = result.unwrap();
+
+		assert_eq!(returned_validator_amount, validator_amount);
+
+		assert_eq!(returned_dapp_amount, 0.into(),);
+
+		assert_eq!(
+			pallet_fee_rewards_vault::Pallet::<Test>::claimable_reward(
+				MeaninglessAddress::get(),
+				MeaninglessTokenAddress::get(),
+			),
+			validator_amount,
+		);
+
+		assert_eq!(
+			pallet_fee_rewards_vault::Pallet::<Test>::claimable_reward(
+				MeaninglessAddress2::get(),
+				MeaninglessTokenAddress::get(),
+			),
+			0.into(),
+		);
+	})
+}
+
+#[test]
 fn pay_fees_calls_with_updated_percentages() {
 	new_test_ext().execute_with(|| {
 		let new_percentage = 10.into();
@@ -149,10 +189,15 @@ fn pay_fees_calls_with_updated_percentages() {
 			(1.into(), 1.into()),
 			meaningless_amount,
 			MeaninglessAddress::get(),
-			MeaninglessAddress2::get(),
+			Some(MeaninglessAddress2::get()),
 		);
 
 		assert!(result.is_ok());
+
+		let (returned_validator_amount, returned_dapp_amount) = result.unwrap();
+
+		assert_eq!(returned_validator_amount, validator_amount);
+		assert_eq!(returned_dapp_amount, meaningless_amount - validator_amount);
 
 		assert_eq!(
 			pallet_fee_rewards_vault::Pallet::<Test>::claimable_reward(
