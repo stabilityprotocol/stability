@@ -200,11 +200,13 @@ where
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
+		// TODO: AFTER UNIFIED ACCOUNT, DONT CHECK IF IS WHITELISTED IF THE HOLDER IS A VALIDATOR
+	
 		if !pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(holder.into()) {
 			return Ok(false);
 		}
 
-		
+
 		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(holder.into());
 
 		if code.is_empty() {
