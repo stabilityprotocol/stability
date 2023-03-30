@@ -151,7 +151,13 @@ impl crate::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 		Ok(())
 	}
 
-	fn pay_fees(_actual_amount: U256, _validator: H160, _to: H160) -> Result<(), Self::Error> {
+	fn pay_fees(
+		_token: H160,
+		_conversion_rate: (U256, U256),
+		_actual_amount: U256,
+		_validator: H160,
+		_to: H160,
+	) -> Result<(), Self::Error> {
 		Ok(())
 	}
 }
