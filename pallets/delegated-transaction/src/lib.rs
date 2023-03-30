@@ -8,6 +8,7 @@ use sp_std::prelude::*;
 pub mod pallet {
 	use super::*;
 	use pallet_evm::Runner;
+	use sp_core::Encode;
 
 	use frame_support::pallet_prelude::{*};
 	use frame_support::{
@@ -29,7 +30,7 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	#[pallet::getter(fn nonce)]
+	#[pallet::getter(fn transaction_nonce)]
 	pub type TransactionNonce<T: Config> = StorageValue<_, u64>;
 
 	#[pallet::storage]
