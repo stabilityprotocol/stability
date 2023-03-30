@@ -39,6 +39,7 @@ use evm::Context;
 use sp_core::Get;
 use sp_core::{H160, H256, U256};
 use sp_std::vec::Vec;
+use sp_std::vec;
 
 use sp_std::marker::PhantomData;
 
