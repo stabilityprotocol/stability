@@ -186,6 +186,7 @@ where
 
 		let token = FC::get_transaction_fee_token(source);
 		let validator = <pallet_evm::Pallet<T>>::find_author();
+		let vault = FC::get_fee_vault();
 
 		let conversion_rate = FC::get_transaction_conversion_rate(validator, token);
 
@@ -241,7 +242,7 @@ where
 
 		executor
 			.log(
-				H160::zero(),
+				vault,
 				sp_std::vec![TRANSACTION_FEE_TOPIC.into()],
 				stbl_tools::eth::args_to_bytes(sp_std::vec![
 					token.into(),
@@ -899,6 +900,9 @@ pub trait OnChargeDecentralizedNativeTokenFee {
 
 	// Get the fee token of the validator and its conversion rate.
 	fn get_transaction_conversion_rate(validator: H160, token: H160) -> (U256, U256);
+
+	// Get fee vault address
+	fn get_fee_vault() -> H160;
 
 	// Withdraws the fee from the user.
 	fn withdraw_fee(

@@ -86,6 +86,10 @@ pub mod pallet {
 			T::ValidatorTokenController::conversion_rate(validator, token)
 		}
 
+		fn get_fee_vault() -> H160 {
+			Self::fee_vault_precompile_address().unwrap()
+		}
+
 		fn withdraw_fee(
 			from: H160,
 			token: H160,
