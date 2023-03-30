@@ -162,20 +162,20 @@ where
 	}
 
 	#[precompile::public("claimReward(address,address)")]
-	fn claim_reward(handle: &mut impl PrecompileHandle, dapp: Address, token: Address) -> EvmResult {
+	fn claim_reward(handle: &mut impl PrecompileHandle, holder: Address, token: Address) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
 		let sender = handle.context().caller;
 		
 
-		if !Self::can_claim_reward(handle, sender.into(), dapp)? {
+		if !Self::can_claim_reward(handle, sender.into(), holder)? {
 			return Err(revert("sender is not allowed to claim reward"));
 		}
 
-		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(dapp.into(), token.into());
+		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(holder.into(), token.into());
 
-		pallet_fee_rewards_vault::Pallet::<Runtime>::sub_claimable_reward(dapp.into(), token.into(), reward).map_err(|_| revert("fail trying to sub claimable reward"))?;
+		pallet_fee_rewards_vault::Pallet::<Runtime>::sub_claimable_reward(holder.into(), token.into(), reward).map_err(|_| revert("fail trying to sub claimable reward"))?;
 	
 		let encoded_data = stbl_tools::eth::generate_calldata(&"transfer(address,uint256)", &vec![sender.into(), stbl_tools::misc::u256_to_h256(reward)]);
 	
@@ -189,28 +189,29 @@ where
 			return Err(revert("fail trying to transfer reward"));
 		}
 
-		log3(handle.context().address, SELECTOR_REWARD_CLAIMED, dapp.0, sender, Vec::from(token.0.to_fixed_bytes())).record(handle)?;
+		log3(handle.context().address, SELECTOR_REWARD_CLAIMED, holder.0, sender, Vec::from(token.0.to_fixed_bytes())).record(handle)?;
 		
 		Ok(())
 	}
 
 	#[precompile::public("canClaimReward(address,address)")]
 	#[precompile::view]
-    fn can_claim_reward(handle: &mut impl PrecompileHandle, claimant: Address, dapp: Address) -> EvmResult<bool> {
+    fn can_claim_reward(handle: &mut impl PrecompileHandle, claimant: Address, holder: Address) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		if !pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(dapp.into()) {
+		if !pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(holder.into()) {
 			return Ok(false);
 		}
 
-		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(dapp.into());
+		
+		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(holder.into());
 
 		if code.is_empty() {
 			return Ok(false);
 		}
 
-		if claimant == dapp {
+		if claimant == holder {
 			return Ok(true);
 		}
 
@@ -221,8 +222,8 @@ where
 		let call_data = stbl_tools::eth::generate_calldata(&"owner()", &vec![]);
 
 		
-		let (reason, output) = handle.call(dapp.into(), None, call_data, Some(handle.remaining_gas()), true, &Context {
-			address: dapp.into(),
+		let (reason, output) = handle.call(holder.into(), None, call_data, Some(handle.remaining_gas()), true, &Context {
+			address: holder.into(),
 			caller: handle.context().address, 
 			apparent_value: U256::zero()
 		});
@@ -238,28 +239,28 @@ where
 
 	#[precompile::public("getClaimableReward(address,address)")]
 	#[precompile::view]
-	fn get_claimable_reward(handle: &mut impl PrecompileHandle, dapp: Address, token: Address) -> EvmResult<U256> {
+	fn get_claimable_reward(handle: &mut impl PrecompileHandle, holder: Address, token: Address) -> EvmResult<U256> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(dapp.into(), token.into());
+		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(holder.into(), token.into());
 
 		Ok(reward)
 	}
 
 	#[precompile::public("isWhitelisted(address)")]
 	#[precompile::view]
-	fn is_whitelisted(handle: &mut impl PrecompileHandle, dapp: Address) -> EvmResult<bool> {
+	fn is_whitelisted(handle: &mut impl PrecompileHandle, holder: Address) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let whitelisted = pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(dapp.into());
+		let whitelisted = pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(holder.into());
 
 		Ok(whitelisted)
 	}
 
 	#[precompile::public("setWhitelisted(address,bool)")]
-	fn set_whitelist(handle: &mut impl PrecompileHandle, dapp: Address, is_whitelisted: bool) -> EvmResult<bool> {
+	fn set_whitelist(handle: &mut impl PrecompileHandle, holder: Address, is_whitelisted: bool) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
@@ -270,16 +271,16 @@ where
 			return Err(revert("sender is not owner"));
 		}
 
-		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(dapp.into());
+		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(holder.into());
 
 		if code.is_empty() {
 			return Err(revert("address is not a smartcontract"));
 		}
 
-		pallet_fee_rewards_vault::Pallet::<Runtime>::set_whitelist(dapp.into(), is_whitelisted);
+		pallet_fee_rewards_vault::Pallet::<Runtime>::set_whitelist(holder.into(), is_whitelisted);
 
 
-		log2(handle.context().address, SELECTOR_WHITELIST_STATUS_UPDATED, dapp.0, bool_to_vec_u8(is_whitelisted)).record(handle)?;
+		log2(handle.context().address, SELECTOR_WHITELIST_STATUS_UPDATED, holder.0, bool_to_vec_u8(is_whitelisted)).record(handle)?;
 		
 		Ok(true)
 	}
