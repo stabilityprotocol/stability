@@ -17,6 +17,7 @@ use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
 use pallet_balances::Instance1;
+use pallet_transaction_payment::OnChargeTransaction;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
 use sp_api::impl_runtime_apis;
@@ -797,25 +798,7 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 		len: usize,
 	) -> Option<TransactionValidity> {
 		match self {
-			// IMPORTANT: TO REMOVE AFTER CUSTOM PALLET_BALANCES IS IMPLEMENTED
-			RuntimeCall::Ethereum(call) => {
-				if let RuntimeCall::Ethereum(transact { transaction }) = self {
-					let nonce = match transaction {
-						pallet_ethereum::Transaction::Legacy(tx) => tx.nonce,
-						pallet_ethereum::Transaction::EIP1559(tx) => tx.nonce,
-						pallet_ethereum::Transaction::EIP2930(tx) => tx.nonce,
-					};
-					Some(
-						ValidTransactionBuilder::default()
-							.and_provides((*info, nonce))
-							.priority(dispatch_info.weight.ref_time())
-							.build(),
-					)
-				} else {
-					None
-				}
-			}
-			// IMPORTANT: TO REMOVE AFTER CUSTOM PALLET_BALANCES IS IMPLEMENTED
+			RuntimeCall::Ethereum(call) => call.validate_self_contained(info, dispatch_info, len),
 			_ => None,
 		}
 	}
