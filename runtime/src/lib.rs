@@ -797,7 +797,7 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 		len: usize,
 	) -> Option<TransactionValidity> {
 		match self {
-			// IMPORTANT: TO REMOVE BEFORE MERGING
+			// IMPORTANT: TO REMOVE AFTER CUSTOM PALLET_BALANCES IS IMPLEMENTED
 			RuntimeCall::Ethereum(call) => {
 				if let RuntimeCall::Ethereum(transact { transaction }) = self {
 					let nonce = match transaction {
@@ -815,7 +815,7 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 					None
 				}
 			}
-			// IMPORTANT: TO REMOVE BEFORE MERGING
+			// IMPORTANT: TO REMOVE AFTER CUSTOM PALLET_BALANCES IS IMPLEMENTED
 			_ => None,
 		}
 	}

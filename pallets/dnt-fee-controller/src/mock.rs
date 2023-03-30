@@ -240,13 +240,6 @@ impl crate::Config for Test {
 	type ERC20Manager = MockERC20Manager;
 }
 
-parameter_types! {
-	pub SmartcontractErc1271Success: H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
-	pub SmartcontractErc1271Fails: H160 = H160::from_str("0xdf1dAbfc88Fdb4Bac77eDBcDd6608d1dAeEd02E0").unwrap();
-	pub SmartcontractWithoutErc721: H160 = H160::from_str("0xba29c6A61bf8Ff7E1d77bF1B9858010cE6756725").unwrap();
-	pub ChainId: u64 = 20180427;
-}
-
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut t = frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
