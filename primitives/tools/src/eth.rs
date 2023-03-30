@@ -1,8 +1,8 @@
 use sp_core::{H160, H256};
 use sp_runtime::traits::Keccak256;
-use sp_std::vec::Vec;
 use sp_std::prelude::*;
 use sp_std::vec;
+use sp_std::vec::Vec;
 
 pub use ethereum::TransactionV2 as Transaction;
 
@@ -83,15 +83,27 @@ pub fn recover_signer(transaction: &Transaction) -> Option<H160> {
 	Some(H160::from(H256::from(sp_io::hashing::keccak_256(&pubkey))))
 }
 
-
 pub fn code_implements_function(code: &[u8], function: &str) -> bool {
 	let hash = <Keccak256 as sp_core::Hasher>::hash(function.as_bytes());
 	let selector = &hash.as_bytes()[0..4];
 
-    let mut encoded_byte_code_function =  vec![99]; // PUSH4 OP_CODE
+	let mut encoded_byte_code_function = vec![99]; // PUSH4 OP_CODE
 	encoded_byte_code_function.extend_from_slice(selector);
 
 	let encoded_byte_code_function_slice = encoded_byte_code_function.as_slice();
-	
-	code.windows(encoded_byte_code_function_slice.len()).any(|window| window == encoded_byte_code_function_slice)
+
+	code.windows(encoded_byte_code_function_slice.len())
+		.any(|window| window == encoded_byte_code_function_slice)
+}
+
+pub fn args_to_bytes(args: sp_std::vec::Vec<H256>) -> Vec<u8> {
+	let mut u8_array: Vec<u8> = Vec::default();
+
+	args.iter().for_each(|arg_value| {
+		arg_value.as_bytes().iter().for_each(|byte| {
+			u8_array.push(*byte);
+		});
+	});
+
+	u8_array
 }

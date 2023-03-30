@@ -21,6 +21,7 @@ pallet-timestamp = { workspace = true }
 fp-evm = { workspace = true }
 stbl-tools = { workspace = true }
 pallet-user-fee-selector = { workspace = true }
+precompile-utils ={ workspace = true }
 
 [dev-dependencies]
 hex = "0.4"
