@@ -132,6 +132,10 @@ impl crate::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 		(Default::default(), Default::default())
 	}
 
+	fn get_fee_vault() -> H160 {
+		Default::default()
+	}
+
 	fn withdraw_fee(
 		_from: H160,
 		_token: H160,
