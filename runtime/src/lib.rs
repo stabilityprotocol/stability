@@ -12,12 +12,10 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode};
 use core::str::FromStr;
 use frame_support::pallet_prelude::EnsureOrigin;
-use frame_support::pallet_prelude::ValidTransaction;
 use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
 use pallet_balances::Instance1;
-use pallet_transaction_payment::OnChargeTransaction;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
 use sp_api::impl_runtime_apis;
@@ -26,7 +24,6 @@ use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
 	Hasher, OpaqueMetadata, H160, H256, U256,
 };
-use sp_runtime::transaction_validity::ValidTransactionBuilder;
 use sp_runtime::AccountId32;
 use sp_runtime::{
 	create_runtime_str, generic,
