@@ -63,6 +63,7 @@ std = [
     'pallet-session/std',
     'pallet-im-online/std',
     'pallet-upgrade-runtime-proposal/std',
+    'pallet-delegated-transaction/std',
     'stbl-primitives-fee-compatible-api/std',
     'precompile-upgrade-runtime-controller/std',
     'runner/std',
@@ -156,4 +157,5 @@ pallet-validator-set = { workspace = true }
 pallet-upgrade-runtime-proposal = { workspace = true }
 precompile-upgrade-runtime-controller = { workspace = true }
 runner = { workspace = true }
+pallet-delegated-transaction = { workspace = true }
 

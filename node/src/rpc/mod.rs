@@ -24,6 +24,10 @@ use stability_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
 mod eth;
 pub use self::eth::{create_eth, overrides_handle, EthDeps};
 
+mod delegated_transaction;
+pub use self::delegated_transaction::{DelegatedTransaction, DelegatedTransactionRpcServer};
+
+
 /// Full client dependencies.
 pub struct FullDeps<C, P, A: ChainApi, CT> {
 	/// The client instance to use.
@@ -74,6 +78,7 @@ where
 
 	io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
 	io.merge(TransactionPayment::new(client).into_rpc())?;
+	io.merge(DelegatedTransaction::new(client.clone(), pool.clone()).into_rpc())?;
 
 	if let Some(command_sink) = command_sink {
 		io.merge(

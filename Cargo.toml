@@ -189,11 +189,11 @@ stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api",
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
 pallet-map-svm-evm = { path = "./pallets/map-svm-evm", default-features = false }
 pallet-upgrade-runtime-proposal = { path = "./pallets/upgrade-runtime-proposal", default-features = false }
+pallet-delegated-transaction = { path = './pallets/delegated-transaction', default-features = false }
 stbl-tools = { path = "./primitives/tools", default-features = false }
 precompile-map-svm-evm-controller = { path = "./precompiles/map-svm-evm-controller", default-features = false }
 precompile-supported-tokens-manager = { path = "./precompiles/token-fee-controller/supported-tokens-manager", default-features = false }
 precompile-upgrade-runtime-controller = { path = "./precompiles/upgrade-runtime-controller", default-features = false }
-
 
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }

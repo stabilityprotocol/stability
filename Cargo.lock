@@ -4234,6 +4234,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-delegated-transaction"
+version = "1.0.0"
+dependencies = [
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "once_cell",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-evm-chain-id",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-tools",
+]
+
+[[package]]
 name = "pallet-dynamic-fee"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/frontier?branch=polkadot-v0.9.36#a032072a623417d3febdcd060464f885bd76103e"
@@ -8178,6 +8200,7 @@ dependencies = [
  "pallet-balances",
  "pallet-base-fee",
  "pallet-collective",
+ "pallet-delegated-transaction",
  "pallet-dynamic-fee",
  "pallet-erc20-manager",
  "pallet-ethereum",
