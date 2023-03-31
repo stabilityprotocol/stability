@@ -10,7 +10,7 @@ pub mod pallet {
 	use pallet_evm::Runner;
 	use sp_core::Encode;
 
-	use frame_support::pallet_prelude::{*};
+	use frame_support::pallet_prelude::{*, ValueQuery};
 	use frame_support::{
 		storage::types::{StorageMap, StorageValue},
 		Blake2_128Concat,
@@ -22,6 +22,7 @@ pub mod pallet {
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
+	#[derive(Encode, Decode, Default, PartialEq, Eq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct PendingTransaction<T: Config> {
 		pub sender: T::AccountId,
@@ -31,12 +32,12 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn transaction_nonce)]
-	pub type TransactionNonce<T: Config> = StorageValue<_, u64>;
+	pub type TransactionNonce<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn transactions_by_nonce)]
 	pub type TransactionsByNonce<T: Config> =
-		StorageMap<_, Blake2_128Concat, TransactionNonce<T>, PendingTransaction<T>>;
+		StorageMap<_, Blake2_128Concat, str, PendingTransaction<T>, ValueQuery>;
 
 	#[pallet::error]
 	pub enum Error<T> {
@@ -102,7 +103,7 @@ pub mod pallet {
 			)?;
 			ensure!(validation_response.is_valid, Error::<T>::InvalidTransaction);
 
-			TransactionsByNonce::<T>::insert(tx_nonce, temporary_transaction);
+			TransactionsByNonce::<T>::insert(String::from(tx_nonce), temporary_transaction);
 
 			TransactionNonce::<T>::mutate(|nonce| {
 				*nonce += 1;
@@ -115,7 +116,7 @@ pub mod pallet {
 		#[pallet::weight(10_000)]
 		pub fn execute_delegated(origin: OriginFor<T>, nonce: u64) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			let transaction = TransactionsByNonce::<T>::try_get(nonce)?;
+			let transaction = TransactionsByNonce::<T>::try_get(String::from(nonce))?;
 
 			let response = T::Runner::call(
 				transaction.sender.clone(),         // source
