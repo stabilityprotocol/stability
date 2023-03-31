@@ -20,7 +20,6 @@ pub trait ERC20Manager {
 pub mod pallet {
 	use super::*;
 
-	use frame_support::pallet_prelude::*;
 	use pallet_supported_tokens_manager::SupportedTokensManager;
 	use sha3::Digest;
 	use sp_core::Encode;

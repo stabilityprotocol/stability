@@ -33,15 +33,15 @@ use frame_support::storage::types::{StorageValue, ValueQuery};
 use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
 
+use evm::Context;
 use evm::ExitReason;
 use evm::ExitSucceed;
-use evm::Context;
 use sp_core::Get;
 use sp_core::{H160, H256, U256};
-use sp_std::vec::Vec;
-use sp_std::vec;
-
 use sp_std::marker::PhantomData;
+use sp_std::vec;
+use sp_std::vec::Vec;
+use stbl_tools::misc::{bool_to_vec_u8, u256_to_vec_u8};
 
 pub const CALL_DATA_LIMIT: u32 = 2u32.pow(16);
 
@@ -52,8 +52,10 @@ parameter_types! {
 pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
 
 pub const SELECTOR_REWARD_CLAIMED: [u8; 32] = keccak256!("RewardClaimed(address,address,address)");
-pub const SELECTOR_WHITELIST_STATUS_UPDATED: [u8; 32] = keccak256!("WhitelistStatusUpdated(address,bool)");
-pub const SELECTOR_VALIDATOR_PERCENTAGE_UPDATED: [u8; 32] = keccak256!("ValidatorPercentageUpdated(uint256)");
+pub const SELECTOR_WHITELIST_STATUS_UPDATED: [u8; 32] =
+	keccak256!("WhitelistStatusUpdated(address,bool)");
+pub const SELECTOR_VALIDATOR_PERCENTAGE_UPDATED: [u8; 32] =
+	keccak256!("ValidatorPercentageUpdated(uint256)");
 
 /// Storage prefix for owner.
 pub struct OwnerPrefix;
@@ -83,12 +85,14 @@ pub struct FeeRewardsVaultControllerPrecompile<Runtime, DefaultOwner: Get<H160> 
 	PhantomData<(Runtime, DefaultOwner)>,
 );
 
-
 #[precompile_utils::precompile]
 impl<Runtime, DefaultOwner> FeeRewardsVaultControllerPrecompile<Runtime, DefaultOwner>
 where
 	DefaultOwner: Get<H160> + 'static,
-	Runtime: pallet_fee_rewards_vault::Config + pallet_timestamp::Config + pallet_evm::Config + pallet_dnt_fee_controller::Config,
+	Runtime: pallet_fee_rewards_vault::Config
+		+ pallet_timestamp::Config
+		+ pallet_evm::Config
+		+ pallet_dnt_fee_controller::Config,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
@@ -162,50 +166,81 @@ where
 	}
 
 	#[precompile::public("claimReward(address,address)")]
-	fn claim_reward(handle: &mut impl PrecompileHandle, holder: Address, token: Address) -> EvmResult {
+	fn claim_reward(
+		handle: &mut impl PrecompileHandle,
+		holder: Address,
+		token: Address,
+	) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
 		let sender = handle.context().caller;
-		
 
 		if !Self::can_claim_reward(handle, sender.into(), holder)? {
 			return Err(revert("sender is not allowed to claim reward"));
 		}
 
-		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(holder.into(), token.into());
+		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(
+			holder.into(),
+			token.into(),
+		);
 
-		pallet_fee_rewards_vault::Pallet::<Runtime>::sub_claimable_reward(holder.into(), token.into(), reward).map_err(|_| revert("fail trying to sub claimable reward"))?;
-	
-		let encoded_data = stbl_tools::eth::generate_calldata(&"transfer(address,uint256)", &vec![sender.into(), stbl_tools::misc::u256_to_h256(reward)]);
-	
-		let (reason, _) =  handle.call(token.into(), None, encoded_data, Some(handle.remaining_gas()), false, &Context {
-			address: token.into(),
-			caller: handle.context().address, 
-			apparent_value: U256::zero()
-		});
-		
+		pallet_fee_rewards_vault::Pallet::<Runtime>::sub_claimable_reward(
+			holder.into(),
+			token.into(),
+			reward,
+		)
+		.map_err(|_| revert("fail trying to sub claimable reward"))?;
+
+		let encoded_data = stbl_tools::eth::generate_calldata(
+			&"transfer(address,uint256)",
+			&vec![sender.into(), stbl_tools::misc::u256_to_h256(reward)],
+		);
+
+		let (reason, _) = handle.call(
+			token.into(),
+			None,
+			encoded_data,
+			Some(handle.remaining_gas()),
+			false,
+			&Context {
+				address: token.into(),
+				caller: handle.context().address,
+				apparent_value: U256::zero(),
+			},
+		);
+
 		if reason != ExitReason::Succeed(ExitSucceed::Returned) {
 			return Err(revert("fail trying to transfer reward"));
 		}
 
-		log3(handle.context().address, SELECTOR_REWARD_CLAIMED, holder.0, sender, Vec::from(token.0.to_fixed_bytes())).record(handle)?;
-		
+		log3(
+			handle.context().address,
+			SELECTOR_REWARD_CLAIMED,
+			holder.0,
+			sender,
+			Vec::from(token.0.to_fixed_bytes()),
+		)
+		.record(handle)?;
+
 		Ok(())
 	}
 
 	#[precompile::public("canClaimReward(address,address)")]
 	#[precompile::view]
-    fn can_claim_reward(handle: &mut impl PrecompileHandle, claimant: Address, holder: Address) -> EvmResult<bool> {
+	fn can_claim_reward(
+		handle: &mut impl PrecompileHandle,
+		claimant: Address,
+		holder: Address,
+	) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
 		// TODO: AFTER UNIFIED ACCOUNT, DONT CHECK IF IS WHITELISTED IF THE HOLDER IS A VALIDATOR
-	
+
 		if !pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(holder.into()) {
 			return Ok(false);
 		}
-
 
 		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(holder.into());
 
@@ -223,12 +258,18 @@ where
 
 		let call_data = stbl_tools::eth::generate_calldata(&"owner()", &vec![]);
 
-		
-		let (reason, output) = handle.call(holder.into(), None, call_data, Some(handle.remaining_gas()), true, &Context {
-			address: holder.into(),
-			caller: handle.context().address, 
-			apparent_value: U256::zero()
-		});
+		let (reason, output) = handle.call(
+			holder.into(),
+			None,
+			call_data,
+			Some(handle.remaining_gas()),
+			true,
+			&Context {
+				address: holder.into(),
+				caller: handle.context().address,
+				apparent_value: U256::zero(),
+			},
+		);
 
 		if reason != ExitReason::Succeed(ExitSucceed::Returned) {
 			return Err(revert("call to owner() failed"));
@@ -241,11 +282,18 @@ where
 
 	#[precompile::public("getClaimableReward(address,address)")]
 	#[precompile::view]
-	fn get_claimable_reward(handle: &mut impl PrecompileHandle, holder: Address, token: Address) -> EvmResult<U256> {
+	fn get_claimable_reward(
+		handle: &mut impl PrecompileHandle,
+		holder: Address,
+		token: Address,
+	) -> EvmResult<U256> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(holder.into(), token.into());
+		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(
+			holder.into(),
+			token.into(),
+		);
 
 		Ok(reward)
 	}
@@ -256,13 +304,18 @@ where
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let whitelisted = pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(holder.into());
+		let whitelisted =
+			pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(holder.into());
 
 		Ok(whitelisted)
 	}
 
 	#[precompile::public("setWhitelisted(address,bool)")]
-	fn set_whitelist(handle: &mut impl PrecompileHandle, holder: Address, is_whitelisted: bool) -> EvmResult<bool> {
+	fn set_whitelist(
+		handle: &mut impl PrecompileHandle,
+		holder: Address,
+		is_whitelisted: bool,
+	) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
@@ -281,9 +334,14 @@ where
 
 		pallet_fee_rewards_vault::Pallet::<Runtime>::set_whitelist(holder.into(), is_whitelisted);
 
+		log2(
+			handle.context().address,
+			SELECTOR_WHITELIST_STATUS_UPDATED,
+			holder.0,
+			bool_to_vec_u8(is_whitelisted),
+		)
+		.record(handle)?;
 
-		log2(handle.context().address, SELECTOR_WHITELIST_STATUS_UPDATED, holder.0, bool_to_vec_u8(is_whitelisted)).record(handle)?;
-		
 		Ok(true)
 	}
 
@@ -298,7 +356,10 @@ where
 	}
 
 	#[precompile::public("setValidatorPercentage(uint256)")]
-	fn set_validator_percentage(handle: &mut impl PrecompileHandle, percentage: U256) -> EvmResult<bool> {
+	fn set_validator_percentage(
+		handle: &mut impl PrecompileHandle,
+		percentage: U256,
+	) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
@@ -312,27 +373,16 @@ where
 		if percentage > U256::from(100) {
 			return Err(revert("percentage is too high"));
 		}
-	
+
 		pallet_dnt_fee_controller::Pallet::<Runtime>::set_validator_percentage(percentage).unwrap();
 
-		log1(handle.context().address, SELECTOR_VALIDATOR_PERCENTAGE_UPDATED, u256_to_vec_u8(percentage)).record(handle)?;
-		
+		log1(
+			handle.context().address,
+			SELECTOR_VALIDATOR_PERCENTAGE_UPDATED,
+			u256_to_vec_u8(percentage),
+		)
+		.record(handle)?;
+
 		Ok(true)
 	}
-
-}
-
-fn bool_to_vec_u8(value: bool) -> Vec<u8> {
-    let mut vec = Vec::new();
-    vec.push(value as u8);
-    vec
-}
-
-fn u256_to_vec_u8(value: U256) -> Vec<u8> {
-	let mut bytes = [0u8; 32];
-	let bytes_slice = bytes.as_mut_slice();
-
-    value.to_big_endian(bytes_slice);
-
-	bytes_slice.to_vec()
 }
