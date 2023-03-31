@@ -1,3 +1,5 @@
+use sp_core::{H256, U256};
+
 #[macro_export]
 macro_rules! map_err {
 	($result:expr, $func:expr) => {
@@ -26,4 +28,10 @@ macro_rules! none_or_err {
 			Some(e) => return Err($func(e)),
 		}
 	};
+}
+
+pub fn u256_to_h256(value: U256) -> H256 {
+	let mut tmp = [0u8; 32];
+	value.to_big_endian(&mut tmp);
+	H256::from(tmp)
 }
