@@ -120,6 +120,52 @@ impl pallet_timestamp::Config for Runtime {
 	type WeightInfo = ();
 }
 
+pub struct MockDNTFeeController;
+impl crate::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
+	type Error = ();
+
+	fn get_transaction_fee_token(_from: H160) -> H160 {
+		Default::default()
+	}
+
+	fn get_transaction_conversion_rate(_validator: H160, _token: H160) -> (U256, U256) {
+		(Default::default(), Default::default())
+	}
+
+	fn get_fee_vault() -> H160 {
+		Default::default()
+	}
+
+	fn withdraw_fee(
+		_from: H160,
+		_token: H160,
+		_conversion_rate: (U256, U256),
+		_amount: U256,
+	) -> Result<(), Self::Error> {
+		Ok(())
+	}
+
+	fn correct_fee(
+		_from: H160,
+		_token: H160,
+		_conversion_rate: (U256, U256),
+		_paid_amount: U256,
+		_actual_amount: U256,
+	) -> Result<(), Self::Error> {
+		Ok(())
+	}
+
+	fn pay_fees(
+		_token: H160,
+		_conversion_rate: (U256, U256),
+		_actual_amount: U256,
+		_validator: H160,
+		_to: Option<H160>,
+	) -> Result<(U256, U256), Self::Error> {
+		Ok((Default::default(), Default::default()))
+	}
+}
+
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
 	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
@@ -136,7 +182,7 @@ impl pallet_evm::Config for Runtime {
 	type AddressMapping = pallet_evm::HashedAddressMapping<BlakeTwo256>;
 	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
-	type Runner = StabilityRunner::Runner<Self, MockUserFeeTokenController>;
+	type Runner = StabilityRunner::Runner<Self, MockDNTFeeController, MockUserFeeTokenController>;
 	type PrecompilesType = ();
 	type PrecompilesValue = ();
 	type ChainId = ();
