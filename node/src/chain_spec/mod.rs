@@ -238,5 +238,6 @@ pub fn base_genesis(
 			initial_default_token,
 			initial_default_token_slot: H256::zero(),
 		},
+		dnt_fee_controller: Default::default(),
 	}
 }

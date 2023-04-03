@@ -34,8 +34,8 @@ fn default_balance_is_zero() {
 		assert_eq!(balance, 0.into());
 
 		let storage_balance = <crate::Pallet<Test> as crate::ERC20Manager>::balance_of(
-			&ERC20SlotZero::get(),
-			&MeaninglessAddress::get(),
+			ERC20SlotZero::get(),
+			MeaninglessAddress::get(),
 		);
 
 		assert_eq!(storage_balance, 0.into());
@@ -49,8 +49,8 @@ fn deposit_and_withdraw() {
 
 		assert!(
 			<crate::Pallet<Test> as crate::ERC20Manager>::deposit_amount(
-				&ERC20SlotZero::get(),
-				&MeaninglessAddress::get(),
+				ERC20SlotZero::get(),
+				MeaninglessAddress::get(),
 				value_minted,
 			)
 			.is_ok()
@@ -61,16 +61,16 @@ fn deposit_and_withdraw() {
 		assert_eq!(balance, value_minted);
 
 		let storage_balance = <crate::Pallet<Test> as crate::ERC20Manager>::balance_of(
-			&ERC20SlotZero::get(),
-			&MeaninglessAddress::get(),
+			ERC20SlotZero::get(),
+			MeaninglessAddress::get(),
 		);
 
 		assert_eq!(storage_balance, value_minted);
 
 		assert!(
 			<crate::Pallet<Test> as crate::ERC20Manager>::withdraw_amount(
-				&ERC20SlotZero::get(),
-				&MeaninglessAddress::get(),
+				ERC20SlotZero::get(),
+				MeaninglessAddress::get(),
 				value_minted,
 			)
 			.is_ok()
@@ -87,8 +87,8 @@ fn fail_not_enough_balance() {
 	new_test_ext().execute_with(|| {
 		assert!(
 			<crate::Pallet<Test> as crate::ERC20Manager>::withdraw_amount(
-				&ERC20SlotZero::get(),
-				&MeaninglessAddress::get(),
+				ERC20SlotZero::get(),
+				MeaninglessAddress::get(),
 				1000.into(),
 			)
 			.is_err()
@@ -101,8 +101,8 @@ fn fail_when_overflow() {
 	new_test_ext().execute_with(|| {
 		assert!(
 			<crate::Pallet<Test> as crate::ERC20Manager>::deposit_amount(
-				&ERC20SlotZero::get(),
-				&MeaninglessAddress::get(),
+				ERC20SlotZero::get(),
+				MeaninglessAddress::get(),
 				U256::MAX,
 			)
 			.is_ok()
@@ -110,8 +110,8 @@ fn fail_when_overflow() {
 
 		assert!(
 			<crate::Pallet<Test> as crate::ERC20Manager>::deposit_amount(
-				&ERC20SlotZero::get(),
-				&MeaninglessAddress::get(),
+				ERC20SlotZero::get(),
+				MeaninglessAddress::get(),
 				U256::MAX,
 			)
 			.is_err()
