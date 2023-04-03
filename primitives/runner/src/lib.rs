@@ -282,6 +282,290 @@ where
 			logs: state.substate.logs,
 		})
 	}
+	
+	// Execute an already validated EVM operation.
+	fn execute_delegated_inner<'config, 'precompiles, F, R>(
+		delegator: H160, // The account that is delegating the call.
+		delegate: H160, // The account that is paying for the call.
+		value: U256,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+		config: &'config evm::Config,
+		precompiles: &'precompiles T::PrecompilesType,
+		is_transactional: bool,
+		f: F,
+		base_fee: U256,
+		weight: Weight,
+	) -> Result<ExecutionInfo<R>, RunnerError<Error<T>>>
+	where
+		F: FnOnce(
+			&mut StackExecutor<
+				'config,
+				'precompiles,
+				SubstrateStackState<'_, 'config, T>,
+				T::PrecompilesType,
+			>,
+		) -> (ExitReason, R),
+	{
+		// EIP-3607: https://eips.ethereum.org/EIPS/eip-3607
+		// Do not allow transactions for which `tx.sender` (delegator) has any code deployed.
+		//
+		// We extend the principle of this EIP to also prevent `tx.sender` (delegator) to be the address
+		// of a precompile. While mainnet Ethereum currently only has stateless precompiles,
+		// projects using Frontier can have stateful precompiles that can manage funds or
+		// which calls other contracts that expects this precompile address to be trustworthy.
+		if !<AccountCodes<T>>::get(delegator).is_empty() || precompiles.is_precompile(delegator) {
+			return Err(RunnerError {
+				error: Error::<T>::TransactionMustComeFromEOA,
+				weight,
+			});
+		}
+
+		let (total_fee_per_gas, _actual_priority_fee_per_gas) =
+			match (max_fee_per_gas, max_priority_fee_per_gas, is_transactional) {
+				// Zero max_fee_per_gas for validated transactional calls exist in XCM -> EVM
+				// because fees are already withdrawn in the xcm-executor.
+				(Some(max_fee), _, true) if max_fee.is_zero() => (U256::zero(), U256::zero()),
+				// With no tip, we pay exactly the base_fee
+				(Some(_), None, _) => (base_fee, U256::zero()),
+				// With tip, we include as much of the tip on top of base_fee that we can, never
+				// exceeding max_fee_per_gas
+				(Some(max_fee_per_gas), Some(max_priority_fee_per_gas), _) => {
+					let actual_priority_fee_per_gas = max_fee_per_gas
+						.saturating_sub(base_fee)
+						.min(max_priority_fee_per_gas);
+					(
+						base_fee.saturating_add(actual_priority_fee_per_gas),
+						actual_priority_fee_per_gas,
+					)
+				}
+				// Gas price check is skipped for non-transactional calls that don't
+				// define a `max_fee_per_gas` input.
+				(None, _, false) => (Default::default(), U256::zero()),
+				// Unreachable, previously validated. Handle gracefully.
+				_ => {
+					return Err(RunnerError {
+						error: Error::<T>::GasPriceTooLow,
+						weight,
+					})
+				}
+			};
+
+		// After eip-1559 we make sure the delegate can pay both the evm execution and priority fees.
+		let total_fee =
+			total_fee_per_gas
+				.checked_mul(U256::from(gas_limit))
+				.ok_or(RunnerError {
+					error: Error::<T>::FeeOverflow,
+					weight,
+				})?;
+
+		// Deduct fee from the `delegate` account. Returns `None` if `total_fee` is Zero.
+		let fee = T::OnChargeTransaction::withdraw_fee(&delegate, total_fee)
+			.map_err(|e| RunnerError { error: e, weight })?;
+
+		// Execute the EVM call.
+		let vicinity = Vicinity {
+			gas_price: base_fee,
+			origin: delegator, // record delegator as transaction source
+		};
+
+		let metadata = StackSubstateMetadata::new(gas_limit, config);
+		let state = SubstrateStackState::new(&vicinity, metadata);
+		let mut executor = StackExecutor::new_with_precompiles(state, config, precompiles);
+
+		let (reason, retv) = f(&mut executor);
+
+		// Post execution.
+		let used_gas = U256::from(executor.used_gas());
+		let actual_fee = executor.fee(total_fee_per_gas);
+		log::debug!(
+			target: "evm",
+			"Execution {:?} [delegator: {:?}, delegate: {:?}, value: {}, gas_limit: {}, actual_fee: {}, is_transactional: {}]",
+			reason,
+			delegator,
+			delegate,
+			value,
+			gas_limit,
+			actual_fee,
+			is_transactional
+		);
+		// The difference between initially withdrawn and the actual cost is refunded.
+		//
+		// Considered the following request:
+		// +-----------+---------+--------------+
+		// | Gas_limit | Max_Fee | Max_Priority |
+		// +-----------+---------+--------------+
+		// |        20 |      10 |            6 |
+		// +-----------+---------+--------------+
+		//
+		// And execution:
+		// +----------+----------+
+		// | Gas_used | Base_Fee |
+		// +----------+----------+
+		// |        5 |        2 |
+		// +----------+----------+
+		//
+		// Initially withdrawn 10 * 20 = 200.
+		// Actual cost (2 + 6) * 5 = 40.
+		// Refunded 200 - 40 = 160.
+		// Tip 5 * 6 = 30.
+		// Burned 200 - (160 + 30) = 10. Which is equivalent to gas_used * base_fee.
+		let actual_priority_fee = T::OnChargeTransaction::correct_and_deposit_fee(
+			&delegate,
+			// Actual fee after evm execution, including tip.
+			actual_fee,
+			// Base fee.
+			executor.fee(base_fee),
+			// Fee initially withdrawn.
+			fee,
+		);
+		T::OnChargeTransaction::pay_priority_fee(actual_priority_fee);
+
+		let state = executor.into_state();
+
+		for address in state.substate.deletes {
+			log::debug!(
+				target: "evm",
+				"Deleting account at {:?}",
+				address
+			);
+			Pallet::<T>::remove_account(&address)
+		}
+
+		for log in &state.substate.logs {
+			log::trace!(
+				target: "evm",
+				"Inserting log for {:?}, topics ({}) {:?}, data ({}): {:?}]",
+				log.address,
+				log.topics.len(),
+				log.topics,
+				log.data.len(),
+				log.data
+			);
+			{
+				let event = Event::<T>::Log {
+					log: Log {
+						address: log.address,
+						topics: log.topics.clone(),
+						data: log.data.clone(),
+					},
+				};
+				let event = <<T as Config>::RuntimeEvent as From<Event<T>>>::from(event);
+				let event = <<T as Config>::RuntimeEvent as Into<
+					<T as frame_system::Config>::RuntimeEvent,
+				>>::into(event);
+				<frame_system::Pallet<T>>::deposit_event(event)
+			};
+		}
+
+		Ok(ExecutionInfo {
+			value: retv,
+			exit_reason: reason,
+			used_gas,
+			logs: state.substate.logs,
+		})
+	}
+
+	#[allow(clippy::let_and_return)]
+	/// Execute an already validated EVM operation.
+	fn execute_delegated<'config, 'precompiles, F, R>(
+		delegator: H160,
+		delegate: H160,
+		value: U256,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+		config: &'config evm::Config,
+		precompiles: &'precompiles T::PrecompilesType,
+		is_transactional: bool,
+		f: F,
+	) -> Result<ExecutionInfo<R>, RunnerError<Error<T>>>
+	where
+		F: FnOnce(
+			&mut StackExecutor<
+				'config,
+				'precompiles,
+				SubstrateStackState<'_, 'config, T>,
+				T::PrecompilesType,
+			>,
+		) -> (ExitReason, R),
+	{
+		let (base_fee, weight) = T::FeeCalculator::min_gas_price();
+
+		#[cfg(feature = "forbid-evm-reentrancy")]
+		if IN_EVM.with(|in_evm| in_evm.replace(true)) {
+			return Err(RunnerError {
+				error: Error::<T>::Reentrancy,
+				weight,
+			});
+		}
+
+		let res = Self::execute_delegated_inner(
+			delegator,
+			delegate,
+			value,
+			gas_limit,
+			max_fee_per_gas,
+			max_priority_fee_per_gas,
+			config,
+			precompiles,
+			is_transactional,
+			f,
+			base_fee,
+			weight,
+		);
+
+		// Set IN_EVM to false
+		// We should make sure that this line is executed whatever the execution path.
+		#[cfg(feature = "forbid-evm-reentrancy")]
+		let _ = IN_EVM.with(|in_evm| in_evm.take());
+
+		res
+	}
+}
+
+pub trait RunnerExt<T: Config>: RunnerT<T> {
+	fn delegated_call(
+		source: H160,
+		target: H160,
+		delegate: H160,
+		input: Vec<u8>,
+		_value: U256,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+		nonce: Option<U256>,
+		access_list: Vec<(H160, Vec<H256>)>,
+		is_transactional: bool,
+		validate: bool,
+		config: &evm::Config,
+	) -> Result<CallInfo, RunnerError<Self::Error>>;
+}
+
+impl<T, C> RunnerExt<C> for T
+where
+	C: Config,
+	T: RunnerT<C>,
+{
+	fn delegated_call(
+		source: H160,
+		target: H160,
+		delegate: H160,
+		input: Vec<u8>,
+		_value: U256,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+		nonce: Option<U256>,
+		access_list: Vec<(H160, Vec<H256>)>,
+		is_transactional: bool,
+		validate: bool,
+		config: &evm::Config,
+	) -> Result<CallInfo, RunnerError<Self::Error>> {
+		Self::call(source, target, input, _value, gas_limit, max_fee_per_gas, max_priority_fee_per_gas, nonce, access_list, is_transactional, validate, config)
+	}
 }
 
 impl<T: Config, U: UserFeeTokenController> RunnerT<T> for Runner<T, U>

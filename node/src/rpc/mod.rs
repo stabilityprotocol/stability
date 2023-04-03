@@ -76,9 +76,9 @@ where
 		eth,
 	} = deps;
 
-	io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
+	io.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
+	io.merge(DelegatedTransaction::new(client.clone(), pool).into_rpc())?;
 	io.merge(TransactionPayment::new(client).into_rpc())?;
-	io.merge(DelegatedTransaction::new(client.clone(), pool.clone()).into_rpc())?;
 
 	if let Some(command_sink) = command_sink {
 		io.merge(
