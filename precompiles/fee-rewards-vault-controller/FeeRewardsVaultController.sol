@@ -12,5 +12,5 @@ interface FeeRewardsVaultController {
     function getClaimableReward(address dapp, address token) external view returns (uint256);
     function isWhitelisted(address dapp) external view returns (bool);
     function getValidatorPercentage() external view returns (uint256);
-    function set_validator_percentage(uint256) external returns (bool);
+    function setValidatorPercentage(uint256) external returns (bool);
 }
