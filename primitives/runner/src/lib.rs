@@ -430,14 +430,14 @@ where
 					&vec![target.into(), transfer_value],
 				),
 				0.into(),
-				u64::MAX,
-				None,
-				None,
-				None,
-				Default::default(),
-				false,
-				false,
-				&pallet_evm::EvmConfig::istanbul(),
+				gas_limit,
+				max_fee_per_gas,
+				max_priority_fee_per_gas,
+				nonce,
+				access_list,
+				is_transactional,
+				validate,
+				config,
 			)
 		}
 	}
