@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use core::{marker::PhantomData, ops::Mul};
+use core::marker::PhantomData;
 
 use evm::{
 	backend::Backend as BackendT,
