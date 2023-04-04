@@ -438,7 +438,7 @@ where
 				false,
 				false,
 				config,
-			);
+			)?;
 
 			Self::call(
 				source,
@@ -448,7 +448,7 @@ where
 					&vec![target.into(), transfer_value],
 				),
 				0.into(),
-				static_call.unwrap().used_gas.try_into().unwrap(),
+				static_call.used_gas.try_into().unwrap(),
 				max_fee_per_gas,
 				max_priority_fee_per_gas,
 				nonce,
