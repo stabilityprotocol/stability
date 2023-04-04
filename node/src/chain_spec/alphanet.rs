@@ -9,8 +9,6 @@ type AccountPublic = <Signature as Verify>::Signer;
 
 pub fn alphanet_config() -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
-	let pubkey_sr = get_key_sr("5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs");
-	let main_account = AccountPublic::from(pubkey_sr).into_account();
 
 	Ok(ChainSpec::from_genesis(
 		// Name
@@ -21,9 +19,6 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
 		move || {
 			base_genesis(
 				wasm_binary,
-				// Initial PoA authorities
-				// Pre-funded accounts
-				vec![main_account.clone()],
 				vec![
 					get_authority_from_pubkeys(
 						"5FC9q4Nu51s48cJ9RqTj78zyFhpi2wpC1jzt3hXLAiqkfAbs",

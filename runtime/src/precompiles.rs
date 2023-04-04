@@ -6,46 +6,19 @@ use pallet_evm_precompile_bn128::{Bn128Add, Bn128Mul, Bn128Pairing};
 use pallet_evm_precompile_modexp::Modexp;
 use pallet_evm_precompile_sha3fips::Sha3FIPS256;
 use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256};
-use precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata};
 use precompile_fee_token_selector::FeeTokenPrecompile;
 use precompile_map_svm_evm_controller::MapSvmEvmControllerPrecompile;
 use precompile_supported_tokens_manager::SupportedTokensManagerPrecompile;
-use precompile_utils::precompile_set::*;
-use precompile_validator_fee_selector::ValidatorFeeManagerPrecompile;
-use precompile_validator_controller::ValidatorControllerPrecompile;
 use precompile_upgrade_runtime_controller::UpgradeRuntimeControllerPrecompile;
+use precompile_utils::precompile_set::*;
+use precompile_validator_controller::ValidatorControllerPrecompile;
+use precompile_validator_fee_selector::ValidatorFeeManagerPrecompile;
 use sp_core::H160;
 
 use crate::{
 	stability_config::{DEFAULT_FEE_TOKEN, DEFAULT_OWNER},
 	FeeController as StabilityFeeController,
 };
-
-pub struct NativeErc20Metadata;
-
-/// ERC20 metadata for the native token.
-impl Erc20Metadata for NativeErc20Metadata {
-	/// Returns the name of the token.
-	fn name() -> &'static str {
-		"DOLR"
-	}
-
-	/// Returns the symbol of the token.
-	fn symbol() -> &'static str {
-		"DOLR"
-	}
-
-	/// Returns the decimals places of the token.
-	fn decimals() -> u8 {
-		18
-	}
-
-	/// Must return `true` only if it represents the main native currency of
-	/// the network. It must be the currency used in `pallet_evm`.
-	fn is_native_currency() -> bool {
-		true
-	}
-}
 
 /// The asset precompile address prefix. Addresses that match against this prefix will be routed
 /// to Erc20AssetsPrecompileSet being marked as foreign
@@ -85,10 +58,6 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 				PrecompileAt<AddressU64<1026>, ECRecoverPublicKey>,
 				// Stability specific precompiles:
 				PrecompileAt<
-					AddressU64<2048>,
-					Erc20BalancesPrecompile<R, NativeErc20Metadata, DefaultOwner>,
-				>,
-				PrecompileAt<
 					AddressU64<2049>,
 					SupportedTokensManagerPrecompile<
 						R,
@@ -109,7 +78,7 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 				>,
 				PrecompileAt<AddressU64<2052>, MapSvmEvmControllerPrecompile<R>>,
 				PrecompileAt<AddressU64<2053>, ValidatorControllerPrecompile<R, DefaultOwner>>,
-				PrecompileAt<AddressU64<2054>, UpgradeRuntimeControllerPrecompile<R, DefaultOwner>>
+				PrecompileAt<AddressU64<2054>, UpgradeRuntimeControllerPrecompile<R, DefaultOwner>>,
 			),
 		>,
 	),

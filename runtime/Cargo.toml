@@ -52,7 +52,6 @@ std = [
     'pallet-evm-chain-id/std',
     'pallet-evm-precompile-modexp/std',
     'pallet-evm-precompile-sha3fips/std',
-    'precompile-balances-erc20/std',
     'pallet-evm-precompile-simple/std',
     'pallet-hotfix-sufficients/std',
     'pallet-collective/std',
@@ -137,7 +136,6 @@ pallet-hotfix-sufficients = { workspace = true }
 pallet-evm-precompile-blake2 = { workspace = true }
 pallet-evm-precompile-bn128 = { workspace = true }
 precompile-utils = { workspace = true }
-precompile-balances-erc20 = { workspace = true }
 precompile-fee-token-selector = { workspace = true }
 precompile-validator-fee-selector = { workspace = true }
 pallet-user-fee-selector = { workspace = true }

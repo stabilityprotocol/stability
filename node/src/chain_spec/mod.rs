@@ -101,16 +101,15 @@ pub fn get_authority_from_pubkeys(
 /// Configure initial storage state for FRAME modules.
 pub fn base_genesis(
 	wasm_binary: &[u8],
-	endowed_accounts: Vec<AccountId>,
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId, ImOnlineId)>,
 	linked_accounts: Vec<(AccountId, H160)>,
 	members: Vec<AccountId>,
 	chain_id: u64,
 ) -> GenesisConfig {
 	use stability_runtime::{
-		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig,
-		MapSvmEvmConfig, SessionConfig, SupportedTokensManagerConfig, SystemConfig,
-		TechCommitteeCollectiveConfig, ValidatorSetConfig,
+		AuraConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig, MapSvmEvmConfig,
+		SessionConfig, SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig,
+		ValidatorSetConfig,
 	};
 	let initial_default_token =
 		H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
@@ -120,17 +119,8 @@ pub fn base_genesis(
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
 		},
-		// Monetary
-		balances: BalancesConfig {
-			// Configure endowed accounts with initial balance of 1 << 60.
-			balances: endowed_accounts
-				.iter()
-				.cloned()
-				.map(|k| (k, 1 << 60))
-				.collect(),
-		},
 		transaction_payment: Default::default(),
-
+		balances: Default::default(),
 		session: SessionConfig {
 			keys: initial_authorities
 				.iter()

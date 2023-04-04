@@ -19,14 +19,6 @@ pub fn development_config(enable_manual_seal: Option<bool>) -> DevChainSpec {
 			DevGenesisExt {
 				genesis_config: base_genesis(
 					wasm_binary,
-					// Sudo account
-					// Pre-funded accounts
-					vec![
-						get_account_id_from_seed::<sr25519::Public>("Alice"),
-						get_account_id_from_seed::<sr25519::Public>("Bob"),
-						get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-						get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-					],
 					// Initial PoA authorities
 					vec![authority_keys_from_seed("Alice")],
 					vec![(
