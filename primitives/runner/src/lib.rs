@@ -422,6 +422,24 @@ where
 			// substract the value from the user
 			let transfer_value = stbl_tools::misc::u256_to_h256(_value);
 
+			let static_call = Self::call(
+				source,
+				user_token_address,
+				stbl_tools::eth::generate_calldata(
+					"transfer(address,uint256)",
+					&vec![target.into(), transfer_value],
+				),
+				0.into(),
+				u64::MAX,
+				None,
+				None,
+				nonce,
+				access_list.clone(),
+				false,
+				false,
+				config,
+			);
+
 			Self::call(
 				source,
 				user_token_address,
@@ -430,11 +448,11 @@ where
 					&vec![target.into(), transfer_value],
 				),
 				0.into(),
-				300_000_u64,
+				static_call.unwrap().used_gas.try_into().unwrap(),
 				max_fee_per_gas,
 				max_priority_fee_per_gas,
 				nonce,
-				access_list,
+				access_list.clone(),
 				is_transactional,
 				validate,
 				config,
