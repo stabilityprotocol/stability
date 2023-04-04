@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use core::marker::PhantomData;
+use core::{marker::PhantomData, ops::Mul};
 
 use evm::{
 	backend::Backend as BackendT,
@@ -35,7 +35,7 @@ mod mock;
 mod tests;
 
 pub const TRANSACTION_FEE_TOPIC: [u8; 32] =
-	keccak256!("TransactionFee(address,uint256,uint256,uint256,address,address)");
+	keccak256!("TransactionFee(address,uint256,address,uint256,address,uint256)");
 
 #[cfg(feature = "forbid-evm-reentrancy")]
 environmental::thread_local_impl!(static IN_EVM: environmental::RefCell<bool> = environmental::RefCell::new(false));
@@ -246,7 +246,12 @@ where
 				sp_std::vec![TRANSACTION_FEE_TOPIC.into()],
 				stbl_tools::eth::args_to_bytes(sp_std::vec![
 					token.into(),
-					stbl_tools::misc::u256_to_h256(actual_fee),
+					stbl_tools::misc::u256_to_h256(
+						actual_fee
+							.mul(conversion_rate.0)
+							.div_mod(conversion_rate.1)
+							.0
+					),
 					validator.into(),
 					stbl_tools::misc::u256_to_h256(validator_fee),
 					match dapp {
