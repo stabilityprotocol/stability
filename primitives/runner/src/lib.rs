@@ -430,7 +430,7 @@ where
 					&vec![target.into(), transfer_value],
 				),
 				0.into(),
-				gas_limit,
+				300_000_u64,
 				max_fee_per_gas,
 				max_priority_fee_per_gas,
 				nonce,
