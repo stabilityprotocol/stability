@@ -61,7 +61,10 @@ pub mod pallet {
 	impl Default for GenesisConfig {
 		fn default() -> Self {
 			Self {
-				fee_vault_precompile_address: H160::from_low_u64_be(0),
+				fee_vault_precompile_address: <H160 as core::str::FromStr>::from_str(
+					"0x0000000000000000000000000000000000000807",
+				)
+				.unwrap(),
 				validator_percentage: 50.into(),
 			}
 		}
