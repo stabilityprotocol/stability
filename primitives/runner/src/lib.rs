@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use core::{marker::PhantomData, ops::Mul};
+use core::marker::PhantomData;
 
 use evm::{
 	backend::Backend as BackendT,
@@ -246,12 +246,7 @@ where
 				sp_std::vec![TRANSACTION_FEE_TOPIC.into()],
 				stbl_tools::eth::args_to_bytes(sp_std::vec![
 					token.into(),
-					stbl_tools::misc::u256_to_h256(
-						actual_fee
-							.mul(conversion_rate.0)
-							.div_mod(conversion_rate.1)
-							.0
-					),
+					stbl_tools::misc::u256_to_h256(validator_fee + dapp_fee),
 					validator.into(),
 					stbl_tools::misc::u256_to_h256(validator_fee),
 					match dapp {
