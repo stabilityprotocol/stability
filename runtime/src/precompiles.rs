@@ -7,7 +7,6 @@ use pallet_evm_precompile_modexp::Modexp;
 use pallet_evm_precompile_sha3fips::Sha3FIPS256;
 use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256};
 use precompile_fee_token_selector::FeeTokenPrecompile;
-use precompile_map_svm_evm_controller::MapSvmEvmControllerPrecompile;
 use precompile_supported_tokens_manager::SupportedTokensManagerPrecompile;
 use precompile_upgrade_runtime_controller::UpgradeRuntimeControllerPrecompile;
 use precompile_utils::precompile_set::*;
@@ -76,7 +75,6 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 					AddressU64<2051>,
 					FeeTokenPrecompile<R, <FeeController as StabilityFeeController>::User>,
 				>,
-				PrecompileAt<AddressU64<2052>, MapSvmEvmControllerPrecompile<R>>,
 				PrecompileAt<AddressU64<2053>, ValidatorControllerPrecompile<R, DefaultOwner>>,
 				PrecompileAt<AddressU64<2054>, UpgradeRuntimeControllerPrecompile<R, DefaultOwner>>,
 			),

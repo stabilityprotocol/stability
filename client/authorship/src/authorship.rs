@@ -428,11 +428,12 @@ where
 
 		let block_size_limit = block_size_limit.unwrap_or(self.default_block_size_limit);
 
-		let key = SyncCryptoStore::sr25519_public_keys(
+		let keys = SyncCryptoStore::ecdsa_public_keys(
 			&*self.keystore,
 			KeyTypeId::try_from("aura").unwrap_or_default(),
 		);
-		let account = AccountId::from(key[0].clone());
+		let key: &[u8] = keys[0].as_ref();
+		let account = AccountId::try_from(key).unwrap();
 
 		debug!("Attempting to push transactions from the pool.");
 		debug!("Pool status: {:?}", self.transaction_pool.status());

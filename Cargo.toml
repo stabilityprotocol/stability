@@ -3,6 +3,7 @@ panic = 'unwind'
 
 [workspace]
 members = [
+    'core-primitives',
     'node',
     'runtime',
     'precompiles/validator-controller',
@@ -15,6 +16,7 @@ members = [
     'precompiles/token-fee-controller/supported-tokens-manager',
     'precompiles/map-svm-evm-controller',
     'precompiles/upgrade-runtime-controller',
+    'primitives/account',
     'primitives/tools',
     'primitives/fee-compatible-api',
     'pallets/erc20-manager',
@@ -191,10 +193,12 @@ stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api",
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
 pallet-map-svm-evm = { path = "./pallets/map-svm-evm", default-features = false }
 pallet-upgrade-runtime-proposal = { path = "./pallets/upgrade-runtime-proposal", default-features = false }
+stbl-core-primitives = { path = "./core-primitives", default-features = false }
 stbl-tools = { path = "./primitives/tools", default-features = false }
 precompile-map-svm-evm-controller = { path = "./precompiles/map-svm-evm-controller", default-features = false }
 precompile-supported-tokens-manager = { path = "./precompiles/token-fee-controller/supported-tokens-manager", default-features = false }
 precompile-upgrade-runtime-controller = { path = "./precompiles/upgrade-runtime-controller", default-features = false }
+elliptic-curve = { version = "^0.13.0", default-features = false }
 
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }
@@ -206,3 +210,4 @@ pallet-supported-tokens-manager = { path = "./pallets/token-fee-controller/suppo
 pallet-validator-set = { path = "./pallets/validator-set", default-features = false }
 pallet-custom-balances = { path = "./pallets/custom-balances", default-features = false }
 runner = { path = "./primitives/runner", default-features = false }
+account = {path = "./primitives/account", default-features = false }

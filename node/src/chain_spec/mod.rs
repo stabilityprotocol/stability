@@ -7,7 +7,10 @@ use stability_runtime::{AccountId, GenesisConfig, Precompiles};
 use std::{collections::BTreeMap, str::FromStr, vec};
 // Substrate
 use sp_core::{crypto::Ss58Codec, sr25519, storage::Storage, Pair, Public};
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::{
+	app_crypto::ecdsa,
+	traits::{IdentifyAccount, Verify},
+};
 use sp_state_machine::BasicExternalities;
 // Frontier
 use stability_runtime::{opaque::SessionKeys, EnableManualSeal, Signature};
@@ -54,24 +57,16 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
 type AccountPublic = <Signature as Verify>::Signer;
 
 /// Generate an account ID from seed.
-pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
-where
-	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
-}
+pub fn get_account_id_from_seed(seed: &str) -> AccountId {}
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
-	(
-		get_account_id_from_seed::<sr25519::Public>(s),
-		get_from_seed::<AuraId>(s),
-		get_from_seed::<GrandpaId>(s),
-		get_from_seed::<ImOnlineId>(s),
-	)
+pub fn authority_keys_from_seed(seed: &str) -> ecdsa::Public {
+	ecdsa::Pair::from_seed(seed.as_bytes().try_into().unwrap())
+		.public()
+		.into_account()
 }
 
-pub fn session_keys(aura: AuraId, grandpa: GrandpaId, im_online: ImOnlineId) -> SessionKeys {
+pub fn session_keys(aura: AccountId, grandpa: AccountId, im_online: AccountId) -> SessionKeys {
 	SessionKeys {
 		aura,
 		grandpa,
@@ -86,23 +81,15 @@ pub fn get_key_sr(pubkey: &str) -> sr25519::Public {
 	}
 }
 
-pub fn get_authority_from_pubkeys(
-	sr_pubkey: &str,
-	ed_pubkey: &str,
-) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
-	(
-		AccountId::from_string(sr_pubkey).expect("bad formatted sr pubkey"),
-		AuraId::from_string(sr_pubkey).expect("bad formatted sr pubkey"),
-		GrandpaId::from_string(ed_pubkey).expect("bad formatted ed pubkey"),
-		ImOnlineId::from_string(sr_pubkey).expect("bad formatted ed pubkey"),
-	)
+pub fn get_authority_from_addresss(address: &str) -> (AccountId, AccountId, AccountId, AccountId) {
+	let address = AccountId::from(H160::from_str(address).expect("bad formatted h160").0);
+	(address, address, address, address)
 }
 
 /// Configure initial storage state for FRAME modules.
 pub fn base_genesis(
 	wasm_binary: &[u8],
-	initial_authorities: Vec<(AccountId, AuraId, GrandpaId, ImOnlineId)>,
-	linked_accounts: Vec<(AccountId, H160)>,
+	initial_authorities: Vec<AccountId>,
 	members: Vec<AccountId>,
 	chain_id: u64,
 ) -> GenesisConfig {
@@ -126,16 +113,16 @@ pub fn base_genesis(
 				.iter()
 				.map(|x| {
 					(
-						x.0.clone(),
-						x.0.clone(),
-						session_keys(x.1.clone(), x.2.clone(), x.3.clone()),
+						x.clone(),
+						x.clone(),
+						session_keys(x.clone(), x.clone(), x.clone()),
 					)
 				})
-				.collect::<Vec<_>>(),
+				.collect(),
 		},
 		im_online: ImOnlineConfig { keys: vec![] },
 		validator_set: ValidatorSetConfig {
-			initial_validators: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
+			initial_validators: initial_authorities.iter().map(|x| (x.clone())).collect(),
 		},
 		// Consensus
 		aura: AuraConfig {
@@ -147,10 +134,6 @@ pub fn base_genesis(
 		tech_committee_collective: TechCommitteeCollectiveConfig {
 			phantom: Default::default(),
 			members: members.clone(),
-		},
-		// EVM compatibility
-		map_svm_evm: MapSvmEvmConfig {
-			linked_accounts: linked_accounts.clone(),
 		},
 		evm_chain_id: EVMChainIdConfig { chain_id },
 		evm: EVMConfig {

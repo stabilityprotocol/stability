@@ -154,4 +154,4 @@ pallet-validator-set = { workspace = true }
 pallet-upgrade-runtime-proposal = { workspace = true }
 precompile-upgrade-runtime-controller = { workspace = true }
 runner = { workspace = true }
-
+stbl-core-primitives = { workspace = true }

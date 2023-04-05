@@ -10,34 +10,30 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode};
-use pallet_balances::Instance1;
-use sp_runtime::AccountId32;
 use core::str::FromStr;
+use frame_support::pallet_prelude::EnsureOrigin;
 use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
+use pallet_balances::Instance1;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
 use sp_api::impl_runtime_apis;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{
-	crypto::{ByteArray, KeyTypeId},
-	Hasher, OpaqueMetadata, H160, H256, U256,
-};
+use sp_core::{crypto::KeyTypeId, Hasher, OpaqueMetadata, H160, H256, U256};
+use sp_runtime::traits::IdentityLookup;
 use sp_runtime::{
 	create_runtime_str, generic,
 	generic::Era,
 	impl_opaque_keys,
 	traits::{
-		AccountIdLookup, BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, Get,
-		IdentifyAccount, NumberFor, OpaqueKeys, PostDispatchInfoOf, UniqueSaturatedInto, Verify,
+		BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, Get, NumberFor, OpaqueKeys,
+		PostDispatchInfoOf, UniqueSaturatedInto, Verify,
 	},
 	transaction_validity::{
 		TransactionPriority, TransactionSource, TransactionValidity, TransactionValidityError,
 	},
 	ApplyExtrinsicResult, MultiSignature, Permill, SaturatedConversion,
 };
-use frame_support::pallet_prelude::EnsureOrigin;
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
 // Substrate FRAME
@@ -53,7 +49,6 @@ use pallet_transaction_payment::CurrencyAdapter;
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use pallet_evm::{Account as EVMAccount, FeeCalculator, Runner};
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime,
@@ -80,6 +75,11 @@ use stability_config::{
 	VALIDATOR_SET_MIN_VALIDATORS,
 };
 
+pub use stbl_core_primitives::{
+	AccountId, AccountIndex, Address, AssetId, Balance, BlockNumber, DigestItem, Hash, Header,
+	Index, Signature,
+};
+
 mod precompiles;
 use precompiles::StabilityPrecompiles;
 
@@ -100,32 +100,6 @@ impl FeeController for StabilityFeeController {
 pub type Precompiles = StabilityPrecompiles<Runtime, StabilityFeeController>;
 
 use runner::Runner as StabilityRunner;
-
-/// Type of block number.
-pub type BlockNumber = u32;
-
-/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
-pub type Signature = MultiSignature;
-
-/// Some way of identifying an account on the chain. We intentionally make it equivalent
-/// to the public key of our transaction signing scheme.
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
-
-/// The type for looking up accounts. We don't expect more than 4 billion of them, but you
-/// never know...
-pub type AccountIndex = u32;
-
-/// Balance of an account.
-pub type Balance = u128;
-
-/// Index of a transaction in the chain.
-pub type Index = u32;
-
-/// A hash of some data used by the chain.
-pub type Hash = sp_core::H256;
-
-/// Digest item type.
-pub type DigestItem = generic::DigestItem;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -211,7 +185,7 @@ impl frame_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
-	type Lookup = AccountIdLookup<AccountId, ()>;
+	type Lookup = IdentityLookup<AccountId>;
 	/// The header type.
 	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// The ubiquitous event type.
@@ -246,7 +220,7 @@ parameter_types! {
 }
 
 impl pallet_aura::Config for Runtime {
-	type AuthorityId = AuraId;
+	type AuthorityId = AccountId;
 	type MaxAuthorities = MaxAuthorities;
 	type DisabledValidators = ();
 }
@@ -255,11 +229,11 @@ impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 
 	type KeyOwnerProof =
-		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
+		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, AccountId)>>::Proof;
 
 	type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
 		KeyTypeId,
-		GrandpaId,
+		AccountId,
 	)>>::IdentificationTuple;
 
 	type KeyOwnerProofSystem = ();
@@ -337,17 +311,11 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 	{
 		if let Some(author_index) = F::find_author(digests) {
 			let authority_id = Aura::authorities()[author_index as usize].clone();
-			let authority_as_bytes: [u8; 32] = authority_id.as_slice()[0..32].try_into().unwrap();
-			let evm_linked = MapSvmEvm::get_linked_evm_account(AccountId::from(authority_as_bytes));
 
-			// if we have a linked EVM account, return it
-			if let Some(_) = evm_linked {
-				return evm_linked;
-			}
-			// otherwise, return the default EVM account
-			return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
+			Some(authority_id.0.into())
+		} else {
+			None
 		}
-		None
 	}
 }
 
@@ -357,20 +325,7 @@ impl<H: Hasher<Out = H256>> pallet_evm::AddressMapping<AccountId>
 	for LinkedOrHashedAddressMapping<H>
 {
 	fn into_account_id(address: H160) -> AccountId {
-		let mut data = [0u8; 24];
-
-		let account_id_option = MapSvmEvm::get_linked_substrate_account(address);
-
-		// if we have a linked Substrate account, return it
-		if let Some(accoun_id) = account_id_option {
-			return accoun_id;
-		}
-		// otherwise, return the default Substrate account
-		data[0..4].copy_from_slice(b"evm:");
-		data[4..24].copy_from_slice(&address[..]);
-		let hash = H::hash(&data);
-
-		AccountId::from(Into::<[u8; 32]>::into(hash))
+		AccountId::from(address.0)
 	}
 }
 
@@ -384,14 +339,7 @@ where
 
 	fn try_address_origin(address: &H160, origin: OuterOrigin) -> Result<AccountId, OuterOrigin> {
 		origin.into().and_then(|o| match o {
-			RawOrigin::Signed(who)
-				if MapSvmEvm::get_linked_evm_account(who.clone()) == Some(*address) =>
-			{
-				Ok(who)
-			}
-			RawOrigin::Signed(who) if AsRef::<[u8; 32]>::as_ref(&who)[0..20] == address[0..20] => {
-				Ok(who)
-			}
+			RawOrigin::Signed(who) => Ok(who),
 			r => Err(OuterOrigin::from(r)),
 		})
 	}
@@ -536,7 +484,7 @@ parameter_types! {
 
 impl pallet_session::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type ValidatorId = <Self as frame_system::Config>::AccountId;
+	type ValidatorId = AccountId;
 	type ValidatorIdOf = pallet_validator_set::ValidatorOf<Self>;
 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
 	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
@@ -593,14 +541,7 @@ where
 		let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
 		let address = account;
 		let (call, extra, _) = raw_payload.deconstruct();
-		Some((
-			call,
-			(
-				sp_runtime::MultiAddress::Id(address),
-				signature.into(),
-				extra,
-			),
-		))
+		Some((call, (address, signature.into(), extra)))
 	}
 }
 
@@ -618,7 +559,7 @@ where
 }
 
 impl pallet_im_online::Config for Runtime {
-	type AuthorityId = ImOnlineId;
+	type AuthorityId = AccountId;
 	type RuntimeEvent = RuntimeEvent;
 	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
 	type ValidatorSet = ValidatorSet;
@@ -630,38 +571,31 @@ impl pallet_im_online::Config for Runtime {
 	type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
 }
 
-impl pallet_map_svm_evm::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-}
-
 parameter_types! {
 	pub const MaxSizeOfCode: u32 = 10 * 1024 * 1024; // 10 MB
 }
 
-
-pub struct EnsureMemberOfTechCollective<AccountId>(sp_std::marker::PhantomData<AccountId>);
-impl<O: Into<Result<RawOrigin<AccountId>, O>> + From<RawOrigin<AccountId>>, AccountId: core::clone::Clone>
-	EnsureOrigin<O> for EnsureMemberOfTechCollective<AccountId>
-	where AccountId32: From<AccountId>
+pub struct EnsureMemberOfTechCollective;
+impl<O: Into<Result<RawOrigin<AccountId>, O>> + From<RawOrigin<AccountId>>> EnsureOrigin<O>
+	for EnsureMemberOfTechCollective
 {
 	type Success = ();
 	fn try_origin(o: O) -> Result<Self::Success, O> {
 		o.into().and_then(|o| match o {
-			RawOrigin::Signed(account) => if <pallet_collective::Pallet<Runtime, Instance1>>::is_member(&account.clone().into()) {
-				Ok(())
-			} else {
-				Err(O::from(RawOrigin::Signed(account.clone())))
-			},
+			RawOrigin::Signed(account) => {
+				if <pallet_collective::Pallet<Runtime, Instance1>>::is_member(&account) {
+					Ok(())
+				} else {
+					Err(O::from(RawOrigin::Signed(account.clone())))
+				}
+			}
 			r => Err(O::from(r)),
 		})
 	}
-
 }
 
-type EnsureRootOrMemberOfTechCollective= EitherOfDiverse<
-	EnsureRoot<AccountId>,
-	EnsureMemberOfTechCollective<AccountId>,
->;
+type EnsureRootOrMemberOfTechCollective =
+	EitherOfDiverse<EnsureRoot<AccountId>, EnsureMemberOfTechCollective>;
 
 impl pallet_upgrade_runtime_proposal::Config for Runtime {
 	type ControlOrigin = EnsureRootOrMemberOfTechCollective;
@@ -686,7 +620,6 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment,
 		TechCommitteeCollective: pallet_collective::<Instance1>,
 		RootController: pallet_root_controller,
-		MapSvmEvm: pallet_map_svm_evm,
 		Ethereum: pallet_ethereum,
 		EVM: pallet_evm,
 		EVMChainId: pallet_evm_chain_id,
@@ -727,10 +660,6 @@ impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConve
 	}
 }
 
-/// The address format for describing accounts.
-pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
-/// Block header type as expected by this runtime.
-pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// A Block signed with a Justification
@@ -900,12 +829,12 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
+	impl sp_consensus_aura::AuraApi<Block, AccountId> for Runtime {
 		fn slot_duration() -> sp_consensus_aura::SlotDuration {
 			sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
 		}
 
-		fn authorities() -> Vec<AuraId> {
+		fn authorities() -> Vec<AccountId> {
 			Aura::authorities().to_vec()
 		}
 	}
@@ -1160,18 +1089,13 @@ impl_runtime_apis! {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool {
 			if let RuntimeCall::Ethereum(transact { transaction }) = tx.0.function {
 				let source_address_option =  stbl_tools::eth::recover_signer(&transaction);
-				let validator_address_option = <pallet_map_svm_evm::Pallet<Runtime>>::get_linked_evm_account(validator);
-
-				if validator_address_option.is_none() {
-					return false
-				}
 
 				if source_address_option.is_none() {
 					return true
 				}
 
-				let source_address = source_address_option.unwrap();
-				let validator_address = validator_address_option.unwrap();
+				let source_address: H160 = source_address_option.unwrap();
+				let validator_address: H160 = validator.into();
 
 
 				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
