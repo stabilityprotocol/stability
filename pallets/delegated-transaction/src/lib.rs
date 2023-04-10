@@ -1,22 +1,19 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+
 pub use pallet::*;
 
 use sp_core::{H160, U256};
 use sp_std::prelude::*;
 
+use frame_support::parameter_types;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use pallet_evm::Runner;
-	use sp_core::Encode;
-
-	use frame_support::pallet_prelude::{*, ValueQuery};
-	use frame_support::{
-		storage::types::{StorageMap, StorageValue},
-		Blake2_128Concat,
-	};
+	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	// use sp_runtime::print;
+	use pallet_evm::Runner;
+	use runner::RunnerExt;
 
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
@@ -28,7 +25,12 @@ pub mod pallet {
 	}
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {}
+	pub trait Config: frame_system::Config + pallet_evm::Config {
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+	}
+
+	#[pallet::event]
+	pub enum Event<T: Config> {}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -37,21 +39,34 @@ pub mod pallet {
 		
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
-		pub fn add_transaction(
-			origin: OriginFor<T>,
+		pub fn execute_delegated_transaction(
+			delegate: OriginFor<T>,
+			delegator: H160, 
 			to: H160,
 			input: Vec<u8>,
 			gas_limit: u64,
 			max_fee_per_gas: Option<U256>,
 			max_priority_fee_per_gas: Option<U256>,
 		) -> DispatchResultWithPostInfo {
-			Ok(Pays::No.into())
-		}
+			let who = ensure_signed(delegate)?;
 
-		#[pallet::call_index(1)]
-		#[pallet::weight(0)]
-		pub fn execute_delegated(origin: OriginFor<T>, nonce: u64) -> DispatchResultWithPostInfo {
-			Ok(Pays::No.into())
+			let exc_info = T::Runner::delegated_call(
+				delegate,
+				to,
+				delegator,
+				input,
+				0,
+				gas_limit,
+				None,
+				None,
+				None,
+				Vec::new(),
+				false,
+				false,
+				&pallet_evm::EvmConfig::istanbul()
+			)?;
+
+			OK(())
 		}
 	}
 }

@@ -4247,6 +4247,7 @@ dependencies = [
  "pallet-evm-chain-id",
  "pallet-timestamp",
  "parity-scale-codec",
+ "runner",
  "scale-info",
  "sp-core",
  "sp-io",

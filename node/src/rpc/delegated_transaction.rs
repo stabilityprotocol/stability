@@ -3,11 +3,7 @@
  use sc_transaction_pool_api::{TransactionPool};
 
  #[rpc(client, server)]
- pub trait DelegatedTransactionRpc {
-	#[method(name = "delegate_transaction")]
-	fn delegate_transaction(&self) -> RpcResult<u64>;
-	
-	
+ pub trait DelegatedTransactionRpc {	
 	#[method(name = "execute_delegated_transaction")]
 	fn execute_delegated_transaction(&self) -> RpcResult<u64>;
  }
@@ -28,12 +24,6 @@
 	 C: Send + Sync + 'static,
 	 P: TransactionPool +  'static,
  {
-	fn delegate_transaction(
-		&self
-	) -> RpcResult<u64> {
-		Ok(0)
-	}
-
 	fn execute_delegated_transaction(&self) -> RpcResult<u64> {
 		Ok(0)
 	}

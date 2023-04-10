@@ -15,6 +15,7 @@ sp-core = { workspace = true }
 sp-io = { workspace = true }
 pallet-evm = { workspace = true }
 stbl-tools = { workspace = true }
+runner = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }

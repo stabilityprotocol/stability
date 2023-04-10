@@ -194,6 +194,7 @@ stbl-tools = { path = "./primitives/tools", default-features = false }
 precompile-map-svm-evm-controller = { path = "./precompiles/map-svm-evm-controller", default-features = false }
 precompile-supported-tokens-manager = { path = "./precompiles/token-fee-controller/supported-tokens-manager", default-features = false }
 precompile-upgrade-runtime-controller = { path = "./precompiles/upgrade-runtime-controller", default-features = false }
+runner = { path = "./primitives/runner", default-features = false }
 
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }
@@ -203,4 +204,4 @@ pallet-user-fee-selector = { path = "./pallets/token-fee-controller/user-fee-sel
 pallet-validator-fee-selector = { path = "./pallets/token-fee-controller/validator-fee-selector", default-features = false }
 pallet-supported-tokens-manager = { path = "./pallets/token-fee-controller/supported-tokens-manager", default-features = false }
 pallet-validator-set = { path = "./pallets/validator-set", default-features = false }
-runner = { path = "./primitives/runner", default-features = false }
+runner-test = { path = "./primitives/runner", default-features = false }
