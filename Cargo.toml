@@ -15,14 +15,16 @@ members = [
     'precompiles/token-fee-controller/validator-fee-selector',
     'precompiles/token-fee-controller/supported-tokens-manager',
     'precompiles/map-svm-evm-controller',
+    'precompiles/fee-rewards-vault-controller',
     'precompiles/upgrade-runtime-controller',
     'primitives/tools',
     'primitives/fee-compatible-api',
     'pallets/erc20-manager',
-    'pallets/evm-fee-controller',
+    'pallets/dnt-fee-controller',
     'pallets/token-fee-controller/supported-tokens-manager',
     'pallets/token-fee-controller/user-fee-selector',
     'pallets/token-fee-controller/validator-fee-selector',
+    'pallets/fee-rewards-vault',
     'pallets/upgrade-runtime-proposal',
     'primitives/tools',
 	'pallets/root-controller',
@@ -184,7 +186,7 @@ precompile-fee-token-selector = { path = "./precompiles/token-fee-controller/fee
 precompile-validator-fee-selector = { path = "./precompiles/token-fee-controller/validator-fee-selector", default-features = false }
 precompile-validator-controller = { path = "./precompiles/validator-controller", default-features = false }
 pallet-root-controller = { path = "./pallets/root-controller", default-features = false }
-pallet-evm-fee-controller = { path = "./pallets/evm-fee-controller", default-features = false }
+pallet-dnt-fee-controller = { path = "./pallets/dnt-fee-controller", default-features = false }
 stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api", default-features = false }
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
 pallet-map-svm-evm = { path = "./pallets/map-svm-evm", default-features = false }
@@ -193,6 +195,8 @@ pallet-delegated-transaction = { path = './pallets/delegated-transaction', defau
 stbl-tools = { path = "./primitives/tools", default-features = false }
 precompile-map-svm-evm-controller = { path = "./precompiles/map-svm-evm-controller", default-features = false }
 precompile-supported-tokens-manager = { path = "./precompiles/token-fee-controller/supported-tokens-manager", default-features = false }
+pallet-fee-rewards-vault = { path = "./pallets/fee-rewards-vault", default-features = false }
+precompile-fee-rewards-vault-controller = { path = "./precompiles/fee-rewards-vault-controller", default-features = false }
 precompile-upgrade-runtime-controller = { path = "./precompiles/upgrade-runtime-controller", default-features = false }
 runner = { path = "./primitives/runner", default-features = false }
 

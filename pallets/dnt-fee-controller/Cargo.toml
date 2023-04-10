@@ -1,5 +1,5 @@
 [package]
-name = "pallet-evm-fee-controller"
+name = "pallet-dnt-fee-controller"
 version = "0.1.0"
 edition = "2021"
 
@@ -18,6 +18,14 @@ pallet-erc20-manager = { workspace = true }
 pallet-user-fee-selector = { workspace = true }
 pallet-validator-fee-selector = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
+runner = { workspace = true }
+pallet-fee-rewards-vault = { workspace = true }
+
+[dev-dependencies]
+pallet-timestamp = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = ["std"] }
+pallet-evm-chain-id = { workspace = true, features = ["std"] }
+pallet-evm = { workspace = true, features = ["std"]}
 
 [features]
 default = ["std"]

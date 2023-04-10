@@ -35,7 +35,7 @@ pub fn development_config(enable_manual_seal: Option<bool>) -> DevChainSpec {
 							.expect("Bad account id format"),
 					)],
 					vec![get_account_id_from_seed::<sr25519::Public>("Alice")],
-					42,
+					20180428,
 				),
 				enable_manual_seal,
 			}

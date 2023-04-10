@@ -11,9 +11,9 @@ mod tests;
 
 pub trait ERC20Manager {
 	type Error;
-	fn balance_of(token: &H160, payer: &H160) -> U256;
-	fn withdraw_amount(token: &H160, payer: &H160, amount: U256) -> Result<U256, Self::Error>;
-	fn deposit_amount(token: &H160, payee: &H160, amount: U256) -> Result<U256, Self::Error>;
+	fn balance_of(token: H160, payer: H160) -> U256;
+	fn withdraw_amount(token: H160, payer: H160, amount: U256) -> Result<U256, Self::Error>;
+	fn deposit_amount(token: H160, payee: H160, amount: U256) -> Result<U256, Self::Error>;
 }
 
 #[frame_support::pallet]
@@ -45,14 +45,14 @@ pub mod pallet {
 	impl<T: Config> ERC20Manager for Pallet<T> {
 		type Error = Error<T>;
 
-		fn balance_of(token: &H160, user: &H160) -> U256 {
+		fn balance_of(token: H160, user: H160) -> U256 {
 			let slot = Self::get_address_balance_storage_slot(token, user);
 
 			let balance = pallet_evm::AccountStorages::<T>::get(token, slot);
 			U256::from_big_endian(balance.as_bytes())
 		}
 
-		fn withdraw_amount(token: &H160, payer: &H160, amount: U256) -> Result<U256, Error<T>> {
+		fn withdraw_amount(token: H160, payer: H160, amount: U256) -> Result<U256, Error<T>> {
 			if amount.is_zero() {
 				return Ok(U256::from(0));
 			};
@@ -76,7 +76,7 @@ pub mod pallet {
 			Ok(amount)
 		}
 
-		fn deposit_amount(token: &H160, payee: &H160, amount: U256) -> Result<U256, Self::Error> {
+		fn deposit_amount(token: H160, payee: H160, amount: U256) -> Result<U256, Self::Error> {
 			if amount.is_zero() {
 				return Ok(U256::from(0));
 			};
@@ -102,11 +102,11 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn get_address_balance_storage_slot(token: &H160, address: &H160) -> H256 {
-			let balance_slot = T::SupportedTokensManager::get_token_balance_slot(*token)
+		fn get_address_balance_storage_slot(token: H160, address: H160) -> H256 {
+			let balance_slot = T::SupportedTokensManager::get_token_balance_slot(token)
 				.unwrap_or(H256::from_low_u64_be(0));
 
-			let u256_address = H256::from(*address);
+			let u256_address = H256::from(address);
 			let address_bytes = u256_address.as_bytes();
 			let balance_slot_bytes = balance_slot.as_bytes();
 

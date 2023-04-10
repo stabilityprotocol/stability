@@ -81,7 +81,7 @@ pub mod pallet {
 
 		fn balance_of(account: H160) -> U256 {
 			let token = Self::get_user_fee_token(account);
-			T::ERC20Manager::balance_of(&token, &account)
+			T::ERC20Manager::balance_of(token, account)
 		}
 	}
 
@@ -102,4 +102,18 @@ pub trait UserFeeTokenController {
 	fn get_user_fee_token(account: H160) -> H160;
 	fn set_user_fee_token(account: H160, token: H160) -> Result<(), Self::Error>;
 	fn balance_of(account: H160) -> U256;
+}
+
+#[cfg(test)]
+impl UserFeeTokenController for () {
+	type Error = ();
+	fn get_user_fee_token(_account: H160) -> H160 {
+		Default::default()
+	}
+	fn set_user_fee_token(_account: H160, _token: H160) -> Result<(), Self::Error> {
+		Ok(())
+	}
+	fn balance_of(_account: H160) -> U256 {
+		Default::default()
+	}
 }
