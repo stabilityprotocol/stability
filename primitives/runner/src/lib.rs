@@ -7,7 +7,7 @@ use evm::{
 	executor::stack::{Accessed, StackExecutor, StackState as StackStateT, StackSubstateMetadata},
 	ExitError, ExitReason, Handler, Transfer,
 };
-use fp_evm::{CallInfo, CreateInfo, ExecutionInfo, Log, Vicinity, InvalidEvmTransactionError};
+use fp_evm::{CallInfo, CreateInfo, ExecutionInfo, Log, Vicinity};
 use frame_support::sp_runtime::traits::UniqueSaturatedInto;
 use frame_support::{
 	traits::{Currency, ExistenceRequirement},
@@ -16,7 +16,7 @@ use frame_support::{
 use pallet_evm::Pallet;
 use pallet_evm::{
 	AccountCodes, AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, Error,
-	Event, FeeCalculator, PrecompileSet, Runner as RunnerT, RunnerError,
+	Event, FeeCalculator, PrecompileSet, Runner as RunnerT, RunnerError, OnChargeEVMTransaction
 };
 use pallet_user_fee_selector::UserFeeTokenController;
 use precompile_utils::prelude::keccak256;
@@ -28,9 +28,6 @@ use sp_std::{
 	vec::Vec,
 };
 use stbl_tools;
-
-// TODO: remove
-// pub mod runner_extension;
 
 #[cfg(test)]
 mod mock;
@@ -1117,8 +1114,16 @@ where
 	}
 }
 
+
+/* pub trait RunnerExt2impl<T: Config, FC: OnChargeDecentralizedNativeTokenFee, U: UserFeeTokenController> RunnerT<T>
+for Runner<T, FC, U>
+where
+BalanceOf<T>: TryFrom<U256> + Into<U256>,
+{}
+ */
+
 // SECTION: Runner Extension
-pub trait RunnerExt<T: Config, U: UserFeeTokenController>: RunnerT<T> {
+pub trait RunnerExt<C: Config, U: UserFeeTokenController>: RunnerT<C> {
 	fn validate_delegated(
 		delegator: H160,
 		delegate: H160,
@@ -1137,8 +1142,8 @@ pub trait RunnerExt<T: Config, U: UserFeeTokenController>: RunnerT<T> {
 	// TODO: move delegated related functions here and move into separate file
 	fn call_delegated(
 		delegator: H160,
-		target: H160,
 		delegate: H160,
+		target: H160,
 		input: Vec<u8>,
 		_value: U256,
 		gas_limit: u64,
@@ -1152,12 +1157,18 @@ pub trait RunnerExt<T: Config, U: UserFeeTokenController>: RunnerT<T> {
 	) -> Result<CallInfo, RunnerError<Self::Error>>;
 }
 
-impl<T, C, U> RunnerExt<C, U> for T
+
+
+
+// SECTION: Runner Extension
+impl<C, FC, U> RunnerExt<C, U> for Runner<C, FC, U>
 where
 	C: Config,
-	T: Runner + RunnerT<C>,
+	FC: OnChargeDecentralizedNativeTokenFee,
 	U: UserFeeTokenController,
-	<T as pallet_evm::Runner<C>>::Error: From<InvalidEvmTransactionError>
+	BalanceOf<C>: TryFrom<U256> + Into<U256>,
+	/* sp_core::U256: From<<<C as pallet_evm::Config>::Currency as Currency<<C as frame_system::Config>::AccountId>>::Balance>,
+	<<C as pallet_evm::Config>::Currency as Currency<<C as frame_system::Config>::AccountId>>::Balance: From<sp_core::U256> */
 {
 	fn validate_delegated(
 		delegator: H160,
@@ -1220,8 +1231,8 @@ where
 	// TODO: delegator needs to have signed a nonce
 	fn call_delegated(
 		delegator: H160,
-		target: H160,
 		delegate: H160,
+		target: H160,
 		input: Vec<u8>,
 		_value: U256,
 		gas_limit: u64,
@@ -1257,7 +1268,7 @@ where
 		if input.len() > 0 {
 			let precompiles = C::PrecompilesValue::get();
 
-			T::execute_delegated(
+			Self::execute_delegated(
 				delegator,
 				delegate,
 				value,
@@ -1273,31 +1284,33 @@ where
 			)
 		} else {
 			// input less than 2 (0x) means that we are doing a regular ETH transfer
-			// we get the user fee token address from the source account
-			let user_token_address = U::get_user_fee_token(source);
+			// we get the user fee token address from the "delegator" account
+			let user_token_address = U::get_user_fee_token(delegator);
 			// substract the value from the user
 			let transfer_value = stbl_tools::misc::u256_to_h256(_value);
 
-			Self::call(
-				source,
+			Self::call_delegated(
+				delegator,
+				delegate,
 				user_token_address,
 				stbl_tools::eth::generate_calldata(
 					"transfer(address,uint256)",
 					&vec![target.into(), transfer_value],
 				),
 				0.into(),
-				u64::MAX,
-				None,
-				None,
-				None,
-				Default::default(),
-				false,
-				false,
-				&pallet_evm::EvmConfig::istanbul(),
+				350_000_u64, // TODO: look for how to estimate the gas
+				max_fee_per_gas,
+				max_priority_fee_per_gas,
+				nonce,
+				access_list.clone(),
+				is_transactional,
+				validate,
+				config,
 			)
 		}
 	}
 }
+
 pub trait OnChargeDecentralizedNativeTokenFee {
 	type Error;
 

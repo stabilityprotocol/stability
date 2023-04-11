@@ -16,6 +16,7 @@ sp-io = { workspace = true }
 pallet-evm = { workspace = true }
 stbl-tools = { workspace = true }
 runner = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
