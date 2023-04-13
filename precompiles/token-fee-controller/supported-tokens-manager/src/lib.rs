@@ -172,6 +172,7 @@ where
 	}
 
 	#[precompile::public("supportedTokens()")]
+	#[precompile::view]
 	fn supported_tokens(handle: &mut impl PrecompileHandle) -> EvmResult<Vec<Address>> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
@@ -181,6 +182,7 @@ where
 	}
 
 	#[precompile::public("isTokenSupported(address)")]
+	#[precompile::view]
 	fn is_token_supported(handle: &mut impl PrecompileHandle, token: Address) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
@@ -188,7 +190,6 @@ where
 	}
 
 	#[precompile::public("removeToken(address)")]
-	#[precompile::view]
 	fn remove_token(handle: &mut impl PrecompileHandle, token: Address) -> EvmResult<()> {
 		Self::require_owner(handle.context().caller)?;
 
