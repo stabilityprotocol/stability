@@ -346,6 +346,7 @@ where
 	}
 
 	#[precompile::public("getValidatorPercentage()")]
+	#[precompile::view]
 	fn get_validator_percentage(handle: &mut impl PrecompileHandle) -> EvmResult<U256> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;

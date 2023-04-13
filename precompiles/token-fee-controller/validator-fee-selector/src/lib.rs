@@ -103,6 +103,7 @@ where
 	}
 
 	#[precompile::public("validatorSupportsToken(address,address)")]
+	#[precompile::view]
 	fn validator_supports_token(
 		handle: &mut impl PrecompileHandle,
 		validator: Address,
@@ -117,7 +118,6 @@ where
 	}
 
 	#[precompile::public("setTokenConversionRate(address,uint256,uint256)")]
-	#[precompile::view]
 	fn set_token_conversion_rate(
 		handle: &mut impl PrecompileHandle,
 		token_address: Address,
