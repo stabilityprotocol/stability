@@ -90,6 +90,6 @@ We have identified the problem of the gas_price unit of measurement and the diff
 
 The approach adopted in Stability allows validators to adjust conversion rates according to their preferences and criteria, rather than depending on an oracle to establish prioritization based on market value.
 
-The possibility of charging different prices than market prices is an additional advantage of this approach since it allows validators to adjust their fees according to their preferences and strategies. This ensures appropriate prioritization of transactions, avoiding problems such as dependence on off-chain data or the need for frequent reorderings.
+The possibility of charging different prices than market prices is an additional advantage of this approach since it allows validators to adjust their fees according to their preferences and strategies. This ensures appropriate prioritization of transactions, avoiding problems such as dependence on off-chain data or the need for frequent reorderings. We believe that the validators will be adjusting their conversion rates to fit with the actual price of the computing power and block congestion.
 
 In summary, Stability has adopted a prioritization approach that respects the multitoken nature of the platform and allows validators to make decisions based on their preferences while maintaining a solid foundation for transaction inclusion in blocks.
