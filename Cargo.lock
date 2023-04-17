@@ -13,6 +13,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "account"
+version = "0.1.1"
+dependencies = [
+ "blake2-rfc",
+ "hex",
+ "impl-serde 0.3.2",
+ "libsecp256k1",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sha3 0.9.1",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-runtime-interface",
+ "sp-std",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -126,6 +146,15 @@ name = "arrayref"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4c527152e37cf757a3f78aae5a06fbeefdb07ccc535c980a3208ee3060dd544"
+
+[[package]]
+name = "arrayvec"
+version = "0.4.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd9fd44efafa8690358b7408d253adf110036b88f55672a933f01d616ad9b1b9"
+dependencies = [
+ "nodrop",
+]
 
 [[package]]
 name = "arrayvec"
@@ -414,6 +443,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake2-rfc"
+version = "0.2.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d6d530bdd2d52966a6d03b7a964add7ae1a288d25214066fd4b600f0f796400"
+dependencies = [
+ "arrayvec 0.4.12",
+ "constant_time_eq",
+]
+
+[[package]]
 name = "blake2b_simd"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -454,7 +493,7 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0940dc441f31689269e10ac70eb1002a3a1d3ad1390e030043662eb7fe4688b"
 dependencies = [
- "block-padding",
+ "block-padding 0.1.5",
  "byte-tools",
  "byteorder",
  "generic-array 0.12.4",
@@ -466,6 +505,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
 dependencies = [
+ "block-padding 0.2.1",
  "generic-array 0.14.4",
 ]
 
@@ -486,6 +526,12 @@ checksum = "fa79dedbb091f449f1f39e53edf88d5dbe95f895dae6135a8d7b881fb5af73f5"
 dependencies = [
  "byte-tools",
 ]
+
+[[package]]
+name = "block-padding"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "blocking"
@@ -1516,7 +1562,7 @@ dependencies = [
  "fixed-hash",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.4.0",
  "scale-info",
  "tiny-keccak",
 ]
@@ -1535,7 +1581,7 @@ dependencies = [
  "rlp",
  "scale-info",
  "serde",
- "sha3",
+ "sha3 0.10.6",
  "triehash",
 ]
 
@@ -1549,7 +1595,7 @@ dependencies = [
  "fixed-hash",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.4.0",
  "primitive-types",
  "scale-info",
  "uint",
@@ -1579,7 +1625,7 @@ dependencies = [
  "rlp",
  "scale-info",
  "serde",
- "sha3",
+ "sha3 0.10.6",
 ]
 
 [[package]]
@@ -1616,7 +1662,7 @@ dependencies = [
  "environmental",
  "evm-core",
  "primitive-types",
- "sha3",
+ "sha3 0.10.6",
 ]
 
 [[package]]
@@ -2754,6 +2800,15 @@ dependencies = [
 
 [[package]]
 name = "impl-serde"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4551f042f3438e64dbd6226b20527fc84a6e1fe65688b58746a2f53623f25f5c"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "impl-serde"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc88fc67028ae3db0c853baa36269d398d5f45b6982f95549ff5def78c935cd"
@@ -3747,6 +3802,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "moonbeam-core-primitives"
+version = "0.1.1"
+dependencies = [
+ "account",
+ "fp-self-contained",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
 name = "multiaddr"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3788,7 +3853,7 @@ dependencies = [
  "digest 0.10.6",
  "multihash-derive",
  "sha2 0.10.2",
- "sha3",
+ "sha3 0.10.6",
  "unsigned-varint",
 ]
 
@@ -3940,6 +4005,12 @@ dependencies = [
  "cfg-if",
  "libc",
 ]
+
+[[package]]
+name = "nodrop"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72ef4a56884ca558e5ddb05a1d1e7e1bfd9a68d9ed024c21704cc98872dae1bb"
 
 [[package]]
 name = "nohash-hasher"
@@ -4290,7 +4361,7 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
- "sha3",
+ "sha3 0.10.6",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -4477,28 +4548,6 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-map-svm-evm"
-version = "1.0.0"
-dependencies = [
- "fp-evm",
- "frame-support",
- "frame-system",
- "hex",
- "once_cell",
- "pallet-balances",
- "pallet-evm",
- "pallet-evm-chain-id",
- "pallet-timestamp",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "stbl-tools",
 ]
 
 [[package]]
@@ -5026,7 +5075,7 @@ dependencies = [
  "precompile-utils",
  "scale-info",
  "serde",
- "sha3",
+ "sha3 0.10.6",
  "slices",
  "sp-core",
  "sp-io",
@@ -5056,7 +5105,7 @@ dependencies = [
  "parity-scale-codec",
  "precompile-utils",
  "scale-info",
- "sha3",
+ "sha3 0.10.6",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -5090,31 +5139,8 @@ dependencies = [
  "precompile-utils",
  "scale-info",
  "serde",
- "sha3",
+ "sha3 0.10.6",
  "slices",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "precompile-map-svm-evm-controller"
-version = "0.1.0"
-dependencies = [
- "fp-evm",
- "frame-support",
- "frame-system",
- "hex",
- "once_cell",
- "pallet-balances",
- "pallet-evm",
- "pallet-map-svm-evm",
- "pallet-timestamp",
- "parity-scale-codec",
- "precompile-utils",
- "scale-info",
- "sha3",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -5142,7 +5168,7 @@ dependencies = [
  "precompile-utils",
  "scale-info",
  "serde",
- "sha3",
+ "sha3 0.10.6",
  "slices",
  "sp-core",
  "sp-io",
@@ -5165,7 +5191,7 @@ dependencies = [
  "parity-scale-codec",
  "precompile-utils",
  "scale-info",
- "sha3",
+ "sha3 0.10.6",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -5195,7 +5221,7 @@ dependencies = [
  "precompile-utils-macro",
  "scale-info",
  "serde",
- "sha3",
+ "sha3 0.10.6",
  "similar-asserts",
  "sp-core",
  "sp-io",
@@ -5216,7 +5242,7 @@ dependencies = [
  "prettyplease",
  "proc-macro2",
  "quote",
- "sha3",
+ "sha3 0.10.6",
  "sp-core",
  "sp-std",
  "syn",
@@ -5238,7 +5264,7 @@ dependencies = [
  "parity-scale-codec",
  "precompile-utils",
  "scale-info",
- "sha3",
+ "sha3 0.10.6",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -5267,7 +5293,7 @@ dependencies = [
  "precompile-utils",
  "scale-info",
  "serde",
- "sha3",
+ "sha3 0.10.6",
  "slices",
  "sp-core",
  "sp-io",
@@ -5324,7 +5350,7 @@ dependencies = [
  "fixed-hash",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.4.0",
  "scale-info",
  "uint",
 ]
@@ -7267,6 +7293,18 @@ dependencies = [
 
 [[package]]
 name = "sha3"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f81199417d4e5de3f04b1e871023acea7389672c4135918f05aa9cbf2f2fa809"
+dependencies = [
+ "block-buffer 0.9.0",
+ "digest 0.9.0",
+ "keccak",
+ "opaque-debug 0.3.0",
+]
+
+[[package]]
+name = "sha3"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bdf0c33fae925bdc080598b84bc15c55e7b9a4a43b3c704da051f977469691c9"
@@ -7640,7 +7678,7 @@ dependencies = [
  "futures",
  "hash-db",
  "hash256-std-hasher",
- "impl-serde",
+ "impl-serde 0.4.0",
  "lazy_static",
  "libsecp256k1",
  "log",
@@ -7679,7 +7717,7 @@ dependencies = [
  "byteorder",
  "digest 0.10.6",
  "sha2 0.10.2",
- "sha3",
+ "sha3 0.10.6",
  "sp-std",
  "twox-hash",
 ]
@@ -7979,7 +8017,7 @@ name = "sp-storage"
 version = "7.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
 dependencies = [
- "impl-serde",
+ "impl-serde 0.4.0",
  "parity-scale-codec",
  "ref-cast",
  "serde",
@@ -8068,7 +8106,7 @@ name = "sp-version"
 version = "5.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
 dependencies = [
- "impl-serde",
+ "impl-serde 0.4.0",
  "parity-scale-codec",
  "parity-wasm",
  "scale-info",
@@ -8222,6 +8260,7 @@ dependencies = [
 name = "stability-runtime"
 version = "0.0.0"
 dependencies = [
+ "account",
  "fp-rpc",
  "fp-self-contained",
  "frame-benchmarking",
@@ -8231,6 +8270,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "log",
+ "moonbeam-core-primitives",
  "pallet-aura",
  "pallet-balances",
  "pallet-base-fee",
@@ -8250,7 +8290,6 @@ dependencies = [
  "pallet-grandpa",
  "pallet-hotfix-sufficients",
  "pallet-im-online",
- "pallet-map-svm-evm",
  "pallet-root-controller",
  "pallet-session",
  "pallet-sudo",
@@ -8266,7 +8305,6 @@ dependencies = [
  "precompile-balances-erc20",
  "precompile-fee-rewards-vault-controller",
  "precompile-fee-token-selector",
- "precompile-map-svm-evm-controller",
  "precompile-supported-tokens-manager",
  "precompile-upgrade-runtime-controller",
  "precompile-utils",

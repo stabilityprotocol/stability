@@ -14,7 +14,6 @@ members = [
     'precompiles/token-fee-controller/fee-token-selector',
     'precompiles/token-fee-controller/validator-fee-selector',
     'precompiles/token-fee-controller/supported-tokens-manager',
-    'precompiles/map-svm-evm-controller',
     'precompiles/fee-rewards-vault-controller',
     'precompiles/upgrade-runtime-controller',
     'primitives/tools',
@@ -28,11 +27,12 @@ members = [
     'pallets/upgrade-runtime-proposal',
     'primitives/tools',
 	'pallets/root-controller',
-    'pallets/map-svm-evm',
     'client/authorship',
     'test-utils/stability-client',
     'test-utils/stability-runtime',
-    'test-utils/stability-runtime-client'
+    'test-utils/stability-runtime-client',
+    'core-primitives',
+    'primitives/account'
 ]
 
 [workspace.package]
@@ -48,13 +48,14 @@ ethereum-types = { version = "0.14.1", default-features = false }
 evm = { version = "0.37.0", default-features = false }
 jsonrpsee = "0.16.2"
 kvdb-rocksdb = "0.17.0"
-libsecp256k1 = "0.7.1"
+libsecp256k1 = { version = "0.7", default-features = false }
+hex = { version = "0.4.3", default-features = false }
 parity-db = "0.4.2"
 rlp = { version = "0.5", default-features = false }
 scale-codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive"] }
 codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive"] }
 scale-info = { version = "2.3.1", default-features = false, features = ["derive"] }
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.101", default-features = false }
 serde_json = "1.0"
 futures = "0.3.21"
 futures-timer = "3.0.1"
@@ -65,7 +66,6 @@ async-trait = "0.1.57"
 cfg-if = "1.0"
 memory-db = { version = "0.31.0", default-features = false }
 trie-db = { version = "0.24.0", default-features = false }
-hex = "0.4"
 once_cell = "1.17.1"
 hex-literal = "0.3.4"
 syn = "1.0.98"
@@ -189,7 +189,6 @@ pallet-root-controller = { path = "./pallets/root-controller", default-features 
 pallet-dnt-fee-controller = { path = "./pallets/dnt-fee-controller", default-features = false }
 stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api", default-features = false }
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
-pallet-map-svm-evm = { path = "./pallets/map-svm-evm", default-features = false }
 pallet-upgrade-runtime-proposal = { path = "./pallets/upgrade-runtime-proposal", default-features = false }
 stbl-tools = { path = "./primitives/tools", default-features = false }
 precompile-map-svm-evm-controller = { path = "./precompiles/map-svm-evm-controller", default-features = false }
@@ -206,3 +205,10 @@ pallet-validator-fee-selector = { path = "./pallets/token-fee-controller/validat
 pallet-supported-tokens-manager = { path = "./pallets/token-fee-controller/supported-tokens-manager", default-features = false }
 pallet-validator-set = { path = "./pallets/validator-set", default-features = false }
 runner = { path = "./primitives/runner", default-features = false }
+
+moonbeam-core-primitives = { path = "core-primitives", default-features = false }
+account = { path = "primitives/account", default-features = false }
+blake2-rfc = { version = "0.2.18", default-features = false }
+impl-serde = { version = "0.3.1", default-features = false }
+parity-scale-codec = { version = "3.0.0", default-features = false, features = [ "derive" ] }
+sha3 = { version = "0.9", default-features = false }

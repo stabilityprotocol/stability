@@ -24,19 +24,20 @@ use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
 	Hasher, OpaqueMetadata, H160, H256, U256,
 };
-use sp_runtime::AccountId32;
+use sp_runtime::traits::IdentityLookup;
+use sp_runtime::traits::Lookup;
 use sp_runtime::{
 	create_runtime_str, generic,
 	generic::Era,
 	impl_opaque_keys,
 	traits::{
-		AccountIdLookup, BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, Get,
-		IdentifyAccount, NumberFor, OpaqueKeys, PostDispatchInfoOf, UniqueSaturatedInto, Verify,
+		BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, Get, NumberFor, OpaqueKeys,
+		PostDispatchInfoOf, UniqueSaturatedInto, Verify,
 	},
 	transaction_validity::{
 		TransactionPriority, TransactionSource, TransactionValidity, TransactionValidityError,
 	},
-	ApplyExtrinsicResult, MultiSignature, Permill, SaturatedConversion,
+	ApplyExtrinsicResult, Permill, SaturatedConversion,
 };
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
@@ -102,30 +103,30 @@ pub type Precompiles = StabilityPrecompiles<Runtime, StabilityFeeController>;
 use runner::Runner as StabilityRunner;
 
 /// Type of block number.
-pub type BlockNumber = u32;
+pub type BlockNumber = moonbeam_core_primitives::BlockNumber;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
-pub type Signature = MultiSignature;
+pub type Signature = moonbeam_core_primitives::Signature;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+pub type AccountId = moonbeam_core_primitives::AccountId;
 
 /// The type for looking up accounts. We don't expect more than 4 billion of them, but you
 /// never know...
-pub type AccountIndex = u32;
+pub type AccountIndex = moonbeam_core_primitives::AccountIndex;
 
 /// Balance of an account.
-pub type Balance = u128;
+pub type Balance = moonbeam_core_primitives::Balance;
 
 /// Index of a transaction in the chain.
-pub type Index = u32;
+pub type Index = moonbeam_core_primitives::Index;
 
 /// A hash of some data used by the chain.
-pub type Hash = sp_core::H256;
+pub type Hash = moonbeam_core_primitives::Hash;
 
 /// Digest item type.
-pub type DigestItem = generic::DigestItem;
+pub type DigestItem = moonbeam_core_primitives::DigestItem;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -211,7 +212,7 @@ impl frame_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
-	type Lookup = AccountIdLookup<AccountId, ()>;
+	type Lookup = IdentityLookup<AccountId>;
 	/// The header type.
 	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// The ubiquitous event type.
@@ -337,13 +338,8 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 	{
 		if let Some(author_index) = F::find_author(digests) {
 			let authority_id = Aura::authorities()[author_index as usize].clone();
-			let authority_as_bytes: [u8; 32] = authority_id.as_slice()[0..32].try_into().unwrap();
-			let evm_linked = MapSvmEvm::get_linked_evm_account(AccountId::from(authority_as_bytes));
+			let authority_as_bytes: [u8; 32] = authority_id.as_slice()[0..20].try_into().unwrap();
 
-			// if we have a linked EVM account, return it
-			if let Some(_) = evm_linked {
-				return evm_linked;
-			}
 			// otherwise, return the default EVM account
 			return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
 		}
@@ -357,20 +353,7 @@ impl<H: Hasher<Out = H256>> pallet_evm::AddressMapping<AccountId>
 	for LinkedOrHashedAddressMapping<H>
 {
 	fn into_account_id(address: H160) -> AccountId {
-		let mut data = [0u8; 24];
-
-		let account_id_option = MapSvmEvm::get_linked_substrate_account(address);
-
-		// if we have a linked Substrate account, return it
-		if let Some(accoun_id) = account_id_option {
-			return accoun_id;
-		}
-		// otherwise, return the default Substrate account
-		data[0..4].copy_from_slice(b"evm:");
-		data[4..24].copy_from_slice(&address[..]);
-		let hash = H::hash(&data);
-
-		AccountId::from(Into::<[u8; 32]>::into(hash))
+		AccountId::from(address.0)
 	}
 }
 
@@ -384,14 +367,7 @@ where
 
 	fn try_address_origin(address: &H160, origin: OuterOrigin) -> Result<AccountId, OuterOrigin> {
 		origin.into().and_then(|o| match o {
-			RawOrigin::Signed(who)
-				if MapSvmEvm::get_linked_evm_account(who.clone()) == Some(*address) =>
-			{
-				Ok(who)
-			}
-			RawOrigin::Signed(who) if AsRef::<[u8; 32]>::as_ref(&who)[0..20] == address[0..20] => {
-				Ok(who)
-			}
+			RawOrigin::Signed(who) if Into::<H160>::into(who).eq(address) => Ok(who),
 			r => Err(OuterOrigin::from(r)),
 		})
 	}
@@ -593,14 +569,7 @@ where
 		let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
 		let address = account;
 		let (call, extra, _) = raw_payload.deconstruct();
-		Some((
-			call,
-			(
-				sp_runtime::MultiAddress::Id(address),
-				signature.into(),
-				extra,
-			),
-		))
+		Some((call, (address, signature.into(), extra)))
 	}
 }
 
@@ -630,10 +599,6 @@ impl pallet_im_online::Config for Runtime {
 	type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
 }
 
-impl pallet_map_svm_evm::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-}
-
 parameter_types! {
 	pub const MaxSizeOfCode: u32 = 10 * 1024 * 1024; // 10 MB
 }
@@ -644,7 +609,7 @@ impl<
 		AccountId: core::clone::Clone,
 	> EnsureOrigin<O> for EnsureMemberOfTechCollective<AccountId>
 where
-	AccountId32: From<AccountId>,
+	account::AccountId20: From<AccountId>,
 {
 	type Success = ();
 	fn try_origin(o: O) -> Result<Self::Success, O> {
@@ -691,7 +656,6 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment,
 		TechCommitteeCollective: pallet_collective::<Instance1>,
 		RootController: pallet_root_controller,
-		MapSvmEvm: pallet_map_svm_evm,
 		Ethereum: pallet_ethereum,
 		EVM: pallet_evm,
 		EVMChainId: pallet_evm_chain_id,
@@ -734,9 +698,9 @@ impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConve
 }
 
 /// The address format for describing accounts.
-pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
+pub type Address = moonbeam_core_primitives::Address;
 /// Block header type as expected by this runtime.
-pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+pub type Header = moonbeam_core_primitives::Header;
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// A Block signed with a Justification
@@ -1166,23 +1130,17 @@ impl_runtime_apis! {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool {
 			if let RuntimeCall::Ethereum(transact { transaction }) = tx.0.function {
 				let source_address_option =  stbl_tools::eth::recover_signer(&transaction);
-				let validator_address_option = <pallet_map_svm_evm::Pallet<Runtime>>::get_linked_evm_account(validator);
-
-				if validator_address_option.is_none() {
-					return false
-				}
 
 				if source_address_option.is_none() {
 					return true
 				}
 
 				let source_address = source_address_option.unwrap();
-				let validator_address = validator_address_option.unwrap();
 
 
 				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
 
-				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator_address, source_fee_token)
+				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
 			}
 			else {
 				// always return true for non-ethereum transactions

@@ -7,14 +7,13 @@ use pallet_evm_precompile_modexp::Modexp;
 use pallet_evm_precompile_sha3fips::Sha3FIPS256;
 use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256};
 use precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata};
-use precompile_fee_token_selector::FeeTokenPrecompile;
-use precompile_map_svm_evm_controller::MapSvmEvmControllerPrecompile;
-use precompile_supported_tokens_manager::SupportedTokensManagerPrecompile;
-use precompile_utils::precompile_set::*;
-use precompile_validator_fee_selector::ValidatorFeeManagerPrecompile;
-use precompile_validator_controller::ValidatorControllerPrecompile;
 use precompile_fee_rewards_vault_controller::FeeRewardsVaultControllerPrecompile;
+use precompile_fee_token_selector::FeeTokenPrecompile;
+use precompile_supported_tokens_manager::SupportedTokensManagerPrecompile;
 use precompile_upgrade_runtime_controller::UpgradeRuntimeControllerPrecompile;
+use precompile_utils::precompile_set::*;
+use precompile_validator_controller::ValidatorControllerPrecompile;
+use precompile_validator_fee_selector::ValidatorFeeManagerPrecompile;
 use sp_core::H160;
 
 use crate::{
@@ -108,10 +107,12 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 					AddressU64<2051>,
 					FeeTokenPrecompile<R, <FeeController as StabilityFeeController>::User>,
 				>,
-				PrecompileAt<AddressU64<2052>, MapSvmEvmControllerPrecompile<R>>,
 				PrecompileAt<AddressU64<2053>, ValidatorControllerPrecompile<R, DefaultOwner>>,
 				PrecompileAt<AddressU64<2054>, UpgradeRuntimeControllerPrecompile<R, DefaultOwner>>,
-				PrecompileAt<AddressU64<2055>, FeeRewardsVaultControllerPrecompile<R, DefaultOwner>>
+				PrecompileAt<
+					AddressU64<2055>,
+					FeeRewardsVaultControllerPrecompile<R, DefaultOwner>,
+				>,
 			),
 		>,
 	),
