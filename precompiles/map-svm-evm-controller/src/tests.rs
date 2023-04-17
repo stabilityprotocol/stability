@@ -71,9 +71,7 @@ fn test_link_of_returns_zero_account_if_account_is_not_linked() {
 					address: TEST_ACCOUNT_ALICE_EVM.clone().into(),
 				},
 			)
-			.execute_returns_encoded(H256::from(
-				SUBSTRATE_ZERO_ACCOUNT,
-			))
+			.execute_returns_encoded(H256::from(SUBSTRATE_ZERO_ACCOUNT))
 	});
 }
 

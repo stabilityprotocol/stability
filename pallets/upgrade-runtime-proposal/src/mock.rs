@@ -5,12 +5,12 @@ use frame_support::parameter_types;
 use frame_support::traits::{ConstU32, ConstU64, Contains};
 use frame_system::EnsureRoot;
 use sp_core::H256;
+use sp_runtime::generic;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 };
 use sp_version::RuntimeVersion;
-use sp_runtime::generic;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;

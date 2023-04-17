@@ -118,7 +118,6 @@ impl pallet_evm::Config for Test {
 	type FindAuthor = ();
 }
 
-
 impl Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 }
@@ -182,17 +181,22 @@ pub fn new_test_ext(linked_accounts: Vec<(AccountId, H160)>) -> sp_io::TestExter
 					storage: Default::default(),
 				},
 			);
-			
+
 			map
 		},
 	};
-	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t).unwrap();
+	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t)
+		.unwrap();
 
 	let chain_id_config = pallet_evm_chain_id::GenesisConfig {
-		chain_id: ChainId::get()
+		chain_id: ChainId::get(),
 	};
 
-	<pallet_evm_chain_id::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&chain_id_config, &mut t).unwrap();
+	<pallet_evm_chain_id::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(
+		&chain_id_config,
+		&mut t,
+	)
+	.unwrap();
 
 	t.into()
 }

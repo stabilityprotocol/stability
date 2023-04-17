@@ -1,12 +1,9 @@
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde::{Deserialize, Serialize};
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{bytes::from_hex, H160, H256, U256};
-use sp_finality_grandpa::AuthorityId as GrandpaId;
 use stability_runtime::{AccountId, GenesisConfig, Precompiles};
 use std::{collections::BTreeMap, str::FromStr, vec};
 // Substrate
-use sp_core::{crypto::Ss58Codec, sr25519, storage::Storage, Pair, Public};
+use sp_core::{sr25519, storage::Storage, Pair, Public};
 use sp_runtime::{
 	app_crypto::ecdsa,
 	traits::{IdentifyAccount, Verify},
@@ -57,7 +54,10 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
 type AccountPublic = <Signature as Verify>::Signer;
 
 /// Generate an account ID from seed.
-pub fn get_account_id_from_seed(seed: &str) -> AccountId {}
+pub fn get_account_id_from_seed(seed: &str) -> AccountId {
+	account::EthereumSignaturePair::from_seed(seed.as_bytes().try_into().expect("invalid length"))
+		.public()
+}
 
 /// Generate an Aura authority key.
 pub fn authority_keys_from_seed(seed: &str) -> ecdsa::Public {
@@ -94,8 +94,8 @@ pub fn base_genesis(
 	chain_id: u64,
 ) -> GenesisConfig {
 	use stability_runtime::{
-		AuraConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig, MapSvmEvmConfig,
-		SessionConfig, SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig,
+		AuraConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig, SessionConfig,
+		SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig,
 		ValidatorSetConfig,
 	};
 	let initial_default_token =

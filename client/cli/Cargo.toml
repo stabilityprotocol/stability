@@ -1,0 +1,57 @@
+[package]
+name = "sc-cli"
+version = "0.10.0-dev"
+authors = ["Parity Technologies <admin@parity.io>"]
+description = "Substrate CLI interface."
+edition = "2021"
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage = "https://substrate.io"
+repository = "https://github.com/paritytech/substrate/"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+array-bytes = { workspace = true}
+chrono = { workspace = true}
+clap = { workspace = true }
+fdlimit = { workspace = true}
+futures = { workspace = true}
+libp2p = { workspace = true}
+log = { workspace = true}
+names = { version = "0.13.0", default-features = false }
+parity-scale-codec ={ workspace = true}
+rand = { workspace = true}
+regex = { workspace = true}
+rpassword = { workspace = true}
+serde = { workspace = true}
+serde_json = { workspace = true}
+thiserror = { workspace = true}
+tiny-bip39 = { workspace = true}
+tokio = { workspace = true}
+sc-client-api =  { workspace = true}  
+sc-client-db =  { workspace = true }
+sc-keystore =  { workspace = true }
+sc-network =  { workspace = true }
+sc-network-common =  { workspace = true }
+sc-service =  { workspace = true }
+sc-telemetry =  { workspace = true }
+sc-tracing =  { workspace = true }
+sc-utils =  { workspace = true }
+sp-blockchain =  { workspace = true }
+sp-core =  { workspace = true }
+sp-keyring =  { workspace = true }
+sp-keystore =  { workspace = true }
+sp-panic-handler =  { workspace = true }
+sp-runtime =  { workspace = true }
+sp-version =  { workspace = true }
+account = { workspace = true, features = ["std"] }
+
+[dev-dependencies]
+tempfile = "3.1.0"
+futures-timer = "3.0.1"
+
+[features]
+default = ["rocksdb"]
+rocksdb = ["sc-client-db/rocksdb"]

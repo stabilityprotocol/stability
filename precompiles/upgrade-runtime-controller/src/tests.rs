@@ -160,15 +160,16 @@ fn claim_ownership_if_claimable() {
 #[test]
 fn test_set_block_application() {
 	let executor = substrate_test_runtime_client::new_native_executor();
-    let mut ext = ExtBuilder::default().build();
+	let mut ext = ExtBuilder::default().build();
 
-    ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
+	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
-            frame_system::RawOrigin::Root.into(),
-            substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
-        ).unwrap();
+			frame_system::RawOrigin::Root.into(),
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
+		)
+		.unwrap();
 
 		let block_number = 100u32;
 		precompiles()
@@ -187,8 +188,11 @@ fn test_set_block_application() {
 					.build(),
 			))
 			.execute_some();
-		
-		assert_eq!(UpgradeRuntimeProposal::get_application_block_number().unwrap(), BlockNumber::from(block_number));
+
+		assert_eq!(
+			UpgradeRuntimeProposal::get_application_block_number().unwrap(),
+			BlockNumber::from(block_number)
+		);
 	});
 }
 
@@ -202,8 +206,9 @@ fn test_fail_set_block_application_if_not_owner() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
-		).unwrap();
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
+		)
+		.unwrap();
 
 		let block_number = 100u32;
 		precompiles()
@@ -228,8 +233,9 @@ fn test_reject_proposed_code() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
-		).unwrap();
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
+		)
+		.unwrap();
 
 		precompiles()
 			.prepare_test(
@@ -237,10 +243,7 @@ fn test_reject_proposed_code() {
 				Precompile1,
 				PCall::reject_proposed_code {},
 			)
-			.expect_log(log0(
-				Precompile1,
-				SELECTOR_CODE_PROPOSED_REJECTED,
-			))
+			.expect_log(log0(Precompile1, SELECTOR_CODE_PROPOSED_REJECTED))
 			.execute_some();
 
 		assert!(UpgradeRuntimeProposal::get_proposed_code().is_none());
@@ -258,8 +261,9 @@ fn test_fail_reject_proposed_code_if_not_owner() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
-		).unwrap();
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
+		)
+		.unwrap();
 
 		precompiles()
 			.prepare_test(

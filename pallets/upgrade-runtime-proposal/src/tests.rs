@@ -1,12 +1,10 @@
 use crate::mock::UpgradeRuntimeProposal;
 
 use super::*;
-use frame_support::{assert_noop, assert_ok, dispatch::DispatchError};
-use mock::{
-	new_test_ext, Test, assert_runtime_updated_digest
-};
-use sp_core::keccak_256;
 use frame_support::traits::Hooks;
+use frame_support::{assert_noop, assert_ok, dispatch::DispatchError};
+use mock::{assert_runtime_updated_digest, new_test_ext, Test};
+use sp_core::keccak_256;
 
 #[test]
 fn test_setup_works() {
@@ -103,7 +101,10 @@ fn test_set_block_application() {
 			frame_system::RawOrigin::Root.into(),
 			1
 		));
-		assert_eq!(UpgradeRuntimeProposal::get_application_block_number().unwrap(), 1);
+		assert_eq!(
+			UpgradeRuntimeProposal::get_application_block_number().unwrap(),
+			1
+		);
 	});
 }
 
@@ -197,25 +198,28 @@ fn test_fails_reject_proposed_code_if_no_proposed_code() {
 
 #[test]
 fn test_scheduled_update_runtime() {
-    let executor = substrate_test_runtime_client::new_native_executor();
-    let mut ext = new_test_ext();
-    ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
+	let executor = substrate_test_runtime_client::new_native_executor();
+	let mut ext = new_test_ext();
+	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
-    ext.execute_with(|| {
-        assert_ok!(UpgradeRuntimeProposal::propose_code(
-            frame_system::RawOrigin::Root.into(),
-            substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
-        ));
-        assert_ok!(UpgradeRuntimeProposal::set_block_application(
-            frame_system::RawOrigin::Root.into(),
-            1
-        ));
-        assert_eq!(UpgradeRuntimeProposal::get_application_block_number().unwrap(), 1);
-        
-        UpgradeRuntimeProposal::on_initialize(1);
+	ext.execute_with(|| {
+		assert_ok!(UpgradeRuntimeProposal::propose_code(
+			frame_system::RawOrigin::Root.into(),
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+		));
+		assert_ok!(UpgradeRuntimeProposal::set_block_application(
+			frame_system::RawOrigin::Root.into(),
+			1
+		));
+		assert_eq!(
+			UpgradeRuntimeProposal::get_application_block_number().unwrap(),
+			1
+		);
 
-        assert_runtime_updated_digest(1);
-        assert!(UpgradeRuntimeProposal::get_proposed_code().is_none());
-        assert!(UpgradeRuntimeProposal::get_application_block_number().is_none());
-    });
+		UpgradeRuntimeProposal::on_initialize(1);
+
+		assert_runtime_updated_digest(1);
+		assert!(UpgradeRuntimeProposal::get_proposed_code().is_none());
+		assert!(UpgradeRuntimeProposal::get_application_block_number().is_none());
+	});
 }

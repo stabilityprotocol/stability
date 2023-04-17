@@ -74,15 +74,22 @@ impl GenesisConfig {
 				.into_iter(),
 			)
 			.collect();
-		map.insert(twox_128(&b"sys:auth"[..])[..].to_vec(), self.authorities.encode());
+		map.insert(
+			twox_128(&b"sys:auth"[..])[..].to_vec(),
+			self.authorities.encode(),
+		);
 		// Add the extra storage entries.
 		map.extend(self.extra_storage.top.clone().into_iter());
 
 		// Assimilate the system genesis config.
-		let mut storage =
-			Storage { top: map, children_default: self.extra_storage.children_default.clone() };
+		let mut storage = Storage {
+			top: map,
+			children_default: self.extra_storage.children_default.clone(),
+		};
 		<system::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-			&system::GenesisConfig { authorities: self.authorities.clone() },
+			&system::GenesisConfig {
+				authorities: self.authorities.clone(),
+			},
 			&mut storage,
 		)
 		.expect("Adding `system::GensisConfig` to the genesis");

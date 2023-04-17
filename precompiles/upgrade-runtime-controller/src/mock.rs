@@ -1,16 +1,16 @@
 use super::*;
 
-use frame_support::{parameter_types, weights::Weight};
 use frame_support::traits::{ConstU32, ConstU64, Contains};
+use frame_support::{parameter_types, weights::Weight};
 use frame_system::EnsureRoot;
+use pallet_evm::{AddressMapping, EnsureAddressNever, EnsureAddressRoot};
+use precompile_utils::precompile_set::*;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 };
 use sp_version::RuntimeVersion;
-use precompile_utils::precompile_set::*;
-use pallet_evm::{EnsureAddressRoot, EnsureAddressNever, AddressMapping};
 
 type Block = frame_system::mocking::MockBlock<Test>;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -93,16 +93,14 @@ impl pallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
-
 pub struct NumberAddressMapping;
 
 impl AddressMapping<u64> for NumberAddressMapping {
 	fn into_account_id(address: H160) -> u64 {
-		let address_bytes: [u8; 8]  = (*address.as_fixed_bytes())[12..].try_into().unwrap();
+		let address_bytes: [u8; 8] = (*address.as_fixed_bytes())[12..].try_into().unwrap();
 		u64::from_be_bytes(address_bytes)
 	}
 }
-
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();

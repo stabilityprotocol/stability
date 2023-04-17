@@ -45,7 +45,8 @@ parameter_types! {
 }
 
 pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
-pub const SELECTOR_SETTED__APPLICATION_BLOCK: [u8; 32] = keccak256!("SettedApplicationBlock(uint256)");
+pub const SELECTOR_SETTED__APPLICATION_BLOCK: [u8; 32] =
+	keccak256!("SettedApplicationBlock(uint256)");
 pub const SELECTOR_CODE_PROPOSED_REJECTED: [u8; 32] = keccak256!("CodeProposedRejected()");
 
 /// Storage prefix for owner.
@@ -76,17 +77,17 @@ pub struct UpgradeRuntimeControllerPrecompile<Runtime, DefaultOwner: Get<H160> +
 	PhantomData<(Runtime, DefaultOwner)>,
 );
 
-
 #[precompile_utils::precompile]
 impl<Runtime, DefaultOwner> UpgradeRuntimeControllerPrecompile<Runtime, DefaultOwner>
 where
 	DefaultOwner: Get<H160> + 'static,
-	Runtime: pallet_upgrade_runtime_proposal::Config + pallet_timestamp::Config + pallet_evm::Config,
+	Runtime:
+		pallet_upgrade_runtime_proposal::Config + pallet_timestamp::Config + pallet_evm::Config,
 	Runtime::RuntimeCall: From<pallet_upgrade_runtime_proposal::Call<Runtime>>,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
-	<Runtime as frame_system::Config>::BlockNumber: From<u32>
+	<Runtime as frame_system::Config>::BlockNumber: From<u32>,
 {
 	#[precompile::public("owner()")]
 	#[precompile::view]
@@ -167,15 +168,22 @@ where
 		if sender != owner {
 			return Err(revert("sender is not owner"));
 		}
-	
+
 		RuntimeHelper::<Runtime>::try_dispatch(
 			handle,
 			frame_system::RawOrigin::Root.into(),
-			pallet_upgrade_runtime_proposal::Call::<Runtime>::set_block_application { block_number:  block_number.into() },
+			pallet_upgrade_runtime_proposal::Call::<Runtime>::set_block_application {
+				block_number: block_number.into(),
+			},
 		)?;
 
-		log1(handle.context().address, SELECTOR_SETTED__APPLICATION_BLOCK, EvmDataWriter::new().write(block_number).build()).record(handle)?;
-	
+		log1(
+			handle.context().address,
+			SELECTOR_SETTED__APPLICATION_BLOCK,
+			EvmDataWriter::new().write(block_number).build(),
+		)
+		.record(handle)?;
+
 		Ok(())
 	}
 
@@ -197,11 +205,7 @@ where
 			pallet_upgrade_runtime_proposal::Call::<Runtime>::reject_proposed_code {},
 		)?;
 
-		log0(
-			handle.context().address,
-			SELECTOR_CODE_PROPOSED_REJECTED,
-		)
-		.record(handle)?;
+		log0(handle.context().address, SELECTOR_CODE_PROPOSED_REJECTED).record(handle)?;
 
 		Ok(())
 	}

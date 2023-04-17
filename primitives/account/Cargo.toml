@@ -27,7 +27,10 @@ sp-io = { workspace = true }
 sp-runtime = { workspace = true }
 sp-runtime-interface = { workspace = true }
 sp-std = { workspace = true }
-elliptic-curve ={ workspace = true, features = ["arithmetic", "alloc", "sec1"]  }
+elliptic-curve = { workspace = true, features = ["arithmetic", "alloc", "sec1"]  }
+stbl-tools = { workspace = true }
+sc-keystore = { workspace = true }
+sp-keystore = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
@@ -47,8 +50,8 @@ std = [
 	"sp-runtime/std",
 	"sp-std/std",
 ]
-
 full_crypto = [
 	"blake2-rfc",
 	"sp-runtime-interface/disable_target_static_assertions",
+	"sp-core/full_crypto"
 ]

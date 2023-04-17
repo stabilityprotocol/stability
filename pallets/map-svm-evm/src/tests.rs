@@ -1,6 +1,8 @@
 use core::str::FromStr;
 
-use crate::mock::{SmartcontractErc1271Fails, SmartcontractErc1271Success, SmartcontractWithoutErc721};
+use crate::mock::{
+	SmartcontractErc1271Fails, SmartcontractErc1271Success, SmartcontractWithoutErc721,
+};
 
 use super::*;
 use hex::FromHex;
@@ -79,7 +81,6 @@ fn fails_if_received_zero_address() {
 			ALICE_LINK_MESSAGE_NONCE_0.clone(),
 		)
 		.unwrap_err();
-
 
 		assert_eq!(err, Error::<Test>::InvalidAddress.into());
 	})

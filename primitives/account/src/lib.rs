@@ -21,19 +21,21 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use core::hash::Hash;
-
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160};
+use sp_runtime::traits::IdentifyAccount;
 use sp_std::vec::Vec;
+
+use sp_runtime::{app_crypto::app_crypto, CryptoTypeId, KeyTypeId, RuntimeAppPublic};
 
 #[cfg(feature = "std")]
 pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use sp_runtime::{
-	app_crypto::{app_crypto, RuntimePublic},
-	CryptoTypeId, KeyTypeId, RuntimeAppPublic,
-};
+#[cfg(feature = "std")]
+use sp_core::crypto::ByteArray;
+#[cfg(feature = "std")]
+use sp_core::crypto::{Derive, Pair as PairT};
 
 //TODO Maybe this should be upstreamed into Frontier (And renamed accordingly) so that it can
 // be used in palletEVM as well. It may also need more traits such as AsRef, AsMut, etc like
@@ -45,7 +47,18 @@ use sp_runtime::{
 /// Polkadot JS.
 
 #[derive(
-	Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord,
+	Eq,
+	PartialEq,
+	Copy,
+	Clone,
+	Encode,
+	Decode,
+	TypeInfo,
+	MaxEncodedLen,
+	Default,
+	PartialOrd,
+	Ord,
+	Hash,
 )]
 pub struct AccountId20(pub [u8; 20]);
 
@@ -61,6 +74,48 @@ impl Into<H160> for AccountId20 {
 	}
 }
 
+impl AsMut<[u8]> for AccountId20 {
+	fn as_mut(&mut self) -> &mut [u8] {
+		&mut self.0
+	}
+}
+
+#[cfg(feature = "std")]
+impl ByteArray for AccountId20 {
+	const LEN: usize = 20;
+
+	fn from_slice(data: &[u8]) -> Result<Self, ()> {
+		Self::try_from(data)
+	}
+
+	fn to_raw_vec(&self) -> Vec<u8> {
+		self.as_slice().to_vec()
+	}
+
+	fn as_slice(&self) -> &[u8] {
+		self.as_ref()
+	}
+}
+
+#[cfg(feature = "std")]
+impl Derive for AccountId20 {
+	fn derive<Iter>(&self, _path: Iter) -> Option<Self> {
+		None
+	}
+}
+
+#[cfg(feature = "std")]
+impl sp_core::crypto::Public for AccountId20 {
+	fn to_public_crypto_pair(&self) -> sp_core::crypto::CryptoTypePublicPair {
+		todo!()
+	}
+}
+
+#[cfg(feature = "std")]
+impl sp_core::crypto::CryptoType for AccountId20 {
+	type Pair = EthereumSignaturePair;
+}
+
 #[cfg(feature = "std")]
 impl_serde::impl_fixed_hash_serde!(AccountId20, 20);
 
@@ -71,6 +126,13 @@ impl std::fmt::Display for AccountId20 {
 	// Maybe this one https://github.com/miguelmota/rust-eth-checksum
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{:?}", self.0)
+	}
+}
+
+impl IdentifyAccount for AccountId20 {
+	type AccountId = AccountId20;
+	fn into_account(self) -> Self::AccountId {
+		self
 	}
 }
 
@@ -109,6 +171,7 @@ impl AsRef<[u8]> for AccountId20 {
 
 app_crypto!(ecdsa, KeyTypeId(*b"etha"));
 
+#[cfg(feature = "std")]
 impl RuntimeAppPublic for AccountId20 {
 	/// An identifier for this application-specific key type.
 	const ID: KeyTypeId = KeyTypeId(*b"etha");
@@ -120,7 +183,9 @@ impl RuntimeAppPublic for AccountId20 {
 
 	/// Returns all public keys for this application in the keystore.
 	fn all() -> sp_std::vec::Vec<Self> {
-		SyncCryptoStore
+		// get access to the keystore and get all the public keys that matches the Keytype(*b"etha")
+
+		Default::default()
 	}
 
 	/// Generate a public/private pair with an optional `seed` and store it in the keystore.
@@ -129,7 +194,19 @@ impl RuntimeAppPublic for AccountId20 {
 	///
 	/// Returns the generated public key.
 	fn generate_pair(seed: Option<Vec<u8>>) -> Self {
-		AccountId20::default()
+		let password = seed.map(|seed| {
+			let seed_result_string = String::from_utf8(seed);
+
+			seed_result_string.unwrap()
+		});
+
+		let (pair, _, _) = if let Some(pass) = password {
+			EthereumSignaturePair::generate_with_phrase(Some(pass.as_str()))
+		} else {
+			EthereumSignaturePair::generate_with_phrase(None)
+		};
+
+		pair.public()
 	}
 
 	/// Sign the given message with the corresponding private key of this public key.
@@ -144,7 +221,7 @@ impl RuntimeAppPublic for AccountId20 {
 
 	/// Verify that the given signature matches the given message using this public key.
 	fn verify<M: AsRef<[u8]>>(&self, msg: &M, signature: &Self::Signature) -> bool {
-		true
+		false
 	}
 
 	/// Returns `Self` as raw vec.
@@ -222,6 +299,12 @@ impl sp_runtime::traits::Verify for EthereumSignature {
 )]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct EthereumSigner([u8; 20]);
+
+impl From<EthereumSigner> for AccountId20 {
+	fn from(value: EthereumSigner) -> Self {
+		Self(value.0)
+	}
+}
 
 impl sp_runtime::traits::IdentifyAccount for EthereumSigner {
 	type AccountId = AccountId20;
@@ -316,5 +399,123 @@ mod tests {
 		let old = AccountId20(H160::from(H256::from_slice(Keccak256::digest(&m).as_slice())).0);
 		let new = AccountId20(H160::from_slice(&Keccak256::digest(&m).as_slice()[12..32]).0);
 		assert_eq!(new, old);
+	}
+}
+
+#[cfg(feature = "std")]
+#[derive(Clone)]
+pub struct EthereumSignaturePair {
+	public: AccountId20,
+	ecdsa_pair: sp_core::ecdsa::Pair,
+}
+
+#[cfg(feature = "std")]
+impl sp_core::crypto::CryptoType for EthereumSignaturePair {
+	type Pair = EthereumSignaturePair;
+}
+
+#[cfg(feature = "std")]
+impl AccountId20 {
+	pub fn from_pubkey(public: sp_core::ecdsa::Public) -> Self {
+		todo!("{:?}", public)
+	}
+}
+
+#[cfg(feature = "std")]
+impl PairT for EthereumSignaturePair {
+	type Public = AccountId20;
+
+	type Seed = <sp_core::ecdsa::Pair as PairT>::Seed;
+
+	type Signature = <sp_core::ecdsa::Pair as PairT>::Signature;
+
+	type DeriveError = <sp_core::ecdsa::Pair as PairT>::DeriveError;
+
+	fn generate_with_phrase(password: Option<&str>) -> (Self, String, Self::Seed) {
+		let (ecdsa_pair, phrase, seed) =
+			<sp_core::ecdsa::Pair as PairT>::generate_with_phrase(password);
+
+		(
+			Self {
+				public: AccountId20::from_pubkey(ecdsa_pair.public()),
+				ecdsa_pair,
+			},
+			phrase,
+			seed,
+		)
+	}
+
+	fn from_phrase(
+		phrase: &str,
+		password: Option<&str>,
+	) -> Result<(Self, Self::Seed), sp_core::crypto::SecretStringError> {
+		let (ecdsa_pair, _) = <sp_core::ecdsa::Pair as PairT>::from_phrase(phrase, password)?;
+
+		Ok((
+			Self {
+				public: AccountId20::from_pubkey(ecdsa_pair.clone().public()),
+				ecdsa_pair: ecdsa_pair.clone(),
+			},
+			ecdsa_pair.seed(),
+		))
+	}
+
+	fn derive<Iter: Iterator<Item = sp_core::crypto::DeriveJunction>>(
+		&self,
+		path: Iter,
+		seed: Option<Self::Seed>,
+	) -> Result<(Self, Option<Self::Seed>), Self::DeriveError> {
+		let (pair, seed) = self.ecdsa_pair.derive(path, seed)?;
+
+		Ok((
+			Self {
+				public: AccountId20::from_pubkey(pair.public()),
+				ecdsa_pair: pair,
+			},
+			seed,
+		))
+	}
+
+	fn from_seed(seed: &Self::Seed) -> Self {
+		let ecdsa_pair = ecdsa::Pair::from_seed(seed);
+
+		Self {
+			public: AccountId20::from_pubkey(ecdsa_pair.public()),
+			ecdsa_pair,
+		}
+	}
+
+	fn from_seed_slice(seed: &[u8]) -> Result<Self, sp_core::crypto::SecretStringError> {
+		let ecdsa_pair = ecdsa::Pair::from_seed_slice(seed)?;
+
+		Ok(Self {
+			public: AccountId20::from_pubkey(ecdsa_pair.public()),
+			ecdsa_pair,
+		})
+	}
+
+	fn sign(&self, message: &[u8]) -> Self::Signature {
+		self.ecdsa_pair.sign(message)
+	}
+
+	fn verify<M: AsRef<[u8]>>(sig: &Self::Signature, message: M, address: &Self::Public) -> bool {
+		sp_core::ecdsa::Signature::recover(sig, message)
+			.map(|signer_pubkey| AccountId20::from_pubkey(signer_pubkey).eq(address))
+			.unwrap_or(false)
+	}
+
+	fn verify_weak<P: AsRef<[u8]>, M: AsRef<[u8]>>(sig: &[u8], message: M, pubkey: P) -> bool {
+		match ecdsa::Signature::from_slice(sig).and_then(|sig| sig.recover(message)) {
+			Some(actual) => actual.as_ref() == pubkey.as_ref(),
+			None => false,
+		}
+	}
+
+	fn public(&self) -> Self::Public {
+		self.public
+	}
+
+	fn to_raw_vec(&self) -> Vec<u8> {
+		todo!()
 	}
 }

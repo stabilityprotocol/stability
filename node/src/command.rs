@@ -210,7 +210,9 @@ pub fn run() -> sc_cli::Result<()> {
 				let (client, _, _, _, frontier_backend) =
 					service::new_chain_ops(&mut config, &cli.eth)?;
 				cmd.run(client, frontier_backend)
-			})
+			});
+
+			Ok(())
 		}
 		None => {
 			let runner = cli.create_runner(&cli.run)?;

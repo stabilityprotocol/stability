@@ -100,7 +100,9 @@ where
 		import.body = Some(extrinsics);
 		import.fork_choice = Some(ForkChoiceStrategy::LongestChain);
 
-		BlockImport::import_block(self, import, HashMap::new()).await.map(|_| ())
+		BlockImport::import_block(self, import, HashMap::new())
+			.await
+			.map(|_| ())
 	}
 
 	async fn import_as_best(
@@ -113,7 +115,9 @@ where
 		import.body = Some(extrinsics);
 		import.fork_choice = Some(ForkChoiceStrategy::Custom(true));
 
-		BlockImport::import_block(self, import, HashMap::new()).await.map(|_| ())
+		BlockImport::import_block(self, import, HashMap::new())
+			.await
+			.map(|_| ())
 	}
 
 	async fn import_as_final(
@@ -127,7 +131,9 @@ where
 		import.finalized = true;
 		import.fork_choice = Some(ForkChoiceStrategy::Custom(true));
 
-		BlockImport::import_block(self, import, HashMap::new()).await.map(|_| ())
+		BlockImport::import_block(self, import, HashMap::new())
+			.await
+			.map(|_| ())
 	}
 
 	async fn import_justified(
@@ -143,7 +149,9 @@ where
 		import.finalized = true;
 		import.fork_choice = Some(ForkChoiceStrategy::LongestChain);
 
-		BlockImport::import_block(self, import, HashMap::new()).await.map(|_| ())
+		BlockImport::import_block(self, import, HashMap::new())
+			.await
+			.map(|_| ())
 	}
 }
 
@@ -162,7 +170,9 @@ where
 		import.body = Some(extrinsics);
 		import.fork_choice = Some(ForkChoiceStrategy::LongestChain);
 
-		BlockImport::import_block(self, import, HashMap::new()).await.map(|_| ())
+		BlockImport::import_block(self, import, HashMap::new())
+			.await
+			.map(|_| ())
 	}
 
 	async fn import_as_best(
@@ -175,7 +185,9 @@ where
 		import.body = Some(extrinsics);
 		import.fork_choice = Some(ForkChoiceStrategy::Custom(true));
 
-		BlockImport::import_block(self, import, HashMap::new()).await.map(|_| ())
+		BlockImport::import_block(self, import, HashMap::new())
+			.await
+			.map(|_| ())
 	}
 
 	async fn import_as_final(
@@ -189,7 +201,9 @@ where
 		import.finalized = true;
 		import.fork_choice = Some(ForkChoiceStrategy::Custom(true));
 
-		BlockImport::import_block(self, import, HashMap::new()).await.map(|_| ())
+		BlockImport::import_block(self, import, HashMap::new())
+			.await
+			.map(|_| ())
 	}
 
 	async fn import_justified(
@@ -205,6 +219,8 @@ where
 		import.finalized = true;
 		import.fork_choice = Some(ForkChoiceStrategy::LongestChain);
 
-		BlockImport::import_block(self, import, HashMap::new()).await.map(|_| ())
+		BlockImport::import_block(self, import, HashMap::new())
+			.await
+			.map(|_| ())
 	}
 }

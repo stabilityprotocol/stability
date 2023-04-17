@@ -1,0 +1,40 @@
+[package]
+name = "sp-keystore"
+version = "0.13.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2021"
+license = "Apache-2.0"
+homepage = "https://substrate.io"
+repository = "https://github.com/paritytech/substrate/"
+description = "Keystore primitives."
+documentation = "https://docs.rs/sp-core"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+async-trait = { workspace = true }
+codec = { workspace = true, default-features = false, features = ["derive"] }
+futures = { workspace = true }
+merlin = { workspace = true }
+parking_lot = { workspace = true }
+schnorrkel = { workspace = true, features = ["preaudit_deprecated", "u64_backend"] }
+serde = { workspace = true, optional = true }
+thiserror = { workspace = true }
+sp-core = { workspace = true }
+sp-externalities = { workspace = true }
+
+[dev-dependencies]
+rand = "0.7.2"
+rand_chacha = "0.2.2"
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"merlin/std",
+	"schnorrkel/std",
+	"serde",
+	"sp-core/std",
+	"sp-externalities/std",
+]

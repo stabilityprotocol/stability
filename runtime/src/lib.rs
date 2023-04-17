@@ -32,7 +32,7 @@ use sp_runtime::{
 	transaction_validity::{
 		TransactionPriority, TransactionSource, TransactionValidity, TransactionValidityError,
 	},
-	ApplyExtrinsicResult, MultiSignature, Permill, SaturatedConversion,
+	ApplyExtrinsicResult, Permill, SaturatedConversion,
 };
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
@@ -504,10 +504,11 @@ parameter_types! {
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
 	RuntimeCall: From<LocalCall>,
+	<Signature as Verify>::Signer: Into<AccountId>,
 {
 	fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
 		call: RuntimeCall,
-		public: <Signature as Verify>::Signer,
+		public: AccountId,
 		account: AccountId,
 		nonce: Index,
 	) -> Option<(
@@ -538,7 +539,7 @@ where
 				log::warn!("Unable to create signed payload: {:?}", e);
 			})
 			.ok()?;
-		let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+		let signature = raw_payload.using_encoded(|payload| C::sign(payload, public.into()))?;
 		let address = account;
 		let (call, extra, _) = raw_payload.deconstruct();
 		Some((call, (address, signature.into(), extra)))
@@ -546,7 +547,7 @@ where
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {
-	type Public = <Signature as Verify>::Signer;
+	type Public = AccountId;
 	type Signature = Signature;
 }
 

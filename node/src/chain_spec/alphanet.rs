@@ -1,7 +1,6 @@
 use super::{base_genesis, ChainSpec};
 use sc_service::ChainType;
-use sp_runtime::traits::Verify;
-use stability_runtime::{AccountId, Signature, WASM_BINARY};
+use stability_runtime::{AccountId, WASM_BINARY};
 use std::{str::FromStr, vec};
 
 pub fn alphanet_config() -> Result<ChainSpec, String> {

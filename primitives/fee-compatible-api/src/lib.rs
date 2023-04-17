@@ -8,5 +8,3 @@ sp_api::decl_runtime_apis! {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool;
 	}
 }
-
-
