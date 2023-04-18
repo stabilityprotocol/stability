@@ -8193,6 +8193,7 @@ dependencies = [
 name = "stability"
 version = "0.0.0"
 dependencies = [
+ "account",
  "async-trait",
  "clap",
  "fc-cli",
@@ -8233,6 +8234,7 @@ dependencies = [
  "sc-transaction-pool-api",
  "serde",
  "sp-api",
+ "sp-application-crypto",
  "sp-block-builder",
  "sp-blockchain",
  "sp-consensus-aura",
@@ -8314,6 +8316,7 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-api",
+ "sp-application-crypto",
  "sp-block-builder",
  "sp-consensus-aura",
  "sp-core",
@@ -8478,6 +8481,7 @@ dependencies = [
 name = "stbl-cli-authorship"
 version = "1.0.0"
 dependencies = [
+ "account",
  "futures",
  "futures-timer",
  "log",

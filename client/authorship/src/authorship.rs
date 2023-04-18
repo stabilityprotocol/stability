@@ -18,6 +18,7 @@
 
 // FIXME #1021 move this into sp-consensus
 
+use account::EthereumSigner;
 use codec::Encode;
 use futures::{
 	channel::oneshot,
@@ -37,7 +38,7 @@ use sp_core::traits::SpawnNamed;
 use sp_inherents::InherentData;
 use sp_runtime::{
 	generic::BlockId,
-	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT},
+	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT, IdentifyAccount},
 	Digest, Percent, SaturatedConversion,
 };
 use stability_runtime::AccountId;
@@ -428,11 +429,12 @@ where
 
 		let block_size_limit = block_size_limit.unwrap_or(self.default_block_size_limit);
 
-		let key = SyncCryptoStore::sr25519_public_keys(
+		let keys = SyncCryptoStore::ecdsa_public_keys(
 			&*self.keystore,
 			KeyTypeId::try_from("aura").unwrap_or_default(),
 		);
-		let account = AccountId::from(key[0].clone());
+
+		let validator = EthereumSigner::from(keys[0]).into_account();
 
 		debug!("Attempting to push transactions from the pool.");
 		debug!("Pool status: {:?}", self.transaction_pool.status());
@@ -457,7 +459,11 @@ where
 			let is_compatible = self
 				.client
 				.runtime_api()
-				.is_compatible_fee(&self.parent_id, pending_tx.data().clone(), account.clone())
+				.is_compatible_fee(
+					&self.parent_id,
+					pending_tx.data().clone(),
+					validator.clone(),
+				)
 				.unwrap();
 
 			if !is_compatible {

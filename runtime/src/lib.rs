@@ -9,6 +9,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use account::EthereumSigner;
 use codec::{Decode, Encode};
 use core::str::FromStr;
 use frame_support::pallet_prelude::EnsureOrigin;
@@ -19,13 +20,14 @@ use pallet_balances::Instance1;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
 use sp_api::impl_runtime_apis;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+use sp_application_crypto::ecdsa::AppPublic as AuraId;
+use sp_application_crypto::ecdsa::AppPublic as ImOnlineId;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
 	Hasher, OpaqueMetadata, H160, H256, U256,
 };
+use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::traits::IdentityLookup;
-use sp_runtime::traits::Lookup;
 use sp_runtime::{
 	create_runtime_str, generic,
 	generic::Era,
@@ -54,7 +56,6 @@ use pallet_transaction_payment::CurrencyAdapter;
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use pallet_evm::{Account as EVMAccount, FeeCalculator, Runner};
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime,
@@ -338,10 +339,12 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 	{
 		if let Some(author_index) = F::find_author(digests) {
 			let authority_id = Aura::authorities()[author_index as usize].clone();
-			let authority_as_bytes: [u8; 32] = authority_id.as_slice()[0..20].try_into().unwrap();
+
+			let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
+			let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
 
 			// otherwise, return the default EVM account
-			return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
+			return Some(signer.into_account().into());
 		}
 		None
 	}

@@ -1,12 +1,10 @@
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde::{Deserialize, Serialize};
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{bytes::from_hex, H160, H256, U256};
+use sp_core::{bytes::from_hex, ecdsa, H160, H256, U256};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use stability_runtime::{AccountId, GenesisConfig, Precompiles};
 use std::{collections::BTreeMap, str::FromStr, vec};
 // Substrate
-use sp_core::{crypto::Ss58Codec, sr25519, storage::Storage, Pair, Public};
+use sp_core::{crypto::Ss58Codec, storage::Storage, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_state_machine::BasicExternalities;
 // Frontier
@@ -23,6 +21,8 @@ pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 
 /// Specialized `ChainSpec` for development.
 pub type DevChainSpec = sc_service::GenericChainSpec<DevGenesisExt>;
+
+pub type ValidatorId = sp_application_crypto::ecdsa::AppPublic;
 
 /// Extension for the dev genesis config to support a custom changes to the genesis state.
 #[derive(Serialize, Deserialize)]
@@ -62,39 +62,42 @@ where
 }
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, ValidatorId, GrandpaId) {
 	(
-		get_account_id_from_seed::<sr25519::Public>(s),
-		get_from_seed::<AuraId>(s),
+		get_account_id_from_seed::<ecdsa::Public>(s),
+		get_from_seed::<ValidatorId>(s),
 		get_from_seed::<GrandpaId>(s),
-		get_from_seed::<ImOnlineId>(s),
 	)
 }
 
-pub fn session_keys(aura: AuraId, grandpa: GrandpaId, im_online: ImOnlineId) -> SessionKeys {
+pub fn session_keys(pubkey: ValidatorId, grandpa: GrandpaId) -> SessionKeys {
 	SessionKeys {
-		aura,
-		grandpa,
-		im_online,
+		aura: pubkey.clone(),
+		grandpa: grandpa,
+		im_online: pubkey.clone(),
 	}
 }
 
-pub fn get_key_sr(pubkey: &str) -> sr25519::Public {
-	match sr25519::Public::from_str(pubkey) {
-		Ok(sr_pubkey) => sr_pubkey,
-		Err(_) => panic!("sr pubkey bad formatted"),
-	}
+pub fn get_key_ecdsa(pubkey: &str) -> ecdsa::Public {
+	let key: [u8; 33] = from_hex(pubkey)
+		.expect("bad formatted pubkey")
+		.as_slice()
+		.try_into()
+		.unwrap();
+
+	ecdsa::Public(key)
 }
 
 pub fn get_authority_from_pubkeys(
-	sr_pubkey: &str,
+	ecdsa_key: &str,
 	ed_pubkey: &str,
-) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
+) -> (AccountId, ValidatorId, GrandpaId) {
+	let ecdsa_pubkey = get_key_ecdsa(ecdsa_key);
 	(
-		AccountId::from_string(sr_pubkey).expect("bad formatted sr pubkey"),
-		AuraId::from_string(sr_pubkey).expect("bad formatted sr pubkey"),
+		(account::EthereumSigner::from(ecdsa_pubkey).into_account()),
+		sp_application_crypto::ecdsa::AppPublic::from_string(ecdsa_key)
+			.expect("bad formatted ecdsa pubkey"),
 		GrandpaId::from_string(ed_pubkey).expect("bad formatted ed pubkey"),
-		ImOnlineId::from_string(sr_pubkey).expect("bad formatted ed pubkey"),
 	)
 }
 
@@ -102,15 +105,14 @@ pub fn get_authority_from_pubkeys(
 pub fn base_genesis(
 	wasm_binary: &[u8],
 	endowed_accounts: Vec<AccountId>,
-	initial_authorities: Vec<(AccountId, AuraId, GrandpaId, ImOnlineId)>,
-	linked_accounts: Vec<(AccountId, H160)>,
+	initial_authorities: Vec<(AccountId, ValidatorId, GrandpaId)>,
 	members: Vec<AccountId>,
 	chain_id: u64,
 ) -> GenesisConfig {
 	use stability_runtime::{
 		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig,
-		MapSvmEvmConfig, SessionConfig, SupportedTokensManagerConfig, SystemConfig,
-		TechCommitteeCollectiveConfig, ValidatorSetConfig,
+		SessionConfig, SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig,
+		ValidatorSetConfig,
 	};
 	let initial_default_token =
 		H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
@@ -138,7 +140,7 @@ pub fn base_genesis(
 					(
 						x.0.clone(),
 						x.0.clone(),
-						session_keys(x.1.clone(), x.2.clone(), x.3.clone()),
+						session_keys(x.1.clone(), x.2.clone()),
 					)
 				})
 				.collect::<Vec<_>>(),
@@ -157,10 +159,6 @@ pub fn base_genesis(
 		tech_committee_collective: TechCommitteeCollectiveConfig {
 			phantom: Default::default(),
 			members: members.clone(),
-		},
-		// EVM compatibility
-		map_svm_evm: MapSvmEvmConfig {
-			linked_accounts: linked_accounts.clone(),
 		},
 		evm_chain_id: EVMChainIdConfig { chain_id },
 		evm: EVMConfig {
