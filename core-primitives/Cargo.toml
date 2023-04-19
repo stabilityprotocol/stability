@@ -9,10 +9,12 @@ version = "0.1.1"
 
 [dependencies]
 account = { workspace = true, default-features = false }
-
+parity-scale-codec = { workspace = true, default-features = false, features = ["derive"] }
 fp-self-contained = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
+sp-application-crypto = { workspace = true, default-features = false }
+scale-info = { workspace = true, default-features = false }
 
 [features]
 default = [ "std" ]
@@ -21,4 +23,5 @@ std = [
 	"fp-self-contained/std",
 	"sp-core/std",
 	"sp-runtime/std",
+	"sp-application-crypto/std",
 ]

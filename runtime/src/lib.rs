@@ -16,12 +16,12 @@ use frame_support::pallet_prelude::EnsureOrigin;
 use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
+use moonbeam_core_primitives::aura::Public as AuraId;
+use moonbeam_core_primitives::imonline::Public as ImOnlineId;
 use pallet_balances::Instance1;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
 use sp_api::impl_runtime_apis;
-use sp_application_crypto::ecdsa::AppPublic as AuraId;
-use sp_application_crypto::ecdsa::AppPublic as ImOnlineId;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
 	Hasher, OpaqueMetadata, H160, H256, U256,

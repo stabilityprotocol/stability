@@ -32,7 +32,7 @@ members = [
     'test-utils/stability-runtime',
     'test-utils/stability-runtime-client',
     'core-primitives',
-    'primitives/account'
+    'primitives/account',
 ]
 
 [workspace.package]

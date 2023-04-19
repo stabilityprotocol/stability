@@ -201,7 +201,7 @@ where
 	};
 
 	let import_queue =
-		sc_consensus_aura::import_queue::<sp_application_crypto::ecdsa::AppPair, _, _, _, _, _>(
+		sc_consensus_aura::import_queue::<moonbeam_core_primitives::aura::Pair, _, _, _, _, _>(
 			sc_consensus_aura::ImportQueueParams {
 				block_import: frontier_block_import.clone(),
 				justification_import: Some(Box::new(grandpa_block_import)),
@@ -459,7 +459,7 @@ where
 		};
 
 		let aura = sc_consensus_aura::start_aura::<
-			sp_application_crypto::ecdsa::AppPair,
+			moonbeam_core_primitives::aura::Pair,
 			_,
 			_,
 			_,

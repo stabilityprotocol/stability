@@ -3807,6 +3807,9 @@ version = "0.1.1"
 dependencies = [
  "account",
  "fp-self-contained",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-application-crypto",
  "sp-core",
  "sp-runtime",
 ]
@@ -8213,6 +8216,7 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "log",
+ "moonbeam-core-primitives",
  "pallet-im-online",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
