@@ -1,0 +1,27 @@
+[package]
+name = "pallet-rpc-tokens"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
+	"derive",
+] }
+jsonrpsee = { workspace = true, features = ["server", "macros"] }
+
+
+# Substrate packages
+sp-api = { default-features = false, workspace = true }
+sp-blockchain = { default-features = false, workspace = true }
+sp-runtime = { default-features = false, workspace = true }
+
+# local packages
+pallet-rpc-tokens-api = { path = "./runtime-api", default-features = false }
+
+[features]
+default = ["std"]
+std = [
+  "sp-api/std",
+  "sp-runtime/std",
+  "pallet-rpc-tokens-api/std"
+]

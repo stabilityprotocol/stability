@@ -1,0 +1,26 @@
+[package]
+name = "pallet-rpc-tokens"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+codec = { package = "parity-scale-codec", workspace = true }
+scale-info = { workspace = true }
+frame-support = { workspace = true, default-features = false }
+frame-system = { workspace = true, default-features = false }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+pallet-supported-tokens-manager = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"frame-support/std",
+	"frame-system/std",
+	"scale-info/std",
+	"sp-runtime/std",
+	"sp-std/std",
+]
