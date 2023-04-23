@@ -1,7 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use sp_core::H160;
+use sp_std::vec::Vec;
+
 sp_api::decl_runtime_apis! {
-	pub trait TokensApi {
+	pub trait StabilityRpcApi {
 		fn get_supported_tokens() -> Vec<H160>;
 	}
 }

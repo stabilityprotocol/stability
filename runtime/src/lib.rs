@@ -16,8 +16,6 @@ use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
 use pallet_balances::Instance1;
-use pallet_rpc_tokens::RPCTokens;
-use pallet_rpc_tokens_api::TokensApi
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
 use sp_api::impl_runtime_apis;
@@ -439,6 +437,12 @@ impl pallet_erc20_manager::Config for Runtime {
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
 }
 
+impl stability_rpc_api::StabilityRpcApi<Block> for Runtime {
+	fn get_supported_tokens() -> Vec<H160> {
+		SupportedTokensManager::get_supported_tokens().unwrap_or(vec![])
+	}
+}
+
 parameter_types! {
 	pub DefaultFeeToken: H160 = H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address");
 }
@@ -839,16 +843,6 @@ parameter_types! {
 		U256::from(max_normal_extrinsic_weight / WEIGHT_PER_GAS)
 	};
 
-}
-
-impl pallet_rpc_tokens::Config for Runtime {
-	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
-}
-
-impl pallet_rpc_tokens_api::TokensApi<Block> for Runtime {
-	fn get_supported_tokens() -> u32 {
-		TokensApi::get_supported_tokens().unwrap_or(vec![])
-	}
 }
 
 #[cfg(feature = "runtime-benchmarks")]

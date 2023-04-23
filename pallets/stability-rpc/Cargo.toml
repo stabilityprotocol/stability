@@ -1,0 +1,32 @@
+[package]
+name = "pallet-stability-rpc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+codec = { package = "parity-scale-codec", workspace = true }
+scale-info = { workspace = true }
+jsonrpsee = { workspace = true, features = ["server", "macros"] }
+lazy_static = { version = "1.4.0", optional = true }
+tokio = { version = "1.17.0", optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Substrate packages
+sp-api = { default-features = false, workspace = true }
+sp-blockchain = { default-features = false, workspace = true }
+sp-runtime = { default-features = false, workspace = true }
+sp-core = { default-features = false, workspace = true }
+
+# local packages
+stability-rpc-api = { workspace = true, default-features = false }
+
+[features]
+default = ["std"]
+std = [
+  "sp-api/std",
+  "sp-core/std",
+  "sp-runtime/std",
+  "stability-rpc-api/std"
+]
+test-helpers = ["lazy_static", "tokio"]
