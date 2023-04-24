@@ -8209,6 +8209,7 @@ dependencies = [
  "sp-timestamp",
  "sp-transaction-pool",
  "sp-trie",
+ "stability-rpc",
  "stability-runtime",
  "stbl-cli-authorship",
  "stbl-primitives-fee-compatible-api",
@@ -8216,6 +8217,37 @@ dependencies = [
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
+]
+
+[[package]]
+name = "stability-rpc"
+version = "0.1.0"
+dependencies = [
+ "assert_matches",
+ "jsonrpsee",
+ "lazy_static",
+ "parity-scale-codec",
+ "sc-client-api",
+ "scale-info",
+ "serde",
+ "serde_json",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "stability-rpc-api",
+ "substrate-test-runtime-client",
+ "tokio",
+]
+
+[[package]]
+name = "stability-rpc-api"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-core",
+ "sp-std",
 ]
 
 [[package]]
@@ -8287,6 +8319,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
+ "stability-rpc-api",
  "stbl-primitives-fee-compatible-api",
  "stbl-tools",
  "substrate-wasm-builder",

@@ -81,6 +81,7 @@ stability-runtime = { path = "./../runtime", features = ["std"] }
 # Stability
 stbl-cli-authorship = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true, features = ["std"] }
+stability-rpc = { workspace = true }
 stbl-tools = { workspace = true }
 
 [build-dependencies]

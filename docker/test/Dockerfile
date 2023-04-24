@@ -20,6 +20,7 @@ COPY pallets ./pallets
 COPY primitives ./primitives
 COPY test-utils ./test-utils
 COPY client ./client
+COPY stability-rpc ./stability-rpc
 COPY Cargo.lock Cargo.toml rust-toolchain ./
 
 RUN cargo build --release --tests
