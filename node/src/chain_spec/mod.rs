@@ -22,8 +22,8 @@ pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 /// Specialized `ChainSpec` for development.
 pub type DevChainSpec = sc_service::GenericChainSpec<DevGenesisExt>;
 
-pub type AuraId = moonbeam_core_primitives::aura::Public;
-pub type ImOnlineId = moonbeam_core_primitives::imonline::Public;
+pub type AuraId = stbl_core_primitives::aura::Public;
+pub type ImOnlineId = stbl_core_primitives::imonline::Public;
 
 /// Extension for the dev genesis config to support a custom changes to the genesis state.
 #[derive(Serialize, Deserialize)]

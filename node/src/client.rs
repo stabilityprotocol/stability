@@ -63,7 +63,7 @@ where
 pub trait RuntimeApiCollection:
 	BaseRuntimeApiCollection
 	+ EthCompatRuntimeApiCollection
-	+ sp_consensus_aura::AuraApi<Block, moonbeam_core_primitives::aura::Public>
+	+ sp_consensus_aura::AuraApi<Block, stbl_core_primitives::aura::Public>
 	+ sp_finality_grandpa::GrandpaApi<Block>
 	+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 	+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
@@ -77,7 +77,7 @@ impl<Api> RuntimeApiCollection for Api
 where
 	Api: BaseRuntimeApiCollection
 		+ EthCompatRuntimeApiCollection
-		+ sp_consensus_aura::AuraApi<Block, moonbeam_core_primitives::aura::Public>
+		+ sp_consensus_aura::AuraApi<Block, stbl_core_primitives::aura::Public>
 		+ sp_finality_grandpa::GrandpaApi<Block>
 		+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>

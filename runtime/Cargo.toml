@@ -65,7 +65,7 @@ std = [
     'precompile-upgrade-runtime-controller/std',
     'runner/std',
     'account/std',
-    'moonbeam-core-primitives/std'
+    'stbl-core-primitives/std'
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
@@ -158,5 +158,5 @@ runner = { workspace = true }
 precompile-fee-rewards-vault-controller = { workspace = true }
 pallet-fee-rewards-vault = { workspace = true }
 
-moonbeam-core-primitives = { workspace = true }
+stbl-core-primitives = { workspace = true }
 account = { workspace = true }

@@ -83,7 +83,7 @@ stbl-cli-authorship = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true, features = ["std"] }
 sp-application-crypto = { workspace = true }
 account = { workspace = true, features = ["std"] }
-moonbeam-core-primitives = { workspace = true, features = ["std"] }
+stbl-core-primitives = { workspace = true, features = ["std"] }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }

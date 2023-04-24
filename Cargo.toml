@@ -206,7 +206,7 @@ pallet-validator-set = { path = "./pallets/validator-set", default-features = fa
 pallet-custom-balances = { path = './pallets/custom-balances', default-features = false }
 runner = { path = "./primitives/runner", default-features = false }
 
-moonbeam-core-primitives = { path = "core-primitives", default-features = false }
+stbl-core-primitives = { path = "core-primitives", default-features = false }
 account = { path = "primitives/account", default-features = false }
 blake2-rfc = { version = "0.2.18", default-features = false }
 impl-serde = { version = "0.3.1", default-features = false }

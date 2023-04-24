@@ -1,5 +1,5 @@
 [package]
-name = "moonbeam-core-primitives"
+name = "stbl-core-primitives"
 authors = [ "PureStake" ]
 edition = "2021"
 homepage = "https://moonbeam.network"

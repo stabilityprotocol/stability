@@ -16,8 +16,6 @@ use frame_support::pallet_prelude::EnsureOrigin;
 use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
-use moonbeam_core_primitives::aura::Public as AuraId;
-use moonbeam_core_primitives::imonline::Public as ImOnlineId;
 use pallet_balances::Instance1;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
@@ -43,6 +41,8 @@ use sp_runtime::{
 };
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
+use stbl_core_primitives::aura::Public as AuraId;
+use stbl_core_primitives::imonline::Public as ImOnlineId;
 // Substrate FRAME
 #[cfg(feature = "with-paritydb-weights")]
 use frame_support::weights::constants::ParityDbWeight as RuntimeDbWeight;
@@ -103,30 +103,30 @@ pub type Precompiles = StabilityPrecompiles<Runtime, StabilityFeeController>;
 use runner::Runner as StabilityRunner;
 
 /// Type of block number.
-pub type BlockNumber = moonbeam_core_primitives::BlockNumber;
+pub type BlockNumber = stbl_core_primitives::BlockNumber;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
-pub type Signature = moonbeam_core_primitives::Signature;
+pub type Signature = stbl_core_primitives::Signature;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
-pub type AccountId = moonbeam_core_primitives::AccountId;
+pub type AccountId = stbl_core_primitives::AccountId;
 
 /// The type for looking up accounts. We don't expect more than 4 billion of them, but you
 /// never know...
-pub type AccountIndex = moonbeam_core_primitives::AccountIndex;
+pub type AccountIndex = stbl_core_primitives::AccountIndex;
 
 /// Balance of an account.
-pub type Balance = moonbeam_core_primitives::Balance;
+pub type Balance = stbl_core_primitives::Balance;
 
 /// Index of a transaction in the chain.
-pub type Index = moonbeam_core_primitives::Index;
+pub type Index = stbl_core_primitives::Index;
 
 /// A hash of some data used by the chain.
-pub type Hash = moonbeam_core_primitives::Hash;
+pub type Hash = stbl_core_primitives::Hash;
 
 /// Digest item type.
-pub type DigestItem = moonbeam_core_primitives::DigestItem;
+pub type DigestItem = stbl_core_primitives::DigestItem;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -695,9 +695,9 @@ impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConve
 }
 
 /// The address format for describing accounts.
-pub type Address = moonbeam_core_primitives::Address;
+pub type Address = stbl_core_primitives::Address;
 /// Block header type as expected by this runtime.
-pub type Header = moonbeam_core_primitives::Header;
+pub type Header = stbl_core_primitives::Header;
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// A Block signed with a Justification

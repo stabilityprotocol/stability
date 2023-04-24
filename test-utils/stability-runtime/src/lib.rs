@@ -345,9 +345,9 @@ impl<B: BlockT> Decode for DecodeFails<B> {
 	}
 }
 
-pub type Signature = moonbeam_core_primitives::Signature;
+pub type Signature = stbl_core_primitives::Signature;
 
-pub type RealAccountiD = moonbeam_core_primitives::AccountId;
+pub type RealAccountiD = stbl_core_primitives::AccountId;
 
 cfg_if! {
 	if #[cfg(feature = "std")] {

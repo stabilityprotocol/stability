@@ -3966,19 +3966,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "moonbeam-core-primitives"
-version = "0.1.1"
-dependencies = [
- "account",
- "fp-self-contained",
- "parity-scale-codec",
- "scale-info",
- "sp-application-crypto",
- "sp-core",
- "sp-runtime",
-]
-
-[[package]]
 name = "multiaddr"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8375,7 +8362,6 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "log",
- "moonbeam-core-primitives",
  "pallet-im-online",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
@@ -8415,6 +8401,7 @@ dependencies = [
  "sp-trie",
  "stability-runtime",
  "stbl-cli-authorship",
+ "stbl-core-primitives",
  "stbl-primitives-fee-compatible-api",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
@@ -8435,7 +8422,6 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "log",
- "moonbeam-core-primitives",
  "pallet-aura",
  "pallet-balances",
  "pallet-base-fee",
@@ -8491,6 +8477,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
+ "stbl-core-primitives",
  "stbl-primitives-fee-compatible-api",
  "stbl-tools",
  "substrate-wasm-builder",
@@ -8533,7 +8520,6 @@ dependencies = [
  "futures",
  "log",
  "memory-db",
- "moonbeam-core-primitives",
  "pallet-babe",
  "pallet-timestamp",
  "parity-scale-codec",
@@ -8565,6 +8551,7 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "stability-test-runtime-client",
+ "stbl-core-primitives",
  "stbl-primitives-fee-compatible-api",
  "substrate-wasm-builder",
  "trie-db",
@@ -8670,6 +8657,19 @@ dependencies = [
  "stability-test-runtime-client",
  "stbl-primitives-fee-compatible-api",
  "substrate-prometheus-endpoint",
+]
+
+[[package]]
+name = "stbl-core-primitives"
+version = "0.1.1"
+dependencies = [
+ "account",
+ "fp-self-contained",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
