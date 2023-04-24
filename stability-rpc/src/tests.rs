@@ -19,7 +19,7 @@ sp_api::mock_impl_runtime_apis! {
 #[tokio::test]
 async fn get_supported_tokens_should_return_expected_addr() {
 	let client = Arc::new(TestApi {});
-	let api = StabilityRpcPallet::<TestApi, Block>::new(client);
+	let api = StabilityRpc::<TestApi, Block>::new(client);
 	let result = api.get_supported_tokens(None);
 	assert_eq!(true, result.is_ok());
 	let result_unwrap = result.unwrap().value as Vec<H160>;
