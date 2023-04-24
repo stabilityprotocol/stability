@@ -26,6 +26,9 @@ use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160, H256};
 
 #[cfg(feature = "std")]
+use sp_core::bytes::to_hex;
+
+#[cfg(feature = "std")]
 pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 //TODO Maybe this should be upstreamed into Frontier (And renamed accordingly) so that it can
@@ -162,6 +165,8 @@ impl From<ecdsa::Public> for EthereumSigner {
 		.serialize();
 		let mut m = [0u8; 64];
 		m.copy_from_slice(&decompressed[1..65]);
+		#[cfg(feature = "std")]
+		let _a = to_hex(&x.0, false);
 		let account = H160::from(H256::from_slice(Keccak256::digest(&m).as_slice()));
 		EthereumSigner(account.into())
 	}

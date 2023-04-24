@@ -24,7 +24,7 @@ use pallet_validator_fee_selector::ValidatorFeeTokenController;
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
-	Hasher, OpaqueMetadata, H160, H256, U256,
+	OpaqueMetadata, H160, H256, U256,
 };
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::traits::IdentityLookup;
@@ -69,7 +69,6 @@ pub use frame_support::{
 	ConsensusEngineId, StorageValue,
 };
 pub use frame_system::Call as SystemCall;
-pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 
 use pallet_user_fee_selector;
@@ -302,20 +301,6 @@ parameter_types! {
 	pub const MaxLocks: u32 = 50;
 }
 
-impl pallet_balances::Config for Runtime {
-	/// The type for recording an account's balance.
-	type Balance = Balance;
-	type DustRemoval = ();
-	/// The ubiquitous event type.
-	type RuntimeEvent = RuntimeEvent;
-	type ExistentialDeposit = ExistentialDeposit;
-	type AccountStore = System;
-	type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
-	type MaxLocks = MaxLocks;
-	type MaxReserves = ();
-	type ReserveIdentifier = [u8; 8];
-}
-
 parameter_types! {
 	pub const TransactionByteFee: Balance = 1;
 }
@@ -350,14 +335,23 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 	}
 }
 
-pub struct LinkedOrHashedAddressMapping<H>(sp_std::marker::PhantomData<H>);
-
-impl<H: Hasher<Out = H256>> pallet_evm::AddressMapping<AccountId>
-	for LinkedOrHashedAddressMapping<H>
-{
+pub struct IdentityAddressMapping;
+impl pallet_evm::AddressMapping<AccountId> for IdentityAddressMapping {
 	fn into_account_id(address: H160) -> AccountId {
-		AccountId::from(address.0)
+		address.into()
 	}
+}
+
+pub struct AccountIdToH160Mapping;
+impl pallet_custom_balances::AccountIdMapping<Runtime> for AccountIdToH160Mapping {
+	fn into_evm_address(address: &AccountId) -> H160 {
+		(*address).into()
+	}
+}
+
+impl pallet_custom_balances::Config for Runtime {
+	type AccountIdMapping = AccountIdToH160Mapping;
+	type UserFeeTokenController = <StabilityFeeController as FeeController>::User;
 }
 
 pub struct EnsureAddressLinkedOrTruncated;
@@ -389,7 +383,7 @@ impl pallet_evm::Config for Runtime {
 	type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
 	type CallOrigin = EnsureAddressLinkedOrTruncated;
 	type WithdrawOrigin = EnsureAddressLinkedOrTruncated;
-	type AddressMapping = LinkedOrHashedAddressMapping<BlakeTwo256>;
+	type AddressMapping = IdentityAddressMapping;
 	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
 	type PrecompilesType = StabilityPrecompiles<Self, StabilityFeeController>;
@@ -463,7 +457,7 @@ impl pallet_base_fee::Config for Runtime {
 }
 
 impl pallet_hotfix_sufficients::Config for Runtime {
-	type AddressMapping = LinkedOrHashedAddressMapping<BlakeTwo256>;
+	type AddressMapping = IdentityAddressMapping;
 	type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
@@ -655,7 +649,7 @@ construct_runtime!(
 		ImOnline: pallet_im_online,
 		Aura: pallet_aura,
 		Grandpa: pallet_grandpa,
-		Balances: pallet_balances,
+		Balances: pallet_custom_balances,
 		TransactionPayment: pallet_transaction_payment,
 		TechCommitteeCollective: pallet_collective::<Instance1>,
 		RootController: pallet_root_controller,
@@ -895,34 +889,7 @@ impl_runtime_apis! {
 		}
 
 		fn account_basic(address: H160) -> EVMAccount {
-			let (account, _) = EVM::account_basic(&address);
-			// we get the user fee token address
-			let address_erc20 = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(address);
-			// call to the EVM for getting the balance of the user
-			let balance = <Runtime as pallet_evm::Config>::Runner::call(
-				H160::zero(),
-				address_erc20,
-				stbl_tools::eth::generate_calldata("balanceOf(address)", &vec![address.into()]),
-				0.into(),
-				u64::MAX,
-				None,
-				None,
-				None,
-				Default::default(),
-				false,
-				false,
-				&pallet_evm::EvmConfig::istanbul(),
-			)
-			.unwrap()
-			.value
-			.as_slice()
-			.try_into()
-			.unwrap();
-
-			EVMAccount {
-				nonce: account.nonce,
-				balance,
-			}
+			EVM::account_basic(&address).0
 		}
 
 		fn gas_price() -> U256 {

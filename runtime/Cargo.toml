@@ -10,7 +10,6 @@ runtime-benchmarks = [
     'frame-benchmarking',
     'frame-system-benchmarking',
     'frame-system/runtime-benchmarks',
-    'pallet-balances/runtime-benchmarks',
     'pallet-grandpa/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'pallet-ethereum/runtime-benchmarks',
@@ -37,7 +36,7 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'pallet-aura/std',
-    'pallet-balances/std',
+    'pallet-custom-balances/std',
     'pallet-grandpa/std',
     'pallet-timestamp/std',
     'pallet-transaction-payment/std',
@@ -52,7 +51,6 @@ std = [
     'pallet-evm-chain-id/std',
     'pallet-evm-precompile-modexp/std',
     'pallet-evm-precompile-sha3fips/std',
-    'precompile-balances-erc20/std',
     'pallet-evm-precompile-simple/std',
     'pallet-hotfix-sufficients/std',
     'pallet-collective/std',
@@ -112,6 +110,7 @@ frame-system = { workspace = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-aura = { workspace = true }
+pallet-custom-balances = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-grandpa = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -139,7 +138,6 @@ pallet-hotfix-sufficients = { workspace = true }
 pallet-evm-precompile-blake2 = { workspace = true }
 pallet-evm-precompile-bn128 = { workspace = true }
 precompile-utils = { workspace = true }
-precompile-balances-erc20 = { workspace = true }
 precompile-fee-token-selector = { workspace = true }
 precompile-validator-fee-selector = { workspace = true }
 pallet-user-fee-selector = { workspace = true }

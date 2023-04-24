@@ -80,16 +80,6 @@ pub fn session_keys(aura: AuraId, grandpa: GrandpaId, im_online: ImOnlineId) -> 
 	}
 }
 
-pub fn get_key_ecdsa(pubkey: &str) -> ecdsa::Public {
-	let key: [u8; 33] = from_hex(pubkey)
-		.expect("bad formatted pubkey")
-		.as_slice()
-		.try_into()
-		.unwrap();
-
-	ecdsa::Public(key)
-}
-
 pub fn get_authority_from_pubkeys(
 	ecdsa_key_str: &str,
 	ed_pubkey: &str,
@@ -106,14 +96,13 @@ pub fn get_authority_from_pubkeys(
 /// Configure initial storage state for FRAME modules.
 pub fn base_genesis(
 	wasm_binary: &[u8],
-	endowed_accounts: Vec<AccountId>,
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId, ImOnlineId)>,
 	members: Vec<AccountId>,
 	chain_id: u64,
 ) -> GenesisConfig {
 	use stability_runtime::{
-		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig,
-		SessionConfig, SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig,
+		AuraConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig, SessionConfig,
+		SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig,
 		ValidatorSetConfig,
 	};
 	let initial_default_token =
@@ -123,15 +112,6 @@ pub fn base_genesis(
 		system: SystemConfig {
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
-		},
-		// Monetary
-		balances: BalancesConfig {
-			// Configure endowed accounts with initial balance of 1 << 60.
-			balances: endowed_accounts
-				.iter()
-				.cloned()
-				.map(|k| (k, 1 << 60))
-				.collect(),
 		},
 		transaction_payment: Default::default(),
 
