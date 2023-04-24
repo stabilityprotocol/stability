@@ -21,8 +21,6 @@ pub mod pallet {
 	use super::*;
 
 	use pallet_supported_tokens_manager::SupportedTokensManager;
-	use sha3::Digest;
-	use sp_core::Encode;
 	use sp_core::{H160, H256, U256};
 	use stbl_tools::some_or_err;
 
@@ -106,16 +104,7 @@ pub mod pallet {
 			let balance_slot = T::SupportedTokensManager::get_token_balance_slot(token)
 				.unwrap_or(H256::from_low_u64_be(0));
 
-			let u256_address = H256::from(address);
-			let address_bytes = u256_address.as_bytes();
-			let balance_slot_bytes = balance_slot.as_bytes();
-
-			let input = &[&address_bytes[..], &balance_slot_bytes[..]].concat();
-
-			sha3::Keccak256::new()
-				.chain_update(input)
-				.finalize()
-				.using_encoded(|x| H256::from_slice(&x[1..]))
+			stbl_tools::eth::get_storage_address_for_mapping(address, balance_slot)
 		}
 	}
 }

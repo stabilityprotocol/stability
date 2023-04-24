@@ -4290,7 +4290,6 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
- "sha3",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -8213,6 +8212,7 @@ dependencies = [
  "stability-runtime",
  "stbl-cli-authorship",
  "stbl-primitives-fee-compatible-api",
+ "stbl-tools",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
@@ -8481,6 +8481,7 @@ version = "0.1.0"
 dependencies = [
  "ethereum",
  "pallet-evm",
+ "sha3",
  "sp-core",
  "sp-io",
  "sp-runtime",
