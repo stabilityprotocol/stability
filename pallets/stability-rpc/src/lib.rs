@@ -11,15 +11,15 @@ pub use stability_rpc_api::StabilityRpcApi as StabilityRpcRuntimeApi;
 use std::sync::Arc;
 
 #[derive(serde::Deserialize, serde::Serialize)]
-pub struct Custom {
+pub struct StabilityOutput<T> {
 	code: u32,
-	value: Vec<H160>,
+	value: T,
 }
 
 #[rpc(server)]
 pub trait StabilityRpc<BlockHash> {
 	#[method(name = "stability_getSupportedTokens")]
-	fn get_supported_tokens(&self, at: Option<BlockHash>) -> RpcResult<Custom>;
+	fn get_supported_tokens(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
 }
 
 pub struct StabilityRpcPallet<C, Block> {
@@ -42,13 +42,16 @@ where
 	C: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
 	C::Api: StabilityRpcRuntimeApi<Block>,
 {
-	fn get_supported_tokens(&self, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Custom> {
+	fn get_supported_tokens(
+		&self,
+		at: Option<<Block as BlockT>::Hash>,
+	) -> RpcResult<StabilityOutput<Vec<H160>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 		let value = api
 			.get_supported_tokens(&at)
 			.map_err(runtime_error_into_rpc_err);
-		Ok(Custom {
+		Ok(StabilityOutput {
 			code: 200,
 			value: value.unwrap(),
 		})
