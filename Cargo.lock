@@ -5432,6 +5432,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "stbl-core-primitives",
 ]
 
 [[package]]

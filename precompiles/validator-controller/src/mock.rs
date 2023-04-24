@@ -20,7 +20,6 @@ use super::*;
 
 use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::Weight};
 use frame_system::EnsureRoot;
-use pallet_evm::HashedAddressMapping;
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
 use pallet_session::*;
 use precompile_utils::precompile_set::*;
@@ -28,11 +27,8 @@ use sp_core::crypto::key_types::DUMMY;
 use sp_core::{H160, H256, U256};
 use sp_runtime::impl_opaque_keys;
 use sp_runtime::testing::UintAuthorityId;
-use sp_runtime::traits::IdentifyAccount;
-use sp_runtime::traits::{BlakeTwo256, IdentityLookup, OpaqueKeys, Verify};
+use sp_runtime::traits::{BlakeTwo256, IdentityLookup, OpaqueKeys};
 use sp_runtime::KeyTypeId;
-use sp_runtime::MultiSignature;
-use sp_runtime::RuntimeAppPublic;
 use std::cell::RefCell;
 
 impl_opaque_keys! {
@@ -72,8 +68,7 @@ impl OpaqueKeys for PreUpgradeMockSessionKeys {
 	}
 }
 
-pub type Signature = MultiSignature;
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+pub type AccountId = stbl_core_primitives::AccountId;
 pub type Balance = u128;
 pub type BlockNumber = u32;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
@@ -144,13 +139,20 @@ parameter_types! {
 	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
 }
 
+pub struct IdentityAddressMapping;
+impl pallet_evm::AddressMapping<AccountId> for IdentityAddressMapping {
+	fn into_account_id(address: H160) -> AccountId {
+		address.into()
+	}
+}
+
 impl pallet_evm::Config for Runtime {
 	type FeeCalculator = ();
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
 	type WeightPerGas = WeightPerGas;
 	type CallOrigin = EnsureAddressRoot<AccountId>;
 	type WithdrawOrigin = EnsureAddressNever<AccountId>;
-	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
+	type AddressMapping = IdentityAddressMapping;
 	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
@@ -174,10 +176,10 @@ impl pallet_validator_set::Config for Runtime {
 }
 
 thread_local! {
-	pub static VALIDATORS: RefCell<Vec<AccountId>> = RefCell::new(vec![AccountId::from_str("0x0").unwrap(), AccountId::from_str("0x1").unwrap(), AccountId::from_str("0x3").unwrap()]);
-	pub static NEXT_VALIDATORS: RefCell<Vec<AccountId>> = RefCell::new(vec![AccountId::from_str("0x0").unwrap(),AccountId::from_str("0x2").unwrap(), AccountId::from_str("0x3").unwrap()]);
-	pub static AUTHORITIES: RefCell<Vec<UintAuthorityId>> =
-		RefCell::new(vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)]);
+	pub static VALIDATORS: RefCell<Vec<AccountId>> = RefCell::new(vec![AccountId::from_str("0x0000000000000000000000000000000000000000").unwrap(), AccountId::from_str("0x0000000000000000000000000000000000000001").unwrap(), AccountId::from_str("0x0000000000000000000000000000000000000003").unwrap()]);
+	pub static NEXT_VALIDATORS: RefCell<Vec<AccountId>> = RefCell::new(vec![AccountId::from_str("0x0000000000000000000000000000000000000000").unwrap(),AccountId::from_str("0x0000000000000000000000000000000000000002").unwrap(), AccountId::from_str("0x0000000000000000000000000000000000000003").unwrap()]);
+	pub static AUTHORITIES: RefCell<Vec<AccountId>> =
+		RefCell::new(vec![AccountId::from_str("0x0000000000000000000000000000000000000000").unwrap(), AccountId::from_str("0x0000000000000000000000000000000000000001").unwrap(), AccountId::from_str("0x0000000000000000000000000000000000000003").unwrap()]);
 	pub static FORCE_SESSION_END: RefCell<bool> = RefCell::new(false);
 	pub static SESSION_LENGTH: RefCell<BlockNumber> = RefCell::new(2);
 	pub static SESSION_CHANGED: RefCell<bool> = RefCell::new(false);
@@ -187,7 +189,7 @@ thread_local! {
 
 pub struct TestSessionHandler;
 impl SessionHandler<AccountId> for TestSessionHandler {
-	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[UintAuthorityId::ID];
+	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[sp_runtime::KeyTypeId(*b"ecds")];
 	fn on_genesis_session<T: OpaqueKeys>(_validators: &[(AccountId, T)]) {}
 	fn on_new_session<T: OpaqueKeys>(
 		changed: bool,
@@ -198,7 +200,7 @@ impl SessionHandler<AccountId> for TestSessionHandler {
 		AUTHORITIES.with(|l| {
 			*l.borrow_mut() = validators
 				.iter()
-				.map(|(_, id)| id.get::<UintAuthorityId>(DUMMY).unwrap_or_default())
+				.map(|(_, id)| id.get::<AccountId>(DUMMY).unwrap_or_default())
 				.collect()
 		});
 	}
