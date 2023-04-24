@@ -8533,6 +8533,7 @@ dependencies = [
  "futures",
  "log",
  "memory-db",
+ "moonbeam-core-primitives",
  "pallet-babe",
  "pallet-timestamp",
  "parity-scale-codec",

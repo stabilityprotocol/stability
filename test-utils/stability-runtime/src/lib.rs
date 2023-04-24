@@ -345,10 +345,9 @@ impl<B: BlockT> Decode for DecodeFails<B> {
 	}
 }
 
-pub type Signature = sp_runtime::MultiSignature;
+pub type Signature = moonbeam_core_primitives::Signature;
 
-pub type RealAccountiD =
-	<<Signature as sp_runtime::traits::Verify>::Signer as sp_runtime::traits::IdentifyAccount>::AccountId;
+pub type RealAccountiD = moonbeam_core_primitives::AccountId;
 
 cfg_if! {
 	if #[cfg(feature = "std")] {
