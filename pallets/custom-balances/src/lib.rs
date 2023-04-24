@@ -2,6 +2,11 @@
 
 pub use pallet::*;
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -37,7 +42,7 @@ pub mod pallet {
 	}
 
 	#[must_use]
-	#[derive(RuntimeDebug, PartialEq, Eq)]
+	#[derive(RuntimeDebug, PartialEq, Eq, Clone)]
 	pub struct NeutralImbalance<
 		T: Balance + MaybeSerializeDeserialize + Debug + MaxEncodedLen + FixedPointOperand,
 	>(T);
@@ -115,8 +120,14 @@ pub mod pallet {
 
 		/// Same result as `slash(who, value)` (but without the side-effects) assuming there are no
 		/// balance changes in the meantime and only the reserved balance is not taken into account.
-		fn can_slash(_who: &T::AccountId, _value: Self::Balance) -> bool {
-			false
+		fn can_slash(who: &T::AccountId, value: Self::Balance) -> bool {
+			Self::ensure_can_withdraw(
+				who,
+				value,
+				WithdrawReasons::TRANSACTION_PAYMENT,
+				Self::Balance::from(0u128),
+			)
+			.is_ok()
 		}
 
 		/// The total amount of issuance in the system.
@@ -129,12 +140,12 @@ pub mod pallet {
 			0u128
 		}
 
-		fn burn(amount: Self::Balance) -> Self::PositiveImbalance {
-			Self::PositiveImbalance::new(amount)
+		fn burn(_amount: Self::Balance) -> Self::PositiveImbalance {
+			Self::PositiveImbalance::new(Self::Balance::from(0u128))
 		}
 
-		fn issue(amount: Self::Balance) -> Self::NegativeImbalance {
-			Self::NegativeImbalance::new(amount)
+		fn issue(_amount: Self::Balance) -> Self::NegativeImbalance {
+			Self::NegativeImbalance::new(Self::Balance::from(0u128))
 		}
 
 		fn free_balance(account: &T::AccountId) -> Self::Balance {
@@ -142,21 +153,31 @@ pub mod pallet {
 		}
 
 		fn ensure_can_withdraw(
-			_who: &T::AccountId,
-			_amount: Self::Balance,
+			who: &T::AccountId,
+			amount: Self::Balance,
 			_reasons: frame_support::traits::WithdrawReasons,
 			_new_balance: Self::Balance,
 		) -> Result<(), sp_runtime::DispatchError> {
-			Ok(())
+			if Self::total_balance(who) >= amount {
+				Ok(())
+			} else {
+				Err(DispatchError::Other("Not enough balance"))
+			}
 		}
 
 		fn transfer(
 			_source: &T::AccountId,
 			_dest: &T::AccountId,
-			_value: Self::Balance,
+			value: Self::Balance,
 			_existence_requirement: ExistenceRequirement,
 		) -> DispatchResult {
-			Ok(())
+			if value == 0u128 {
+				Ok(())
+			} else {
+				Err(DispatchError::Other(
+					"Transfer is not supported in this pallet",
+				))
+			}
 		}
 
 		fn slash(
@@ -170,14 +191,16 @@ pub mod pallet {
 			_who: &T::AccountId,
 			_value: Self::Balance,
 		) -> Result<Self::PositiveImbalance, DispatchError> {
-			Ok(Self::PositiveImbalance::default())
+			Err(DispatchError::Other(
+				"Deposits are not allowed in this pallet",
+			))
 		}
 
 		fn resolve_into_existing(
 			_who: &T::AccountId,
-			_value: Self::NegativeImbalance,
+			value: Self::NegativeImbalance,
 		) -> Result<(), Self::NegativeImbalance> {
-			Ok(())
+			Err(value)
 		}
 
 		fn deposit_creating(_who: &T::AccountId, _value: Self::Balance) -> Self::PositiveImbalance {
@@ -192,23 +215,25 @@ pub mod pallet {
 			_reasons: WithdrawReasons,
 			_liveness: ExistenceRequirement,
 		) -> Result<Self::NegativeImbalance, DispatchError> {
-			Ok(Self::PositiveImbalance::new(_value))
+			Err(DispatchError::Other(
+				"Withdrawals are not allowed in this pallet",
+			))
 		}
 
 		fn settle(
 			_who: &T::AccountId,
-			_value: Self::PositiveImbalance,
+			value: Self::PositiveImbalance,
 			_reasons: WithdrawReasons,
 			_liveness: ExistenceRequirement,
 		) -> Result<(), Self::PositiveImbalance> {
-			Ok(())
+			Err(value)
 		}
 
 		fn make_free_balance_be(
 			_who: &T::AccountId,
 			_balance: Self::Balance,
 		) -> SignedImbalance<Self::Balance, Self::PositiveImbalance> {
-			SignedImbalance::Positive(Self::PositiveImbalance::default())
+			panic!("make_free_balance_be is not allowed in this pallet")
 		}
 	}
 
@@ -252,7 +277,7 @@ pub mod pallet {
 			_amount: Self::Balance,
 			_mint: bool,
 		) -> DepositConsequence {
-			DepositConsequence::Success
+			DepositConsequence::UnknownAsset
 		}
 
 		/// Returns `Failed` if the balance of `who` may not be decreased by `amount`, otherwise
@@ -261,7 +286,9 @@ pub mod pallet {
 			_who: &T::AccountId,
 			_amount: Self::Balance,
 		) -> WithdrawConsequence<Self::Balance> {
-			WithdrawConsequence::Success
+			Self::ensure_can_withdraw(_who, _amount, WithdrawReasons::all(), 0u128)
+				.map(|_| WithdrawConsequence::Success)
+				.unwrap_or(WithdrawConsequence::NoFunds)
 		}
 	}
 }
