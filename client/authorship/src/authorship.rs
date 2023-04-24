@@ -694,7 +694,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::sr25519_generate_new(
+		SyncCryptoStore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -756,7 +756,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::sr25519_generate_new(
+		SyncCryptoStore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -824,7 +824,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::sr25519_generate_new(
+		SyncCryptoStore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -910,7 +910,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::sr25519_generate_new(
+		SyncCryptoStore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -1024,7 +1024,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::sr25519_generate_new(
+		SyncCryptoStore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -1136,7 +1136,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::sr25519_generate_new(
+		SyncCryptoStore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -1220,7 +1220,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::sr25519_generate_new(
+		SyncCryptoStore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -1297,7 +1297,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::sr25519_generate_new(
+		SyncCryptoStore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),

@@ -198,7 +198,7 @@ precompile-upgrade-runtime-controller = { path = "./precompiles/upgrade-runtime-
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }
 stability-test-runtime = { path = "./test-utils/stability-runtime", default-features = false }
-stability-test-runtime-client = { path = "./test-utils/stability-runtime-client", default-features = false }
+stability-test-runtime-client = { path = "./test-utils/stability-runtime-client" }
 pallet-user-fee-selector = { path = "./pallets/token-fee-controller/user-fee-selector", default-features = false }
 pallet-validator-fee-selector = { path = "./pallets/token-fee-controller/validator-fee-selector", default-features = false }
 pallet-supported-tokens-manager = { path = "./pallets/token-fee-controller/supported-tokens-manager", default-features = false }

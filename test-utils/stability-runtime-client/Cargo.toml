@@ -21,4 +21,4 @@ sp-consensus = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 stability-test-client = { workspace = true }
-stability-test-runtime = { workspace = true }
+stability-test-runtime = { workspace = true, features = ["std"] }

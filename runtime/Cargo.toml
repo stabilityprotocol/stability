@@ -60,6 +60,7 @@ std = [
     'pallet-session/std',
     'pallet-im-online/std',
     'pallet-upgrade-runtime-proposal/std',
+    'pallet-dnt-fee-controller/std',
     'stbl-primitives-fee-compatible-api/std',
     'precompile-upgrade-runtime-controller/std',
     'runner/std',
