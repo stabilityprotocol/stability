@@ -1,5 +1,5 @@
 [package]
-name = "pallet-stability-rpc"
+name = "stability-rpc"
 version = "0.1.0"
 edition = "2021"
 

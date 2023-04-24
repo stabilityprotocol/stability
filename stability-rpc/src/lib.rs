@@ -22,17 +22,17 @@ pub struct StabilityOutput<T> {
 }
 
 #[rpc(server)]
-pub trait StabilityRpc<BlockHash> {
+pub trait StabilityRpcEndpoints<BlockHash> {
 	#[method(name = "stability_getSupportedTokens")]
 	fn get_supported_tokens(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
 }
 
-pub struct StabilityRpcPallet<C, Block> {
+pub struct StabilityRpc<C, Block> {
 	client: Arc<C>,
 	_marker: std::marker::PhantomData<Block>,
 }
 
-impl<C, Block> StabilityRpcPallet<C, Block> {
+impl<C, Block> StabilityRpc<C, Block> {
 	pub fn new(client: Arc<C>) -> Self {
 		Self {
 			client,
@@ -41,7 +41,7 @@ impl<C, Block> StabilityRpcPallet<C, Block> {
 	}
 }
 
-impl<C, Block> StabilityRpcServer<<Block as BlockT>::Hash> for StabilityRpcPallet<C, Block>
+impl<C, Block> StabilityRpcEndpointsServer<<Block as BlockT>::Hash> for StabilityRpc<C, Block>
 where
 	Block: BlockT,
 	C: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,

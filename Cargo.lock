@@ -4536,27 +4536,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-stability-rpc"
-version = "0.1.0"
-dependencies = [
- "assert_matches",
- "jsonrpsee",
- "lazy_static",
- "parity-scale-codec",
- "sc-client-api",
- "scale-info",
- "serde",
- "serde_json",
- "sp-api",
- "sp-blockchain",
- "sp-core",
- "sp-runtime",
- "stability-rpc-api",
- "substrate-test-runtime-client",
- "tokio",
-]
-
-[[package]]
 name = "pallet-sudo"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
@@ -8195,7 +8174,6 @@ dependencies = [
  "jsonrpsee",
  "log",
  "pallet-im-online",
- "pallet-stability-rpc",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -8231,6 +8209,7 @@ dependencies = [
  "sp-timestamp",
  "sp-transaction-pool",
  "sp-trie",
+ "stability-rpc",
  "stability-runtime",
  "stbl-cli-authorship",
  "stbl-primitives-fee-compatible-api",
@@ -8238,6 +8217,27 @@ dependencies = [
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
+]
+
+[[package]]
+name = "stability-rpc"
+version = "0.1.0"
+dependencies = [
+ "assert_matches",
+ "jsonrpsee",
+ "lazy_static",
+ "parity-scale-codec",
+ "sc-client-api",
+ "scale-info",
+ "serde",
+ "serde_json",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "stability-rpc-api",
+ "substrate-test-runtime-client",
+ "tokio",
 ]
 
 [[package]]

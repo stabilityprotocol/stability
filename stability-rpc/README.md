@@ -1,6 +1,6 @@
-# pallet-stability-rpc
+# stability-rpc
 
-This custom pallet extends the functionality of Substrate-based blockchain by providing additional RPC endpoints and features tailored to your specific needs. One such feature is the `stability_getSupportedTokens` RPC, which allows developers to access information about supported tokens in the network.
+This custom extension extends the functionality of Substrate-based blockchain by providing additional RPC endpoints and features tailored to your specific needs. One such feature is the `stability_getSupportedTokens` RPC, which allows developers to access information about supported tokens in the network.
 
 ## Methods
 

@@ -30,7 +30,7 @@ members = [
     'primitives/tools',
 	'pallets/root-controller',
     'pallets/map-svm-evm',
-    'pallets/stability-rpc',
+    'stability-rpc',
     'client/authorship',
     'test-utils/stability-client',
     'test-utils/stability-runtime',
@@ -193,7 +193,6 @@ stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api",
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
 pallet-map-svm-evm = { path = "./pallets/map-svm-evm", default-features = false }
 pallet-upgrade-runtime-proposal = { path = "./pallets/upgrade-runtime-proposal", default-features = false }
-pallet-stability-rpc = { path = "./pallets/stability-rpc", default-features = false }
 stbl-tools = { path = "./primitives/tools", default-features = false }
 precompile-map-svm-evm-controller = { path = "./precompiles/map-svm-evm-controller", default-features = false }
 precompile-supported-tokens-manager = { path = "./precompiles/token-fee-controller/supported-tokens-manager", default-features = false }
@@ -205,6 +204,7 @@ pallet-validator-fee-selector = { path = "./pallets/token-fee-controller/validat
 pallet-supported-tokens-manager = { path = "./pallets/token-fee-controller/supported-tokens-manager", default-features = false }
 pallet-validator-set = { path = "./pallets/validator-set", default-features = false }
 runner = { path = "./primitives/runner", default-features = false }
+stability-rpc = { path = "./stability-rpc", default-features = false }
 stability-rpc-api = { path = "./primitives/stability-rpc-api", default-features = false }
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }
