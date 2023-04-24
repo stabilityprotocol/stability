@@ -4540,9 +4540,11 @@ dependencies = [
 name = "pallet-stability-rpc"
 version = "0.1.0"
 dependencies = [
+ "assert_matches",
  "jsonrpsee",
  "lazy_static",
  "parity-scale-codec",
+ "sc-client-api",
  "scale-info",
  "serde",
  "serde_json",
@@ -4551,6 +4553,7 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "stability-rpc-api",
+ "substrate-test-runtime-client",
  "tokio",
 ]
 

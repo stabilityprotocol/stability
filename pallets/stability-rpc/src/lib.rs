@@ -10,6 +10,11 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 pub use stability_rpc_api::StabilityRpcApi as StabilityRpcRuntimeApi;
 use std::sync::Arc;
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct StabilityOutput<T> {
 	code: u32,
