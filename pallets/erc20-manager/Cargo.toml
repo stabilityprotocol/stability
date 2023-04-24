@@ -16,7 +16,6 @@ sp-io = { workspace = true }
 pallet-evm = { workspace = true }
 stbl-tools = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
-sha3 ={ version = "0.10.6", default-features = false}
 
 [dev-dependencies]
 hex = "0.4"

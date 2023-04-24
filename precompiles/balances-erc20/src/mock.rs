@@ -92,7 +92,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-	pub DefaultOwner: H160 = H160::from_str("0xA38395b264f232ffF4bb294b5947092E359dDE88").expect("invalid address");
+	pub DefaultOwner: H160 = H160::from_str("0xaf537bd156c7E548D0BF2CD43168dABF7aF2feb5").expect("invalid address");
 }
 
 pub type Precompiles<R> = PrecompileSetBuilder<
