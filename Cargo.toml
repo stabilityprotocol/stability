@@ -206,6 +206,7 @@ pallet-validator-set = { path = "./pallets/validator-set", default-features = fa
 runner = { path = "./primitives/runner", default-features = false }
 stability-rpc = { path = "./stability-rpc", default-features = false }
 stability-rpc-api = { path = "./primitives/stability-rpc-api", default-features = false }
+
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }
 stability-test-runtime = { path = "./test-utils/stability-runtime", default-features = false }
