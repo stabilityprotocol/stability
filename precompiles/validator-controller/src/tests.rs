@@ -1,6 +1,5 @@
 use crate::{mock::*, *};
 
-use codec::Encode;
 use precompile_utils::testing::*;
 use sha3::{Digest, Keccak256};
 
@@ -8,10 +7,8 @@ fn precompiles() -> Precompiles<Runtime> {
 	PrecompilesValue::get()
 }
 
-fn account_id_to_h256(account_id: AccountId) -> H256 {
-	let mut h256 = H256::default();
-	h256.as_bytes_mut().copy_from_slice(&account_id.encode());
-	h256
+fn account_id_to_h256(account_id: AccountId) -> Address {
+	H160(account_id.0).into()
 }
 
 #[test]
@@ -20,9 +17,8 @@ fn selectors() {
 	assert!(PCall::pending_owner_selectors().contains(&0xe30c3978));
 	assert!(PCall::transfer_ownership_selectors().contains(&0xf2fde38b));
 	assert!(PCall::claim_ownership_selectors().contains(&0x79ba5097));
-	assert!(PCall::add_validator_selectors().contains(&0x4eedc9b0));
-	assert!(PCall::remove_validator_selectors().contains(&0xcd993ba5));
-
+	assert!(PCall::add_validator_selectors().contains(&0x4d238c8e));
+	assert!(PCall::remove_validator_selectors().contains(&0x40a141ff));
 	assert_eq!(
 		crate::SELECTOR_LOG_NEW_OWNER,
 		&Keccak256::digest(b"NewOwner(address)")[..]
@@ -180,7 +176,7 @@ fn add_validator() {
 }
 
 parameter_types! {
-	pub ValidatorCandidate:AccountId = AccountId::from_str("0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22").expect("invalid address");
+	pub ValidatorCandidate:AccountId = AccountId::from_str("0x42a4ACa0201918116E0C5569d93faaD0E435aB46").expect("invalid address");
 }
 
 #[test]
@@ -201,7 +197,7 @@ fn add_validator_fails_if_sender_not_owner() {
 }
 
 parameter_types! {
-	pub ValidatorInitial:AccountId = AccountId::from_str("0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe21").expect("invalid address");
+	pub ValidatorInitial:AccountId = AccountId::from_str("0x42a4ACa0201918116E0C5569d93faaD0E435aB45").expect("invalid address");
 }
 
 #[test]
@@ -238,7 +234,7 @@ fn add_validator_if_already_init() {
 }
 
 parameter_types! {
-	pub SecondValidatorCandidate:AccountId = AccountId::from_str("0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe23").expect("invalid address");
+	pub SecondValidatorCandidate:AccountId = AccountId::from_str("0x42a4ACa0201918116E0C5569d93faaD0E435aB47").expect("invalid address");
 }
 #[test]
 fn add_two_validators() {

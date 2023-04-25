@@ -15,7 +15,7 @@ codec = { package = "parity-scale-codec", workspace = true }
 scale-info = { workspace = true}
 frame-benchmarking = { workspace = true, optional = true }
 sp-io = { workspace = true }
-log = { workspace = true, default-features = false }
+log = { workspace = true }
 pallet-evm = { workspace = true }
 pallet-timestamp = { workspace = true }
 fp-evm = { workspace = true }

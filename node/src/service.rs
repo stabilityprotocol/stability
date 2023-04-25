@@ -11,7 +11,6 @@ use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
 use sc_service::{error::Error as ServiceError, Configuration, PartialComponents, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sp_api::{ConstructRuntimeApi, TransactionFor};
-use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sp_core::U256;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
@@ -201,20 +200,21 @@ where
 		Ok((slot, timestamp, dynamic_fee))
 	};
 
-	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _>(
-		sc_consensus_aura::ImportQueueParams {
-			block_import: frontier_block_import.clone(),
-			justification_import: Some(Box::new(grandpa_block_import)),
-			client,
-			create_inherent_data_providers,
-			spawner: &task_manager.spawn_essential_handle(),
-			registry: config.prometheus_registry(),
-			check_for_equivocation: Default::default(),
-			telemetry,
-			compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
-		},
-	)
-	.map_err::<ServiceError, _>(Into::into)?;
+	let import_queue =
+		sc_consensus_aura::import_queue::<stbl_core_primitives::aura::Pair, _, _, _, _, _>(
+			sc_consensus_aura::ImportQueueParams {
+				block_import: frontier_block_import.clone(),
+				justification_import: Some(Box::new(grandpa_block_import)),
+				client,
+				create_inherent_data_providers,
+				spawner: &task_manager.spawn_essential_handle(),
+				registry: config.prometheus_registry(),
+				check_for_equivocation: Default::default(),
+				telemetry,
+				compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
+			},
+		)
+		.map_err::<ServiceError, _>(Into::into)?;
 
 	Ok((import_queue, Box::new(frontier_block_import)))
 }
@@ -263,7 +263,7 @@ where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
 	RuntimeApi: Send + Sync + 'static,
 	RuntimeApi::RuntimeApi:
-		RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
+		RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>> + stability_rpc::StabilityRpcRuntimeApi<Block>,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	let build_import_queue = if sealing.is_some() {
@@ -458,25 +458,35 @@ where
 			Ok((slot, timestamp, dynamic_fee))
 		};
 
-		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(
-			sc_consensus_aura::StartAuraParams {
-				slot_duration,
-				client,
-				select_chain,
-				block_import,
-				proposer_factory,
-				sync_oracle: network.clone(),
-				justification_sync_link: network.clone(),
-				create_inherent_data_providers,
-				force_authoring,
-				backoff_authoring_blocks: Option::<()>::None,
-				keystore: keystore_container.sync_keystore(),
-				block_proposal_slot_portion: sc_consensus_aura::SlotProportion::new(2f32 / 3f32),
-				max_block_proposal_slot_portion: None,
-				telemetry: telemetry.as_ref().map(|x| x.handle()),
-				compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
-			},
-		)?;
+		let aura = sc_consensus_aura::start_aura::<
+			stbl_core_primitives::aura::Pair,
+			_,
+			_,
+			_,
+			_,
+			_,
+			_,
+			_,
+			_,
+			_,
+			_,
+		>(sc_consensus_aura::StartAuraParams {
+			slot_duration,
+			client,
+			select_chain,
+			block_import,
+			proposer_factory,
+			sync_oracle: network.clone(),
+			justification_sync_link: network.clone(),
+			create_inherent_data_providers,
+			force_authoring,
+			backoff_authoring_blocks: Option::<()>::None,
+			keystore: keystore_container.sync_keystore(),
+			block_proposal_slot_portion: sc_consensus_aura::SlotProportion::new(2f32 / 3f32),
+			max_block_proposal_slot_portion: None,
+			telemetry: telemetry.as_ref().map(|x| x.handle()),
+			compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
+		})?;
 		// the AURA authoring task is considered essential, i.e. if it
 		// fails we take down the service with it.
 		task_manager

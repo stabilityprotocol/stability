@@ -3,7 +3,7 @@
 if [ -n "$SEED" ]; then
   ./target/release/stability key insert --base-path /tmp/node \
   --keystore-path  /tmp/node/chains/alphanet/keystore \
-  --scheme Sr25519 \
+  --scheme ecdsa \
   --suri "$SEED" \
   --key-type aura
 
@@ -17,7 +17,7 @@ if [ -n "$SEED" ]; then
   ./target/release/stability key insert \
   --keystore-path  /tmp/node/chains/alphanet/keystore \
   --base-path /tmp/node \
-  --scheme Sr25519 \
+  --scheme ecdsa \
   --suri "$SEED" \
   --key-type imon
 

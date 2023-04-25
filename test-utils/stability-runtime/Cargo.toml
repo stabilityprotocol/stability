@@ -49,6 +49,7 @@ stbl-primitives-fee-compatible-api = { workspace = true }
 cfg-if = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true, optional = true, features = ["derive"] }
+stbl-core-primitives = { workspace = true }
 
 [dev-dependencies]
 sc-block-builder = { workspace = true }
@@ -99,7 +100,8 @@ std = [
 	"sp-finality-grandpa/std",
 	"sp-trie/std",
 	"sp-transaction-pool/std",
-	"trie-db/std"
+	"trie-db/std",
+	"stbl-core-primitives/std",
 
 ]
 # Special feature to disable logging

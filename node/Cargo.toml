@@ -82,6 +82,11 @@ stability-runtime = { path = "./../runtime", features = ["std"] }
 stbl-cli-authorship = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true, features = ["std"] }
 pallet-delegated-transaction = { path = "./../pallets/delegated-transaction", workspace = true, features = ["std"] }
+sp-application-crypto = { workspace = true }
+account = { workspace = true, features = ["std"] }
+stbl-core-primitives = { workspace = true, features = ["std"] }
+stability-rpc = { workspace = true }
+stbl-tools = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }

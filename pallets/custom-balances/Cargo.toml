@@ -1,6 +1,6 @@
 [package]
-name = "pallet-map-svm-evm"
-version = "1.0.0"
+name = "pallet-custom-balances"
+version = "0.1.0"
 edition = "2021"
 
 
@@ -13,17 +13,18 @@ codec = { package = "parity-scale-codec", workspace = true }
 scale-info = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
-pallet-evm = { workspace = true }
 stbl-tools = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
+pallet-evm = { workspace = true }
 
 [dev-dependencies]
-hex = { workspace = true }
-once_cell = { workspace = true }
-pallet-timestamp = { workspace = true }
-pallet-balances = { workspace = true }
+hex = "0.4"
+pallet-evm = { workspace = true, features = ["std"] }
 fp-evm = { workspace = true, features = ["std"] }
-pallet-evm-chain-id = { workspace = true }
-
+pallet-evm-chain-id = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = ["std"] }
+pallet-timestamp = { workspace = true, features = ["std"] }
+stbl-core-primitives ={ workspace = true, features = ["std"] }
 
 [features]
 default = ["std"]
@@ -34,8 +35,5 @@ std = [
 	"frame-system/std",
     "sp-runtime/std",
     "sp-std/std",
-    "pallet-timestamp/std",
-    "pallet-balances/std",
     "pallet-evm/std",
-    "pallet-evm-chain-id/std"
 ]
