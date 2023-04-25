@@ -1,10 +1,10 @@
-use sp_core::{H160, H256};
+pub use ethereum::TransactionV2 as Transaction;
+use sha3::Digest;
+use sp_core::{Encode, H160, H256};
 use sp_runtime::traits::Keccak256;
 use sp_std::prelude::*;
 use sp_std::vec;
 use sp_std::vec::Vec;
-
-pub use ethereum::TransactionV2 as Transaction;
 
 use crate::some_or_err;
 
@@ -106,4 +106,17 @@ pub fn args_to_bytes(args: sp_std::vec::Vec<H256>) -> Vec<u8> {
 	});
 
 	u8_array
+}
+
+pub fn get_storage_address_for_mapping(address: H160, var_slot: H256) -> H256 {
+	let u256_address = H256::from(address);
+	let address_bytes = u256_address.as_bytes();
+	let balance_slot_bytes = var_slot.as_bytes();
+
+	let input = &[&address_bytes[..], &balance_slot_bytes[..]].concat();
+
+	sha3::Keccak256::new()
+		.chain_update(input)
+		.finalize()
+		.using_encoded(|x| H256::from_slice(&x[1..]))
 }

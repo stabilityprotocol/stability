@@ -17,6 +17,7 @@ use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
 use pallet_balances::Instance1;
+use pallet_supported_tokens_manager::SupportedTokensManager as OtherSupportedTokensManager;
 use pallet_transaction_payment::OnChargeTransaction;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
@@ -1151,6 +1152,12 @@ impl_runtime_apis! {
 				return true;
 			}
 
+		}
+	}
+
+	impl stability_rpc_api::StabilityRpcApi<Block> for Runtime {
+		fn get_supported_tokens() -> Vec<H160> {
+			<pallet_supported_tokens_manager::Pallet<Runtime> as OtherSupportedTokensManager>::get_supported_tokens()
 		}
 	}
 

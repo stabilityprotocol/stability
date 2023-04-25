@@ -65,7 +65,8 @@ std = [
     'precompile-upgrade-runtime-controller/std',
     'runner/std',
     'account/std',
-    'stbl-core-primitives/std'
+    'stbl-core-primitives/std',
+    'stability-rpc-api/std',
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
@@ -160,3 +161,4 @@ pallet-fee-rewards-vault = { workspace = true }
 
 stbl-core-primitives = { workspace = true }
 account = { workspace = true }
+stability-rpc-api = { workspace = true }

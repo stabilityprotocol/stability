@@ -17,6 +17,7 @@ members = [
     'precompiles/upgrade-runtime-controller',
     'primitives/tools',
     'primitives/fee-compatible-api',
+    'primitives/stability-rpc-api',
     'pallets/erc20-manager',
     'pallets/dnt-fee-controller',
     'pallets/token-fee-controller/supported-tokens-manager',
@@ -27,6 +28,7 @@ members = [
     'pallets/custom-balances',
     'primitives/tools',
 	'pallets/root-controller',
+    'stability-rpc',
     'client/authorship',
     'test-utils/stability-client',
     'test-utils/stability-runtime',
@@ -212,3 +214,6 @@ blake2-rfc = { version = "0.2.18", default-features = false }
 impl-serde = { version = "0.3.1", default-features = false }
 parity-scale-codec = { version = "3.0.0", default-features = false, features = [ "derive" ] }
 sha3 = { version = "0.9", default-features = false }
+stability-rpc = { path = "./stability-rpc", default-features = false }
+stability-rpc-api = { path = "./primitives/stability-rpc-api", default-features = false }
+

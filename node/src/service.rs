@@ -263,7 +263,7 @@ where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
 	RuntimeApi: Send + Sync + 'static,
 	RuntimeApi::RuntimeApi:
-		RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
+		RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>> + stability_rpc::StabilityRpcRuntimeApi<Block>,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	let build_import_queue = if sealing.is_some() {
