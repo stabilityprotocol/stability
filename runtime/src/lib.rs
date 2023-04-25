@@ -362,8 +362,6 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 
 			let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
 			let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
-
-			// otherwise, return the default EVM account
 			return Some(signer.into_account().into());
 		}
 		None
