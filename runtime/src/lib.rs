@@ -21,7 +21,6 @@ use pallet_supported_tokens_manager::SupportedTokensManager as OtherSupportedTok
 use pallet_transaction_payment::OnChargeTransaction;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
-use runner::OnChargeDecentralizedNativeTokenFee;
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
@@ -54,7 +53,6 @@ use frame_support::weights::constants::RocksDbWeight as RuntimeDbWeight;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
-use pallet_transaction_payment::CurrencyAdapter;
 // Frontier
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
@@ -318,22 +316,22 @@ impl<T: pallet_transaction_payment::Config> OnChargeTransaction<T>
 	type LiquidityInfo = Balance;
 
 	fn withdraw_fee(
-		who: &T::AccountId,
-		call: &T::RuntimeCall,
-		dispatch_info: &DispatchInfoOf<T::RuntimeCall>,
+		_who: &T::AccountId,
+		_call: &T::RuntimeCall,
+		_dispatch_info: &DispatchInfoOf<T::RuntimeCall>,
 		fee: Self::Balance,
-		tip: Self::Balance,
+		_tip: Self::Balance,
 	) -> Result<Self::LiquidityInfo, TransactionValidityError> {
 		Ok(fee)
 	}
 
 	fn correct_and_deposit_fee(
-		who: &T::AccountId,
+		_who: &T::AccountId,
 		_dispatch_info: &DispatchInfoOf<T::RuntimeCall>,
 		_post_info: &PostDispatchInfoOf<T::RuntimeCall>,
-		corrected_fee: Self::Balance,
-		tip: Self::Balance,
-		already_withdrawn: Self::LiquidityInfo,
+		_corrected_fee: Self::Balance,
+		_tip: Self::Balance,
+		_already_withdrawn: Self::LiquidityInfo,
 	) -> Result<(), TransactionValidityError> {
 		Ok(())
 	}

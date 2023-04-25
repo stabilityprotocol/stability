@@ -20,7 +20,6 @@ COPY primitives ./primitives
 COPY client ./client
 COPY stability-rpc ./stability-rpc
 COPY test-utils ./test-utils
-COPY core-primitives ./core-primitives
 COPY Cargo.lock Cargo.toml rust-toolchain ./
 
 
