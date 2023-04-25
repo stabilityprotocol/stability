@@ -55,9 +55,8 @@ impl<Runtime, UserFeeTokenController, Instance>
 where
 	UserFeeTokenController: pallet_user_fee_selector::UserFeeTokenController,
 	Instance: 'static,
-	Runtime: pallet_balances::Config<Instance> + pallet_evm::Config + pallet_timestamp::Config,
+	Runtime: pallet_evm::Config + pallet_timestamp::Config,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
-	Runtime::RuntimeCall: From<pallet_balances::Call<Runtime, Instance>>,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
 {

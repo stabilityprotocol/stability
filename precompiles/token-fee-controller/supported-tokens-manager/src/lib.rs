@@ -147,9 +147,8 @@ where
 	DefaultOwner: Get<H160> + 'static,
 	SupportedTokensManager: pallet_supported_tokens_manager::SupportedTokensManager,
 	Instance: 'static + InstanceToPrefix,
-	Runtime: pallet_balances::Config<Instance> + pallet_evm::Config + pallet_timestamp::Config,
+	Runtime: pallet_evm::Config + pallet_timestamp::Config,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
-	Runtime::RuntimeCall: From<pallet_balances::Call<Runtime, Instance>>,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
 {

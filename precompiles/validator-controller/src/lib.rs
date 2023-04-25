@@ -23,7 +23,6 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-use codec::Decode;
 use core::str::FromStr;
 use fp_evm::PrecompileHandle;
 use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
@@ -86,6 +85,7 @@ where
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
+	<Runtime as frame_system::Config>::AccountId: From<sp_core::H160>,
 {
 	#[precompile::public("owner()")]
 	#[precompile::view]
@@ -155,8 +155,8 @@ where
 		Ok(())
 	}
 
-	#[precompile::public("addValidator(bytes32)")]
-	fn add_validator(handle: &mut impl PrecompileHandle, new_validator: H256) -> EvmResult {
+	#[precompile::public("addValidator(address)")]
+	fn add_validator(handle: &mut impl PrecompileHandle, new_validator: Address) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
@@ -167,14 +167,13 @@ where
 			return Err(revert("sender is not owner"));
 		}
 
-		let origin_id = Runtime::AccountId::decode(&mut new_validator.as_fixed_bytes().as_slice())
-			.map_err(|_| revert("invalid account id"))?;
+		let origin_id: H160 = new_validator.into();
 
 		RuntimeHelper::<Runtime>::try_dispatch(
 			handle,
 			frame_system::RawOrigin::Root.into(),
 			pallet_validator_set::Call::<Runtime>::add_validator {
-				validator_id: origin_id,
+				validator_id: origin_id.into(),
 			},
 		)?;
 
@@ -182,7 +181,7 @@ where
 			handle.context().address,
 			SELECTOR_VALIDATOR_ADDED,
 			EvmDataWriter::new()
-				.write(Into::<H256>::into(new_validator))
+				.write(Into::<H256>::into(origin_id))
 				.build(),
 		)
 		.record(handle)?;
@@ -190,8 +189,11 @@ where
 		Ok(())
 	}
 
-	#[precompile::public("removeValidator(bytes32)")]
-	fn remove_validator(handle: &mut impl PrecompileHandle, removed_validator: H256) -> EvmResult {
+	#[precompile::public("removeValidator(address)")]
+	fn remove_validator(
+		handle: &mut impl PrecompileHandle,
+		removed_validator: Address,
+	) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
@@ -202,15 +204,13 @@ where
 			return Err(revert("sender is not owner"));
 		}
 
-		let origin_id =
-			Runtime::AccountId::decode(&mut removed_validator.as_fixed_bytes().as_slice())
-				.map_err(|_| revert("invalid account id"))?;
+		let origin_id: H160 = removed_validator.into();
 
 		RuntimeHelper::<Runtime>::try_dispatch(
 			handle,
 			frame_system::RawOrigin::Root.into(),
 			pallet_validator_set::Call::<Runtime>::remove_validator {
-				validator_id: origin_id,
+				validator_id: origin_id.into(),
 			},
 		)?;
 
@@ -218,7 +218,7 @@ where
 			handle.context().address,
 			SELECTOR_VALIDATOR_REMOVED,
 			EvmDataWriter::new()
-				.write(Into::<H256>::into(removed_validator))
+				.write(Into::<H256>::into(origin_id))
 				.build(),
 		)
 		.record(handle)?;

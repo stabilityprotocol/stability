@@ -1,12 +1,10 @@
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde::{Deserialize, Serialize};
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{bytes::from_hex, H160, H256, U256};
+use sp_core::{bytes::from_hex, ecdsa, H160, H256, U256};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use stability_runtime::{AccountId, GenesisConfig, Precompiles};
 use std::{collections::BTreeMap, str::FromStr, vec};
 // Substrate
-use sp_core::{crypto::Ss58Codec, sr25519, storage::Storage, Pair, Public};
+use sp_core::{crypto::Ss58Codec, storage::Storage, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_state_machine::BasicExternalities;
 // Frontier
@@ -23,6 +21,9 @@ pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 
 /// Specialized `ChainSpec` for development.
 pub type DevChainSpec = sc_service::GenericChainSpec<DevGenesisExt>;
+
+pub type AuraId = stbl_core_primitives::aura::Public;
+pub type ImOnlineId = stbl_core_primitives::imonline::Public;
 
 /// Extension for the dev genesis config to support a custom changes to the genesis state.
 #[derive(Serialize, Deserialize)]
@@ -64,7 +65,7 @@ where
 /// Generate an Aura authority key.
 pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
 	(
-		get_account_id_from_seed::<sr25519::Public>(s),
+		get_account_id_from_seed::<ecdsa::Public>(s),
 		get_from_seed::<AuraId>(s),
 		get_from_seed::<GrandpaId>(s),
 		get_from_seed::<ImOnlineId>(s),
@@ -79,38 +80,30 @@ pub fn session_keys(aura: AuraId, grandpa: GrandpaId, im_online: ImOnlineId) -> 
 	}
 }
 
-pub fn get_key_sr(pubkey: &str) -> sr25519::Public {
-	match sr25519::Public::from_str(pubkey) {
-		Ok(sr_pubkey) => sr_pubkey,
-		Err(_) => panic!("sr pubkey bad formatted"),
-	}
-}
-
 pub fn get_authority_from_pubkeys(
-	sr_pubkey: &str,
+	ecdsa_key_str: &str,
 	ed_pubkey: &str,
 ) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
+	let ecdsa_pubkey = ecdsa::Public::from_string(ecdsa_key_str).unwrap();
 	(
-		AccountId::from_string(sr_pubkey).expect("bad formatted sr pubkey"),
-		AuraId::from_string(sr_pubkey).expect("bad formatted sr pubkey"),
-		GrandpaId::from_string(ed_pubkey).expect("bad formatted ed pubkey"),
-		ImOnlineId::from_string(sr_pubkey).expect("bad formatted ed pubkey"),
+		(account::EthereumSigner::from(ecdsa_pubkey).into_account()),
+		AuraId::from_string(ecdsa_key_str).unwrap(),
+		GrandpaId::from_string(ed_pubkey).unwrap(),
+		ImOnlineId::from_string(ecdsa_key_str).unwrap(),
 	)
 }
 
 /// Configure initial storage state for FRAME modules.
 pub fn base_genesis(
 	wasm_binary: &[u8],
-	endowed_accounts: Vec<AccountId>,
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId, ImOnlineId)>,
-	linked_accounts: Vec<(AccountId, H160)>,
 	members: Vec<AccountId>,
 	chain_id: u64,
 ) -> GenesisConfig {
 	use stability_runtime::{
-		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig,
-		MapSvmEvmConfig, SessionConfig, SupportedTokensManagerConfig, SystemConfig,
-		TechCommitteeCollectiveConfig, ValidatorSetConfig,
+		AuraConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig, SessionConfig,
+		SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig,
+		ValidatorSetConfig,
 	};
 	let initial_default_token =
 		H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
@@ -119,15 +112,6 @@ pub fn base_genesis(
 		system: SystemConfig {
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
-		},
-		// Monetary
-		balances: BalancesConfig {
-			// Configure endowed accounts with initial balance of 1 << 60.
-			balances: endowed_accounts
-				.iter()
-				.cloned()
-				.map(|k| (k, 1 << 60))
-				.collect(),
 		},
 		transaction_payment: Default::default(),
 
@@ -157,10 +141,6 @@ pub fn base_genesis(
 		tech_committee_collective: TechCommitteeCollectiveConfig {
 			phantom: Default::default(),
 			members: members.clone(),
-		},
-		// EVM compatibility
-		map_svm_evm: MapSvmEvmConfig {
-			linked_accounts: linked_accounts.clone(),
 		},
 		evm_chain_id: EVMChainIdConfig { chain_id },
 		evm: EVMConfig {

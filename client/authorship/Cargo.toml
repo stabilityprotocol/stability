@@ -33,6 +33,8 @@ stbl-primitives-fee-compatible-api = { workspace = true, features = ["std"] }
 sp-keystore = { workspace = true }
 stability-runtime = { path = "./../../runtime", features = ["std"] }
 sc-service = { workspace = true }
+account = { workspace = true, features = ["std"] }
+
 [dev-dependencies]
 parking_lot = { workspace = true }
 sc-transaction-pool = { workspace = true }
