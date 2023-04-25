@@ -1,11 +1,7 @@
 # Custom Balances
 
-This pallet is a mocked version of substrate's pallet_balances to enable `pallet_evm` to get access the Decentralized Native Token (DNT) user balance.
+This pallet is a custom version of substrate's pallet_balances to enable `pallet_evm` to get access the Decentralized Native Token (DNT) user balance.
 
-## Useful functions
+## Mock pallet
 
-There are only three functions really working, we could consider the rest of them mocks.
-
-- `total_balance(address)`: Calculates the total balance of a user in its selected "native" token.
-- `reducible_balance(address)`: Idem as `total_balance`.
-- `free_balance(address)`: Idem as `total_balance`.
+This pallet is not intented to have a similar behaviour to `pallet_balances` instead this pallet implements the same interface mocking writing functions and actually implmenting read functions using DNT user balance.
