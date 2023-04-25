@@ -153,3 +153,87 @@ fn transaction_fee_log_emitted() {
 		assert_eq!(response.logs[0].topics[0], TRANSACTION_FEE_TOPIC.into());
 	})
 }
+
+#[test]
+fn test_delegated_call() {
+	let config = evm::Config::istanbul();
+
+	let delegate_account = H160::from_str("A38395b264f232ffF4bb294b5947092E359dDE88")
+		.expect("internal H160 is valid; qed");
+	let delegator_account = H160::from_str("B38395b264f232ffF4bb294b5947092E359dDE88")
+		.expect("internal H160 is valid; qed");
+	let receiver_account = H160::from_str("B38395b264f232ffF4bb294b5947092E359dDE88")
+		.expect("internal H160 is valid; qed");
+
+	// let token_addr = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
+
+	new_test_ext().execute_with(|| {
+		let res = Runner::<Runtime, MockDNTFeeController, MockUserFeeTokenController>::call_delegated(
+			delegator_account,
+			delegate_account,
+			receiver_account,
+			vec![],
+			U256::from(100_u128),
+			u64::MAX,
+			None,
+			None,
+			None,
+			vec![],
+			true,
+			false,
+			&config
+		);
+		if res.is_err() {
+			eprintln!("{err}", res.expect("REASON").clone().unwrap_err());
+		}
+		assert!(res.is_ok());
+	});
+
+	/* new_test_ext().execute_with(|| {
+		let res = Runner::<Runtime, MockDNTFeeController, MockUserFeeTokenController>::call(
+			acc,
+			token_addr,
+			vec![],
+			U256::from(100_u128),
+			u64::MAX,
+			None,
+			None,
+			None,
+			vec![],
+			false,
+			false,
+			&config,
+		);
+		assert!(res.is_ok());
+		// pallet_balances
+		let account_id = pallet_evm::HashedAddressMapping::<BlakeTwo256>::into_account_id(acc);
+		let acc_balance = Balances::free_balance(&account_id);
+		assert_eq!(acc_balance, 1_000_000_000_000_000_000u128);
+		// end pallet_balances
+
+		let target = Runner::<Runtime, MockDNTFeeController, MockUserFeeTokenController>::call(
+			acc,
+			token_addr,
+			stbl_tools::eth::generate_calldata("balanceOf(address)", &vec![token_addr.into()]),
+			U256::from(0),
+			u64::MAX,
+			None,
+			None,
+			None,
+			vec![],
+			false,
+			false,
+			&config,
+		);
+		assert!(target.is_ok());
+		let target_res = target.unwrap();
+		assert_eq!(
+			target_res.exit_reason,
+			ExitReason::Succeed(ExitSucceed::Returned)
+		);
+
+		let mut expected_value = [0u8; 32];
+		U256::from(100_u128).to_big_endian(&mut expected_value);
+		assert_eq!(target_res.value, expected_value);
+	}); */
+}
