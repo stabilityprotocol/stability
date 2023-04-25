@@ -17,8 +17,10 @@ use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
 use pallet_balances::Instance1;
+use pallet_transaction_payment::OnChargeTransaction;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
+use runner::OnChargeDecentralizedNativeTokenFee;
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
@@ -305,9 +307,41 @@ parameter_types! {
 	pub const TransactionByteFee: Balance = 1;
 }
 
+// To change: Mocked version must no go to production
+pub struct MockedSubstrateFeeController;
+impl<T: pallet_transaction_payment::Config> OnChargeTransaction<T>
+	for MockedSubstrateFeeController
+{
+	type Balance = Balance;
+
+	type LiquidityInfo = Balance;
+
+	fn withdraw_fee(
+		who: &T::AccountId,
+		call: &T::RuntimeCall,
+		dispatch_info: &DispatchInfoOf<T::RuntimeCall>,
+		fee: Self::Balance,
+		tip: Self::Balance,
+	) -> Result<Self::LiquidityInfo, TransactionValidityError> {
+		Ok(fee)
+	}
+
+	fn correct_and_deposit_fee(
+		who: &T::AccountId,
+		_dispatch_info: &DispatchInfoOf<T::RuntimeCall>,
+		_post_info: &PostDispatchInfoOf<T::RuntimeCall>,
+		corrected_fee: Self::Balance,
+		tip: Self::Balance,
+		already_withdrawn: Self::LiquidityInfo,
+	) -> Result<(), TransactionValidityError> {
+		Ok(())
+	}
+}
+// End of to change: Mocked version must no go to production
+
 impl pallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+	type OnChargeTransaction = MockedSubstrateFeeController;
 	type OperationalFeeMultiplier = ConstU8<5>;
 	type WeightToFee = IdentityFee<Balance>;
 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
