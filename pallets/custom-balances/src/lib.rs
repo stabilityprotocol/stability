@@ -115,7 +115,16 @@ pub mod pallet {
 		/// The combined balance of `who`.
 		fn total_balance(who: &T::AccountId) -> Self::Balance {
 			let evm_address = T::AccountIdMapping::into_evm_address(who);
-			<T::UserFeeTokenController as UserFeeTokenController>::balance_of(evm_address).as_u128()
+			let actual_balance =
+				<T::UserFeeTokenController as UserFeeTokenController>::balance_of(evm_address);
+
+			let maximum_balance = sp_core::U256::from(u128::MAX);
+
+			if maximum_balance < actual_balance {
+				u128::MAX
+			} else {
+				actual_balance.as_u128()
+			}
 		}
 
 		/// Same result as `slash(who, value)` (but without the side-effects) assuming there are no
