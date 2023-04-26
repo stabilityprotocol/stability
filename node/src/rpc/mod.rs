@@ -24,9 +24,6 @@ use stability_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
 mod eth;
 pub use self::eth::{create_eth, overrides_handle, EthDeps};
 
-mod delegated_transaction;
-pub use self::delegated_transaction::{DelegatedTransaction, DelegatedTransactionRpcServer};
-
 
 /// Full client dependencies.
 pub struct FullDeps<C, P, A: ChainApi, CT> {

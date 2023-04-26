@@ -4463,6 +4463,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-custom-balances"
+version = "0.1.0"
+dependencies = [
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-evm-chain-id",
+ "pallet-timestamp",
+ "pallet-user-fee-selector",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-core-primitives",
+ "stbl-tools",
+]
+
+[[package]]
 name = "pallet-delegated-transaction"
 version = "1.0.0"
 dependencies = [
@@ -4475,7 +4498,6 @@ dependencies = [
  "pallet-evm",
  "pallet-evm-chain-id",
  "pallet-timestamp",
- "pallet-user-fee-selector",
  "parity-scale-codec",
  "runner",
  "scale-info",
@@ -4483,7 +4505,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "stbl-core-primitives",
  "stbl-tools",
 ]
 
@@ -8365,7 +8386,6 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "log",
- "pallet-delegated-transaction",
  "pallet-im-online",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
@@ -8463,6 +8483,7 @@ dependencies = [
  "pallet-balances",
  "pallet-base-fee",
  "pallet-collective",
+ "pallet-custom-balances",
  "pallet-delegated-transaction",
  "pallet-dnt-fee-controller",
  "pallet-dynamic-fee",

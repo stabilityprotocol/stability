@@ -25,6 +25,14 @@ pub struct StabilityOutput<T> {
 pub trait StabilityRpcEndpoints<BlockHash> {
 	#[method(name = "stability_getSupportedTokens")]
 	fn get_supported_tokens(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
+
+	#[method(name = "stability_createDelegatedTransaction")]
+	fn create_delegated_transaction(
+		&self, 
+		to: H160, 
+		input: Vec<u8>,
+		validFor: Option<u64>
+	) -> RpcResult<StabilityOutput<([u8; 32], u64)>>;
 }
 
 pub struct StabilityRpc<C, Block> {
@@ -60,6 +68,27 @@ where
 			code: 200,
 			value: value.unwrap(),
 		})
+	}
+
+	fn create_delegated_transaction(
+		&self,
+		to:H160,
+		input:Vec<u8>,
+		validFor:Option<u64>
+	) -> RpcResult<StabilityOutput<([u8;
+	32],u64)> > {
+		let api = self.client.runtime_api();
+
+		// let outcome = api.delegate_transaction(to,input);
+		let outcome = api.delegate_transaction(to,input,validFor);
+		/* let at = BlockId::hash(self.client.info().best_hash);
+		let value = api
+			.create_delegated_transaction(&at,to,input,validFor)
+			.map_err(runtime_error_into_rpc_err);
+		Ok(StabilityOutput {
+			code: 200,
+			value: value.unwrap(),
+		}) */
 	}
 }
 

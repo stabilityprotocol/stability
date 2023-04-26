@@ -21,6 +21,7 @@ use pallet_supported_tokens_manager::SupportedTokensManager as OtherSupportedTok
 use pallet_transaction_payment::OnChargeTransaction;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
+use pallet_delegated_transaction::DelegatedTransaction;
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
@@ -1154,6 +1155,13 @@ impl_runtime_apis! {
 	impl stability_rpc_api::StabilityRpcApi<Block> for Runtime {
 		fn get_supported_tokens() -> Vec<H160> {
 			<pallet_supported_tokens_manager::Pallet<Runtime> as OtherSupportedTokensManager>::get_supported_tokens()
+		}
+		fn create_delegated_transaction(
+			to:H160,
+			input:Vec<u8>,
+			validFor:Option<u64>
+		) -> Result<H256, &'static str> {
+			<pallet_delegated_transaction::Pallet<Runtime>>::delegate_transaction(to, input, validFor)
 		}
 	}
 

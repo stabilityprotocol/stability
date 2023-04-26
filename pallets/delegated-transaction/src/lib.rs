@@ -2,7 +2,7 @@
 
 pub use pallet::*;
 
-use sp_core::{Blake2Hasher, H160, U256};
+use sp_core::{H160, U256};
 use sp_std::prelude::*;
 
 use frame_support::dispatch::DispatchResultWithPostInfo;
@@ -14,6 +14,28 @@ parameter_types! {
 	pub ZeroAddress:H160 = H160::from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] as [u8; 20]);
 }
 
+pub trait DelegatedTransaction<T: pallet::Config> {
+	type Error;
+
+	fn delegate_transaction(
+		origin: OriginFor<T>,
+		to: H160,
+		input: Vec<u8>,
+	) -> Result<(), Self::Error>;
+
+	fn execute_delegated_transaction(
+		origin: OriginFor<T>, // delegate
+		delegator: T::PublicKey,
+		to: H160,
+		input: Vec<u8>,
+		nonce: u64,
+		signature: T::Signature,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+	) -> DispatchResultWithPostInfo;
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -21,7 +43,6 @@ pub mod pallet {
 	use frame_system::{pallet_prelude::*, Account};
 	use pallet_evm::{EnsureAddressOrigin, Runner};
 	use runner::{Runner as RunnerImpl, RunnerExt};
-	use sp_core::Blake2Hasher;
 	use sp_io::hashing::blake2_256;
 	use sp_runtime::traits::{AccountIdConversion, IdentifyAccount, Verify};
 	use sp_runtime::verify_encoded_lazy;
@@ -87,8 +108,13 @@ pub mod pallet {
 
 			blake2_256(&encoded_tx)
 		}
+	}
 
-		pub fn delegate_transaction(
+	/* #[pallet::call] */
+	impl<T: Config> DelegatedTransaction for Pallet<T> {
+		type Error = Error<T>;
+
+		/* pub fn delegate_transaction(
 			origin: OriginFor<T>,
 			to: H160,
 			input: Vec<u8>,
@@ -116,15 +142,40 @@ pub mod pallet {
 
 			Ok(completed_values)
 		}
-	}
+		*/
+		/* #[pallet::call_index(0)]
+		#[pallet::weight(0)] */
+		pub fn delegate_transaction(
+			origin: OriginFor<T>,
+			to: H160,
+			input: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			/* let delegator_result = ensure_signed(origin)?;
+			let delegator = delegator_result.clone();
 
-	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+			let outcome = Account::<T>::get(&delegator);
+			let outcome2: H160 = outcome.clone().into();
+
+			let delegator_h160 = H160::from_slice(&delegator.encode()[12..]);
+
+			// let delegator_h160: H160 = delegator::Get().clone_into();
+
+			let transaction_nonce = DelegatorNonce::<T>::get(delegator_h160.clone());
+
+			DelegatorNonce::<T>::mutate(delegator_h160.clone(), |nonce| *nonce += 1);
+			DelegatorTxsByNonce::<T>::insert(delegator_h160.clone(), transaction_nonce, true);
+
+			let hashedPayload = Self::hash_tx(&delegator_h160, &to, &input, &transaction_nonce);
+			let completed_values = (hashedPayload, transaction_nonce); */
+
+			Ok(().into())
+		}
+
 		// Take encoded_data, signature
 		// If matches signature, execute
-		#[pallet::call_index(1)]
-		#[pallet::weight(0)]
-		pub fn execute_delegated_transaction2(
+		/* #[pallet::call_index(1)]
+		#[pallet::weight(0)] */
+		pub fn execute_delegated_transaction(
 			origin: OriginFor<T>, // delegate
 			delegator: T::PublicKey,
 			to: H160,
@@ -135,7 +186,7 @@ pub mod pallet {
 			max_fee_per_gas: Option<U256>,
 			max_priority_fee_per_gas: Option<U256>,
 		) -> DispatchResultWithPostInfo {
-			let delegate = ensure_signed(origin)?;
+			/* let delegate = ensure_signed(origin)?;
 			if delegator == ZeroAddress::get() {
 				return Err(Error::<T>::InvalidDelegatorAddress.into());
 			}
@@ -153,7 +204,7 @@ pub mod pallet {
 			// Verify transaction data hasn't been tampered with
 			let delegator_is_signer =
 				verify_encoded_lazy(&signature, &encoded_tx_hash, &delegator.into_account());
-				
+
 			if !delegator_is_signer {
 				return Err(Error::<T>::InvalidSignature.into());
 			}
@@ -176,7 +227,7 @@ pub mod pallet {
 			)?;
 
 			// Set nonce as used
-			DelegatorTxsByNonce::<T>::remove(delegator_h160, nonce);
+			DelegatorTxsByNonce::<T>::remove(delegator_h160, nonce); */
 
 			Ok(().into())
 		}
