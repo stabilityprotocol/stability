@@ -920,7 +920,7 @@ impl_runtime_apis! {
 		}
 
 		fn account_basic(address: H160) -> EVMAccount {
-			EVM::account_basic(&address).0
+			EVMAccount { nonce: EVM::account_basic(&address).0.nonce, balance: <StabilityFeeController as FeeController>::User::balance_of(address) }
 		}
 
 		fn gas_price() -> U256 {
