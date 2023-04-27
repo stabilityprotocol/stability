@@ -8515,6 +8515,7 @@ dependencies = [
  "stbl-core-primitives",
  "stbl-primitives-fee-compatible-api",
  "stbl-tools",
+ "stbl-transaction-validator",
  "substrate-wasm-builder",
 ]
 
@@ -8727,6 +8728,25 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "stbl-transaction-validator"
+version = "0.1.0"
+dependencies = [
+ "ethereum",
+ "fp-ethereum",
+ "fp-evm",
+ "frame-system",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-user-fee-selector",
+ "sha3 0.10.7",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-tools",
 ]
 
 [[package]]

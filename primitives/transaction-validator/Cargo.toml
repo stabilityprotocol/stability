@@ -1,0 +1,21 @@
+[package]
+name = "stbl-transaction-validator"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+fp-ethereum = { workspace = true, default-features = false }
+fp-evm = { workspace = true, default-features = false }
+pallet-evm = { workspace = true, default-features = false }
+pallet-ethereum = { workspace = true, default-features = false }
+sp-core = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
+sp-io = { workspace = true, default-features = false }
+ethereum = { workspace = true, default-features = false }
+sha3 = { version = "0.10.6", default-features = false }
+frame-system = { workspace = true, default-features = false }
+pallet-user-fee-selector ={ workspace = true, default-features = false }
+stbl-tools = { workspace = true }
