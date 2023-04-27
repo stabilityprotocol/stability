@@ -808,7 +808,14 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 		len: usize,
 	) -> Option<Result<(), TransactionValidityError>> {
 		match self {
-			RuntimeCall::Ethereum(call) => Some(Ok(())),
+			RuntimeCall::Ethereum(call) => call
+				.pre_dispatch_self_contained(info, dispatch_info, len)
+				.map(|result| match result {
+					Err(TransactionValidityError::Invalid(InvalidTransaction::Payment)) => {
+						FallbackTransactionValidator::check_actual_balance(info, call).map(|_| ())
+					}
+					_ => result,
+				}),
 			_ => None,
 		}
 	}

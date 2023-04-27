@@ -31,17 +31,6 @@ macro_rules! none_or_err {
 	};
 }
 
-#[macro_export]
-macro_rules! tertiary_operator {
-	($condition:expr, $true:expr, $false:expr) => {
-		if $condition {
-			$true
-		} else {
-			$false
-		}
-	};
-}
-
 pub fn u256_to_h256(value: U256) -> H256 {
 	let mut tmp = [0u8; 32];
 	value.to_big_endian(&mut tmp);

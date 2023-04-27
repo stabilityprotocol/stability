@@ -1,6 +1,5 @@
 pub use ethereum::TransactionV2 as Transaction;
 use sha3::Digest;
-use sp_core::U256;
 use sp_core::{Encode, H160, H256};
 use sp_runtime::traits::Keccak256;
 use sp_std::prelude::*;
