@@ -10,6 +10,11 @@ use sp_runtime::transaction_validity::{
 	InvalidTransaction, TransactionValidity, TransactionValidityError, ValidTransactionBuilder,
 };
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 pub struct FallbackTransactionValidator<T>(PhantomData<T>);
 
 impl<T> FallbackTransactionValidator<T>
