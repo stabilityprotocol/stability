@@ -250,14 +250,14 @@ where
 			return Ok(false);
 		}
 
+		if claimant == holder {
+			return Ok(true);
+		}
+
 		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(holder.into());
 
 		if code.is_empty() {
 			return Ok(false);
-		}
-
-		if claimant == holder {
-			return Ok(true);
 		}
 
 		if !stbl_tools::eth::code_implements_function(code.as_slice(), &"owner()") {

@@ -1,6 +1,5 @@
 use super::*;
 
-use core::cell::RefCell;
 use frame_support::traits::{ConstU32, ConstU64, Contains, GenesisBuild};
 use frame_support::{parameter_types, weights::Weight};
 use frame_system::EnsureRoot;
@@ -9,7 +8,6 @@ use pallet_evm::{AddressMapping, EnsureAddressNever, EnsureAddressRoot, Identity
 use pallet_session::{SessionHandler, ShouldEndSession};
 use precompile_utils::precompile_set::*;
 use sp_core::H256;
-use sp_runtime::key_types::DUMMY;
 use sp_runtime::testing::UintAuthorityId;
 use sp_runtime::traits::OpaqueKeys;
 use sp_runtime::{impl_opaque_keys, KeyTypeId};
@@ -212,8 +210,8 @@ impl SessionHandler<H160> for TestSessionHandler {
 	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[UintAuthorityId::ID];
 	fn on_genesis_session<T: OpaqueKeys>(_validators: &[(H160, T)]) {}
 	fn on_new_session<T: OpaqueKeys>(
-		changed: bool,
-		validators: &[(H160, T)],
+		_changed: bool,
+		_validators: &[(H160, T)],
 		_queued_validators: &[(H160, T)],
 	) {
 	}
@@ -223,7 +221,7 @@ impl SessionHandler<H160> for TestSessionHandler {
 
 pub struct TestShouldEndSession;
 impl ShouldEndSession<u64> for TestShouldEndSession {
-	fn should_end_session(now: u64) -> bool {
+	fn should_end_session(_now: u64) -> bool {
 		false
 	}
 }

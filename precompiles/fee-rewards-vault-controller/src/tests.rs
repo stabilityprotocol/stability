@@ -288,17 +288,20 @@ fn test_can_claim_reward_should_return_false_if_not_whitelisted() {
 	});
 }
 
+#[test]
 fn test_can_claim_reward_should_return_true_if_claimant_is_validator() {
 	ExtBuilder::default().build().execute_with(|| {
 		let claimant = Validators::get()[0].into();
-		precompiles().prepare_test(
-			claimant,
-			Precompile1,
-			PCall::can_claim_reward {
+		precompiles()
+			.prepare_test(
 				claimant,
-				holder: claimant,
-			},
-		);
+				Precompile1,
+				PCall::can_claim_reward {
+					claimant,
+					holder: claimant,
+				},
+			)
+			.execute_returns_encoded(true);
 	})
 }
 
