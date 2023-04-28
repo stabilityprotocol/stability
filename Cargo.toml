@@ -35,6 +35,7 @@ members = [
     'test-utils/stability-runtime-client',
     'primitives/core',
     'primitives/account',
+    'primitives/transaction-validator',
 ]
 
 [workspace.package]
@@ -216,4 +217,4 @@ parity-scale-codec = { version = "3.0.0", default-features = false, features = [
 sha3 = { version = "0.9", default-features = false }
 stability-rpc = { path = "./stability-rpc", default-features = false }
 stability-rpc-api = { path = "./primitives/stability-rpc-api", default-features = false }
-
+stbl-transaction-validator = { path = "./primitives/transaction-validator", default-features = false }
