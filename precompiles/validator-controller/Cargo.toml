@@ -21,6 +21,7 @@ pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
 # Stability
 pallet-validator-set = { workspace = true }
 precompile-utils = { workspace = true }
+pallet-custom-balances = { workspace = true }
 
 [dev-dependencies]
 pallet-balances = { workspace = true }

@@ -5420,6 +5420,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-custom-balances",
  "pallet-evm",
  "pallet-session",
  "pallet-timestamp",

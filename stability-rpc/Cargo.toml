@@ -14,7 +14,7 @@ serde_json = { workspace = true }
 
 # Substrate packages
 sp-api = { default-features = false, workspace = true }
-sp-blockchain = { default-features = false, workspace = true }
+sp-blockchain = { workspace = true }
 sp-runtime = { default-features = false, workspace = true }
 sp-core = { default-features = false, workspace = true }
 
