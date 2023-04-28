@@ -25,6 +25,9 @@ pub struct StabilityOutput<T> {
 pub trait StabilityRpcEndpoints<BlockHash> {
 	#[method(name = "stability_getSupportedTokens")]
 	fn get_supported_tokens(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
+
+	#[method(name = "stability_getValidatorList")]
+	fn get_validator_list(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
 }
 
 pub struct StabilityRpc<C, Block> {
@@ -55,6 +58,21 @@ where
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 		let value = api
 			.get_supported_tokens(&at)
+			.map_err(runtime_error_into_rpc_err);
+		Ok(StabilityOutput {
+			code: 200,
+			value: value.unwrap(),
+		})
+	}
+
+	fn get_validator_list(
+		&self,
+		at: Option<<Block as BlockT>::Hash>,
+	) -> RpcResult<StabilityOutput<Vec<H160>>> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
+		let value = api
+			.get_validator_list(&at)
 			.map_err(runtime_error_into_rpc_err);
 		Ok(StabilityOutput {
 			code: 200,
