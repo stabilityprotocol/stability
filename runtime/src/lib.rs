@@ -74,6 +74,7 @@ pub use frame_support::{
 pub use frame_system::Call as SystemCall;
 pub use pallet_timestamp::Call as TimestampCall;
 
+use pallet_custom_balances::AccountIdMapping;
 use pallet_user_fee_selector;
 
 mod stability_config;
@@ -1168,6 +1169,14 @@ impl_runtime_apis! {
 	impl stability_rpc_api::StabilityRpcApi<Block> for Runtime {
 		fn get_supported_tokens() -> Vec<H160> {
 			<pallet_supported_tokens_manager::Pallet<Runtime> as OtherSupportedTokensManager>::get_supported_tokens()
+		}
+
+		fn get_validator_list() -> Vec<H160> {
+			let validators = <pallet_validator_set::Pallet<Runtime>>::validators();
+			validators
+			.iter()
+			.map(|v| <Runtime as pallet_custom_balances::Config>::AccountIdMapping::into_evm_address(v))
+			.collect()
 		}
 	}
 

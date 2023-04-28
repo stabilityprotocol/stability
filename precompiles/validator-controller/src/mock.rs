@@ -77,6 +77,7 @@ pub type Block = frame_system::mocking::MockBlock<Runtime>;
 parameter_types! {
 	pub const BlockHashCount: u32 = 250;
 	pub const SS58Prefix: u8 = 42;
+	pub MeaninglessTokenAddress : H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
 }
 
 impl frame_system::Config for Runtime {
@@ -144,6 +145,32 @@ impl pallet_evm::AddressMapping<AccountId> for IdentityAddressMapping {
 	fn into_account_id(address: H160) -> AccountId {
 		address.into()
 	}
+}
+
+pub struct MockUserFeeTokenController;
+impl pallet_user_fee_selector::UserFeeTokenController for MockUserFeeTokenController {
+	type Error = ();
+	fn get_user_fee_token(_account: H160) -> H160 {
+		MeaninglessTokenAddress::get()
+	}
+	fn set_user_fee_token(_account: H160, _token: H160) -> Result<(), Self::Error> {
+		Ok(())
+	}
+	fn balance_of(_account: H160) -> U256 {
+		Default::default()
+	}
+}
+
+pub struct AccountIdToH160Mapping;
+impl crate::AccountIdMapping<Runtime> for AccountIdToH160Mapping {
+	fn into_evm_address(address: &AccountId) -> H160 {
+		(*address).into()
+	}
+}
+
+impl pallet_custom_balances::Config for Runtime {
+	type AccountIdMapping = AccountIdToH160Mapping;
+	type UserFeeTokenController = MockUserFeeTokenController;
 }
 
 impl pallet_evm::Config for Runtime {
