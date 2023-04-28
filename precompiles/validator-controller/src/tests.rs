@@ -7,7 +7,7 @@ fn precompiles() -> Precompiles<Runtime> {
 	PrecompilesValue::get()
 }
 
-fn account_id_to_h256(account_id: AccountId) -> Address {
+fn account_id_to_evm_address(account_id: AccountId) -> Address {
 	H160(account_id.0).into()
 }
 
@@ -19,6 +19,7 @@ fn selectors() {
 	assert!(PCall::claim_ownership_selectors().contains(&0x79ba5097));
 	assert!(PCall::add_validator_selectors().contains(&0x4d238c8e));
 	assert!(PCall::remove_validator_selectors().contains(&0x40a141ff));
+	assert!(PCall::get_validator_list_selectors().contains(&0xe35c0f7d));
 	assert_eq!(
 		crate::SELECTOR_LOG_NEW_OWNER,
 		&Keccak256::digest(b"NewOwner(address)")[..]
@@ -159,14 +160,14 @@ fn add_validator() {
 				owner,
 				Precompile1,
 				PCall::add_validator {
-					new_validator: account_id_to_h256(validator.clone()),
+					new_validator: account_id_to_evm_address(validator.clone()),
 				},
 			)
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_VALIDATOR_ADDED,
 				EvmDataWriter::new()
-					.write(account_id_to_h256(validator.clone()))
+					.write(account_id_to_evm_address(validator.clone()))
 					.build(),
 			))
 			.execute_some();
@@ -189,7 +190,7 @@ fn add_validator_fails_if_sender_not_owner() {
 				sender,
 				Precompile1,
 				PCall::add_validator {
-					new_validator: account_id_to_h256(validator.clone()),
+					new_validator: account_id_to_evm_address(validator.clone()),
 				},
 			)
 			.execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
@@ -214,14 +215,14 @@ fn add_validator_if_already_init() {
 					owner,
 					Precompile1,
 					PCall::add_validator {
-						new_validator: account_id_to_h256(validator.clone()),
+						new_validator: account_id_to_evm_address(validator.clone()),
 					},
 				)
 				.expect_log(log1(
 					Precompile1,
 					SELECTOR_VALIDATOR_ADDED,
 					EvmDataWriter::new()
-						.write(account_id_to_h256(validator.clone()))
+						.write(account_id_to_evm_address(validator.clone()))
 						.build(),
 				))
 				.execute_some();
@@ -247,7 +248,7 @@ fn add_two_validators() {
 				owner,
 				Precompile1,
 				PCall::add_validator {
-					new_validator: account_id_to_h256(validator.clone()),
+					new_validator: account_id_to_evm_address(validator.clone()),
 				},
 			)
 			.execute_some();
@@ -256,7 +257,7 @@ fn add_two_validators() {
 				owner,
 				Precompile1,
 				PCall::add_validator {
-					new_validator: account_id_to_h256(second_validator.clone()),
+					new_validator: account_id_to_evm_address(second_validator.clone()),
 				},
 			)
 			.execute_some();
@@ -281,7 +282,7 @@ fn add_validator_fails_if_add_already_validator() {
 					owner,
 					Precompile1,
 					PCall::add_validator {
-						new_validator: account_id_to_h256(validator.clone()),
+						new_validator: account_id_to_evm_address(validator.clone()),
 					},
 				)
 				.execute_reverts(|_| true);
@@ -301,14 +302,14 @@ fn remove_validator() {
 					owner,
 					Precompile1,
 					PCall::remove_validator {
-						removed_validator: account_id_to_h256(validator.clone()),
+						removed_validator: account_id_to_evm_address(validator.clone()),
 					},
 				)
 				.expect_log(log1(
 					Precompile1,
 					SELECTOR_VALIDATOR_REMOVED,
 					EvmDataWriter::new()
-						.write(account_id_to_h256(validator.clone()))
+						.write(account_id_to_evm_address(validator.clone()))
 						.build(),
 				))
 				.execute_some();
@@ -330,9 +331,29 @@ fn remove_validator_fails_if_sender_not_owner() {
 					sender,
 					Precompile1,
 					PCall::remove_validator {
-						removed_validator: account_id_to_h256(validator.clone()),
+						removed_validator: account_id_to_evm_address(validator.clone()),
 					},
 				)
 				.execute_reverts(|_| true);
+		});
+}
+
+#[test]
+fn get_default_validator_list() {
+	let sender = UnpermissionedAccount::get();
+	let validator = ValidatorInitial::get();
+	let validators = vec![validator.clone()];
+	ExtBuilder::default()
+		.with_validators(validators.clone())
+		.build()
+		.execute_with(|| {
+			precompiles()
+				.prepare_test(sender, Precompile1, PCall::get_validator_list {})
+				.execute_returns_encoded(
+					validators
+						.iter()
+						.map(|v| account_id_to_evm_address(*v))
+						.collect::<Vec<Address>>(),
+				);
 		});
 }

@@ -5424,6 +5424,7 @@ dependencies = [
  "pallet-evm",
  "pallet-session",
  "pallet-timestamp",
+ "pallet-user-fee-selector",
  "pallet-validator-set",
  "parity-scale-codec",
  "precompile-utils",
