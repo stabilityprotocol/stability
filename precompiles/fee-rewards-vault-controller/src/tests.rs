@@ -3,7 +3,6 @@ use crate::{mock::*, *};
 use precompile_utils::testing::*;
 use sha3::{Digest, Keccak256};
 
-
 fn precompiles() -> Precompiles<Test> {
 	PrecompilesValue::get()
 }
@@ -14,26 +13,26 @@ fn selectors() {
 	assert!(PCall::pending_owner_selectors().contains(&0xe30c3978));
 	assert!(PCall::transfer_ownership_selectors().contains(&0xf2fde38b));
 	assert!(PCall::claim_ownership_selectors().contains(&0x79ba5097));
-    assert!(PCall::claim_reward_selectors().contains(&0x4953c782));
-    assert!(PCall::set_whitelist_selectors().contains(&0x9281aa0b));
-    assert!(PCall::can_claim_reward_selectors().contains(&0xa4630c85));
-    assert!(PCall::get_claimable_reward_selectors().contains(&0x21e91dea));
-    assert!(PCall::is_whitelisted_selectors().contains(&0x3af32abf));
+	assert!(PCall::claim_reward_selectors().contains(&0x4953c782));
+	assert!(PCall::set_whitelist_selectors().contains(&0x9281aa0b));
+	assert!(PCall::can_claim_reward_selectors().contains(&0xa4630c85));
+	assert!(PCall::get_claimable_reward_selectors().contains(&0x21e91dea));
+	assert!(PCall::is_whitelisted_selectors().contains(&0x3af32abf));
 
 	assert_eq!(
 		crate::SELECTOR_LOG_NEW_OWNER,
 		&Keccak256::digest(b"NewOwner(address)")[..]
 	);
 
-    assert_eq!(
-        crate::SELECTOR_REWARD_CLAIMED,
-        &Keccak256::digest(b"RewardClaimed(address,address,address)")[..]
-    );
+	assert_eq!(
+		crate::SELECTOR_REWARD_CLAIMED,
+		&Keccak256::digest(b"RewardClaimed(address,address,address)")[..]
+	);
 
-    assert_eq!(
-        crate::SELECTOR_WHITELIST_STATUS_UPDATED,
-        &Keccak256::digest(b"WhitelistStatusUpdated(address,bool)")[..]
-    );
+	assert_eq!(
+		crate::SELECTOR_WHITELIST_STATUS_UPDATED,
+		&Keccak256::digest(b"WhitelistStatusUpdated(address,bool)")[..]
+	);
 }
 
 #[test]
@@ -47,10 +46,10 @@ fn modifiers() {
 		tester.test_default_modifier(PCall::claim_ownership_selectors());
 		tester.test_default_modifier(PCall::claim_reward_selectors());
 		tester.test_default_modifier(PCall::set_whitelist_selectors());
-        tester.test_view_modifier(PCall::can_claim_reward_selectors());
-        tester.test_view_modifier(PCall::can_claim_reward_selectors());
-        tester.test_view_modifier(PCall::get_claimable_reward_selectors());
-        tester.test_view_modifier(PCall::is_whitelisted_selectors());
+		tester.test_view_modifier(PCall::can_claim_reward_selectors());
+		tester.test_view_modifier(PCall::can_claim_reward_selectors());
+		tester.test_view_modifier(PCall::get_claimable_reward_selectors());
+		tester.test_view_modifier(PCall::is_whitelisted_selectors());
 	});
 }
 
@@ -168,15 +167,34 @@ fn claim_ownership_if_claimable() {
 fn test_set_whitelisted() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
-		.prepare_test(DefaultOwner::get(), Precompile1, PCall::is_whitelisted { holder: SmartContratWithoutOwner::get().into() } )
-		.execute_returns_encoded(false);
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::is_whitelisted {
+					holder: SmartContratWithoutOwner::get().into(),
+				},
+			)
+			.execute_returns_encoded(false);
 
 		precompiles()
-			.prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { holder: SmartContratWithoutOwner::get().into(), is_whitelisted: true } )
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::set_whitelist {
+					holder: SmartContratWithoutOwner::get().into(),
+					is_whitelisted: true,
+				},
+			)
 			.execute_returns_encoded(true);
-	
+
 		precompiles()
-			.prepare_test(DefaultOwner::get(), Precompile1, PCall::is_whitelisted { holder: SmartContratWithoutOwner::get().into() } )
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::is_whitelisted {
+					holder: SmartContratWithoutOwner::get().into(),
+				},
+			)
 			.execute_returns_encoded(true);
 	});
 }
@@ -185,11 +203,24 @@ fn test_set_whitelisted() {
 fn test_set_whitelisted_should_fail_if_address_is_not_smartcontract() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
-		.prepare_test(DefaultOwner::get(), Precompile1, PCall::is_whitelisted { holder: NotOwner::get().into() } )
-		.execute_returns_encoded(false);
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::is_whitelisted {
+					holder: NotOwner::get().into(),
+				},
+			)
+			.execute_returns_encoded(false);
 
 		precompiles()
-			.prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { holder: NotOwner::get().into(), is_whitelisted: true } )
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::set_whitelist {
+					holder: NotOwner::get().into(),
+					is_whitelisted: true,
+				},
+			)
 			.execute_reverts(|x| x.eq_ignore_ascii_case(b"address is not a smartcontract"));
 	});
 }
@@ -198,7 +229,14 @@ fn test_set_whitelisted_should_fail_if_address_is_not_smartcontract() {
 fn test_set_whitelisted_fails_if_sender_is_not_owner() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
-			.prepare_test(NotOwner::get(), Precompile1, PCall::set_whitelist { holder: SmartContratWithoutOwner::get().into(), is_whitelisted: true } )
+			.prepare_test(
+				NotOwner::get(),
+				Precompile1,
+				PCall::set_whitelist {
+					holder: SmartContratWithoutOwner::get().into(),
+					is_whitelisted: true,
+				},
+			)
 			.execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
 	});
 }
@@ -209,44 +247,84 @@ parameter_types! {
 }
 
 #[test]
-fn  test_can_claim_reward_returns_true_if_holder_and_claimant_are_equal() {
-    ExtBuilder::default().build().execute_with(|| {
-        precompiles()
-            .prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { holder: SmartContratWithoutOwner::get().into(), is_whitelisted: true } )
-            .execute_returns_encoded(true);
-        precompiles()
-            .prepare_test(SmartContratWithoutOwner::get(), Precompile1, PCall::can_claim_reward {
-                claimant: SmartContratWithoutOwner::get().into(),
-                holder: SmartContratWithoutOwner::get().into(),
-            })
-            .execute_returns_encoded(true);
-    });
+fn test_can_claim_reward_returns_true_if_holder_and_claimant_are_equal() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::set_whitelist {
+					holder: SmartContratWithoutOwner::get().into(),
+					is_whitelisted: true,
+				},
+			)
+			.execute_returns_encoded(true);
+		precompiles()
+			.prepare_test(
+				SmartContratWithoutOwner::get(),
+				Precompile1,
+				PCall::can_claim_reward {
+					claimant: SmartContratWithoutOwner::get().into(),
+					holder: SmartContratWithoutOwner::get().into(),
+				},
+			)
+			.execute_returns_encoded(true);
+	});
 }
 
-
 #[test]
-fn  test_can_claim_reward_should_return_false_if_not_whitelisted() {
-    ExtBuilder::default().build().execute_with(|| {
-        precompiles()
-            .prepare_test(Dapp1::get(), Precompile1, PCall::can_claim_reward {
-                claimant: Dapp1::get().into(),
-                holder: Dapp1::get().into(),
-            })
-            .execute_returns_encoded(false);
-    });
+fn test_can_claim_reward_should_return_false_if_not_whitelisted() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				Dapp1::get(),
+				Precompile1,
+				PCall::can_claim_reward {
+					claimant: Dapp1::get().into(),
+					holder: Dapp1::get().into(),
+				},
+			)
+			.execute_returns_encoded(false);
+	});
+}
+
+fn test_can_claim_reward_should_return_true_if_claimant_is_validator() {
+	ExtBuilder::default().build().execute_with(|| {
+		let claimant = Validators::get()[0].into();
+		precompiles().prepare_test(
+			claimant,
+			Precompile1,
+			PCall::can_claim_reward {
+				claimant,
+				holder: claimant,
+			},
+		);
+	})
 }
 
 #[test]
 fn test_can_claim_reward_should_return_true_if_claimant_are_the_owner_of_the_dapp() {
-    ExtBuilder::default().build().execute_with(|| {
-        precompiles()
-            .prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { holder: SmartContractWithOwner::get().into(), is_whitelisted: true } )
-            .execute_returns_encoded(true);
-        precompiles()
-            .prepare_test(OwnerOfDapp::get(), Precompile1, PCall::can_claim_reward {
-                claimant: OwnerOfDapp::get().into(),
-                holder: SmartContractWithOwner::get().into(),
-            }).with_subcall_handle(move |subcall| {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::set_whitelist {
+					holder: SmartContractWithOwner::get().into(),
+					is_whitelisted: true,
+				},
+			)
+			.execute_returns_encoded(true);
+		precompiles()
+			.prepare_test(
+				OwnerOfDapp::get(),
+				Precompile1,
+				PCall::can_claim_reward {
+					claimant: OwnerOfDapp::get().into(),
+					holder: SmartContractWithOwner::get().into(),
+				},
+			)
+			.with_subcall_handle(move |subcall| {
 				let Subcall {
 					address,
 					transfer: _,
@@ -260,10 +338,10 @@ fn test_can_claim_reward_should_return_true_if_claimant_are_the_owner_of_the_dap
 				assert_eq!(context.caller, Precompile1.into());
 				assert_eq!(address, SmartContractWithOwner::get());
 				assert_eq!(is_static, true);
-				
+
 				assert_eq!(input, vec![141, 165, 203, 91]);
-		
-				let mut output =  vec![0,0,0,0,0,0,0,0,0,0,0,0];
+
+				let mut output = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 				output.extend_from_slice(&OwnerOfDapp::get().as_bytes());
 
@@ -273,22 +351,34 @@ fn test_can_claim_reward_should_return_true_if_claimant_are_the_owner_of_the_dap
 					cost: 1,
 					logs: vec![],
 				}
-			}).execute_returns_encoded(true);
-    });
+			})
+			.execute_returns_encoded(true);
+	});
 }
-
 
 #[test]
 fn test_can_claim_reward_should_return_false_if_claimant_are_not_the_owner_of_the_dapp() {
-    ExtBuilder::default().build().execute_with(|| {
-        precompiles()
-            .prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { holder: SmartContractWithOwner::get().into(), is_whitelisted: true } )
-            .execute_returns_encoded(true);
-        precompiles()
-            .prepare_test(OwnerOfDapp::get(), Precompile1, PCall::can_claim_reward {
-                claimant: NotOwner::get().into(),
-                holder: SmartContractWithOwner::get().into(),
-            }).with_subcall_handle(move |subcall| {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::set_whitelist {
+					holder: SmartContractWithOwner::get().into(),
+					is_whitelisted: true,
+				},
+			)
+			.execute_returns_encoded(true);
+		precompiles()
+			.prepare_test(
+				OwnerOfDapp::get(),
+				Precompile1,
+				PCall::can_claim_reward {
+					claimant: NotOwner::get().into(),
+					holder: SmartContractWithOwner::get().into(),
+				},
+			)
+			.with_subcall_handle(move |subcall| {
 				let Subcall {
 					address,
 					transfer: _,
@@ -302,10 +392,10 @@ fn test_can_claim_reward_should_return_false_if_claimant_are_not_the_owner_of_th
 				assert_eq!(context.caller, Precompile1.into());
 				assert_eq!(address, SmartContractWithOwner::get());
 				assert_eq!(is_static, true);
-				
+
 				assert_eq!(input, vec![141, 165, 203, 91]);
-		
-				let mut output =  vec![0,0,0,0,0,0,0,0,0,0,0,0];
+
+				let mut output = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 				output.extend_from_slice(&OwnerOfDapp::get().as_bytes());
 
@@ -315,107 +405,221 @@ fn test_can_claim_reward_should_return_false_if_claimant_are_not_the_owner_of_th
 					cost: 1,
 					logs: vec![],
 				}
-			}).execute_returns_encoded(false);
-    });
+			})
+			.execute_returns_encoded(false);
+	});
 }
-
 
 #[test]
 fn test_can_claim_reward_should_return_false_if_dapp_not_implement_owner_function() {
 	ExtBuilder::default().build().execute_with(|| {
-	precompiles()
-		.prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { holder: SmartContratWithoutOwner::get().into(), is_whitelisted: true } )
-		.execute_returns_encoded(true);
-    precompiles()
-            .prepare_test(OwnerOfDapp::get(), Precompile1, PCall::can_claim_reward {
-                claimant: NotOwner::get().into(),
-                holder: SmartContratWithoutOwner::get().into(),
-            }).with_subcall_handle(move |_| {
-				
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::set_whitelist {
+					holder: SmartContratWithoutOwner::get().into(),
+					is_whitelisted: true,
+				},
+			)
+			.execute_returns_encoded(true);
+		precompiles()
+			.prepare_test(
+				OwnerOfDapp::get(),
+				Precompile1,
+				PCall::can_claim_reward {
+					claimant: NotOwner::get().into(),
+					holder: SmartContratWithoutOwner::get().into(),
+				},
+			)
+			.with_subcall_handle(move |_| {
 				panic!("should not be called");
-
-			}).execute_returns_encoded(false);
+			})
+			.execute_returns_encoded(false);
 	});
 }
 
 #[test]
 fn test_get_claimable_reward() {
 	ExtBuilder::default().build().execute_with(|| {
-		assert_eq!(FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()), sp_core::U256::from(0));
-		
-		FeeRewardsVault::add_claimable_reward(SmartContratWithoutOwner::get(), Token1::get(), sp_core::U256::from(100)).unwrap();
+		assert_eq!(
+			FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()),
+			sp_core::U256::from(0)
+		);
 
-		precompiles().prepare_test(DefaultOwner::get(), Precompile1, PCall::get_claimable_reward { holder: SmartContratWithoutOwner::get().into(), token: Token1::get().into() }).execute_returns_encoded(sp_core::U256::from(100));
+		FeeRewardsVault::add_claimable_reward(
+			SmartContratWithoutOwner::get(),
+			Token1::get(),
+			sp_core::U256::from(100),
+		)
+		.unwrap();
+
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::get_claimable_reward {
+					holder: SmartContratWithoutOwner::get().into(),
+					token: Token1::get().into(),
+				},
+			)
+			.execute_returns_encoded(sp_core::U256::from(100));
 	});
 }
 
 #[test]
 fn test_claim_reward() {
 	ExtBuilder::default().build().execute_with(|| {
-
-		let precompile_address:H160 = Precompile1.into();
+		let precompile_address: H160 = Precompile1.into();
 
 		precompiles()
-			.prepare_test(DefaultOwner::get(), Precompile1, PCall::set_whitelist { holder: SmartContratWithoutOwner::get().into(), is_whitelisted: true } )
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::set_whitelist {
+					holder: SmartContratWithoutOwner::get().into(),
+					is_whitelisted: true,
+				},
+			)
 			.execute_returns_encoded(true);
 
-		assert_eq!(FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()), sp_core::U256::from(0));
-		
-		FeeRewardsVault::add_claimable_reward(SmartContratWithoutOwner::get(), Token1::get(), sp_core::U256::from(100)).unwrap();
-		FeeRewardsVault::add_claimable_reward(SmartContratWithoutOwner::get(), Token2::get(), sp_core::U256::from(100)).unwrap();
+		assert_eq!(
+			FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()),
+			sp_core::U256::from(0)
+		);
 
-		precompiles().prepare_test(SmartContratWithoutOwner::get(), Precompile1, PCall::claim_reward { holder: SmartContratWithoutOwner::get().into(), token: Token1::get().into() }).with_subcall_handle(move |subcall| {
-			let Subcall {
-				address,
-				transfer: _,
-				input,
-				target_gas: _,
-				is_static,
-				context,
-			} = subcall;
+		FeeRewardsVault::add_claimable_reward(
+			SmartContratWithoutOwner::get(),
+			Token1::get(),
+			sp_core::U256::from(100),
+		)
+		.unwrap();
+		FeeRewardsVault::add_claimable_reward(
+			SmartContratWithoutOwner::get(),
+			Token2::get(),
+			sp_core::U256::from(100),
+		)
+		.unwrap();
 
-			// Called on the behalf of the permit maker.
-			assert_eq!(context.caller, precompile_address);
-			assert_eq!(address, Token1::get());
-			assert_eq!(is_static, false);
-			
-			assert_eq!(input, stbl_tools::eth::generate_calldata(&"transfer(address,uint256)", &vec![SmartContratWithoutOwner::get().into(), stbl_tools::misc::u256_to_h256(sp_core::U256::from(100))]));
-	
-			let  output =  vec![];
+		precompiles()
+			.prepare_test(
+				SmartContratWithoutOwner::get(),
+				Precompile1,
+				PCall::claim_reward {
+					holder: SmartContratWithoutOwner::get().into(),
+					token: Token1::get().into(),
+				},
+			)
+			.with_subcall_handle(move |subcall| {
+				let Subcall {
+					address,
+					transfer: _,
+					input,
+					target_gas: _,
+					is_static,
+					context,
+				} = subcall;
 
-			SubcallOutput {
-				reason: ExitReason::Succeed(ExitSucceed::Returned),
-				output: output,
-				cost: 1,
-				logs: vec![],
-			}
-		}).expect_log(log3(precompile_address, SELECTOR_REWARD_CLAIMED, SmartContratWithoutOwner::get(), SmartContratWithoutOwner::get(), Vec::from(Token1::get().to_fixed_bytes()))).execute_some();
+				// Called on the behalf of the permit maker.
+				assert_eq!(context.caller, precompile_address);
+				assert_eq!(address, Token1::get());
+				assert_eq!(is_static, false);
 
-		assert_eq!(FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()), sp_core::U256::from(0));
-		assert_eq!(FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token2::get()), sp_core::U256::from(100));
+				assert_eq!(
+					input,
+					stbl_tools::eth::generate_calldata(
+						&"transfer(address,uint256)",
+						&vec![
+							SmartContratWithoutOwner::get().into(),
+							stbl_tools::misc::u256_to_h256(sp_core::U256::from(100))
+						]
+					)
+				);
+
+				let output = vec![];
+
+				SubcallOutput {
+					reason: ExitReason::Succeed(ExitSucceed::Returned),
+					output: output,
+					cost: 1,
+					logs: vec![],
+				}
+			})
+			.expect_log(log3(
+				precompile_address,
+				SELECTOR_REWARD_CLAIMED,
+				SmartContratWithoutOwner::get(),
+				SmartContratWithoutOwner::get(),
+				Vec::from(Token1::get().to_fixed_bytes()),
+			))
+			.execute_some();
+
+		assert_eq!(
+			FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()),
+			sp_core::U256::from(0)
+		);
+		assert_eq!(
+			FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token2::get()),
+			sp_core::U256::from(100)
+		);
 	});
 }
 
 #[test]
 fn test_set_validator_percentage() {
 	ExtBuilder::default().build().execute_with(|| {
-		precompiles().prepare_test(DefaultOwner::get(), Precompile1, PCall::get_validator_percentage {}).execute_returns_encoded(sp_core::U256::from(0));
-		precompiles().prepare_test(DefaultOwner::get(), Precompile1, PCall::set_validator_percentage { percentage: sp_core::U256::from(10) }).execute_some();
-		precompiles().prepare_test(DefaultOwner::get(), Precompile1, PCall::get_validator_percentage {}).execute_returns_encoded(sp_core::U256::from(10));
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::get_validator_percentage {},
+			)
+			.execute_returns_encoded(sp_core::U256::from(0));
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::set_validator_percentage {
+					percentage: sp_core::U256::from(10),
+				},
+			)
+			.execute_some();
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::get_validator_percentage {},
+			)
+			.execute_returns_encoded(sp_core::U256::from(10));
 	});
 }
 
 #[test]
 fn test_set_validator_percentage_fails_if_not_owner() {
 	ExtBuilder::default().build().execute_with(|| {
-		precompiles().prepare_test(SmartContratWithoutOwner::get(), Precompile1, PCall::set_validator_percentage { percentage: sp_core::U256::from(10) }).execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
+		precompiles()
+			.prepare_test(
+				SmartContratWithoutOwner::get(),
+				Precompile1,
+				PCall::set_validator_percentage {
+					percentage: sp_core::U256::from(10),
+				},
+			)
+			.execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
 	});
 }
 
 #[test]
 fn test_set_validator_percentage_fails_if_greater() {
 	ExtBuilder::default().build().execute_with(|| {
-		precompiles().prepare_test(DefaultOwner::get(), Precompile1, PCall::set_validator_percentage { percentage: sp_core::U256::from(110) }).execute_reverts(|x| x.eq_ignore_ascii_case(b"percentage is too high"));
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::set_validator_percentage {
+					percentage: sp_core::U256::from(110),
+				},
+			)
+			.execute_reverts(|x| x.eq_ignore_ascii_case(b"percentage is too high"));
 	});
 }
-
