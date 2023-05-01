@@ -25,22 +25,29 @@ pub struct StabilityOutput<T> {
 pub trait StabilityRpcEndpoints<BlockHash> {
 	#[method(name = "stability_getSupportedTokens")]
 	fn get_supported_tokens(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
-
-	/* #[method(name = "stability_createDelegatedTransaction")]
-	fn create_delegated_transaction(
-		&self, 
-		to: H160, 
-		input: Vec<u8>,
-		validFor: Option<u64>
-	) -> RpcResult<StabilityOutput<([u8; 32], u64)>>; */
+	
+	#[method(name = "stability_getValidatorList")]
+	fn get_validator_list(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
+	
 	#[method(name = "stability_getDelegatedTransactionCurrentNonce")]
 	fn get_delegated_transaction_current_nonce(
 		&self,
 		at: Option<BlockHash>
-	) -> RpcResult<StabilityOutput<(u64)>>;
+	) -> RpcResult<StabilityOutput<u64>>;
+	
+	#[method(name = "stability_getDelegatedTransactionEcho")]
+	fn get_delegated_transaction_echo(
+		&self,
+		at: Option<BlockHash>,
+		num: u64,
+	) -> RpcResult<StabilityOutput<u64>>;
 
-	#[method(name = "stability_getValidatorList")]
-	fn get_validator_list(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
+	#[method(name = "stability_getDelegatedTransactionCompare")]
+	fn get_delegated_transaction_compare(
+		&self,
+		at: Option<BlockHash>,
+		num: u64,
+	) -> RpcResult<StabilityOutput<(u64, bool)>>;
 }
 
 pub struct StabilityRpc<C, Block> {
@@ -78,6 +85,21 @@ where
 		})
 	}
 
+	fn get_validator_list(
+		&self,
+		at: Option<<Block as BlockT>::Hash>,
+	) -> RpcResult<StabilityOutput<Vec<H160>>> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
+		let value = api
+			.get_validator_list(&at)
+			.map_err(runtime_error_into_rpc_err);
+		Ok(StabilityOutput {
+			code: 200,
+			value: value.unwrap(),
+		})
+	}
+
 	fn get_delegated_transaction_current_nonce(
 		&self,
 		at:Option<<Block  as  BlockT>::Hash>
@@ -93,14 +115,32 @@ where
 		})
 	}
 
-	fn get_validator_list(
+	fn get_delegated_transaction_echo(
 		&self,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> RpcResult<StabilityOutput<Vec<H160>>> {
+		num: u64,
+	) -> RpcResult<StabilityOutput<u64>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 		let value = api
-			.get_validator_list(&at)
+			.get_delegated_transaction_echo(&at, num)
+			.map_err(runtime_error_into_rpc_err);
+		Ok(StabilityOutput {
+			code: 200,
+			value: value.unwrap(),
+		})
+	}
+	
+	fn get_delegated_transaction_compare(
+		&self,
+		at: Option<<Block as BlockT>::Hash>,
+		num: u64,
+	) -> RpcResult<StabilityOutput<(u64, bool)>> {
+		// self.deny_unsafe.check_if_safe()?;
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
+		let value = api
+			.get_delegated_transaction_compare(&at, num)
 			.map_err(runtime_error_into_rpc_err);
 		Ok(StabilityOutput {
 			code: 200,
