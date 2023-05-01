@@ -7,6 +7,8 @@ sp_api::decl_runtime_apis! {
 	pub trait StabilityRpcApi {
 		fn get_supported_tokens() -> Vec<H160>;
 
+		fn get_delegated_transaction_current_nonce() -> u64;
+
 		fn get_validator_list() -> Vec<H160>;
 	}
 }

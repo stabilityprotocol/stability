@@ -1171,12 +1171,23 @@ impl_runtime_apis! {
 		fn get_supported_tokens() -> Vec<H160> {
 			<pallet_supported_tokens_manager::Pallet<Runtime> as OtherSupportedTokensManager>::get_supported_tokens()
 		}
-		fn create_delegated_transaction(
+
+		/* fn create_delegated_transaction(
 			to:H160,
 			input:Vec<u8>,
 			validFor:Option<u64>
 		) -> Result<H256, &'static str> {
 			<pallet_delegated_transaction::Pallet<Runtime>>::delegate_transaction(to, input, validFor)
+		} */
+
+		fn get_delegated_transaction_current_nonce() -> u64 {
+			<pallet_delegated_transaction::Pallet<Runtime>>::get_delegated_transaction_current_nonce()
+		}
+
+		/* fn get_delegated_transaction_current_nonce(address: H160) -> u64 {
+			// <pallet_delegated_transaction::Pallet<Runtime>>::get_delegated_transaction_current_nonce(address)
+			<Runtime as pallet_delegated_transaction::Config>::DelegatorNonce::get(&address)
+		} */
 
 		fn get_validator_list() -> Vec<H160> {
 			let validators = <pallet_validator_set::Pallet<Runtime>>::validators();

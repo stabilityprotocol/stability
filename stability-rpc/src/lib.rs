@@ -26,14 +26,19 @@ pub trait StabilityRpcEndpoints<BlockHash> {
 	#[method(name = "stability_getSupportedTokens")]
 	fn get_supported_tokens(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
 
-	#[method(name = "stability_createDelegatedTransaction")]
+	/* #[method(name = "stability_createDelegatedTransaction")]
 	fn create_delegated_transaction(
 		&self, 
 		to: H160, 
 		input: Vec<u8>,
 		validFor: Option<u64>
-	) -> RpcResult<StabilityOutput<([u8; 32], u64)>>;
-	
+	) -> RpcResult<StabilityOutput<([u8; 32], u64)>>; */
+	#[method(name = "stability_getDelegatedTransactionCurrentNonce")]
+	fn get_delegated_transaction_current_nonce(
+		&self,
+		at: Option<BlockHash>
+	) -> RpcResult<StabilityOutput<(u64)>>;
+
 	#[method(name = "stability_getValidatorList")]
 	fn get_validator_list(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
 }
@@ -73,25 +78,19 @@ where
 		})
 	}
 
-	fn create_delegated_transaction(
+	fn get_delegated_transaction_current_nonce(
 		&self,
-		to:H160,
-		input:Vec<u8>,
-		validFor:Option<u64>
-	) -> RpcResult<StabilityOutput<([u8;
-	32],u64)> > {
+		at:Option<<Block  as  BlockT>::Hash>
+	) -> RpcResult<StabilityOutput<u64>> {
 		let api = self.client.runtime_api();
-
-		// let outcome = api.delegate_transaction(to,input);
-		let outcome = api.delegate_transaction(to,input,validFor);
-		/* let at = BlockId::hash(self.client.info().best_hash);
+		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 		let value = api
-			.create_delegated_transaction(&at,to,input,validFor)
+			.get_delegated_transaction_current_nonce(&at)
 			.map_err(runtime_error_into_rpc_err);
 		Ok(StabilityOutput {
 			code: 200,
 			value: value.unwrap(),
-		}) */
+		})
 	}
 
 	fn get_validator_list(
