@@ -5,6 +5,7 @@ This custom extension extends the functionality of Substrate-based blockchain by
 ## Methods
 
 - `stability_getSupportedTokens`
+- `stability_getValidatorList`
 
 ## Example
 

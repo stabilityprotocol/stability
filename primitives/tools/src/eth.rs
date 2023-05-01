@@ -120,3 +120,11 @@ pub fn get_storage_address_for_mapping(address: H160, var_slot: H256) -> H256 {
 		.finalize()
 		.using_encoded(|x| H256::from_slice(&x[1..]))
 }
+
+pub fn transaction_gas_price(transaction: &Transaction) -> u64 {
+	match transaction {
+		Transaction::Legacy(t) => t.gas_price.as_u64(),
+		Transaction::EIP2930(t) => t.gas_price.as_u64(),
+		Transaction::EIP1559(t) => t.max_fee_per_gas.as_u64(),
+	}
+}

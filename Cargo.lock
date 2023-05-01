@@ -5443,9 +5443,11 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-custom-balances",
  "pallet-evm",
  "pallet-session",
  "pallet-timestamp",
+ "pallet-user-fee-selector",
  "pallet-validator-set",
  "parity-scale-codec",
  "precompile-utils",
@@ -8539,6 +8541,7 @@ dependencies = [
  "stbl-core-primitives",
  "stbl-primitives-fee-compatible-api",
  "stbl-tools",
+ "stbl-transaction-validator",
  "substrate-wasm-builder",
 ]
 
@@ -8751,6 +8754,38 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "stbl-transaction-validator"
+version = "0.1.0"
+dependencies = [
+ "environmental",
+ "ethereum",
+ "evm",
+ "fp-ethereum",
+ "fp-evm",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "log",
+ "pallet-balances",
+ "pallet-erc20-manager",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-supported-tokens-manager",
+ "pallet-timestamp",
+ "pallet-user-fee-selector",
+ "parity-scale-codec",
+ "precompile-utils",
+ "scale-info",
+ "sha3 0.10.7",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-tools",
 ]
 
 [[package]]

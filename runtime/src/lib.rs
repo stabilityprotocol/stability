@@ -13,6 +13,7 @@ use account::EthereumSigner;
 use codec::{Decode, Encode};
 use core::str::FromStr;
 use frame_support::pallet_prelude::EnsureOrigin;
+use frame_support::pallet_prelude::InvalidTransaction;
 use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
@@ -46,6 +47,7 @@ use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
 use stbl_core_primitives::aura::Public as AuraId;
 use stbl_core_primitives::imonline::Public as ImOnlineId;
+use stbl_transaction_validator::FallbackTransactionValidator;
 // Substrate FRAME
 #[cfg(feature = "with-paritydb-weights")]
 use frame_support::weights::constants::ParityDbWeight as RuntimeDbWeight;
@@ -73,6 +75,7 @@ pub use frame_support::{
 pub use frame_system::Call as SystemCall;
 pub use pallet_timestamp::Call as TimestampCall;
 
+use pallet_custom_balances::AccountIdMapping;
 use pallet_user_fee_selector;
 
 mod stability_config;
@@ -788,7 +791,14 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 		len: usize,
 	) -> Option<TransactionValidity> {
 		match self {
-			RuntimeCall::Ethereum(call) => call.validate_self_contained(info, dispatch_info, len),
+			RuntimeCall::Ethereum(call) => call
+				.validate_self_contained(info, dispatch_info, len)
+				.map(|result| match result {
+					Err(TransactionValidityError::Invalid(InvalidTransaction::Payment)) => {
+						FallbackTransactionValidator::check_actual_balance(info, call)
+					}
+					_ => result,
+				}),
 			_ => None,
 		}
 	}
@@ -800,9 +810,14 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 		len: usize,
 	) -> Option<Result<(), TransactionValidityError>> {
 		match self {
-			RuntimeCall::Ethereum(call) => {
-				call.pre_dispatch_self_contained(info, dispatch_info, len)
-			}
+			RuntimeCall::Ethereum(call) => call
+				.pre_dispatch_self_contained(info, dispatch_info, len)
+				.map(|result| match result {
+					Err(TransactionValidityError::Invalid(InvalidTransaction::Payment)) => {
+						FallbackTransactionValidator::check_actual_balance(info, call).map(|_| ())
+					}
+					_ => result,
+				}),
 			_ => None,
 		}
 	}
@@ -1162,6 +1177,13 @@ impl_runtime_apis! {
 			validFor:Option<u64>
 		) -> Result<H256, &'static str> {
 			<pallet_delegated_transaction::Pallet<Runtime>>::delegate_transaction(to, input, validFor)
+
+		fn get_validator_list() -> Vec<H160> {
+			let validators = <pallet_validator_set::Pallet<Runtime>>::validators();
+			validators
+			.iter()
+			.map(|v| <Runtime as pallet_custom_balances::Config>::AccountIdMapping::into_evm_address(v))
+			.collect()
 		}
 	}
 

@@ -31,12 +31,14 @@ use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};
 
 use frame_support::traits::StorageInstance;
+use pallet_custom_balances::AccountIdMapping;
 use precompile_utils::prelude::*;
 
 use sp_core::Get;
 use sp_core::{H160, H256, U256};
 
 use sp_std::marker::PhantomData;
+use sp_std::vec::Vec;
 
 pub const CALL_DATA_LIMIT: u32 = 2u32.pow(16);
 
@@ -80,12 +82,15 @@ pub struct ValidatorControllerPrecompile<Runtime, DefaultOwner: Get<H160> + 'sta
 impl<Runtime, DefaultOwner> ValidatorControllerPrecompile<Runtime, DefaultOwner>
 where
 	DefaultOwner: Get<H160> + 'static,
-	Runtime: pallet_validator_set::Config + pallet_timestamp::Config + pallet_evm::Config,
+	Runtime: pallet_validator_set::Config
+		+ pallet_timestamp::Config
+		+ pallet_evm::Config
+		+ pallet_custom_balances::Config,
 	Runtime::RuntimeCall: From<pallet_validator_set::Call<Runtime>>,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
-	<Runtime as frame_system::Config>::AccountId: From<sp_core::H160>,
+	<Runtime as frame_system::Config>::AccountId: From<H160>,
 {
 	#[precompile::public("owner()")]
 	#[precompile::view]
@@ -153,6 +158,23 @@ where
 		.record(handle)?;
 
 		Ok(())
+	}
+
+	#[precompile::public("getValidatorList()")]
+	#[precompile::view]
+	fn get_validator_list(handle: &mut impl PrecompileHandle) -> EvmResult<Vec<Address>> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+		let validators = pallet_validator_set::Validators::<Runtime>::get();
+
+		let validators_h160: Vec<H160> = validators
+			.iter()
+			.map(|v| Runtime::AccountIdMapping::into_evm_address(v))
+			.collect();
+
+		Ok(validators_h160
+			.iter()
+			.map(|v| Into::<Address>::into(*v))
+			.collect())
 	}
 
 	#[precompile::public("addValidator(address)")]
