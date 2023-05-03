@@ -28,6 +28,12 @@ pub trait StabilityRpcEndpoints<BlockHash> {
 
 	#[method(name = "stability_getValidatorList")]
 	fn get_validator_list(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
+
+	#[method(name = "stability_setUserFeeToken")]
+	fn set_user_fee_token(
+		&self,
+		token_address: H160,
+	) -> RpcResult<StabilityOutput<Result<(), sp_runtime::DispatchError>>>;
 }
 
 pub struct StabilityRpc<C, Block> {
@@ -73,6 +79,21 @@ where
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 		let value = api
 			.get_validator_list(&at)
+			.map_err(runtime_error_into_rpc_err);
+		Ok(StabilityOutput {
+			code: 200,
+			value: value.unwrap(),
+		})
+	}
+
+	fn set_user_fee_token(
+		&self,
+		token_address: H160,
+	) -> RpcResult<StabilityOutput<Result<(), sp_runtime::DispatchError>>> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(self.client.info().best_hash);
+		let value = api
+			.set_user_fee_token(&at, token_address)
 			.map_err(runtime_error_into_rpc_err);
 		Ok(StabilityOutput {
 			code: 200,

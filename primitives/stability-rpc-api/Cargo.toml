@@ -7,6 +7,7 @@ edition = "2021"
 sp-api = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false }
 codec = { package = "parity-scale-codec", workspace = true }
 
 [features]
@@ -15,5 +16,6 @@ std = [
     'sp-api/std',
     'sp-core/std',
     'sp-std/std',
+    'sp-runtime/std',
     'codec/std',
 ]

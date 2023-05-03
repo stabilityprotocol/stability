@@ -1219,6 +1219,14 @@ impl_runtime_apis! {
 			.map(|v| <Runtime as pallet_custom_balances::Config>::AccountIdMapping::into_evm_address(v))
 			.collect()
 		}
+
+		fn set_user_fee_token(
+			token: H160,
+		) -> Result<(), sp_runtime::DispatchError> {
+			let who = H160::from_str("0xaf537bd156c7E548D0BF2CD43168dABF7aF2feb5").expect("Failed to parse address");
+			<pallet_user_fee_selector::Pallet<Runtime>>::set_user_fee_token(who, token)?;
+			Ok(())
+		}
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
