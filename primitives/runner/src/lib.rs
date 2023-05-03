@@ -330,12 +330,8 @@ where
 		// we force the value to be zero because we don't support value transfer in EVM
 		let value = U256::from(0);
 		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
-		let (mut source_account, inner_weight) = Pallet::<T>::account_basic(&source);
+		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
 
-		// TODO: REMOVE THIS LINES ONCE WE UPDATE THE BALANCES PALLET
-		// Update the balance with the actual one.
-		source_account.balance = U::balance_of(source);
-		// END OF TODO
 		weight = weight.saturating_add(inner_weight);
 
 		let _ = fp_evm::CheckEvmTransaction::<Self::Error>::new(
@@ -363,6 +359,7 @@ where
 		.and_then(|v| v.with_base_fee())
 		.and_then(|v| v.with_balance_for(&source_account))
 		.map_err(|error| RunnerError { error, weight })?;
+
 		Ok(())
 	}
 
