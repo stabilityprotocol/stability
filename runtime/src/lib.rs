@@ -9,6 +9,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use account::AccountId20;
 use account::EthereumSigner;
 use codec::{Decode, Encode};
 use core::str::FromStr;
@@ -18,10 +19,12 @@ use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
 use pallet_balances::Instance1;
+use pallet_custom_balances::AccountIdMapping;
 use pallet_supported_tokens_manager::SupportedTokensManager as OtherSupportedTokensManager;
 use pallet_transaction_payment::OnChargeTransaction;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
+use runner::OnChargeDecentralizedNativeTokenFee;
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
@@ -74,7 +77,6 @@ pub use frame_support::{
 pub use frame_system::Call as SystemCall;
 pub use pallet_timestamp::Call as TimestampCall;
 
-use pallet_custom_balances::AccountIdMapping;
 use pallet_user_fee_selector;
 
 mod stability_config;
@@ -309,37 +311,76 @@ parameter_types! {
 	pub const TransactionByteFee: Balance = 1;
 }
 
-// To change: Mocked version must no go to production
 pub struct MockedSubstrateFeeController;
-impl<T: pallet_transaction_payment::Config> OnChargeTransaction<T>
-	for MockedSubstrateFeeController
+impl<T: pallet_transaction_payment::Config> OnChargeTransaction<T> for MockedSubstrateFeeController
+where
+	account::AccountId20: From<T::AccountId>,
 {
 	type Balance = Balance;
 
 	type LiquidityInfo = Balance;
 
 	fn withdraw_fee(
-		_who: &T::AccountId,
+		who: &T::AccountId,
 		_call: &T::RuntimeCall,
 		_dispatch_info: &DispatchInfoOf<T::RuntimeCall>,
-		fee: Self::Balance,
+		_fee: Self::Balance,
 		_tip: Self::Balance,
 	) -> Result<Self::LiquidityInfo, TransactionValidityError> {
-		Ok(fee)
+		let from: H160 = Into::<AccountId20>::into((*who).clone()).into();
+		let token = DNTFeeController::get_transaction_fee_token(from);
+		let validator = EVM::find_author();
+		let conversion_rate = DNTFeeController::get_transaction_conversion_rate(validator, token);
+		let fee = U256::from(_fee.saturated_into::<u128>());
+
+		DNTFeeController::withdraw_fee(from, token, conversion_rate, fee).map_err(|_x| {
+			TransactionValidityError::Invalid(
+				frame_support::pallet_prelude::InvalidTransaction::Payment,
+			)
+		})?;
+
+		Ok(_fee)
 	}
 
 	fn correct_and_deposit_fee(
-		_who: &T::AccountId,
+		who: &T::AccountId,
 		_dispatch_info: &DispatchInfoOf<T::RuntimeCall>,
 		_post_info: &PostDispatchInfoOf<T::RuntimeCall>,
 		_corrected_fee: Self::Balance,
 		_tip: Self::Balance,
 		_already_withdrawn: Self::LiquidityInfo,
 	) -> Result<(), TransactionValidityError> {
+		let from: H160 = Into::<AccountId20>::into((*who).clone()).into();
+		let corrected_fee = U256::from(_corrected_fee.saturated_into::<u128>());
+		let already_withdrawn = U256::from(_already_withdrawn.saturated_into::<u128>());
+		let validator = EVM::find_author();
+
+		let token = DNTFeeController::get_transaction_fee_token(from);
+		let conversion_rate = DNTFeeController::get_transaction_conversion_rate(from, token);
+
+		DNTFeeController::correct_fee(
+			from,
+			token,
+			conversion_rate,
+			already_withdrawn,
+			corrected_fee,
+		)
+		.map_err(|_x| {
+			TransactionValidityError::Invalid(
+				frame_support::pallet_prelude::InvalidTransaction::Payment,
+			)
+		})?;
+
+		DNTFeeController::pay_fees(token, conversion_rate, corrected_fee, validator, None)
+			.map_err(|_x| {
+				TransactionValidityError::Invalid(
+					frame_support::pallet_prelude::InvalidTransaction::Payment,
+				)
+			})?;
+
 		Ok(())
 	}
 }
-// End of to change: Mocked version must no go to production
 
 impl pallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
