@@ -21,10 +21,25 @@ use super::*;
 use std::str::FromStr;
 
 use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::Weight};
+use frame_system::EnsureRoot;
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
-use precompile_utils::{precompile_set::*, testing::MockAccount};
+use pallet_session::{SessionHandler, ShouldEndSession};
+use precompile_utils::{
+	precompile_set::*,
+	testing::{CryptoAlith, MockAccount},
+};
 use sp_core::{H160, H256, U256};
-use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
+use sp_runtime::{
+	impl_opaque_keys,
+	testing::UintAuthorityId,
+	traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
+};
+
+impl_opaque_keys! {
+	pub struct MockSessionKeys {
+		pub dummy: UintAuthorityId,
+	}
+}
 
 pub type AccountId = MockAccount;
 pub type Balance = u128;
@@ -170,6 +185,49 @@ impl pallet_evm::Config for Runtime {
 	type FindAuthor = ();
 }
 
+pub struct TestSessionHandler;
+impl SessionHandler<AccountId> for TestSessionHandler {
+	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[sp_runtime::KeyTypeId(*b"ecds")];
+	fn on_genesis_session<T: OpaqueKeys>(_validators: &[(AccountId, T)]) {}
+	fn on_new_session<T: OpaqueKeys>(
+		_changed: bool,
+		_validators: &[(AccountId, T)],
+		_queued_validators: &[(AccountId, T)],
+	) {
+	}
+	fn on_disabled(_validator_index: u32) {}
+	fn on_before_session_ending() {}
+}
+
+pub struct TestShouldEndSession;
+impl ShouldEndSession<BlockNumber> for TestShouldEndSession {
+	fn should_end_session(_now: BlockNumber) -> bool {
+		true
+	}
+}
+parameter_types! {
+	pub const MinAuthorities: u32 = 1u32;
+}
+impl pallet_validator_set::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+
+	type AddRemoveOrigin = EnsureRoot<AccountId>;
+
+	type MinAuthorities = MinAuthorities;
+}
+
+impl pallet_session::Config for Runtime {
+	type ValidatorId = <Self as frame_system::Config>::AccountId;
+	type ValidatorIdOf = pallet_validator_set::ValidatorOf<Self>;
+	type ShouldEndSession = TestShouldEndSession;
+	type NextSessionRotation = ();
+	type SessionManager = ValidatorSet;
+	type SessionHandler = TestSessionHandler;
+	type Keys = MockSessionKeys;
+	type WeightInfo = ();
+	type RuntimeEvent = RuntimeEvent;
+}
+
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
 	pub enum Runtime where
@@ -182,6 +240,8 @@ construct_runtime!(
 		Evm: pallet_evm::{Pallet, Call, Storage, Event<T>},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 		ValidatorFeeSelector: pallet_validator_fee_selector,
+		ValidatorSet: pallet_validator_set,
+		Session: pallet_session,
 	}
 );
 
@@ -197,6 +257,10 @@ impl Default for ExtBuilder {
 	}
 }
 
+parameter_types! {
+	pub NonCryptoAlith: H160 = H160::from_low_u64_be(0);
+}
+
 impl ExtBuilder {
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
 		let mut t = frame_system::GenesisConfig::default()
@@ -208,6 +272,12 @@ impl ExtBuilder {
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet balances storage can be assimilated");
+
+		pallet_validator_set::GenesisConfig::<Runtime> {
+			initial_validators: vec![CryptoAlith.into()],
+		}
+		.assimilate_storage(&mut t)
+		.expect("Pallet validator set storage can be assimilated");
 
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));

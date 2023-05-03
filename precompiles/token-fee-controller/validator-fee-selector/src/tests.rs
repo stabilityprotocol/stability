@@ -6,7 +6,7 @@ use precompile_utils::{
 use sp_core::{H160, U256};
 
 use crate::{
-	mock::{ExtBuilder, PCall, Precompiles, PrecompilesValue, Runtime},
+	mock::{ExtBuilder, NonCryptoAlith, PCall, Precompiles, PrecompilesValue, Runtime},
 	SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED, SELECTOR_LOG_VALIDATOR_TOKEN_RATE_CHANGED,
 };
 use crate::{DefaultAcceptance, DefaultConversionRate};
@@ -108,6 +108,26 @@ fn default_token_address() {
 				},
 			)
 			.execute_returns_encoded(false);
+	});
+}
+
+#[test]
+fn fail_to_accept_token_if_not_validator() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				NonCryptoAlith::get(),
+				Precompile1,
+				PCall::set_token_acceptance {
+					token_address: MeaninglessTokenAddress::get().into(),
+					acceptance_value: true,
+				},
+			)
+			.execute_reverts(|x| {
+				x.eq_ignore_ascii_case(
+					b"ValidatorFeeTokenController: sender is not an approved validator",
+				)
+			});
 	});
 }
 
@@ -229,6 +249,27 @@ fn update_conversion_rate() {
 				},
 			)
 			.execute_returns(EvmDataWriter::new().write(100u128).write(3u128).build());
+	})
+}
+
+#[test]
+fn fail_update_conversion_rate_non_validator() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				NonCryptoAlith::get(),
+				Precompile1,
+				PCall::set_token_conversion_rate {
+					token_address: MeaninglessTokenAddress::get().into(),
+					numerator: U256::from(100),
+					denominator: U256::from(3),
+				},
+			)
+			.execute_reverts(|x| {
+				x.eq_ignore_ascii_case(
+					b"ValidatorFeeTokenController: sender is not an approved validator",
+				)
+			});
 	})
 }
 
