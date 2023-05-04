@@ -4902,6 +4902,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-evm",
  "pallet-supported-tokens-manager",
  "pallet-timestamp",
  "parity-scale-codec",
@@ -4910,6 +4911,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "stbl-tools",
 ]
 
 [[package]]
@@ -5265,6 +5267,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
+ "pallet-validator-set",
  "parity-scale-codec",
  "precompile-utils",
  "scale-info",

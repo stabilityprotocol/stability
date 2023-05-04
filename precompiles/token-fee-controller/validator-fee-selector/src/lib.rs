@@ -39,8 +39,8 @@ pub const SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED: [u8; 32] =
 	keccak256!("ValidatorTokenAcceptanceChanged(address,address,bool)");
 
 /// Solidity selector of the Transfer log, which is the Keccak of the Log signature.
-pub const SELECTOR_LOG_VALIDATOR_TOKEN_RATE_CHANGED: [u8; 32] =
-	keccak256!("ValidatorTokenRateChanged(address,address,uint256,uint256)");
+pub const SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED: [u8; 32] =
+	keccak256!("ValidatorTokenRateControllerChanged(address,address)");
 
 parameter_types! {
 	pub ZeroAddress:H160 = H160::from_str("0x0000000000000000000000000000000000000000").expect("invalid address");
@@ -78,16 +78,12 @@ where
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		match ValidatorFeeTokenController::update_fee_token_acceptance(
+		ValidatorFeeTokenController::update_fee_token_acceptance(
 			msg_sender,
 			token_address.into(),
 			acceptance_value,
-		) {
-			Ok(_) => {}
-			Err(_) => {
-				return Err(revert("ValidatorFeeTokenController: token not supported"));
-			}
-		};
+		)
+		.map_err(|_| revert("ValidatorFeeTokenController: token not supported"))?;
 
 		log3(
 			handle.context().address,
@@ -116,58 +112,43 @@ where
 		))
 	}
 
-	#[precompile::public("setTokenConversionRate(address,uint256,uint256)")]
-	fn set_token_conversion_rate(
+	#[precompile::public("updateConversionRateController(address)")]
+	fn update_conversion_rate_controller(
 		handle: &mut impl PrecompileHandle,
-		token_address: Address,
-		numerator: U256,
-		denominator: U256,
+		cr_controller: Address,
 	) -> EvmResult {
 		let msg_sender = handle.context().caller;
 		handle.record_log_costs_manual(3, 64)?;
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		match ValidatorFeeTokenController::update_conversion_rate(
+		ValidatorFeeTokenController::update_conversion_rate_controller(
 			msg_sender,
-			token_address.into(),
-			(numerator, denominator),
-		) {
-			Err(_) => {
-				return Err(revert(
-					b"ValidatorFeeTokenController: default token conversion rate cannot be updated",
-				))
-			}
-			_ => {}
-		}
+			cr_controller.into(),
+		)
+		.map_err(|_| {
+			revert(b"ValidatorFeeTokenController: default token conversion rate cannot be updated")
+		})?;
 
-		log3(
+		log2(
 			handle.context().address,
-			SELECTOR_LOG_VALIDATOR_TOKEN_RATE_CHANGED,
+			SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
 			msg_sender,
-			Into::<H160>::into(token_address),
-			EvmDataWriter::new()
-				.write(numerator)
-				.write(denominator)
-				.build(),
+			EvmDataWriter::new().write(cr_controller).build(),
 		)
 		.record(handle)?;
 
 		Ok(())
 	}
 
-	#[precompile::public("tokenConversionRate(address,address)")]
+	#[precompile::public("conversionRateController(address)")]
 	#[precompile::view]
-	fn token_conversion_rate(
+	fn conversion_rate_controller(
 		handle: &mut impl PrecompileHandle,
 		validator: Address,
-		token_address: Address,
-	) -> EvmResult<(U256, U256)> {
+	) -> EvmResult<Address> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		Ok(ValidatorFeeTokenController::conversion_rate(
-			validator.into(),
-			token_address.into(),
-		))
+		Ok(ValidatorFeeTokenController::conversion_rate_controller(validator.into()).into())
 	}
 }
