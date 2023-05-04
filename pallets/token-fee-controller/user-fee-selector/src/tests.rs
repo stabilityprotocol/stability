@@ -1,12 +1,11 @@
 use crate::mock::{
-	ExtBuilder, MeaninglessTokenAddress, MockDefaultFeeToken, MockSupportedTokensManager, Runtime,
+	ExtBuilder, MeaninglessTokenAddress, MockDefaultFeeToken, MockSupportedTokensManager,
 	UserFeeTokenSelector,
 };
 
 use super::*;
 
-use frame_support::{parameter_types, traits::Hooks};
-use frame_system::pallet_prelude::BlockNumberFor;
+use frame_support::parameter_types;
 use pallet_supported_tokens_manager::SupportedTokensManager;
 use sp_core::H160;
 
@@ -33,14 +32,6 @@ fn set_token() {
 		)
 		.unwrap();
 
-		// not be changed until block is finalized
-		assert_eq!(
-			UserFeeTokenSelector::get_user_fee_token(MeaninglessAccount::get()),
-			MockDefaultFeeToken::get()
-		);
-
-		<UserFeeTokenSelector as Hooks<BlockNumberFor<Runtime>>>::on_finalize(1);
-
 		assert_eq!(
 			UserFeeTokenSelector::get_user_fee_token(MeaninglessAccount::get()),
 			MeaninglessTokenAddress::get()
@@ -56,8 +47,6 @@ fn set_token_if_no_longer_available_is_default() {
 			MeaninglessTokenAddress::get(),
 		)
 		.unwrap();
-
-		<UserFeeTokenSelector as Hooks<BlockNumberFor<Runtime>>>::on_finalize(1);
 
 		assert_eq!(
 			UserFeeTokenSelector::get_user_fee_token(MeaninglessAccount::get()),
