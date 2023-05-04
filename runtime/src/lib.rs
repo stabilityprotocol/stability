@@ -1220,6 +1220,7 @@ impl_runtime_apis! {
 			.iter()
 			.map(|v| <Runtime as pallet_custom_balances::Config>::AccountIdMapping::into_evm_address(v))
 			.collect()
+
 		}
 	}
 

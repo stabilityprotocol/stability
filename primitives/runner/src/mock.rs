@@ -128,7 +128,11 @@ impl crate::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 		Default::default()
 	}
 
-	fn get_transaction_conversion_rate(_validator: H160, _token: H160) -> (U256, U256) {
+	fn get_transaction_conversion_rate(
+		_sender: H160,
+		_validator: H160,
+		_token: H160,
+	) -> (U256, U256) {
 		(Default::default(), Default::default())
 	}
 

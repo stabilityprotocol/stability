@@ -94,6 +94,7 @@ fn transaction_fee_cr_returns_validator_cr() {
 	assert_eq!(
 		<Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::get_transaction_conversion_rate(
 			MeaninglessAddress::get(),
+			MeaninglessAddress::get(),
 			MeaninglessTokenAddress::get()
 		),
 		MeaninglessConversionRate::get()

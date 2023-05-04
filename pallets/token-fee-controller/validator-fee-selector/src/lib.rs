@@ -21,6 +21,9 @@ pub mod pallet {
 		storage::types::{StorageDoubleMap, StorageMap, StorageValue},
 		Blake2_128Concat,
 	};
+
+	use frame_system::pallet_prelude::OriginFor;
+
 	use pallet_evm::Runner;
 	use pallet_supported_tokens_manager::SupportedTokensManager;
 	use sp_core::{H160, H256, U256};
@@ -104,6 +107,23 @@ pub mod pallet {
 	impl<T: Config> GenesisBuild<T> for GenesisConfig {
 		fn build(&self) {
 			DefaultController::<T>::put(self.initial_default_conversion_rate_controller);
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		pub fn set_default_controller(controller: H160) {
+			DefaultController::<T>::put(controller);
+		}
+	}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::call_index(0)]
+		#[pallet::weight(0)]
+		pub fn update_default_controller(origin: OriginFor<T>, controller: H160) -> DispatchResult {
+			frame_system::ensure_root(origin)?;
+			Self::set_default_controller(controller);
+			Ok(())
 		}
 	}
 

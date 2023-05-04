@@ -164,6 +164,7 @@ impl pallet_user_fee_selector::Config for Test {
 
 impl pallet_validator_fee_selector::Config for Test {
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+	type SimulatorRunner = pallet_evm::runner::stack::Runner<Self>;
 }
 
 impl pallet_supported_tokens_manager::Config for Test {}
