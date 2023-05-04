@@ -5265,6 +5265,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
+ "pallet-validator-set",
  "parity-scale-codec",
  "precompile-utils",
  "scale-info",

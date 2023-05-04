@@ -29,6 +29,7 @@ pallet-erc20-manager = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
 pallet-validator-fee-selector = { workspace = true }
 pallet-user-fee-selector = { workspace = true }
+pallet-validator-set = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
@@ -59,4 +60,5 @@ std = [
     "pallet-dnt-fee-controller/std",
     "pallet-supported-tokens-manager/std",
     "pallet-user-fee-selector/std",
+    "pallet-validator-set/std"
 ]
