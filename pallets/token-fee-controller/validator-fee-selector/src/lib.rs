@@ -38,6 +38,8 @@ pub mod pallet {
 		type SimulatorRunner: pallet_evm::Runner<Self>;
 	}
 
+	const DEFAULT_CONVERSION_RATIO: (U256, U256) = (U256::from(1), U256::from(1));
+
 	#[pallet::error]
 	pub enum Error<T> {}
 
@@ -161,7 +163,7 @@ pub mod pallet {
 			let args: sp_std::vec::Vec<H256> =
 				sp_std::vec![sender.into(), validator.into(), token.into()];
 
-			let output = T::SimulatorRunner::call(
+			T::SimulatorRunner::call(
 				H160::from_low_u64_be(0),
 				conversion_rate_controller,
 				stbl_tools::eth::generate_calldata(
@@ -178,14 +180,13 @@ pub mod pallet {
 				false,
 				&pallet_evm::EvmConfig::london(),
 			)
-			.map_err(|_| ())
-			.unwrap()
-			.value;
-
-			(
-				U256::from_big_endian(output[0..32].as_ref()),
-				U256::from_big_endian(output[32..64].as_ref()),
-			)
+			.map(|execution_info| {
+				(
+					U256::from_big_endian(execution_info.value[0..32].as_ref()),
+					U256::from_big_endian(execution_info.value[32..64].as_ref()),
+				)
+			})
+			.unwrap_or()
 		}
 
 		fn update_conversion_rate_controller(
