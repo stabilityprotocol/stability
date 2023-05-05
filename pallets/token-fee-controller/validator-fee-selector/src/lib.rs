@@ -38,8 +38,6 @@ pub mod pallet {
 		type SimulatorRunner: pallet_evm::Runner<Self>;
 	}
 
-	const DEFAULT_CONVERSION_RATIO: (U256, U256) = (U256::from(1), U256::from(1));
-
 	#[pallet::error]
 	pub enum Error<T> {}
 
@@ -186,7 +184,7 @@ pub mod pallet {
 					U256::from_big_endian(execution_info.value[32..64].as_ref()),
 				)
 			})
-			.unwrap_or()
+			.unwrap_or((U256::from(1), U256::from(1)))
 		}
 
 		fn update_conversion_rate_controller(
