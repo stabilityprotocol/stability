@@ -14,7 +14,21 @@ Though a user can select the token in which the fees are paid, this doesn't mean
 
 Stability validators have to select which tokens want to accept as fees. The validators can accept all the allowed fee tokens though they will only accept the default token` at first. There is no need for the validators to accept the default token, but they should update their acceptance of this token. Along with the token acceptance, the validator should set up the conversion rate of the token that be used when a user selects this token to pay the fees. This conversion rate is used for mapping from our internal fee units to the selected fee token.
 
-To select the token and its conversion rate, the user has to interact with `ValidatorFeeManagerPrecompile` at `0x0000000000000000000000000000000000000802`. Since validators have their keys in the `sr25519` format, they cannot interact directly with the EVM (uses `ed25519` format). Validators should link their `sr25519` key with an EVM address.
+To select the token and its conversion rate, the user has to interact with `ValidatorFeeManagerPrecompile` at `0x0000000000000000000000000000000000000802`. Token acceptance is directly set by the validator but token conversion rate is not directly set in this contract, instead what the validator sets is the address of a convesion rate manager.
+
+### How to create a conversion rate manager?
+
+A conversion rate manager is a smart contract that implements the following interface.
+
+```solidity
+pragma solidity =0.6.6;
+
+interface IConversionRateManager {
+     function getConversionRate(address /*sender*/, address/*validator*/, address token) external view returns(uint256, uint256);
+}
+```
+
+This function is called every time a transaction is sent to the blockchain and used the result to calculate the actual DNT fees. The default conversion rate manager is `0x444212d6E4827893A70d19921E383130281Cda4a`.
 
 ## Map validators address to EVM address
 
