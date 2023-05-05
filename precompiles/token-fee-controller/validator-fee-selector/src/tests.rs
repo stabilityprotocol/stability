@@ -5,12 +5,10 @@ use precompile_utils::{
 };
 use sp_core::H160;
 
-use crate::DefaultAcceptance;
 use crate::{
-	mock::{ExtBuilder, PCall, Precompiles, PrecompilesValue, Runtime},
-	SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED, SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
 	mock::{ExtBuilder, NonCryptoAlith, PCall, Precompiles, PrecompilesValue, Runtime},
-	SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED, SELECTOR_LOG_VALIDATOR_TOKEN_RATE_CHANGED,
+	DefaultAcceptance, SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
+	SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
 };
 
 // No test of invalid selectors since we have a fallback behavior (deposit).
@@ -256,10 +254,8 @@ fn fail_update_conversion_rate_non_validator() {
 			.prepare_test(
 				NonCryptoAlith::get(),
 				Precompile1,
-				PCall::set_token_conversion_rate {
-					token_address: MeaninglessTokenAddress::get().into(),
-					numerator: U256::from(100),
-					denominator: U256::from(3),
+				PCall::update_conversion_rate_controller {
+					cr_controller: Address(CryptoAlith.into()),
 				},
 			)
 			.execute_reverts(|x| {

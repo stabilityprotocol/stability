@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sp_core::{bytes::from_hex, ecdsa, H160, H256, U256};
+use sp_core::{bytes::from_hex, ecdsa, H160, H256};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use stability_runtime::{AccountId, GenesisConfig, Precompiles, ValidatorFeeSelectorConfig};
 use std::{collections::BTreeMap, str::FromStr, vec};

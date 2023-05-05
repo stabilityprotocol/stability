@@ -20,13 +20,9 @@ use super::*;
 
 use std::str::FromStr;
 
+use frame_support::traits::GenesisBuild;
 use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::Weight};
 use frame_system::EnsureRoot;
-use frame_support::{
-	construct_runtime, parameter_types,
-	traits::{Everything, GenesisBuild},
-	weights::Weight,
-};
 
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
 use pallet_session::{SessionHandler, ShouldEndSession};
@@ -279,8 +275,8 @@ impl ExtBuilder {
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet balances storage can be assimilated");
-    
-    let config = pallet_validator_fee_selector::GenesisConfig {
+
+		let config = pallet_validator_fee_selector::GenesisConfig {
 			initial_default_conversion_rate_controller: H160::from_str(
 				"0x444212d6E4827893A70d19921E383130281Cda4a",
 			)
@@ -292,8 +288,7 @@ impl ExtBuilder {
 			&mut t,
 		)
 		.expect("Pallet validator fee selector storage can be assimilated");
-    
-    
+
 		pallet_validator_set::GenesisConfig::<Runtime> {
 			initial_validators: vec![CryptoAlith.into()],
 		}
