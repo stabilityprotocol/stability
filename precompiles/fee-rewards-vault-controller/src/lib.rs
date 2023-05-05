@@ -36,6 +36,7 @@ use precompile_utils::prelude::*;
 use evm::Context;
 use evm::ExitReason;
 use evm::ExitSucceed;
+use pallet_evm::AddressMapping;
 use sp_core::Get;
 use sp_core::{H160, H256, U256};
 use sp_std::marker::PhantomData;
@@ -92,7 +93,8 @@ where
 	Runtime: pallet_fee_rewards_vault::Config
 		+ pallet_timestamp::Config
 		+ pallet_evm::Config
-		+ pallet_dnt_fee_controller::Config,
+		+ pallet_dnt_fee_controller::Config
+		+ pallet_validator_set::Config,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
@@ -234,22 +236,28 @@ where
 		holder: Address,
 	) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		// TODO: AFTER UNIFIED ACCOUNT, DONT CHECK IF IS WHITELISTED IF THE HOLDER IS A VALIDATOR
+		let holder_account_id: <Runtime as frame_system::Config>::AccountId =
+			<Runtime as pallet_evm::Config>::AddressMapping::into_account_id(holder.into());
+		let is_whitelisted =
+			pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(holder.into());
+		let is_validator =
+			pallet_validator_set::Validators::<Runtime>::get().contains(&holder_account_id);
 
-		if !pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(holder.into()) {
+		if !is_whitelisted && !is_validator {
 			return Ok(false);
+		}
+
+		if claimant == holder {
+			return Ok(true);
 		}
 
 		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(holder.into());
 
 		if code.is_empty() {
 			return Ok(false);
-		}
-
-		if claimant == holder {
-			return Ok(true);
 		}
 
 		if !stbl_tools::eth::code_implements_function(code.as_slice(), &"owner()") {

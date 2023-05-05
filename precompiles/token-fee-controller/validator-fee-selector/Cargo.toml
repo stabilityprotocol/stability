@@ -29,12 +29,14 @@ fp-evm = { workspace = true }
 pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
 pallet-validator-fee-selector = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
+pallet-validator-set = { workspace = true }
 
 [dev-dependencies]
 derive_more = { version = "0.99" }
 hex-literal = "0.3.4"
 libsecp256k1 = "0.7"
 serde = { version = "1.0.100" }
+pallet-session = { workspace = true }
 sha3 = "0.10"
 
 precompile-utils = { workspace = true, features = [ "testing" ] }
@@ -57,5 +59,6 @@ std = [
 	"sp-io/std",
 	"sp-std/std",
 	"pallet-validator-fee-selector/std",
+	"pallet-validator-set/std"
 ]
 

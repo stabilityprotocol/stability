@@ -62,10 +62,11 @@ impl<Runtime, ValidatorFeeTokenController, Instance>
 where
 	ValidatorFeeTokenController: pallet_validator_fee_selector::ValidatorFeeTokenController,
 	Instance: 'static,
-	Runtime: pallet_evm::Config + pallet_timestamp::Config,
+	Runtime: pallet_evm::Config + pallet_timestamp::Config + pallet_validator_set::Config,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
+	<Runtime as frame_system::Config>::AccountId: From<H160>,
 {
 	#[precompile::public("setTokenAcceptance(address,bool)")]
 	fn set_token_acceptance(
@@ -77,8 +78,16 @@ where
 		handle.record_log_costs_manual(3, 32)?;
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+    
+    let validators = pallet_validator_set::Pallet::<Runtime>::approved_validators();
 
-		ValidatorFeeTokenController::update_fee_token_acceptance(
+		if !validators.contains(&msg_sender.into()) {
+			return Err(revert(
+				"ValidatorFeeTokenController: sender is not an approved validator",
+			));
+		}
+
+    ValidatorFeeTokenController::update_fee_token_acceptance(
 			msg_sender,
 			token_address.into(),
 			acceptance_value,
@@ -121,6 +130,14 @@ where
 		handle.record_log_costs_manual(3, 64)?;
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+    
+    let validators = pallet_validator_set::Pallet::<Runtime>::approved_validators();
+
+		if !validators.contains(&msg_sender.into()) {
+			return Err(revert(
+				"ValidatorFeeTokenController: sender is not an approved validator",
+			));
+		}
 
 		ValidatorFeeTokenController::update_conversion_rate_controller(
 			msg_sender,
