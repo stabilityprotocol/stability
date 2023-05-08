@@ -51,7 +51,8 @@ parameter_types! {
 }
 
 pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
-
+pub const SELECTOR_LOG_TRANSFER_OWNER: [u8; 32] =
+	keccak256!("OwnershipTransferStarted(address,address)");
 pub const SELECTOR_REWARD_CLAIMED: [u8; 32] = keccak256!("RewardClaimed(address,address,address)");
 pub const SELECTOR_WHITELIST_STATUS_UPDATED: [u8; 32] =
 	keccak256!("WhitelistStatusUpdated(address,bool)");
@@ -131,6 +132,19 @@ where
 			*claimable_owner = new_owner.into();
 		});
 
+		let target_new_owner: H160 = new_owner.into();
+
+		handle.record_log_costs_manual(2, 32)?;
+		log2(
+			handle.context().address,
+			SELECTOR_LOG_TRANSFER_OWNER,
+			Into::<H256>::into(owner),
+			EvmDataWriter::new()
+				.write(Into::<H256>::into(target_new_owner))
+				.build(),
+		)
+		.record(handle)?;
+
 		Ok(())
 	}
 
@@ -198,6 +212,7 @@ where
 			&vec![msg_sender.into(), stbl_tools::misc::u256_to_h256(reward)],
 		);
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		let (reason, _) = handle.call(
 			token.into(),
 			None,
@@ -264,7 +279,6 @@ where
 
 		let call_data = stbl_tools::eth::generate_calldata(&"owner()", &vec![]);
 
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		let (reason, output) = handle.call(
 			holder.into(),
 			None,

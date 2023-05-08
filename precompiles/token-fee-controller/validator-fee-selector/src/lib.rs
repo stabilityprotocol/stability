@@ -74,10 +74,9 @@ where
 		token_address: Address,
 		acceptance_value: bool,
 	) -> EvmResult {
-		let msg_sender = handle.context().caller;
-		handle.record_log_costs_manual(3, 32)?;
-
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+
+		let msg_sender = handle.context().caller;
 
 		let validators = pallet_validator_set::Pallet::<Runtime>::approved_validators();
 
@@ -87,6 +86,7 @@ where
 			));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		match ValidatorFeeTokenController::update_fee_token_acceptance(
 			msg_sender,
 			token_address.into(),
@@ -98,6 +98,7 @@ where
 			}
 		};
 
+		handle.record_log_costs_manual(3, 32)?;
 		log3(
 			handle.context().address,
 			SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
@@ -132,10 +133,9 @@ where
 		numerator: U256,
 		denominator: U256,
 	) -> EvmResult {
-		let msg_sender = handle.context().caller;
-		handle.record_log_costs_manual(3, 64)?;
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+		let msg_sender = handle.context().caller;
 
 		let validators = pallet_validator_set::Pallet::<Runtime>::approved_validators();
 
@@ -145,6 +145,7 @@ where
 			));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		match ValidatorFeeTokenController::update_conversion_rate(
 			msg_sender,
 			token_address.into(),
@@ -158,6 +159,7 @@ where
 			_ => {}
 		}
 
+		handle.record_log_costs_manual(3, 32)?;
 		log3(
 			handle.context().address,
 			SELECTOR_LOG_VALIDATOR_TOKEN_RATE_CHANGED,
