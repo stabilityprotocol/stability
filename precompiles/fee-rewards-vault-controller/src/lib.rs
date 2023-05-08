@@ -117,16 +117,16 @@ where
 
 	#[precompile::public("transferOwnership(address)")]
 	fn transfer_ownership(handle: &mut impl PrecompileHandle, new_owner: Address) -> EvmResult {
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 		let owner = OwnerStorage::<DefaultOwner>::get();
 
-		if sender != owner {
+		if msg_sender != owner {
 			return Err(revert("sender is not owner"));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		ClaimableOwnerStorage::mutate(move |claimable_owner| {
 			*claimable_owner = new_owner.into();
 		});
@@ -137,24 +137,23 @@ where
 	#[precompile::public("acceptOwnership()")]
 	fn claim_ownership(handle: &mut impl PrecompileHandle) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		handle.record_log_costs_manual(1, 32)?;
-
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 
 		let target_new_owner = ClaimableOwnerStorage::get();
 
-		if target_new_owner != sender {
+		if target_new_owner != msg_sender {
 			return Err(revert("target owner is not the claimer"));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		ClaimableOwnerStorage::kill();
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		OwnerStorage::<DefaultOwner>::mutate(|owner| {
 			*owner = target_new_owner;
 		});
 
+		handle.record_log_costs_manual(1, 32)?;
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
@@ -174,11 +173,10 @@ where
 		token: Address,
 	) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 
-		if !Self::can_claim_reward(handle, sender.into(), holder)? {
+		if !Self::can_claim_reward(handle, msg_sender.into(), holder)? {
 			return Err(revert("sender is not allowed to claim reward"));
 		}
 
@@ -187,6 +185,7 @@ where
 			token.into(),
 		);
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		pallet_fee_rewards_vault::Pallet::<Runtime>::sub_claimable_reward(
 			holder.into(),
 			token.into(),
@@ -196,7 +195,7 @@ where
 
 		let encoded_data = stbl_tools::eth::generate_calldata(
 			&"transfer(address,uint256)",
-			&vec![sender.into(), stbl_tools::misc::u256_to_h256(reward)],
+			&vec![msg_sender.into(), stbl_tools::misc::u256_to_h256(reward)],
 		);
 
 		let (reason, _) = handle.call(
@@ -216,11 +215,12 @@ where
 			return Err(revert("fail trying to transfer reward"));
 		}
 
+		handle.record_log_costs_manual(3, 32)?;
 		log3(
 			handle.context().address,
 			SELECTOR_REWARD_CLAIMED,
 			holder.0,
-			sender,
+			msg_sender,
 			Vec::from(token.0.to_fixed_bytes()),
 		)
 		.record(handle)?;
@@ -236,8 +236,6 @@ where
 		holder: Address,
 	) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
 		let holder_account_id: <Runtime as frame_system::Config>::AccountId =
 			<Runtime as pallet_evm::Config>::AddressMapping::into_account_id(holder.into());
@@ -266,6 +264,7 @@ where
 
 		let call_data = stbl_tools::eth::generate_calldata(&"owner()", &vec![]);
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		let (reason, output) = handle.call(
 			holder.into(),
 			None,
@@ -296,7 +295,6 @@ where
 		token: Address,
 	) -> EvmResult<U256> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
 		let reward = pallet_fee_rewards_vault::Pallet::<Runtime>::get_claimable_reward(
 			holder.into(),
@@ -310,7 +308,6 @@ where
 	#[precompile::view]
 	fn is_whitelisted(handle: &mut impl PrecompileHandle, holder: Address) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
 		let whitelisted =
 			pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(holder.into());
@@ -325,12 +322,11 @@ where
 		is_whitelisted: bool,
 	) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 		let owner = OwnerStorage::<DefaultOwner>::get();
 
-		if sender != owner {
+		if msg_sender != owner {
 			return Err(revert("sender is not owner"));
 		}
 
@@ -340,8 +336,10 @@ where
 			return Err(revert("address is not a smartcontract"));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		pallet_fee_rewards_vault::Pallet::<Runtime>::set_whitelist(holder.into(), is_whitelisted);
 
+		handle.record_log_costs_manual(2, 32)?;
 		log2(
 			handle.context().address,
 			SELECTOR_WHITELIST_STATUS_UPDATED,
@@ -357,7 +355,6 @@ where
 	#[precompile::view]
 	fn get_validator_percentage(handle: &mut impl PrecompileHandle) -> EvmResult<U256> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
 		let percentage = pallet_dnt_fee_controller::Pallet::<Runtime>::get_validator_percentage();
 
@@ -370,12 +367,11 @@ where
 		percentage: U256,
 	) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 		let owner = OwnerStorage::<DefaultOwner>::get();
 
-		if sender != owner {
+		if msg_sender != owner {
 			return Err(revert("sender is not owner"));
 		}
 
@@ -383,8 +379,10 @@ where
 			return Err(revert("percentage is too high"));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		pallet_dnt_fee_controller::Pallet::<Runtime>::set_validator_percentage(percentage).unwrap();
 
+		handle.record_log_costs_manual(1, 32)?;
 		log1(
 			handle.context().address,
 			SELECTOR_VALIDATOR_PERCENTAGE_UPDATED,
