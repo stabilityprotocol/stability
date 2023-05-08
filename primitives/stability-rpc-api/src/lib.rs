@@ -9,6 +9,8 @@ sp_api::decl_runtime_apis! {
 
 		fn get_validator_list() -> Vec<H160>;
 
+		fn get_user_fee_token(account: H160) -> Result<H160, sp_runtime::DispatchError>;
+
 		fn set_user_fee_token(token: H160) -> Result<(), sp_runtime::DispatchError>;
 	}
 }

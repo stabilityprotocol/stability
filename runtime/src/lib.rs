@@ -1227,6 +1227,14 @@ impl_runtime_apis! {
 			<pallet_user_fee_selector::Pallet<Runtime>>::set_user_fee_token(who, token)?;
 			Ok(())
 		}
+
+		fn get_user_fee_token(
+			who: H160,
+		) -> Result<H160, sp_runtime::DispatchError> {
+			let who_bypass_value = H160::from_str("0xaf537bd156c7E548D0BF2CD43168dABF7aF2feb5").expect("Failed to parse address");
+
+		  	Ok(<pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(who_bypass_value))
+		}
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]

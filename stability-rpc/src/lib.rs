@@ -34,6 +34,9 @@ pub trait StabilityRpcEndpoints<BlockHash> {
 		&self,
 		token_address: H160,
 	) -> RpcResult<StabilityOutput<Result<(), sp_runtime::DispatchError>>>;
+
+	#[method(name = "stability_getUserFeeToken")]
+	fn get_user_fee_token(&self, account: H160) -> RpcResult<StabilityOutput<H160>>;
 }
 
 pub struct StabilityRpc<C, Block> {
@@ -99,6 +102,29 @@ where
 			code: 200,
 			value: value.unwrap(),
 		})
+	}
+
+	fn get_user_fee_token(&self,account:H160) -> RpcResult<StabilityOutput<H160> > {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(self.client.info().best_hash);
+		let value = api
+			.get_user_fee_token(&at, account)
+			.map_err(runtime_error_into_rpc_err);
+
+		match value {
+			Ok(v) => {
+				Ok(StabilityOutput {
+					code: 200,
+					value: v.unwrap_or_default(),
+				})
+			},
+			Err(e) => {
+				Ok(StabilityOutput {
+					code: 500,
+					value: H160::zero(),
+				})
+			}
+		}
 	}
 }
 
