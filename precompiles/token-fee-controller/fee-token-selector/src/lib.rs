@@ -65,8 +65,6 @@ where
 		let msg_sender = handle.context().caller;
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-		handle.record_log_costs_manual(2, 32)?;
-
 		match UserFeeTokenController::set_user_fee_token(msg_sender.into(), token_address.into()) {
 			Err(_) => {
 				return Err(revert(b"UserFeeTokenController: token not supported"));
@@ -74,6 +72,7 @@ where
 			_ => {}
 		};
 
+		handle.record_log_costs_manual(2, 32)?;
 		log2(
 			handle.context().address,
 			SELECTOR_LOG_FEE_CHANGED,

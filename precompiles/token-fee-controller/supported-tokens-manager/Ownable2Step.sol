@@ -3,6 +3,7 @@ pragma solidity >=0.8.3;
 
 interface Ownable2Step {
     event NewOwner(address newOwner);
+    event OwnershipTransferStarted(address currentOwner, address newOwner);
 
     /// @dev Returns owner.
     /// @custom:selector 8da5cb5b
