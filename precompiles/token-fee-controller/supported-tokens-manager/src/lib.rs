@@ -116,6 +116,8 @@ pub const SELECTOR_LOG_TOKEN_SUPPORT_CHANGE: [u8; 32] = keccak256!("TokenSupport
 
 /// Solidity selector of the Withdraw log, which is the Keccak of the Log signature.
 pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
+pub const SELECTOR_LOG_TRANSFER_OWNER: [u8; 32] =
+	keccak256!("OwnershipTransferStarted(address,address)");
 
 pub type OwnerStorage<Instance, DefaultOwner> =
 	StorageValue<<Instance as InstanceToPrefix>::OwnerPrefix, H160, ValueQuery, DefaultOwner>;
@@ -156,16 +158,19 @@ where
 	fn add_token(handle: &mut impl PrecompileHandle, token: Address, slot: H256) -> EvmResult<()> {
 		Self::require_owner(handle.context().caller)?;
 
-		log2(
-			handle.context().address,
-			SELECTOR_LOG_TOKEN_SUPPORT_CHANGE,
-			Into::<H160>::into(token),
-			EvmDataWriter::new().write(true).build(),
-		)
-		.record(handle)?;
-
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		match SupportedTokensManager::add_supported_token(token.into(), slot) {
-			Ok(_) => Ok(()),
+			Ok(_) => {
+				handle.record_log_costs_manual(2, 32)?;
+				log2(
+					handle.context().address,
+					SELECTOR_LOG_TOKEN_SUPPORT_CHANGE,
+					Into::<H160>::into(token),
+					EvmDataWriter::new().write(true).build(),
+				)
+				.record(handle)?;
+				Ok(())
+			}
 			Err(_) => Err(revert("SupportedTokensManager: Token is already supported")),
 		}
 	}
@@ -190,8 +195,10 @@ where
 
 	#[precompile::public("removeToken(address)")]
 	fn remove_token(handle: &mut impl PrecompileHandle, token: Address) -> EvmResult<()> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		Self::require_owner(handle.context().caller)?;
 
+		handle.record_log_costs_manual(2, 32)?;
 		log2(
 			handle.context().address,
 			SELECTOR_LOG_TOKEN_SUPPORT_CHANGE,
@@ -200,6 +207,7 @@ where
 		)
 		.record(handle)?;
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		match SupportedTokensManager::remove_supported_token(token.into()) {
 			Ok(_) => Ok(()),
 			Err(_) => Err(revert(
@@ -236,19 +244,32 @@ where
 
 	#[precompile::public("transferOwnership(address)")]
 	fn transfer_ownership(handle: &mut impl PrecompileHandle, new_owner: Address) -> EvmResult {
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 		let owner = OwnerStorage::<Instance, DefaultOwner>::get();
 
-		if sender != owner {
+		if msg_sender != owner {
 			return Err(revert("SupportedTokensManager: Sender is not owner"));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		ClaimableOwnerStorage::<Instance>::mutate(move |claimable_owner| {
 			*claimable_owner = new_owner.into();
 		});
+
+		let target_new_owner: H160 = new_owner.into();
+
+		handle.record_log_costs_manual(2, 32)?;
+		log2(
+			handle.context().address,
+			SELECTOR_LOG_TRANSFER_OWNER,
+			Into::<H256>::into(owner),
+			EvmDataWriter::new()
+				.write(Into::<H256>::into(target_new_owner))
+				.build(),
+		)
+		.record(handle)?;
 
 		Ok(())
 	}
@@ -256,26 +277,25 @@ where
 	#[precompile::public("acceptOwnership()")]
 	fn claim_ownership(handle: &mut impl PrecompileHandle) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		handle.record_log_costs_manual(1, 32)?;
-
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 
 		let target_new_owner = ClaimableOwnerStorage::<Instance>::get();
 
-		if target_new_owner != sender {
+		if target_new_owner != msg_sender {
 			return Err(revert(
 				"SupportedTokensManager: Target owner is not the claimer",
 			));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		ClaimableOwnerStorage::<Instance>::kill();
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		OwnerStorage::<Instance, DefaultOwner>::mutate(|owner| {
 			*owner = target_new_owner;
 		});
 
+		handle.record_log_costs_manual(1, 32)?;
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,

@@ -47,6 +47,8 @@ parameter_types! {
 }
 
 pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
+pub const SELECTOR_LOG_TRANSFER_OWNER: [u8; 32] =
+	keccak256!("OwnershipTransferStarted(address,address)");
 pub const SELECTOR_VALIDATOR_ADDED: [u8; 32] = keccak256!("ValidatorAdded(bytes32)");
 pub const SELECTOR_VALIDATOR_REMOVED: [u8; 32] = keccak256!("ValidatorRemoved(bytes32)");
 
@@ -110,19 +112,32 @@ where
 
 	#[precompile::public("transferOwnership(address)")]
 	fn transfer_ownership(handle: &mut impl PrecompileHandle, new_owner: Address) -> EvmResult {
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 		let owner = OwnerStorage::<DefaultOwner>::get();
 
-		if sender != owner {
+		if msg_sender != owner {
 			return Err(revert("sender is not owner"));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		ClaimableOwnerStorage::mutate(move |claimable_owner| {
 			*claimable_owner = new_owner.into();
 		});
+
+		let target_new_owner: H160 = new_owner.into();
+
+		handle.record_log_costs_manual(2, 32)?;
+		log2(
+			handle.context().address,
+			SELECTOR_LOG_TRANSFER_OWNER,
+			Into::<H256>::into(owner),
+			EvmDataWriter::new()
+				.write(Into::<H256>::into(target_new_owner))
+				.build(),
+		)
+		.record(handle)?;
 
 		Ok(())
 	}
@@ -130,24 +145,23 @@ where
 	#[precompile::public("acceptOwnership()")]
 	fn claim_ownership(handle: &mut impl PrecompileHandle) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		handle.record_log_costs_manual(1, 32)?;
-
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 
 		let target_new_owner = ClaimableOwnerStorage::get();
 
-		if target_new_owner != sender {
+		if target_new_owner != msg_sender {
 			return Err(revert("target owner is not the claimer"));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		ClaimableOwnerStorage::kill();
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		OwnerStorage::<DefaultOwner>::mutate(|owner| {
 			*owner = target_new_owner;
 		});
 
+		handle.record_log_costs_manual(1, 32)?;
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
@@ -180,17 +194,17 @@ where
 	#[precompile::public("addValidator(address)")]
 	fn add_validator(handle: &mut impl PrecompileHandle, new_validator: Address) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 		let owner = OwnerStorage::<DefaultOwner>::get();
 
-		if sender != owner {
+		if msg_sender != owner {
 			return Err(revert("sender is not owner"));
 		}
 
 		let origin_id: H160 = new_validator.into();
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		RuntimeHelper::<Runtime>::try_dispatch(
 			handle,
 			frame_system::RawOrigin::Root.into(),
@@ -199,6 +213,7 @@ where
 			},
 		)?;
 
+		handle.record_log_costs_manual(1, 32)?;
 		log1(
 			handle.context().address,
 			SELECTOR_VALIDATOR_ADDED,
@@ -217,17 +232,17 @@ where
 		removed_validator: Address,
 	) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 		let owner = OwnerStorage::<DefaultOwner>::get();
 
-		if sender != owner {
+		if msg_sender != owner {
 			return Err(revert("sender is not owner"));
 		}
 
 		let origin_id: H160 = removed_validator.into();
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		RuntimeHelper::<Runtime>::try_dispatch(
 			handle,
 			frame_system::RawOrigin::Root.into(),
@@ -236,6 +251,7 @@ where
 			},
 		)?;
 
+		handle.record_log_costs_manual(1, 32)?;
 		log1(
 			handle.context().address,
 			SELECTOR_VALIDATOR_REMOVED,

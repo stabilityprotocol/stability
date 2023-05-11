@@ -86,7 +86,8 @@ where
 		}
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-		ValidatorFeeTokenController::update_fee_token_acceptance(
+    
+    ValidatorFeeTokenController::update_fee_token_acceptance(
 			msg_sender,
 			token_address.into(),
 			acceptance_value,
@@ -95,6 +96,7 @@ where
 
 		handle.record_log_costs_manual(3, 32)?;
 
+		handle.record_log_costs_manual(3, 32)?;
 		log3(
 			handle.context().address,
 			SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
@@ -137,6 +139,7 @@ where
 		}
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+    
 		ValidatorFeeTokenController::update_conversion_rate_controller(
 			msg_sender,
 			cr_controller.into(),
@@ -145,7 +148,7 @@ where
 			revert(b"ValidatorFeeTokenController: default token conversion rate cannot be updated")
 		})?;
 
-		handle.record_log_costs_manual(2, 64)?;
+    handle.record_log_costs_manual(2, 64)?;
 		log2(
 			handle.context().address,
 			SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
