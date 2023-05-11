@@ -77,7 +77,7 @@ where
 		)
 		.validate_in_pool_for(&account)
 		.and_then(|v| v.with_base_fee())
-		.map_err(|e| TransactionValidityError::Invalid(InvalidTransaction::Payment))?;
+		.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Payment))?;
 
 		ValidTransactionBuilder::default()
 			.and_provides((origin, transaction_data.nonce))
