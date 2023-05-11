@@ -34,11 +34,11 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-/// Solidity selector of the Transfer log, which is the Keccak of the Log signature.
+/// Solidity selector of the Token Acceptance Changed log, which is the Keccak of the Log signature.
 pub const SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED: [u8; 32] =
 	keccak256!("ValidatorTokenAcceptanceChanged(address,address,bool)");
 
-/// Solidity selector of the Transfer log, which is the Keccak of the Log signature.
+/// Solidity selector of the Controller Changed log, which is the Keccak of the Log signature.
 pub const SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED: [u8; 32] =
 	keccak256!("ValidatorTokenRateControllerChanged(address,address)");
 
