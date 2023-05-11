@@ -75,11 +75,9 @@ where
 		acceptance_value: bool,
 	) -> EvmResult {
 		let msg_sender = handle.context().caller;
-		handle.record_log_costs_manual(3, 32)?;
 
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-    
-    let validators = pallet_validator_set::Pallet::<Runtime>::approved_validators();
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+		let validators = pallet_validator_set::Pallet::<Runtime>::approved_validators();
 
 		if !validators.contains(&msg_sender.into()) {
 			return Err(revert(
@@ -87,12 +85,15 @@ where
 			));
 		}
 
-    ValidatorFeeTokenController::update_fee_token_acceptance(
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+		ValidatorFeeTokenController::update_fee_token_acceptance(
 			msg_sender,
 			token_address.into(),
 			acceptance_value,
 		)
 		.map_err(|_| revert("ValidatorFeeTokenController: token not supported"))?;
+
+		handle.record_log_costs_manual(3, 32)?;
 
 		log3(
 			handle.context().address,
@@ -114,7 +115,6 @@ where
 		token_address: Address,
 	) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-
 		Ok(ValidatorFeeTokenController::validator_supports_fee_token(
 			validator.into(),
 			token_address.into(),
@@ -127,11 +127,8 @@ where
 		cr_controller: Address,
 	) -> EvmResult {
 		let msg_sender = handle.context().caller;
-		handle.record_log_costs_manual(3, 64)?;
 
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-    
-    let validators = pallet_validator_set::Pallet::<Runtime>::approved_validators();
+		let validators = pallet_validator_set::Pallet::<Runtime>::approved_validators();
 
 		if !validators.contains(&msg_sender.into()) {
 			return Err(revert(
@@ -139,6 +136,7 @@ where
 			));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		ValidatorFeeTokenController::update_conversion_rate_controller(
 			msg_sender,
 			cr_controller.into(),
@@ -147,6 +145,7 @@ where
 			revert(b"ValidatorFeeTokenController: default token conversion rate cannot be updated")
 		})?;
 
+		handle.record_log_costs_manual(2, 64)?;
 		log2(
 			handle.context().address,
 			SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
@@ -165,7 +164,6 @@ where
 		validator: Address,
 	) -> EvmResult<Address> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-
 		Ok(ValidatorFeeTokenController::conversion_rate_controller(validator.into()).into())
 	}
 }
