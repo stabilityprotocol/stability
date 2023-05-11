@@ -72,7 +72,7 @@ pub mod pallet {
 	>;
 
 	pub enum ValidatorFeeTokenError {
-		NotMutableDefaultTokenConversionRate,
+		ControllerIsEOA,
 		NotSupportedToken,
 	}
 
@@ -191,8 +191,15 @@ pub mod pallet {
 			validator: H160,
 			conversion_rate_controller: H160,
 		) -> Result<(), Self::Error> {
-			ValidatorConversionRateController::<T>::insert(validator, conversion_rate_controller);
-			Ok(())
+			if pallet_evm::AccountCodes::<T>::get(conversion_rate_controller).is_empty() {
+				Err(ValidatorFeeTokenError::ControllerIsEOA)
+			} else {
+				ValidatorConversionRateController::<T>::insert(
+					validator,
+					conversion_rate_controller,
+				);
+				Ok(())
+			}
 		}
 	}
 }

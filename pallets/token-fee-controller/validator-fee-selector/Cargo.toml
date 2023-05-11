@@ -23,6 +23,7 @@ pallet-ethereum = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-balances = { workspace = true, features = ["std"] }
 pallet-root-controller = { workspace = true }
+fp-evm = { workspace = true }
 
 [features]
 default = ["std"]

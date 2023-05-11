@@ -32,6 +32,7 @@ use pallet_evm::{EvmConfig, IdentityAddressMapping};
 use sp_core::{H160, H256};
 use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 use sp_std::vec;
+use std::collections::BTreeMap;
 
 pub type AccountId = H160;
 pub type Balance = u128;
@@ -249,6 +250,30 @@ impl ExtBuilder {
 		let mut t = frame_system::GenesisConfig::default()
 			.build_storage::<Runtime>()
 			.expect("Frame system builds valid default genesis config");
+
+		let initial_default_conversion_rate_controller =
+			crate::GenesisConfig::default().initial_default_conversion_rate_controller;
+
+		<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+			&pallet_evm::GenesisConfig {
+				accounts: {
+					let mut map = BTreeMap::new();
+					let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+					map.insert(
+						initial_default_conversion_rate_controller,
+						fp_evm::GenesisAccount {
+							nonce: U256::zero(),
+							balance: U256::from(1000000000000000000u128),
+							storage: BTreeMap::new(),
+							code: revert_bytecode,
+						},
+					);
+					map
+				},
+			},
+			&mut t,
+		)
+		.unwrap();
 
 		<crate::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
 			&crate::GenesisConfig::default(),

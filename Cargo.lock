@@ -4899,6 +4899,7 @@ dependencies = [
 name = "pallet-validator-fee-selector"
 version = "0.1.0"
 dependencies = [
+ "fp-evm",
  "frame-support",
  "frame-system",
  "pallet-balances",

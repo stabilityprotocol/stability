@@ -6,6 +6,7 @@ use precompile_utils::{
 use sp_core::H160;
 
 use crate::{
+	mock::MeaninglessTokenAddress,
 	mock::{ExtBuilder, NonCryptoAlith, PCall, Precompiles, PrecompilesValue, Runtime},
 	DefaultAcceptance, SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
 	SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
@@ -15,8 +16,6 @@ use crate::{
 fn precompiles() -> Precompiles<Runtime> {
 	PrecompilesValue::get()
 }
-
-use crate::mock::MeaninglessTokenAddress;
 
 // fee token acceptance management
 
@@ -215,7 +214,7 @@ fn default_conversion_rate() {
 }
 
 #[test]
-fn update_conversion_rate_controller() {
+fn fail_update_conversion_rate_controller_of_eoa() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(
@@ -225,12 +224,31 @@ fn update_conversion_rate_controller() {
 					cr_controller: Address(CryptoAlith.into()),
 				},
 			)
+			.execute_reverts(|x| {
+				x.eq_ignore_ascii_case(
+					b"ValidatorFeeTokenController: default token conversion rate cannot be updated",
+				)
+			});
+	})
+}
+
+#[test]
+fn update_conversion_rate_controller() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				CryptoAlith,
+				Precompile1,
+				PCall::update_conversion_rate_controller {
+					cr_controller: MeaninglessTokenAddress::get().into(),
+				},
+			)
 			.expect_log(log2(
 				Precompile1,
 				SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
-				CryptoAlith,
+				H160::from(CryptoAlith),
 				EvmDataWriter::new()
-					.write(Address(CryptoAlith.into()))
+					.write(Address(MeaninglessTokenAddress::get()))
 					.build(),
 			))
 			.execute_some();
@@ -243,7 +261,7 @@ fn update_conversion_rate_controller() {
 					validator: Address(CryptoAlith.into()),
 				},
 			)
-			.execute_returns_encoded(Address(CryptoAlith.into()));
+			.execute_returns_encoded(Address(MeaninglessTokenAddress::get()));
 	})
 }
 
@@ -279,21 +297,5 @@ fn reverts_if_validator_dont_accepts_token() {
 				},
 			)
 			.execute_some();
-
-		// precompiles()
-		// 	.prepare_test(
-		// 		CryptoAlith,
-		// 		Precompile1,
-		// 		PCall::token_conversion_rate {
-		// 			validator: Address(CryptoAlith.into()),
-		// 			token_address: MeaninglessTokenAddress::get().into(),
-		// 		},
-		// 	)
-		// 	.execute_returns(
-		// 		EvmDataWriter::new()
-		// 			.write(DefaultConversionRate::get().0)
-		// 			.write(DefaultConversionRate::get().1)
-		// 			.build(),
-		// 	);
 	})
 }

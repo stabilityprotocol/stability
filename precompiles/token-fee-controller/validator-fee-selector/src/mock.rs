@@ -23,6 +23,7 @@ use std::str::FromStr;
 use frame_support::traits::GenesisBuild;
 use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::Weight};
 use frame_system::EnsureRoot;
+use std::collections::BTreeMap;
 
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
 use pallet_session::{SessionHandler, ShouldEndSession};
@@ -282,6 +283,29 @@ impl ExtBuilder {
 			)
 			.expect("invalid address"),
 		};
+
+		let custom_controller = MeaninglessTokenAddress::get();
+
+		<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+			&pallet_evm::GenesisConfig {
+				accounts: {
+					let mut map = BTreeMap::new();
+					let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+					map.insert(
+						custom_controller,
+						fp_evm::GenesisAccount {
+							nonce: U256::zero(),
+							balance: U256::from(1000000000000000000u128),
+							storage: BTreeMap::new(),
+							code: revert_bytecode,
+						},
+					);
+					map
+				},
+			},
+			&mut t,
+		)
+		.unwrap();
 
 		<pallet_validator_fee_selector::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
 			&config,
