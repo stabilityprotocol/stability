@@ -3099,10 +3099,10 @@ version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d291e3a5818a2384645fd9756362e6d89cf0541b0b916fa7702ea4a9833608e"
 dependencies = [
- "jsonrpsee-core",
+ "jsonrpsee-core 0.16.2",
  "jsonrpsee-proc-macros",
  "jsonrpsee-server",
- "jsonrpsee-types",
+ "jsonrpsee-types 0.16.2",
  "tracing",
 ]
 
@@ -3120,7 +3120,7 @@ dependencies = [
  "futures-util",
  "globset",
  "hyper",
- "jsonrpsee-types",
+ "jsonrpsee-types 0.16.2",
  "parking_lot 0.12.1",
  "rand 0.8.5",
  "rustc-hash",
@@ -3129,6 +3129,22 @@ dependencies = [
  "soketto",
  "thiserror",
  "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "jsonrpsee-core"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d857956771795d8d9ce86f79911e8cdb9530f062f553794ebe383999026d320"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "beef",
+ "jsonrpsee-types 0.18.1",
+ "serde",
+ "serde_json",
+ "thiserror",
  "tracing",
 ]
 
@@ -3155,8 +3171,8 @@ dependencies = [
  "futures-util",
  "http",
  "hyper",
- "jsonrpsee-core",
- "jsonrpsee-types",
+ "jsonrpsee-core 0.16.2",
+ "jsonrpsee-types 0.16.2",
  "serde",
  "serde_json",
  "soketto",
@@ -3172,6 +3188,20 @@ name = "jsonrpsee-types"
 version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5bd522fe1ce3702fd94812965d7bb7a3364b1c9aba743944c5a00529aae80f8c"
+dependencies = [
+ "anyhow",
+ "beef",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "jsonrpsee-types"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b664e8c147332e8ab73e38b4f6f0f5f791321aac170db8694d6f91120463e618"
 dependencies = [
  "anyhow",
  "beef",
@@ -4731,6 +4761,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-meta-transactions"
+version = "0.1.0"
+dependencies = [
+ "fp-ethereum",
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "pallet-balances",
+ "pallet-erc20-manager",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-evm-chain-id",
+ "pallet-fee-rewards-vault",
+ "pallet-supported-tokens-manager",
+ "pallet-timestamp",
+ "pallet-user-fee-selector",
+ "pallet-validator-fee-selector",
+ "parity-scale-codec",
+ "runner",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-tools",
+]
+
+[[package]]
 name = "pallet-root-controller"
 version = "1.0.0"
 dependencies = [
@@ -6019,6 +6078,17 @@ dependencies = [
  "libc",
  "rtoolbox",
  "winapi",
+]
+
+[[package]]
+name = "rpc-eth-extension-api"
+version = "0.1.0"
+dependencies = [
+ "fp-ethereum",
+ "sp-api",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -8373,6 +8443,7 @@ dependencies = [
  "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
+ "rpc-eth-extension-api",
  "sc-cli",
  "sc-client-api",
  "sc-consensus",
@@ -8421,10 +8492,19 @@ name = "stability-rpc"
 version = "0.1.0"
 dependencies = [
  "assert_matches",
+ "async-trait",
+ "ethereum",
+ "fc-rpc-core",
+ "fp-rpc",
+ "futures-util",
  "jsonrpsee",
+ "jsonrpsee-core 0.18.1",
  "lazy_static",
+ "pallet-meta-transactions",
  "parity-scale-codec",
+ "rpc-eth-extension-api",
  "sc-client-api",
+ "sc-transaction-pool-api",
  "scale-info",
  "serde",
  "serde_json",
@@ -8481,6 +8561,7 @@ dependencies = [
  "pallet-grandpa",
  "pallet-hotfix-sufficients",
  "pallet-im-online",
+ "pallet-meta-transactions",
  "pallet-root-controller",
  "pallet-session",
  "pallet-sudo",
@@ -8500,6 +8581,7 @@ dependencies = [
  "precompile-utils",
  "precompile-validator-controller",
  "precompile-validator-fee-selector",
+ "rpc-eth-extension-api",
  "runner",
  "scale-info",
  "serde",
@@ -8727,6 +8809,7 @@ name = "stbl-tools"
 version = "0.1.0"
 dependencies = [
  "ethereum",
+ "hex",
  "pallet-evm",
  "sha3 0.10.7",
  "sp-core",

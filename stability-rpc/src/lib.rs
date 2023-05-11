@@ -1,14 +1,20 @@
+use futures_util::TryFutureExt;
 use jsonrpsee::{
-	core::{Error as JsonRpseeError, RpcResult},
+	core::{error, Error as JsonRpseeError, RpcResult},
 	proc_macros::rpc,
 	types::error::{CallError, ErrorObject},
 };
+use rpc_eth_extension_api::EthExtensionRpcApi;
+use sc_transaction_pool_api::TransactionSource;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
-use sp_core::H160;
+use sp_core::{Bytes, H160, H256};
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 pub use stability_rpc_api::StabilityRpcApi as StabilityRpcRuntimeApi;
-use std::sync::Arc;
+use std::{
+	str::{self},
+	sync::Arc,
+};
 
 #[cfg(test)]
 mod mock;

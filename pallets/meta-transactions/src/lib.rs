@@ -1,0 +1,326 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+use sp_core::H160;
+
+pub use pallet::*;
+#[frame_support::pallet]
+pub mod pallet {
+	use super::*;
+	use fp_ethereum::TransactionData;
+	use fp_evm::CheckEvmTransactionConfig;
+	use fp_evm::FeeCalculator;
+	use frame_support::dispatch::GetDispatchInfo;
+	use frame_support::pallet_prelude::{StorageMap, *};
+	use frame_support::sp_runtime::traits::UniqueSaturatedInto;
+	use frame_support::weights::Weight;
+	use frame_system::pallet_prelude::*;
+	use pallet_erc20_manager::ERC20Manager;
+	use pallet_evm::GasWeightMapping;
+	use runner::OnChargeDecentralizedNativeTokenFee;
+	use sp_core::{H256, U256};
+	use sp_std::{vec, vec::Vec};
+
+	#[pallet::pallet]
+	#[pallet::without_storage_info]
+	pub struct Pallet<T>(_);
+
+	#[pallet::storage]
+	pub type SponsorNonce<T: Config> = StorageMap<_, Blake2_128Concat, H160, u64, ValueQuery>;
+
+	#[pallet::config]
+	pub trait Config: frame_system::Config + pallet_evm::Config + pallet_ethereum::Config {
+		type RuntimeCall: Parameter + GetDispatchInfo;
+		type ERC20Manager: ERC20Manager;
+		type DNTFeeController: runner::OnChargeDecentralizedNativeTokenFee;
+	}
+
+	#[pallet::validate_unsigned]
+	impl<T: Config> ValidateUnsigned for Pallet<T>
+	where
+		Result<pallet_ethereum::RawOrigin, <T as frame_system::Config>::RuntimeOrigin>:
+			From<<T as frame_system::Config>::RuntimeOrigin>,
+		<T as frame_system::Config>::RuntimeOrigin: From<pallet_ethereum::RawOrigin>,
+	{
+		type Call = Call<T>;
+
+		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+			match call {
+				Call::send_delegated_transaction {
+					transaction,
+					meta_trx_sponsor,
+					meta_trx_nonce,
+					meta_trx_sponsor_signature: _,
+				} => {
+					match SponsorNonce::<T>::get(meta_trx_sponsor.clone()) {
+						nonce if nonce > *meta_trx_nonce => {
+							Err(TransactionValidityError::Invalid(InvalidTransaction::Stale))
+						}
+						nonce if nonce < *meta_trx_nonce => Err(TransactionValidityError::Invalid(
+							InvalidTransaction::Future,
+						)),
+						_ => Ok(()),
+					}?;
+
+					let from =
+						Self::ensure_transaction_signature(transaction.clone()).map_err(|_| {
+							TransactionValidityError::Invalid(InvalidTransaction::BadProof)
+						})?;
+
+					Self::ensure_transaction_unicity(&from, &transaction)
+						.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Call))?;
+
+					let transaction_data: TransactionData = transaction.into();
+
+					let (gas_price, _) = Self::get_transaction_gas_info(&transaction)
+						.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Call))?;
+
+					return sp_runtime::transaction_validity::ValidTransactionBuilder::default()
+						.and_provides((from, transaction_data.nonce))
+						.priority(stbl_tools::misc::truncate_u256_to_u64(gas_price))
+						.build();
+				}
+				_ => Err(TransactionValidityError::Unknown(
+					UnknownTransaction::Custom(0),
+				)),
+			}
+		}
+	}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T>
+	where
+		Result<pallet_ethereum::RawOrigin, <T as frame_system::Config>::RuntimeOrigin>:
+			From<<T as frame_system::Config>::RuntimeOrigin>,
+		<T as frame_system::Config>::RuntimeOrigin: From<pallet_ethereum::RawOrigin>,
+	{
+		#[pallet::call_index(0)]
+		#[pallet::weight({
+			let without_base_extrinsic_weight = true;
+			<T as pallet_evm::Config>::GasWeightMapping::gas_to_weight({
+				let transaction_data: TransactionData = transaction.into();
+				transaction_data.gas_limit.unique_saturated_into()
+			}, without_base_extrinsic_weight)
+		})]
+		pub fn send_delegated_transaction(
+			_origin: OriginFor<T>,
+			transaction: pallet_ethereum::Transaction,
+			meta_trx_sponsor: H160,
+			meta_trx_nonce: u64,
+			meta_trx_sponsor_signature: Vec<u8>,
+		) -> DispatchResult {
+			Self::ensure_sponsor_nonce(meta_trx_sponsor, meta_trx_nonce)
+				.map_err(|_| DispatchError::Other("Invalid metatransaction nonce"))?;
+
+			SponsorNonce::<T>::mutate(meta_trx_sponsor.clone(), |nonce| *nonce += 1);
+
+			let from = Self::ensure_transaction_signature(transaction.clone())
+				.map_err(|_| DispatchError::Other("Invalid transaction signature"))?;
+
+			Self::ensure_transaction_unicity(&from, &transaction)
+				.map_err(|_| DispatchError::Other("Transaction object is invalid"))?;
+
+			Self::ensure_meta_transaction_sponsor(
+				transaction.clone(),
+				meta_trx_nonce,
+				meta_trx_sponsor,
+				meta_trx_sponsor_signature,
+			)
+			.map_err(|_| DispatchError::Other("Invalid metatransaction signature"))?;
+
+			let (gas_limit, gas_price) = Self::get_transaction_gas_info(&transaction)
+				.map_err(|_| DispatchError::Other("Invalid gas price info"))?;
+
+			let (transaction_fee_token, conversion_rate) = Self::get_fee_token_info(&from);
+
+			Self::transfer_fee_token(
+				&transaction_fee_token,
+				conversion_rate,
+				&meta_trx_sponsor,
+				&from,
+				gas_limit.saturating_mul(gas_price.into()),
+			)
+			.map_err(|_| DispatchError::Other("Failed to borrow fee token"))?;
+
+			let origin: T::RuntimeOrigin =
+				pallet_ethereum::Origin::EthereumTransaction(from).into();
+			let dispatch = pallet_ethereum::Pallet::<T>::transact(origin, transaction)
+				.map_err(|_| DispatchError::Other("Signature doesn't meet with sponsor address"))?;
+
+			let gas_used = Self::gas_from_actual_weight(dispatch.actual_weight.unwrap());
+
+			let gas_left = gas_limit.saturating_sub(gas_used.into());
+
+			Self::transfer_fee_token(
+				&transaction_fee_token,
+				conversion_rate,
+				&from,
+				&meta_trx_sponsor,
+				gas_left.saturating_mul(gas_price.into()),
+			)
+			.map_err(|_| DispatchError::Other("Failed to refund fee token"))?;
+
+			Ok(().into())
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		fn ensure_transaction_signature(
+			transaction: pallet_ethereum::Transaction,
+		) -> Result<H160, ()> {
+			match stbl_tools::eth::recover_signer(&transaction) {
+				None => Err(()),
+				Some(address) => Ok(address),
+			}
+		}
+
+		fn ensure_sponsor_nonce(sponsor: H160, nonce: u64) -> Result<(), ()> {
+			if SponsorNonce::<T>::get(sponsor.clone()) == nonce {
+				Ok(())
+			} else {
+				Err(())
+			}
+		}
+
+		fn ensure_meta_transaction_sponsor(
+			transaction: pallet_ethereum::Transaction,
+			meta_trx_nonce: u64,
+			expected_sponsor: H160,
+			meta_trx_sponsor_signature: Vec<u8>,
+		) -> Result<(), ()> {
+			let meta_trx_internal_message: Vec<u8> =
+				Self::get_meta_transaction_signing_message(transaction.clone(), meta_trx_nonce);
+
+			let eip191_message =
+				stbl_tools::eth::build_eip191_message_hash(meta_trx_internal_message);
+
+			let meta_trx_signed_address = Self::get_meta_trx_signer(
+				meta_trx_sponsor_signature.clone(),
+				eip191_message.clone(),
+			);
+
+			match meta_trx_signed_address {
+				Some(address) if address == expected_sponsor => Ok(()),
+				_ => Err(()),
+			}
+		}
+
+		fn ensure_transaction_unicity(
+			origin: &H160,
+			transaction: &pallet_ethereum::Transaction,
+		) -> Result<(), ()> {
+			let transaction_data: TransactionData = transaction.into();
+
+			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
+			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
+
+			fp_evm::CheckEvmTransaction::<pallet_ethereum::InvalidTransactionWrapper>::new(
+				CheckEvmTransactionConfig {
+					evm_config: T::config(),
+					block_gas_limit: T::BlockGasLimit::get(),
+					base_fee,
+					chain_id: T::ChainId::get(),
+					is_transactional: true,
+				},
+				transaction_data.into(),
+			)
+			.validate_in_block_for(&who)
+			.and_then(|v| v.with_chain_id())
+			.and_then(|v| v.with_base_fee())
+			.map_err(|_| ())?;
+
+			Ok(())
+		}
+
+		fn get_fee_token_info(sponsored_address: &H160) -> (H160, (U256, U256)) {
+			let transaction_fee_token =
+				T::DNTFeeController::get_transaction_fee_token(sponsored_address.clone());
+			let validator = <pallet_evm::Pallet<T>>::find_author();
+			let conversion_rate = T::DNTFeeController::get_transaction_conversion_rate(
+				validator,
+				transaction_fee_token,
+			);
+
+			(transaction_fee_token, conversion_rate)
+		}
+
+		fn get_transaction_gas_info(
+			transaction: &pallet_ethereum::Transaction,
+		) -> Result<(U256, U256), ()> {
+			let transaction_data: TransactionData = transaction.into();
+			let base_fee = <T as pallet_evm::Config>::FeeCalculator::min_gas_price().0;
+			let gas_price = stbl_tools::eth::transaction_gas_price(base_fee, transaction, true)?;
+
+			if transaction_data.input.len() == 0 {
+				Ok((runner::TRANSFER_GAS_LIMIT.into(), gas_price))
+			} else {
+				Ok((transaction_data.gas_limit, gas_price))
+			}
+		}
+
+		fn gas_from_actual_weight(weight: Weight) -> u64 {
+			let actual_weight = weight.saturating_add(
+				T::BlockWeights::get()
+					.get(frame_support::dispatch::DispatchClass::Normal)
+					.base_extrinsic,
+			);
+
+			<T as pallet_evm::Config>::GasWeightMapping::weight_to_gas(actual_weight)
+		}
+
+		fn transfer_fee_token(
+			token: &H160,
+			conversion_rate: (U256, U256),
+			payer: &H160,
+			payee: &H160,
+			amount: U256,
+		) -> Result<(), ()> {
+			let actual_amount = amount
+				.saturating_mul(conversion_rate.0)
+				.div_mod(conversion_rate.1)
+				.0;
+			T::ERC20Manager::withdraw_amount(token.clone(), payer.clone(), actual_amount)
+				.map_err(|_| {})?;
+
+			T::ERC20Manager::deposit_amount(token.clone(), payee.clone(), actual_amount)
+				.map_err(|_| {})?;
+
+			Ok(())
+		}
+
+		fn get_meta_transaction_signing_message(
+			trx: pallet_ethereum::Transaction,
+			meta_trx_nonce: u64,
+		) -> Vec<u8> {
+			let mut message = Vec::new();
+
+			let trx_hash = trx.hash();
+			let trx_bytes_hash = trx_hash.as_bytes();
+			let trx_hash_string = hex::encode(trx_bytes_hash);
+
+			message.extend_from_slice(b"I consent to be a sponsor of transaction: 0x");
+			message.extend_from_slice(trx_hash_string.as_bytes());
+			message.extend_from_slice(b" with nonce: ");
+			message.extend_from_slice(
+				stbl_tools::misc::u64_to_buffer_in_ascii(meta_trx_nonce).as_slice(),
+			);
+
+			return message;
+		}
+
+		fn get_meta_trx_signer(signature: Vec<u8>, message: H256) -> Option<H160> {
+			let result = match sp_io::crypto::secp256k1_ecdsa_recover(
+				signature.as_slice().try_into().unwrap(),
+				message.as_fixed_bytes(),
+			) {
+				Ok(pubkey) => {
+					let mut address = sp_io::hashing::keccak_256(&pubkey);
+					address[0..12].copy_from_slice(&[0u8; 12]);
+					address.to_vec()
+				}
+				Err(_) => [0u8; 0].to_vec(),
+			};
+
+			return Some(H160::from_slice(&result[12..32]));
+		}
+	}
+}
