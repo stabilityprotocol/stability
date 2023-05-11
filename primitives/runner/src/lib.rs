@@ -188,7 +188,7 @@ where
 		let validator = <pallet_evm::Pallet<T>>::find_author();
 		let vault = FC::get_fee_vault();
 
-		let conversion_rate = FC::get_transaction_conversion_rate(validator, token);
+		let conversion_rate = FC::get_transaction_conversion_rate(source, validator, token);
 
 		// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
 		FC::withdraw_fee(source, token, conversion_rate, total_fee).map_err(|_| RunnerError {
@@ -896,7 +896,7 @@ pub trait OnChargeDecentralizedNativeTokenFee {
 	fn get_transaction_fee_token(from: H160) -> H160;
 
 	// Get the fee token of the validator and its conversion rate.
-	fn get_transaction_conversion_rate(validator: H160, token: H160) -> (U256, U256);
+	fn get_transaction_conversion_rate(sender: H160, validator: H160, token: H160) -> (U256, U256);
 
 	// Get fee vault address
 	fn get_fee_vault() -> H160;

@@ -15,10 +15,15 @@ scale-info = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
+pallet-evm = { workspace = true }
+stbl-tools = { workspace = true }
+pallet-ethereum = { workspace = true } 
 
 [dev-dependencies]
 pallet-timestamp = { workspace = true }
 pallet-balances = { workspace = true, features = ["std"] }
+pallet-root-controller = { workspace = true }
+fp-evm = { workspace = true }
 
 [features]
 default = ["std"]
@@ -29,4 +34,5 @@ std = [
 	"frame-system/std",
     "sp-runtime/std",
     "sp-std/std",
+    "pallet-ethereum/std",
 ]

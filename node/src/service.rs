@@ -262,8 +262,8 @@ pub fn new_full<RuntimeApi, Executor>(
 where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
 	RuntimeApi: Send + Sync + 'static,
-	RuntimeApi::RuntimeApi:
-		RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>> + stability_rpc::StabilityRpcRuntimeApi<Block>,
+	RuntimeApi::RuntimeApi: RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>
+		+ stability_rpc::StabilityRpcRuntimeApi<Block>,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	let build_import_queue = if sealing.is_some() {
@@ -572,7 +572,9 @@ where
 		telemetry.as_ref().map(|x| x.handle()),
 	);
 
-	thread_local!(static TIMESTAMP: RefCell<u64> = RefCell::new(0));
+	thread_local! {
+		static TIMESTAMP: RefCell<u64> = RefCell::new(0)
+	};
 
 	/// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
 	/// Each call will increment timestamp by slot_duration making Aura think time has passed.

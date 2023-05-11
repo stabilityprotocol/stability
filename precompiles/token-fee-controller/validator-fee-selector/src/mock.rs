@@ -20,8 +20,11 @@ use super::*;
 
 use std::str::FromStr;
 
+use frame_support::traits::GenesisBuild;
 use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::Weight};
 use frame_system::EnsureRoot;
+use std::collections::BTreeMap;
+
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
 use pallet_session::{SessionHandler, ShouldEndSession};
 use precompile_utils::{
@@ -147,6 +150,7 @@ impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTo
 
 impl pallet_validator_fee_selector::Config for Runtime {
 	type SupportedTokensManager = MockSupportedTokensManager;
+	type SimulatorRunner = pallet_evm::runner::stack::Runner<Self>;
 }
 
 pub type Precompiles<R> = PrecompileSetBuilder<
@@ -272,6 +276,42 @@ impl ExtBuilder {
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet balances storage can be assimilated");
+
+		let config = pallet_validator_fee_selector::GenesisConfig {
+			initial_default_conversion_rate_controller: H160::from_str(
+				"0x444212d6E4827893A70d19921E383130281Cda4a",
+			)
+			.expect("invalid address"),
+		};
+
+		let custom_controller = MeaninglessTokenAddress::get();
+
+		<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+			&pallet_evm::GenesisConfig {
+				accounts: {
+					let mut map = BTreeMap::new();
+					let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+					map.insert(
+						custom_controller,
+						fp_evm::GenesisAccount {
+							nonce: U256::zero(),
+							balance: U256::from(1000000000000000000u128),
+							storage: BTreeMap::new(),
+							code: revert_bytecode,
+						},
+					);
+					map
+				},
+			},
+			&mut t,
+		)
+		.unwrap();
+
+		<pallet_validator_fee_selector::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+			&config,
+			&mut t,
+		)
+		.expect("Pallet validator fee selector storage can be assimilated");
 
 		pallet_validator_set::GenesisConfig::<Runtime> {
 			initial_validators: vec![CryptoAlith.into()],

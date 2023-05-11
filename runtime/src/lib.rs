@@ -330,7 +330,8 @@ where
 		let from: H160 = Into::<AccountId20>::into((*who).clone()).into();
 		let token = DNTFeeController::get_transaction_fee_token(from);
 		let validator = EVM::find_author();
-		let conversion_rate = DNTFeeController::get_transaction_conversion_rate(validator, token);
+		let conversion_rate =
+			DNTFeeController::get_transaction_conversion_rate(from, validator, token);
 		let fee = U256::from(_fee.saturated_into::<u128>());
 
 		DNTFeeController::withdraw_fee(from, token, conversion_rate, fee).map_err(|_x| {
@@ -356,7 +357,7 @@ where
 		let validator = EVM::find_author();
 
 		let token = DNTFeeController::get_transaction_fee_token(from);
-		let conversion_rate = DNTFeeController::get_transaction_conversion_rate(from, token);
+		let conversion_rate = DNTFeeController::get_transaction_conversion_rate(from, from, token);
 
 		DNTFeeController::correct_fee(
 			from,
@@ -494,6 +495,7 @@ impl pallet_user_fee_selector::Config for Runtime {
 }
 impl pallet_validator_fee_selector::Config for Runtime {
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+	type SimulatorRunner = pallet_evm::runner::stack::Runner<Self>;
 }
 
 impl pallet_supported_tokens_manager::Config for Runtime {}
@@ -1218,6 +1220,7 @@ impl_runtime_apis! {
 			.iter()
 			.map(|v| <Runtime as pallet_custom_balances::Config>::AccountIdMapping::into_evm_address(v))
 			.collect()
+
 		}
 	}
 
