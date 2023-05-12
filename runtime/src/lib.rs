@@ -47,6 +47,7 @@ use sp_runtime::{
 };
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
+use stability_config::{MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use stbl_core_primitives::aura::Public as AuraId;
 use stbl_core_primitives::imonline::Public as ImOnlineId;
 use stbl_transaction_validator::FallbackTransactionValidator;
@@ -81,10 +82,9 @@ use pallet_user_fee_selector;
 
 mod stability_config;
 use stability_config::{
-	build_block_weights, COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS,
-	COUNCIL_MOTION_MINUTES_DURATION, DEFAULT_ELASTICITY, DEFAULT_FEE_TOKEN, EXISTENTIAL_DEPOSIT,
-	GAS_BASE_FEE, MAXIMUM_BLOCK_LENGTH, MILLISECS_PER_BLOCK, SESSION_MINUTES_DURATION,
-	VALIDATOR_SET_MIN_VALIDATORS,
+	COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS, COUNCIL_MOTION_MINUTES_DURATION,
+	DEFAULT_ELASTICITY, DEFAULT_FEE_TOKEN, EXISTENTIAL_DEPOSIT, GAS_BASE_FEE, MAXIMUM_BLOCK_LENGTH,
+	MILLISECS_PER_BLOCK, SESSION_MINUTES_DURATION, VALIDATOR_SET_MIN_VALIDATORS,
 };
 
 mod precompiles;
@@ -880,11 +880,11 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 }
 
 parameter_types! {
-	pub BlockWeights: frame_system::limits::BlockWeights = build_block_weights();
+	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights::with_sensible_defaults(MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO);
 
 	pub BlockGasLimit : U256 = {
-		let max_normal_extrinsic_weight = BlockWeights::get().get(DispatchClass::Normal).max_extrinsic.expect("invalid max_extrinsic").ref_time();
-		U256::from(max_normal_extrinsic_weight / WEIGHT_PER_GAS)
+		let max_normal_block_usage = BlockWeights::get().get(DispatchClass::Normal).max_total.expect("invalid max_extrinsic").ref_time();
+		U256::from(max_normal_block_usage / WEIGHT_PER_GAS)
 	};
 
 }
