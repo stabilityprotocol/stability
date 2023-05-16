@@ -62,7 +62,7 @@ use pallet_grandpa::{
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use pallet_evm::{Account as EVMAccount, FeeCalculator, Runner};
-use pallet_meta_transactions::Call::send_delegated_transaction;
+use pallet_meta_transactions::Call::send_sponsored_transaction;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime,
@@ -1206,7 +1206,7 @@ impl_runtime_apis! {
 				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
 
 				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
-			} else if let RuntimeCall::MetaTransactions(send_delegated_transaction { transaction, .. }) = tx.0.function {
+			} else if let RuntimeCall::MetaTransactions(send_sponsored_transaction { transaction, .. }) = tx.0.function {
 				let source_address_option =  stbl_tools::eth::recover_signer(&transaction);
 
 				if source_address_option.is_none() {

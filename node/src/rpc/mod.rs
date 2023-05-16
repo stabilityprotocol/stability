@@ -18,7 +18,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT};
-use stability_rpc::EthExtensionRpcEndpointsServer;
+use stability_rpc::{EthExtensionRpcEndpointsServer, eth_extension::EthExtensionRpc};
 // Runtime
 use stability_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
 
@@ -64,7 +64,7 @@ where
 {
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 	use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApiServer};
-	use stability_rpc::{EthExtensionRpc, StabilityRpc, StabilityRpcEndpointsServer};
+	use stability_rpc::{StabilityRpc, StabilityRpcEndpointsServer};
 	use substrate_frame_rpc_system::{System, SystemApiServer};
 
 	let mut io = RpcModule::new(());
