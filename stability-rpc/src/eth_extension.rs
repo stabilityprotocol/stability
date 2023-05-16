@@ -1,7 +1,21 @@
+use std::sync::Arc;
+
+use futures_util::TryFutureExt;
+use jsonrpsee::{
+	core::{error, RpcResult},
+	proc_macros::rpc,
+};
+use rpc_eth_extension_api::EthExtensionRpcApi;
+use sc_transaction_pool_api::TransactionSource;
+use sp_api::ProvideRuntimeApi;
+use sp_blockchain::HeaderBackend;
+use sp_core::{Bytes, H160, H256};
+use sp_runtime::{generic::BlockId, traits::Block as BlockT};
+
 #[rpc(server)]
 pub trait EthExtensionRpcEndpoints {
-	#[method(name = "eth_sendDelegatedTransaction")]
-	async fn send_delegated_transaction(
+	#[method(name = "eth_sendSponsoredTransaction")]
+	async fn send_sponsored_transaction(
 		&self,
 		transaction_req: Bytes,
 		meta_trx_nonce: u64,
@@ -37,7 +51,7 @@ where
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block> + rpc_eth_extension_api::EthExtensionRpcApi<Block>,
 	Pool: sc_transaction_pool_api::TransactionPool<Block = Block> + Send + Sync + 'static,
 {
-	async fn send_delegated_transaction(
+	async fn send_sponsored_transaction(
 		&self,
 		transaction: Bytes,
 		meta_trx_nonce: u64,
@@ -60,7 +74,7 @@ where
 		let extrinsic = self
 			.client
 			.runtime_api()
-			.convert_delegated_transaction(
+			.convert_sponsored_transaction(
 				&block_hash,
 				transaction.clone(),
 				meta_trx_nonce,

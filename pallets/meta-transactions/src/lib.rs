@@ -2,6 +2,11 @@
 
 use sp_core::H160;
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
@@ -45,7 +50,7 @@ pub mod pallet {
 
 		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
 			match call {
-				Call::send_delegated_transaction {
+				Call::send_sponsored_transaction {
 					transaction,
 					meta_trx_sponsor,
 					meta_trx_nonce,
@@ -101,7 +106,7 @@ pub mod pallet {
 				transaction_data.gas_limit.unique_saturated_into()
 			}, without_base_extrinsic_weight)
 		})]
-		pub fn send_delegated_transaction(
+		pub fn send_sponsored_transaction(
 			_origin: OriginFor<T>,
 			transaction: pallet_ethereum::Transaction,
 			meta_trx_sponsor: H160,
@@ -116,9 +121,6 @@ pub mod pallet {
 			let from = Self::ensure_transaction_signature(transaction.clone())
 				.map_err(|_| DispatchError::Other("Invalid transaction signature"))?;
 
-			Self::ensure_transaction_unicity(&from, &transaction)
-				.map_err(|_| DispatchError::Other("Transaction object is invalid"))?;
-
 			Self::ensure_meta_transaction_sponsor(
 				transaction.clone(),
 				meta_trx_nonce,
@@ -126,6 +128,9 @@ pub mod pallet {
 				meta_trx_sponsor_signature,
 			)
 			.map_err(|_| DispatchError::Other("Invalid metatransaction signature"))?;
+
+			Self::ensure_transaction_unicity(&from, &transaction)
+				.map_err(|_| DispatchError::Other("Transaction object is invalid"))?;
 
 			let (gas_limit, gas_price) = Self::get_transaction_gas_info(&transaction)
 				.map_err(|_| DispatchError::Other("Invalid gas price info"))?;
@@ -287,7 +292,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		fn get_meta_transaction_signing_message(
+		pub fn get_meta_transaction_signing_message(
 			trx: pallet_ethereum::Transaction,
 			meta_trx_nonce: u64,
 		) -> Vec<u8> {
