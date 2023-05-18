@@ -245,11 +245,12 @@ pub mod pallet {
 			Ok(())
 		}
 
-		fn get_fee_token_info(sponsored_address: &H160) -> (H160, (U256, U256)) {
+		fn get_fee_token_info(from: &H160) -> (H160, (U256, U256)) {
 			let transaction_fee_token =
-				T::DNTFeeController::get_transaction_fee_token(sponsored_address.clone());
+				T::DNTFeeController::get_transaction_fee_token(from.clone());
 			let validator = <pallet_evm::Pallet<T>>::find_author();
 			let conversion_rate = T::DNTFeeController::get_transaction_conversion_rate(
+				from.clone(),
 				validator,
 				transaction_fee_token,
 			);
