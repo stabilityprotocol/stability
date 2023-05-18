@@ -111,7 +111,11 @@ impl runner::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 		Default::default()
 	}
 
-	fn get_transaction_conversion_rate(_validator: H160, _token: H160) -> (U256, U256) {
+	fn get_transaction_conversion_rate(
+		_user: H160,
+		_validator: H160,
+		_token: H160,
+	) -> (U256, U256) {
 		(1.into(), 1.into())
 	}
 
