@@ -47,6 +47,7 @@ use sp_runtime::{
 };
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
+use stability_config::{MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use stbl_core_primitives::aura::Public as AuraId;
 use stbl_core_primitives::imonline::Public as ImOnlineId;
 use stbl_transaction_validator::FallbackTransactionValidator;
@@ -82,10 +83,9 @@ use pallet_user_fee_selector;
 
 mod stability_config;
 use stability_config::{
-	build_block_weights, COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS,
-	COUNCIL_MOTION_MINUTES_DURATION, DEFAULT_ELASTICITY, DEFAULT_FEE_TOKEN, EXISTENTIAL_DEPOSIT,
-	GAS_BASE_FEE, MAXIMUM_BLOCK_LENGTH, MILLISECS_PER_BLOCK, SESSION_MINUTES_DURATION,
-	VALIDATOR_SET_MIN_VALIDATORS,
+	COUNCIL_MAX_MEMBERS, COUNCIL_MAX_PROPOSALS, COUNCIL_MOTION_MINUTES_DURATION,
+	DEFAULT_ELASTICITY, DEFAULT_FEE_TOKEN, EXISTENTIAL_DEPOSIT, GAS_BASE_FEE, MAXIMUM_BLOCK_LENGTH,
+	MILLISECS_PER_BLOCK, SESSION_MINUTES_DURATION, VALIDATOR_SET_MIN_VALIDATORS,
 };
 
 mod precompiles;
@@ -331,7 +331,8 @@ where
 		let from: H160 = Into::<AccountId20>::into((*who).clone()).into();
 		let token = DNTFeeController::get_transaction_fee_token(from);
 		let validator = EVM::find_author();
-		let conversion_rate = DNTFeeController::get_transaction_conversion_rate(validator, token);
+		let conversion_rate =
+			DNTFeeController::get_transaction_conversion_rate(from, validator, token);
 		let fee = U256::from(_fee.saturated_into::<u128>());
 
 		DNTFeeController::withdraw_fee(from, token, conversion_rate, fee).map_err(|_x| {
@@ -357,7 +358,7 @@ where
 		let validator = EVM::find_author();
 
 		let token = DNTFeeController::get_transaction_fee_token(from);
-		let conversion_rate = DNTFeeController::get_transaction_conversion_rate(from, token);
+		let conversion_rate = DNTFeeController::get_transaction_conversion_rate(from, from, token);
 
 		DNTFeeController::correct_fee(
 			from,
@@ -495,6 +496,7 @@ impl pallet_user_fee_selector::Config for Runtime {
 }
 impl pallet_validator_fee_selector::Config for Runtime {
 	type SupportedTokensManager = pallet_supported_tokens_manager::Pallet<Self>;
+	type SimulatorRunner = pallet_evm::runner::stack::Runner<Self>;
 }
 
 impl pallet_supported_tokens_manager::Config for Runtime {}
@@ -886,11 +888,11 @@ impl pallet_sponsored_transactions::Config for Runtime {
 }
 
 parameter_types! {
-	pub BlockWeights: frame_system::limits::BlockWeights = build_block_weights();
+	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights::with_sensible_defaults(MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO);
 
 	pub BlockGasLimit : U256 = {
-		let max_normal_extrinsic_weight = BlockWeights::get().get(DispatchClass::Normal).max_extrinsic.expect("invalid max_extrinsic").ref_time();
-		U256::from(max_normal_extrinsic_weight / WEIGHT_PER_GAS)
+		let max_normal_block_usage = BlockWeights::get().get(DispatchClass::Normal).max_total.expect("invalid max_extrinsic").ref_time();
+		U256::from(max_normal_block_usage / WEIGHT_PER_GAS)
 	};
 
 }
@@ -1239,6 +1241,7 @@ impl_runtime_apis! {
 			.iter()
 			.map(|v| <Runtime as pallet_custom_balances::Config>::AccountIdMapping::into_evm_address(v))
 			.collect()
+
 		}
 	}
 

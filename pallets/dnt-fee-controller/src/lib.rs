@@ -85,8 +85,12 @@ pub mod pallet {
 			T::UserFeeTokenController::get_user_fee_token(from)
 		}
 
-		fn get_transaction_conversion_rate(validator: H160, token: H160) -> (U256, U256) {
-			T::ValidatorTokenController::conversion_rate(validator, token)
+		fn get_transaction_conversion_rate(
+			sender: H160,
+			validator: H160,
+			token: H160,
+		) -> (U256, U256) {
+			T::ValidatorTokenController::conversion_rate(sender, validator, token)
 		}
 
 		fn get_fee_vault() -> H160 {

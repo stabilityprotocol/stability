@@ -166,16 +166,19 @@ impl pallet_validator_fee_selector::ValidatorFeeTokenController for MockValidato
 		Ok(())
 	}
 
-	fn conversion_rate(_validator: H160, _token: H160) -> (U256, U256) {
+	fn conversion_rate(_s: H160, _validator: H160, _token: H160) -> (U256, U256) {
 		MeaninglessConversionRate::get()
 	}
 
-	fn update_conversion_rate(
+	fn conversion_rate_controller(_validator: H160) -> H160 {
+		Default::default()
+	}
+
+	fn update_conversion_rate_controller(
 		_validator: H160,
-		_token: H160,
-		_conversion_rate: (U256, U256),
+		_conversion_rate_controller: H160,
 	) -> Result<(), Self::Error> {
-		Ok(())
+		Ok(Default::default())
 	}
 }
 

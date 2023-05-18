@@ -1,22 +1,21 @@
 use precompile_utils::{
-	prelude::{log3, Address},
+	prelude::{log2, log3, Address},
 	testing::{CryptoAlith, Precompile1, PrecompileTesterExt},
 	EvmDataWriter,
 };
-use sp_core::{H160, U256};
+use sp_core::H160;
 
 use crate::{
+	mock::MeaninglessTokenAddress,
 	mock::{ExtBuilder, NonCryptoAlith, PCall, Precompiles, PrecompilesValue, Runtime},
-	SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED, SELECTOR_LOG_VALIDATOR_TOKEN_RATE_CHANGED,
+	DefaultAcceptance, SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
+	SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
 };
-use crate::{DefaultAcceptance, DefaultConversionRate};
 
 // No test of invalid selectors since we have a fallback behavior (deposit).
 fn precompiles() -> Precompiles<Runtime> {
 	PrecompilesValue::get()
 }
-
-use crate::mock::MeaninglessTokenAddress;
 
 // fee token acceptance management
 
@@ -198,44 +197,59 @@ fn accept_token_and_revoke() {
 
 #[test]
 fn default_conversion_rate() {
+	let default: Address = pallet_validator_fee_selector::GenesisConfig::default()
+		.initial_default_conversion_rate_controller
+		.into();
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(
 				CryptoAlith,
 				Precompile1,
-				PCall::token_conversion_rate {
+				PCall::conversion_rate_controller {
 					validator: Address(CryptoAlith.into()),
-					token_address: MeaninglessTokenAddress::get().into(),
 				},
 			)
-			.execute_returns(
-				EvmDataWriter::new()
-					.write(DefaultConversionRate::get().0)
-					.write(DefaultConversionRate::get().1)
-					.build(),
-			);
+			.execute_returns_encoded(default);
 	})
 }
 
 #[test]
-fn update_conversion_rate() {
+fn fail_update_conversion_rate_controller_of_eoa() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(
 				CryptoAlith,
 				Precompile1,
-				PCall::set_token_conversion_rate {
-					token_address: MeaninglessTokenAddress::get().into(),
-					numerator: U256::from(100),
-					denominator: U256::from(3),
+				PCall::update_conversion_rate_controller {
+					cr_controller: Address(CryptoAlith.into()),
 				},
 			)
-			.expect_log(log3(
+			.execute_reverts(|x| {
+				x.eq_ignore_ascii_case(
+					b"ValidatorFeeTokenController: default token conversion rate cannot be updated",
+				)
+			});
+	})
+}
+
+#[test]
+fn update_conversion_rate_controller() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				CryptoAlith,
 				Precompile1,
-				SELECTOR_LOG_VALIDATOR_TOKEN_RATE_CHANGED,
+				PCall::update_conversion_rate_controller {
+					cr_controller: MeaninglessTokenAddress::get().into(),
+				},
+			)
+			.expect_log(log2(
+				Precompile1,
+				SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
 				H160::from(CryptoAlith),
-				MeaninglessTokenAddress::get(),
-				EvmDataWriter::new().write(100u128).write(3u128).build(),
+				EvmDataWriter::new()
+					.write(Address(MeaninglessTokenAddress::get()))
+					.build(),
 			))
 			.execute_some();
 
@@ -243,12 +257,11 @@ fn update_conversion_rate() {
 			.prepare_test(
 				CryptoAlith,
 				Precompile1,
-				PCall::token_conversion_rate {
+				PCall::conversion_rate_controller {
 					validator: Address(CryptoAlith.into()),
-					token_address: MeaninglessTokenAddress::get().into(),
 				},
 			)
-			.execute_returns(EvmDataWriter::new().write(100u128).write(3u128).build());
+			.execute_returns_encoded(Address(MeaninglessTokenAddress::get()));
 	})
 }
 
@@ -259,10 +272,8 @@ fn fail_update_conversion_rate_non_validator() {
 			.prepare_test(
 				NonCryptoAlith::get(),
 				Precompile1,
-				PCall::set_token_conversion_rate {
-					token_address: MeaninglessTokenAddress::get().into(),
-					numerator: U256::from(100),
-					denominator: U256::from(3),
+				PCall::update_conversion_rate_controller {
+					cr_controller: Address(CryptoAlith.into()),
 				},
 			)
 			.execute_reverts(|x| {
@@ -286,21 +297,5 @@ fn reverts_if_validator_dont_accepts_token() {
 				},
 			)
 			.execute_some();
-
-		precompiles()
-			.prepare_test(
-				CryptoAlith,
-				Precompile1,
-				PCall::token_conversion_rate {
-					validator: Address(CryptoAlith.into()),
-					token_address: MeaninglessTokenAddress::get().into(),
-				},
-			)
-			.execute_returns(
-				EvmDataWriter::new()
-					.write(DefaultConversionRate::get().0)
-					.write(DefaultConversionRate::get().1)
-					.build(),
-			);
 	})
 }

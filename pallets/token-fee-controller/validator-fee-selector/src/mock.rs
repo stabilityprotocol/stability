@@ -24,16 +24,17 @@ use frame_support::{
 	construct_runtime,
 	pallet_prelude::{StorageValue, ValueQuery},
 	parameter_types,
-	traits::{Everything, StorageInstance},
+	traits::{Everything, GenesisBuild, StorageInstance},
+	weights::Weight,
 };
+use frame_system::{EnsureSigned, RawOrigin};
+use pallet_evm::{EvmConfig, IdentityAddressMapping};
 use sp_core::{H160, H256};
-use sp_runtime::{
-	traits::{BlakeTwo256, IdentityLookup},
-	AccountId32,
-};
+use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 use sp_std::vec;
+use std::collections::BTreeMap;
 
-pub type AccountId = AccountId32;
+pub type AccountId = H160;
 pub type Balance = u128;
 pub type BlockNumber = u32;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
@@ -158,6 +159,64 @@ impl pallet_supported_tokens_manager::SupportedTokensManager for MockSupportedTo
 
 impl crate::Config for Runtime {
 	type SupportedTokensManager = MockSupportedTokensManager;
+	type SimulatorRunner = pallet_evm::runner::stack::Runner<Self>;
+}
+
+pub struct EnsureAddressLinkedOrTruncated;
+
+impl<OuterOrigin> pallet_evm::EnsureAddressOrigin<OuterOrigin> for EnsureAddressLinkedOrTruncated
+where
+	OuterOrigin: Into<Result<RawOrigin<AccountId>, OuterOrigin>> + From<RawOrigin<AccountId>>,
+{
+	type Success = AccountId;
+
+	fn try_address_origin(address: &H160, origin: OuterOrigin) -> Result<AccountId, OuterOrigin> {
+		origin.into().and_then(|o| match o {
+			RawOrigin::Signed(who) if Into::<H160>::into(who).eq(address) => Ok(who),
+			r => Err(OuterOrigin::from(r)),
+		})
+	}
+}
+
+static LONDON_CONFIG: EvmConfig = EvmConfig::london();
+
+parameter_types! {
+	pub WeightPerGas : Weight = Weight::from_ref_time(1);
+	pub EVMChainId: u64 = 1;
+	pub BlockGasLimit: U256 = U256::MAX;
+}
+impl pallet_evm::Config for Runtime {
+	type FeeCalculator = ();
+	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
+	type WeightPerGas = WeightPerGas;
+	type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
+	type CallOrigin = EnsureAddressLinkedOrTruncated;
+	type WithdrawOrigin = EnsureAddressLinkedOrTruncated;
+	type AddressMapping = IdentityAddressMapping;
+	type Currency = Balances;
+	type RuntimeEvent = RuntimeEvent;
+	type PrecompilesType = ();
+	type PrecompilesValue = ();
+	type ChainId = EVMChainId;
+	type BlockGasLimit = BlockGasLimit;
+	type Runner = pallet_evm::runner::stack::Runner<Self>;
+	type OnChargeTransaction = ();
+	type FindAuthor = ();
+
+	fn config() -> &'static pallet_evm::EvmConfig {
+		&LONDON_CONFIG
+	}
+}
+
+impl pallet_root_controller::Config for Runtime {
+	type ControlOrigin = EnsureSigned<H160>;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+}
+
+impl pallet_ethereum::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
 }
 
 // Configure a mock runtime to test the pallet.
@@ -171,6 +230,9 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 		ValidatorFeeSelector: crate,
+		EVM: pallet_evm,
+		Ethereum: pallet_ethereum,
+		RootController: pallet_root_controller
 	}
 );
 
@@ -185,9 +247,39 @@ impl Default for ExtBuilder {
 
 impl ExtBuilder {
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
-		let t = frame_system::GenesisConfig::default()
+		let mut t = frame_system::GenesisConfig::default()
 			.build_storage::<Runtime>()
 			.expect("Frame system builds valid default genesis config");
+
+		let initial_default_conversion_rate_controller =
+			crate::GenesisConfig::default().initial_default_conversion_rate_controller;
+
+		<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+			&pallet_evm::GenesisConfig {
+				accounts: {
+					let mut map = BTreeMap::new();
+					let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+					map.insert(
+						initial_default_conversion_rate_controller,
+						fp_evm::GenesisAccount {
+							nonce: U256::zero(),
+							balance: U256::from(1000000000000000000u128),
+							storage: BTreeMap::new(),
+							code: revert_bytecode,
+						},
+					);
+					map
+				},
+			},
+			&mut t,
+		)
+		.unwrap();
+
+		<crate::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+			&crate::GenesisConfig::default(),
+			&mut t,
+		)
+		.unwrap();
 
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));

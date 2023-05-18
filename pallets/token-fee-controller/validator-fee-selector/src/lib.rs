@@ -12,30 +12,37 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
 
+	use core::str::FromStr;
+
 	use super::*;
 
 	use frame_support::{
-		pallet_prelude::{OptionQuery, ValueQuery},
-		storage::types::StorageDoubleMap,
+		pallet_prelude::*,
+		storage::types::{StorageDoubleMap, StorageMap, StorageValue},
 		Blake2_128Concat,
 	};
+
+	use frame_system::pallet_prelude::OriginFor;
+
+	use pallet_evm::Runner;
 	use pallet_supported_tokens_manager::SupportedTokensManager;
-	use sp_core::{H160, U256};
+	use sp_core::{H160, H256, U256};
 
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_evm::Config {
 		type SupportedTokensManager: SupportedTokensManager;
+		type SimulatorRunner: pallet_evm::Runner<Self>;
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {}
 
 	#[pallet::storage]
-	#[pallet::getter(fn supported_fee_tokens)]
+	#[pallet::getter(fn validator_support_token)]
 	pub type ValidatorSupportFeeToken<T: Config> = StorageDoubleMap<
 		_,
 		// Owner
@@ -48,37 +55,24 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	#[derive(codec::Encode, sp_core::Decode, frame_support::pallet_prelude::TypeInfo)]
-	pub struct ConversionRate(U256, U256);
-
-	impl Default for ConversionRate {
-		fn default() -> Self {
-			ConversionRate(U256::from(1), U256::from(1))
-		}
-	}
-
-	impl Into<(U256, U256)> for ConversionRate {
-		fn into(self) -> (U256, U256) {
-			(self.0, self.1)
-		}
-	}
+	#[pallet::storage]
+	#[pallet::getter(fn default_controller)]
+	pub type DefaultController<T: Config> = StorageValue<_, H160, OptionQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn conversion_rate_fee_tokens)]
-	pub type ValidatorConversionRateToken<T: Config> = StorageDoubleMap<
+	pub type ValidatorConversionRateController<T: Config> = StorageMap<
 		_,
 		// Owner
 		Blake2_128Concat,
 		H160,
-		Blake2_128Concat,
+		// CR controller
 		H160,
-		// Nonce
-		ConversionRate,
-		ValueQuery,
+		OptionQuery,
 	>;
 
 	pub enum ValidatorFeeTokenError {
-		NotMutableDefaultTokenConversionRate,
+		ControllerIsEOA,
 		NotSupportedToken,
 	}
 
@@ -88,6 +82,48 @@ pub mod pallet {
 				.into_iter()
 				.filter(|token| Self::validator_supports_fee_token(validator, *token))
 				.collect()
+		}
+	}
+
+	#[pallet::genesis_config]
+	#[cfg(feature = "std")]
+	pub struct GenesisConfig {
+		pub initial_default_conversion_rate_controller: H160,
+	}
+
+	#[cfg(feature = "std")]
+	impl Default for GenesisConfig {
+		fn default() -> Self {
+			Self {
+				initial_default_conversion_rate_controller: H160::from_str(
+					"0x444212d6E4827893A70d19921E383130281Cda4a",
+				)
+				.expect("invalid address"),
+			}
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig {
+		fn build(&self) {
+			DefaultController::<T>::put(self.initial_default_conversion_rate_controller);
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		pub fn set_default_controller(controller: H160) {
+			DefaultController::<T>::put(controller);
+		}
+	}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::call_index(0)]
+		#[pallet::weight(0)]
+		pub fn update_default_controller(origin: OriginFor<T>, controller: H160) -> DispatchResult {
+			frame_system::ensure_root(origin)?;
+			Self::set_default_controller(controller);
+			Ok(())
 		}
 	}
 
@@ -114,22 +150,56 @@ pub mod pallet {
 			}
 		}
 
-		fn conversion_rate(validator: H160, token: H160) -> (U256, U256) {
-			ValidatorConversionRateToken::<T>::get(validator, token).into()
+		fn conversion_rate_controller(validator: H160) -> H160 {
+			ValidatorConversionRateController::<T>::get(validator)
+				.unwrap_or(DefaultController::<T>::get().unwrap())
 		}
 
-		fn update_conversion_rate(
-			account: H160,
-			token: H160,
-			conversion_rate: (U256, U256),
-		) -> Result<(), Self::Error> {
-			ValidatorConversionRateToken::<T>::set(
-				account,
-				token,
-				ConversionRate(conversion_rate.0, conversion_rate.1),
-			);
+		fn conversion_rate(sender: H160, validator: H160, token: H160) -> (U256, U256) {
+			let conversion_rate_controller = Self::conversion_rate_controller(validator);
 
-			Ok(())
+			let args: sp_std::vec::Vec<H256> =
+				sp_std::vec![sender.into(), validator.into(), token.into()];
+
+			T::SimulatorRunner::call(
+				H160::from_low_u64_be(0),
+				conversion_rate_controller,
+				stbl_tools::eth::generate_calldata(
+					"getConversionRate(address,address,address)",
+					&args,
+				),
+				0.into(),
+				3_000_000,
+				None,
+				None,
+				None,
+				Default::default(),
+				false,
+				false,
+				&pallet_evm::EvmConfig::london(),
+			)
+			.map(|execution_info| {
+				(
+					U256::from_big_endian(execution_info.value[0..32].as_ref()),
+					U256::from_big_endian(execution_info.value[32..64].as_ref()),
+				)
+			})
+			.unwrap_or((U256::from(1), U256::from(1)))
+		}
+
+		fn update_conversion_rate_controller(
+			validator: H160,
+			conversion_rate_controller: H160,
+		) -> Result<(), Self::Error> {
+			if pallet_evm::AccountCodes::<T>::get(conversion_rate_controller).is_empty() {
+				Err(ValidatorFeeTokenError::ControllerIsEOA)
+			} else {
+				ValidatorConversionRateController::<T>::insert(
+					validator,
+					conversion_rate_controller,
+				);
+				Ok(())
+			}
 		}
 	}
 }
@@ -145,12 +215,13 @@ pub trait ValidatorFeeTokenController {
 		support: bool,
 	) -> Result<(), Self::Error>;
 
-	fn conversion_rate(validator: H160, token: H160) -> (U256, U256);
+	fn conversion_rate_controller(validator: H160) -> H160;
 
-	fn update_conversion_rate(
+	fn conversion_rate(sender: H160, validator: H160, token: H160) -> (U256, U256);
+
+	fn update_conversion_rate_controller(
 		validator: H160,
-		token: H160,
-		conversion_rate: (U256, U256),
+		conversion_rate_controller: H160,
 	) -> Result<(), Self::Error>;
 }
 

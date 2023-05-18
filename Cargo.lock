@@ -4959,9 +4959,13 @@ dependencies = [
 name = "pallet-validator-fee-selector"
 version = "0.1.0"
 dependencies = [
+ "fp-evm",
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-root-controller",
  "pallet-supported-tokens-manager",
  "pallet-timestamp",
  "parity-scale-codec",
@@ -4970,6 +4974,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "stbl-tools",
 ]
 
 [[package]]

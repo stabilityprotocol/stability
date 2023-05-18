@@ -33,7 +33,6 @@ use frame_support::storage::types::{StorageValue, ValueQuery};
 use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
 
-
 use sp_core::Get;
 use sp_core::{H160, H256, U256};
 
@@ -46,7 +45,10 @@ parameter_types! {
 }
 
 pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
-pub const SELECTOR_SETTED__APPLICATION_BLOCK: [u8; 32] = keccak256!("SettedApplicationBlock(uint256)");
+pub const SELECTOR_LOG_TRANSFER_OWNER: [u8; 32] =
+	keccak256!("OwnershipTransferStarted(address,address)");
+pub const SELECTOR_SETTED__APPLICATION_BLOCK: [u8; 32] =
+	keccak256!("SettedApplicationBlock(uint256)");
 pub const SELECTOR_CODE_PROPOSED_REJECTED: [u8; 32] = keccak256!("CodeProposedRejected()");
 
 /// Storage prefix for owner.
@@ -77,17 +79,17 @@ pub struct UpgradeRuntimeControllerPrecompile<Runtime, DefaultOwner: Get<H160> +
 	PhantomData<(Runtime, DefaultOwner)>,
 );
 
-
 #[precompile_utils::precompile]
 impl<Runtime, DefaultOwner> UpgradeRuntimeControllerPrecompile<Runtime, DefaultOwner>
 where
 	DefaultOwner: Get<H160> + 'static,
-	Runtime: pallet_upgrade_runtime_proposal::Config + pallet_timestamp::Config + pallet_evm::Config,
+	Runtime:
+		pallet_upgrade_runtime_proposal::Config + pallet_timestamp::Config + pallet_evm::Config,
 	Runtime::RuntimeCall: From<pallet_upgrade_runtime_proposal::Call<Runtime>>,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
-	<Runtime as frame_system::Config>::BlockNumber: From<u32>
+	<Runtime as frame_system::Config>::BlockNumber: From<u32>,
 {
 	#[precompile::public("owner()")]
 	#[precompile::view]
@@ -107,19 +109,32 @@ where
 
 	#[precompile::public("transferOwnership(address)")]
 	fn transfer_ownership(handle: &mut impl PrecompileHandle, new_owner: Address) -> EvmResult {
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 		let owner = OwnerStorage::<DefaultOwner>::get();
 
-		if sender != owner {
+		if msg_sender != owner {
 			return Err(revert("sender is not owner"));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		ClaimableOwnerStorage::mutate(move |claimable_owner| {
 			*claimable_owner = new_owner.into();
 		});
+
+		let target_new_owner: H160 = new_owner.into();
+
+		handle.record_log_costs_manual(2, 32)?;
+		log2(
+			handle.context().address,
+			SELECTOR_LOG_TRANSFER_OWNER,
+			Into::<H256>::into(owner),
+			EvmDataWriter::new()
+				.write(Into::<H256>::into(target_new_owner))
+				.build(),
+		)
+		.record(handle)?;
 
 		Ok(())
 	}
@@ -127,24 +142,23 @@ where
 	#[precompile::public("acceptOwnership()")]
 	fn claim_ownership(handle: &mut impl PrecompileHandle) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		handle.record_log_costs_manual(1, 32)?;
-
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 
 		let target_new_owner = ClaimableOwnerStorage::get();
 
-		if target_new_owner != sender {
+		if target_new_owner != msg_sender {
 			return Err(revert("target owner is not the claimer"));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		ClaimableOwnerStorage::kill();
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		OwnerStorage::<DefaultOwner>::mutate(|owner| {
 			*owner = target_new_owner;
 		});
 
+		handle.record_log_costs_manual(1, 32)?;
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
@@ -160,49 +174,54 @@ where
 	#[precompile::public("setApplicationBlock(uint32)")]
 	fn set_application_block(handle: &mut impl PrecompileHandle, block_number: u32) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 		let owner = OwnerStorage::<DefaultOwner>::get();
 
-		if sender != owner {
+		if msg_sender != owner {
 			return Err(revert("sender is not owner"));
 		}
-	
+
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		RuntimeHelper::<Runtime>::try_dispatch(
 			handle,
 			frame_system::RawOrigin::Root.into(),
-			pallet_upgrade_runtime_proposal::Call::<Runtime>::set_block_application { block_number:  block_number.into() },
+			pallet_upgrade_runtime_proposal::Call::<Runtime>::set_block_application {
+				block_number: block_number.into(),
+			},
 		)?;
 
-		log1(handle.context().address, SELECTOR_SETTED__APPLICATION_BLOCK, EvmDataWriter::new().write(block_number).build()).record(handle)?;
-	
+		handle.record_log_costs_manual(1, 32)?;
+		log1(
+			handle.context().address,
+			SELECTOR_SETTED__APPLICATION_BLOCK,
+			EvmDataWriter::new().write(block_number).build(),
+		)
+		.record(handle)?;
+
 		Ok(())
 	}
 
 	#[precompile::public("rejectProposedCode()")]
 	fn reject_proposed_code(handle: &mut impl PrecompileHandle) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		let sender = handle.context().caller;
+		let msg_sender = handle.context().caller;
 		let owner = OwnerStorage::<DefaultOwner>::get();
 
-		if sender != owner {
+		if msg_sender != owner {
 			return Err(revert("sender is not owner"));
 		}
 
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		RuntimeHelper::<Runtime>::try_dispatch(
 			handle,
 			frame_system::RawOrigin::Root.into(),
 			pallet_upgrade_runtime_proposal::Call::<Runtime>::reject_proposed_code {},
 		)?;
 
-		log0(
-			handle.context().address,
-			SELECTOR_CODE_PROPOSED_REJECTED,
-		)
-		.record(handle)?;
+		handle.record_log_costs_manual(0, 32)?;
+		log0(handle.context().address, SELECTOR_CODE_PROPOSED_REJECTED).record(handle)?;
 
 		Ok(())
 	}
