@@ -13,3 +13,4 @@ sp-std = { workspace = true }
 sp-io = { workspace = true }
 ethereum = { workspace = true }
 sha3 = { version = "0.10.6", default-features = false }
+hex = {workspace= true, default-features = false    }

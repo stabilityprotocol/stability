@@ -25,12 +25,12 @@ Having this relationship between these two limits, we can create a unique limit 
 
 Additionally, in Substrate there is a constant (`WEIGHT_REF_TIME_PER_MILLIS`) that marks how much weight could be processed in a millisecond.
 
-This is useful because introducing some of the blockchain's parameters we could know if certain block specifications are achieveable so when the blockchain is initalized this check is runned. If this check fails the blockchain would exit.
+Using this value and estimating the share of the block time that is spent in computing it we reach to the block gas limit
 
 - **COMPUTATION_BLOCK_TIME_RATIO**: How much part of the block time could be spent in processing transactions.
-- **MAXIMUM_NORMAL_BLOCK_WEIGHT**: The maximum weight that could be processed given the block time and `COMPUTATION_BLOCK_TIME_RATIO`
+- **MAXIMUM_BLOCK_WEIGHT**: The maximum weight that could be processed given the block time and `COMPUTATION_BLOCK_TIME_RATIO`
   - MAXIMUM_NORMAL_BLOCK_WEIGHT = 1_333_333_333_333
-- **Target Gas Limit**: ~50_000_000. Frontier assumes that a Gas Unit is equals to 20_000 Weight (`WEIGHT_PER_GAS`), and the blocks would allow till 75% (`NORMAL_DISPATCH_RATIO`) of `Normal` extrinsics in each one. The formula looks like:
+- **Block Gas Limit**: ~50_000_000. Frontier assumes that a Gas Unit is equals to 20_000 Weight (`WEIGHT_PER_GAS`), and the blocks would allow till 75% (`NORMAL_DISPATCH_RATIO`) of `Normal` extrinsics in each one. The formula looks like:
 
 ```
 Gas Limit = NORMAL_DISPATCH_RATIO * MBW / WEIGHT_PER_GAS

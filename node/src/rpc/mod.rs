@@ -55,6 +55,7 @@ where
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: fp_rpc::ConvertTransactionRuntimeApi<Block>,
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
+	C::Api: rpc_eth_extension_api::EthExtensionRpcApi<Block>,
 	C::Api: stability_rpc::StabilityRpcRuntimeApi<Block>,
 	P: TransactionPool<Block = Block> + 'static,
 	A: ChainApi<Block = Block> + 'static,
@@ -74,9 +75,9 @@ where
 		eth,
 	} = deps;
 
-	io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
+	io.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
 	io.merge(TransactionPayment::new(client.clone()).into_rpc())?;
-	io.merge(StabilityRpc::new(client.clone()).into_rpc())?;
+	io.merge(StabilityRpc::new(client.clone(), pool.clone()).into_rpc())?;
 
 	if let Some(command_sink) = command_sink {
 		io.merge(

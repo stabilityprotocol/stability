@@ -1,5 +1,6 @@
 pub use ethereum::TransactionV2 as Transaction;
 use sha3::Digest;
+use sp_core::U256;
 use sp_core::{Encode, H160, H256};
 use sp_runtime::traits::Keccak256;
 use sp_std::prelude::*;
@@ -121,10 +122,48 @@ pub fn get_storage_address_for_mapping(address: H160, var_slot: H256) -> H256 {
 		.using_encoded(|x| H256::from_slice(&x[1..]))
 }
 
-pub fn transaction_gas_price(transaction: &Transaction) -> u64 {
-	match transaction {
-		Transaction::Legacy(t) => t.gas_price.as_u64(),
-		Transaction::EIP2930(t) => t.gas_price.as_u64(),
-		Transaction::EIP1559(t) => t.max_fee_per_gas.as_u64(),
+pub fn transaction_gas_price(
+	base_fee: U256,
+	transaction: &Transaction,
+	is_transactional: bool,
+) -> Result<U256, ()> {
+	let (max_fee_per_gas, max_priority_fee_per_gas) = {
+		match transaction {
+			Transaction::Legacy(t) => (Some(t.gas_price), Some(t.gas_price)),
+			Transaction::EIP2930(t) => (Some(t.gas_price), Some(t.gas_price)),
+			Transaction::EIP1559(t) => (Some(t.max_fee_per_gas), Some(t.max_priority_fee_per_gas)),
+		}
+	};
+
+	match (max_fee_per_gas, max_priority_fee_per_gas, is_transactional) {
+		// Zero max_fee_per_gas for validated transactional calls exist in XCM -> EVM
+		// because fees are already withdrawn in the xcm-executor.
+		(Some(max_fee), _, true) if max_fee.is_zero() => Ok(U256::zero()),
+		// With no tip, we pay exactly the base_fee
+		(Some(_), None, _) => Ok(base_fee.into()),
+		// With tip, we include as much of the tip on top of base_fee that we can, never
+		// exceeding max_fee_per_gas
+		(Some(max_fee_per_gas), Some(max_priority_fee_per_gas), _) => {
+			let actual_priority_fee_per_gas = max_fee_per_gas
+				.saturating_sub(base_fee.into())
+				.min(max_priority_fee_per_gas);
+			Ok(actual_priority_fee_per_gas.saturating_add(base_fee.into()))
+		}
+		// Gas price check is skipped for non-transactional calls that don't
+		// define a `max_fee_per_gas` input.
+		(None, _, false) => Ok(Default::default()),
+		// Unreachable, previously validated. Handle gracefully.
+		_ => Err(()),
 	}
+}
+
+pub fn build_eip191_message_hash(message: Vec<u8>) -> H256 {
+	let result = b"\x19Ethereum Signed Message:\n"
+		.iter()
+		.chain(crate::misc::u64_to_buffer_in_ascii(message.len().try_into().unwrap()).iter())
+		.chain(message.iter())
+		.cloned()
+		.collect::<Vec<u8>>();
+
+	crate::misc::kecckak256(&result)
 }

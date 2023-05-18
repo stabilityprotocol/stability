@@ -40,6 +40,8 @@ pub const TRANSACTION_FEE_TOPIC: [u8; 32] =
 #[cfg(feature = "forbid-evm-reentrancy")]
 environmental::thread_local_impl!(static IN_EVM: environmental::RefCell<bool> = environmental::RefCell::new(false));
 
+pub const TRANSFER_GAS_LIMIT: u64 = 350_000_u64;
+
 #[derive(Default)]
 pub struct Runner<T: Config, FC: OnChargeDecentralizedNativeTokenFee, U: UserFeeTokenController> {
 	_marker: PhantomData<(T, FC, U)>,
@@ -427,7 +429,7 @@ where
 					&vec![target.into(), transfer_value],
 				),
 				0.into(),
-				350_000_u64, // TODO: look for how to estimate the gas
+				TRANSFER_GAS_LIMIT, // TODO: look for how to estimate the gas
 				max_fee_per_gas,
 				max_priority_fee_per_gas,
 				nonce,
