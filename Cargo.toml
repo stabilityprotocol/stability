@@ -26,6 +26,7 @@ members = [
     'pallets/fee-rewards-vault',
     'pallets/upgrade-runtime-proposal',
     'pallets/custom-balances',
+    'pallets/sponsored-transactions',
     'primitives/tools',
 	'pallets/root-controller',
     'stability-rpc',
@@ -189,6 +190,7 @@ precompile-validator-fee-selector = { path = "./precompiles/token-fee-controller
 precompile-validator-controller = { path = "./precompiles/validator-controller", default-features = false }
 pallet-root-controller = { path = "./pallets/root-controller", default-features = false }
 pallet-dnt-fee-controller = { path = "./pallets/dnt-fee-controller", default-features = false }
+pallet-sponsored-transactions = { path = "./pallets/sponsored-transactions", default-features = false }
 stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api", default-features = false }
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
 pallet-upgrade-runtime-proposal = { path = "./pallets/upgrade-runtime-proposal", default-features = false }
@@ -209,6 +211,7 @@ pallet-validator-set = { path = "./pallets/validator-set", default-features = fa
 pallet-custom-balances = { path = './pallets/custom-balances', default-features = false }
 runner = { path = "./primitives/runner", default-features = false }
 
+rpc-eth-extension-api = { path = "primitives/rpc-eth-extension-api", default-features = false }
 stbl-core-primitives = { path = "primitives/core", default-features = false }
 account = { path = "primitives/account", default-features = false }
 blake2-rfc = { version = "0.2.18", default-features = false }

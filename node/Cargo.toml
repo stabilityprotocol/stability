@@ -20,6 +20,7 @@ jsonrpsee = { workspace = true, features = ["server", "macros"] }
 log = "0.4.17"
 scale-codec = { package = "parity-scale-codec", workspace = true }
 serde = { workspace = true }
+rpc-eth-extension-api = { workspace = true }
 
 # Substrate
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", workspace = true }

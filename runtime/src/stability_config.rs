@@ -1,13 +1,5 @@
-use frame_support::{
-	dispatch::DispatchClass,
-	weights::{
-		constants::{ExtrinsicBaseWeight, WEIGHT_REF_TIME_PER_MILLIS},
-		Weight,
-	},
-};
+use frame_support::weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight};
 use sp_runtime::{Perbill, Permill};
-
-use crate::WEIGHT_PER_GAS;
 
 // Block time
 pub const MILLISECS_PER_BLOCK: u64 = 2000;
@@ -23,8 +15,6 @@ pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_ref_time(WEIGHT_REF_TIME_P
 	.mul(COMPUTATION_BLOCK_TIME_RATIO.0)
 	.div(COMPUTATION_BLOCK_TIME_RATIO.1) // 1_333_333_333_333
 	.set_proof_size(u64::MAX);
-
-pub const OPERATION_RESERVE_FACTOR: Perbill = Perbill::from_percent(20);
 
 // `.set_proof_size`, since migration to WeightV2, we have set the proof size weight for the maximum block.
 // https://github.com/paritytech/substrate/pull/12277
@@ -52,8 +42,6 @@ pub const SESSION_MINUTES_DURATION: u32 = 2;
 // VALIDATOR SET
 
 pub const VALIDATOR_SET_MIN_VALIDATORS: u32 = 1;
-
-pub const TARGET_BLOCK_GAS_LIMIT: u64 = 50_000_000u64;
 
 // Gas Base Fee
 pub const GAS_BASE_FEE: u128 = 1_000_000_000;

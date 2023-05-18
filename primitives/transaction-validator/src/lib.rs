@@ -4,8 +4,9 @@ use core::{marker::PhantomData, ops::Mul};
 
 use ethereum::TransactionV2;
 use fp_ethereum::TransactionData;
+use pallet_evm::FeeCalculator;
 use pallet_user_fee_selector::UserFeeTokenController;
-use sp_core::H160;
+use sp_core::{H160, U256};
 use sp_runtime::transaction_validity::{
 	InvalidTransaction, TransactionValidity, TransactionValidityError, ValidTransactionBuilder,
 };
@@ -31,7 +32,11 @@ where
 		call: &pallet_ethereum::Call<T>,
 	) -> TransactionValidity {
 		if let pallet_ethereum::Call::transact { transaction } = call {
-			let gas_price = stbl_tools::eth::transaction_gas_price(&transaction);
+			let base_fee = <T as pallet_evm::Config>::FeeCalculator::min_gas_price().0;
+
+			let gas_price = stbl_tools::eth::transaction_gas_price(base_fee, &transaction, true)
+				.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Custom(0)))?;
+
 			let transaction_data: TransactionData = (transaction).into();
 			let total_transaction_price =
 				transaction_data.gas_limit.mul(gas_price) + transaction_data.value;
@@ -42,7 +47,7 @@ where
 				);
 
 			match balance >= total_transaction_price {
-				true => Self::build_validity_success_transaction(origin, transaction),
+				true => Self::build_validity_success_transaction(origin, transaction, gas_price),
 				false => Err(TransactionValidityError::Invalid(
 					InvalidTransaction::Payment,
 				)),
@@ -57,12 +62,13 @@ where
 	fn build_validity_success_transaction(
 		origin: &H160,
 		transaction: &TransactionV2,
+		gas_price: U256,
 	) -> TransactionValidity {
 		let transaction_data: TransactionData = transaction.into();
 
 		ValidTransactionBuilder::default()
 			.and_provides((origin, transaction_data.nonce))
-			.priority(stbl_tools::eth::transaction_gas_price(transaction))
+			.priority(stbl_tools::misc::truncate_u256_to_u64(gas_price))
 			.build()
 	}
 }

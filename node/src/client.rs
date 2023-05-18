@@ -68,6 +68,7 @@ pub trait RuntimeApiCollection:
 	+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 	+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
 	+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
+	+ rpc_eth_extension_api::EthExtensionRpcApi<Block>
 where
 	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
@@ -81,7 +82,8 @@ where
 		+ sp_finality_grandpa::GrandpaApi<Block>
 		+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
-		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>,
+		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
+		+ rpc_eth_extension_api::EthExtensionRpcApi<Block>,
 	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }

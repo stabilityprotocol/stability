@@ -63,6 +63,7 @@ use pallet_grandpa::{
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use pallet_evm::{Account as EVMAccount, FeeCalculator, Runner};
+use pallet_sponsored_transactions::Call::send_sponsored_transaction;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime,
@@ -743,6 +744,7 @@ construct_runtime!(
 		DNTFeeController: pallet_dnt_fee_controller,
 		UpgradeRuntimeProposal: pallet_upgrade_runtime_proposal,
 		FeeRewardsVault: pallet_fee_rewards_vault,
+		MetaTransactions: pallet_sponsored_transactions,
 	}
 );
 
@@ -877,6 +879,12 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 			_ => None,
 		}
 	}
+}
+
+impl pallet_sponsored_transactions::Config for Runtime {
+	type RuntimeCall = RuntimeCall;
+	type ERC20Manager = ERC20Manager;
+	type DNTFeeController = DNTFeeController;
 }
 
 parameter_types! {
@@ -1200,6 +1208,19 @@ impl_runtime_apis! {
 				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
 
 				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
+			} else if let RuntimeCall::MetaTransactions(send_sponsored_transaction { transaction, .. }) = tx.0.function {
+				let source_address_option =  stbl_tools::eth::recover_signer(&transaction);
+
+				if source_address_option.is_none() {
+					return true
+				}
+
+				let source_address = source_address_option.unwrap();
+
+
+				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
+
+				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
 			}
 			else {
 				// always return true for non-ethereum transactions
@@ -1221,6 +1242,18 @@ impl_runtime_apis! {
 			.map(|v| <Runtime as pallet_custom_balances::Config>::AccountIdMapping::into_evm_address(v))
 			.collect()
 
+		}
+	}
+
+	impl rpc_eth_extension_api::EthExtensionRpcApi<Block> for Runtime {
+		fn convert_sponsored_transaction(transaction: EthereumTransaction, meta_trx_nonce : u64, meta_trx_sponsor: H160, meta_trx_sponsor_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
+			UncheckedExtrinsic::new_unsigned(
+				pallet_sponsored_transactions::Call::<Runtime>::send_sponsored_transaction { transaction, meta_trx_nonce, meta_trx_sponsor, meta_trx_sponsor_signature }.into(),
+			)
+		}
+
+		fn get_sponsor_nonce(sponsor: H160) -> u64 {
+			pallet_sponsored_transactions::SponsorNonce::<Runtime>::get(sponsor)
 		}
 	}
 
