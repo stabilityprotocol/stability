@@ -4,14 +4,10 @@ use core::{marker::PhantomData, ops::Mul};
 
 use ethereum::TransactionV2;
 use fp_ethereum::TransactionData;
-use fp_evm::FeeCalculator;
-use fp_evm::{CheckEvmTransaction, CheckEvmTransactionConfig};
+use fp_evm::{CheckEvmTransaction, CheckEvmTransactionConfig, FeeCalculator};
 use pallet_ethereum::InvalidTransactionWrapper;
 use pallet_user_fee_selector::UserFeeTokenController;
-use sp_core::{Get, H160};
-use pallet_evm::FeeCalculator;
-use pallet_user_fee_selector::UserFeeTokenController;
-use sp_core::{H160, U256};
+use sp_core::{Get, H160, U256};
 use sp_runtime::transaction_validity::{
 	InvalidTransaction, TransactionValidity, TransactionValidityError, ValidTransactionBuilder,
 };

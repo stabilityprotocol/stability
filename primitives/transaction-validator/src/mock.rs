@@ -19,6 +19,7 @@
 
 use core::str::FromStr;
 
+use fp_evm::FeeCalculator;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Everything, GenesisBuild},
@@ -111,9 +112,17 @@ parameter_types! {
 	pub ERC20SlotZero: H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
 	pub ZeroSlot : H256 = H256::from_low_u64_be(0);
 }
-
+pub struct FixedBaseFee;
+impl FeeCalculator for FixedBaseFee {
+	fn min_gas_price() -> (U256, Weight) {
+		(
+			U256::from(1_000_000_000),
+			Weight::from_ref_time(1_000_000_000),
+		)
+	}
+}
 impl pallet_evm::Config for Runtime {
-	type FeeCalculator = ();
+	type FeeCalculator = FixedBaseFee;
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
 	type WeightPerGas = WeightPerGas;
 	type CallOrigin = EnsureAddressRoot<AccountId>;
