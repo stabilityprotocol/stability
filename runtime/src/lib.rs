@@ -62,7 +62,7 @@ use pallet_grandpa::{
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use pallet_evm::{Account as EVMAccount, FeeCalculator, Runner};
-use pallet_meta_transactions::Call::send_sponsored_transaction;
+use pallet_sponsored_transactions::Call::send_sponsored_transaction;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime,
@@ -742,7 +742,7 @@ construct_runtime!(
 		DNTFeeController: pallet_dnt_fee_controller,
 		UpgradeRuntimeProposal: pallet_upgrade_runtime_proposal,
 		FeeRewardsVault: pallet_fee_rewards_vault,
-		MetaTransactions: pallet_meta_transactions,
+		MetaTransactions: pallet_sponsored_transactions,
 	}
 );
 
@@ -879,7 +879,7 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 	}
 }
 
-impl pallet_meta_transactions::Config for Runtime {
+impl pallet_sponsored_transactions::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type ERC20Manager = ERC20Manager;
 	type DNTFeeController = DNTFeeController;
@@ -1245,12 +1245,12 @@ impl_runtime_apis! {
 	impl rpc_eth_extension_api::EthExtensionRpcApi<Block> for Runtime {
 		fn convert_sponsored_transaction(transaction: EthereumTransaction, meta_trx_nonce : u64, meta_trx_sponsor: H160, meta_trx_sponsor_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
 			UncheckedExtrinsic::new_unsigned(
-				pallet_meta_transactions::Call::<Runtime>::send_sponsored_transaction { transaction, meta_trx_nonce, meta_trx_sponsor, meta_trx_sponsor_signature }.into(),
+				pallet_sponsored_transactions::Call::<Runtime>::send_sponsored_transaction { transaction, meta_trx_nonce, meta_trx_sponsor, meta_trx_sponsor_signature }.into(),
 			)
 		}
 
 		fn get_sponsor_nonce(sponsor: H160) -> u64 {
-			pallet_meta_transactions::SponsorNonce::<Runtime>::get(sponsor)
+			pallet_sponsored_transactions::SponsorNonce::<Runtime>::get(sponsor)
 		}
 	}
 

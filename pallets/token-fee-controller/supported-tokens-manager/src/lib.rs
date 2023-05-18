@@ -14,9 +14,8 @@ pub mod pallet {
 
 	use super::*;
 
-	use frame_support::pallet_prelude::*;
-
 	use frame_support::{
+		pallet_prelude::*,
 		storage::types::{OptionQuery, StorageMap, StorageValue, ValueQuery},
 		Blake2_128Concat,
 	};

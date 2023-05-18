@@ -18,7 +18,6 @@ use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT};
-use stability_rpc::{EthExtensionRpcEndpointsServer, eth_extension::EthExtensionRpc};
 // Runtime
 use stability_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
 
@@ -78,8 +77,7 @@ where
 
 	io.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
 	io.merge(TransactionPayment::new(client.clone()).into_rpc())?;
-	io.merge(StabilityRpc::new(client.clone()).into_rpc())?;
-	io.merge(EthExtensionRpc::new(client.clone(), pool.clone()).into_rpc())?;
+	io.merge(StabilityRpc::new(client.clone(), pool.clone()).into_rpc())?;
 
 	if let Some(command_sink) = command_sink {
 		io.merge(

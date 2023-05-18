@@ -4761,36 +4761,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-meta-transactions"
-version = "0.1.0"
-dependencies = [
- "ethereum",
- "fp-ethereum",
- "fp-evm",
- "frame-support",
- "frame-system",
- "hex",
- "pallet-balances",
- "pallet-erc20-manager",
- "pallet-ethereum",
- "pallet-evm",
- "pallet-evm-chain-id",
- "pallet-fee-rewards-vault",
- "pallet-supported-tokens-manager",
- "pallet-timestamp",
- "pallet-user-fee-selector",
- "pallet-validator-fee-selector",
- "parity-scale-codec",
- "runner",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "stbl-tools",
-]
-
-[[package]]
 name = "pallet-root-controller"
 version = "1.0.0"
 dependencies = [
@@ -4823,6 +4793,36 @@ dependencies = [
  "sp-staking",
  "sp-std",
  "sp-trie",
+]
+
+[[package]]
+name = "pallet-sponsored-transactions"
+version = "0.1.0"
+dependencies = [
+ "ethereum",
+ "fp-ethereum",
+ "fp-evm",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "pallet-balances",
+ "pallet-erc20-manager",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-evm-chain-id",
+ "pallet-fee-rewards-vault",
+ "pallet-supported-tokens-manager",
+ "pallet-timestamp",
+ "pallet-user-fee-selector",
+ "pallet-validator-fee-selector",
+ "parity-scale-codec",
+ "runner",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-tools",
 ]
 
 [[package]]
@@ -8501,7 +8501,7 @@ dependencies = [
  "jsonrpsee",
  "jsonrpsee-core 0.18.1",
  "lazy_static",
- "pallet-meta-transactions",
+ "pallet-sponsored-transactions",
  "parity-scale-codec",
  "rpc-eth-extension-api",
  "sc-client-api",
@@ -8562,9 +8562,9 @@ dependencies = [
  "pallet-grandpa",
  "pallet-hotfix-sufficients",
  "pallet-im-online",
- "pallet-meta-transactions",
  "pallet-root-controller",
  "pallet-session",
+ "pallet-sponsored-transactions",
  "pallet-sudo",
  "pallet-supported-tokens-manager",
  "pallet-timestamp",

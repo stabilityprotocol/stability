@@ -26,7 +26,7 @@ members = [
     'pallets/fee-rewards-vault',
     'pallets/upgrade-runtime-proposal',
     'pallets/custom-balances',
-    'pallets/meta-transactions',
+    'pallets/sponsored-transactions',
     'primitives/tools',
 	'pallets/root-controller',
     'stability-rpc',
@@ -190,7 +190,7 @@ precompile-validator-fee-selector = { path = "./precompiles/token-fee-controller
 precompile-validator-controller = { path = "./precompiles/validator-controller", default-features = false }
 pallet-root-controller = { path = "./pallets/root-controller", default-features = false }
 pallet-dnt-fee-controller = { path = "./pallets/dnt-fee-controller", default-features = false }
-pallet-meta-transactions = { path = "./pallets/meta-transactions", default-features = false }
+pallet-sponsored-transactions = { path = "./pallets/sponsored-transactions", default-features = false }
 stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api", default-features = false }
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
 pallet-upgrade-runtime-proposal = { path = "./pallets/upgrade-runtime-proposal", default-features = false }

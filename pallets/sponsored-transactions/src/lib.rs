@@ -79,6 +79,15 @@ pub mod pallet {
 					let (gas_price, _) = Self::get_transaction_gas_info(&transaction)
 						.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Call))?;
 
+					let (transaction_fee_token, _) = Self::get_fee_token_info(&from);
+
+					Self::ensure_sponsor_balance(
+						meta_trx_sponsor.clone(),
+						transaction_fee_token,
+						gas_price * transaction_data.gas_limit,
+					)
+					.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Payment))?;
+
 					return sp_runtime::transaction_validity::ValidTransactionBuilder::default()
 						.and_provides((from, transaction_data.nonce))
 						.priority(stbl_tools::misc::truncate_u256_to_u64(gas_price))
@@ -270,6 +279,15 @@ pub mod pallet {
 			);
 
 			<T as pallet_evm::Config>::GasWeightMapping::weight_to_gas(actual_weight)
+		}
+
+		fn ensure_sponsor_balance(sponsor: H160, token: H160, amount: U256) -> Result<(), ()> {
+			let balance = T::ERC20Manager::balance_of(token.clone(), sponsor.clone());
+			if balance >= amount {
+				Ok(())
+			} else {
+				Err(())
+			}
 		}
 
 		fn transfer_fee_token(
