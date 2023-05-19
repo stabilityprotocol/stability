@@ -4,8 +4,7 @@ use stbl_tools::eth::recover_signer;
 
 use crate::mock::{
 	new_test_ext, MetaDeploymentSignature, MetaDeploymentTransaction, MetaTransaction0Signature,
-	MetaTransaction1Signature, RawTransaction0, RawTransaction1, Runtime, Sponsor,
-	StorageCalledArguments,
+	RawTransaction0, Runtime, Sponsor, StorageCalledArguments,
 };
 
 #[test]
@@ -21,7 +20,6 @@ fn fail_to_execute_meta_transaction_twice() {
 			origin.clone(),
 			trx0.clone(),
 			Sponsor::get(),
-			0u64,
 			MetaTransaction0Signature::get(),
 		)
 		.unwrap();
@@ -30,39 +28,13 @@ fn fail_to_execute_meta_transaction_twice() {
 			origin.clone(),
 			trx0.clone(),
 			Sponsor::get(),
-			0u64,
 			MetaTransaction0Signature::get(),
 		)
 		.unwrap_err();
 
 		assert!(matches!(
 			error,
-			DispatchError::Other("Invalid metatransaction nonce")
-		));
-	});
-}
-
-#[test]
-fn fail_to_execute_meta_transaction_with_wrong_meta_nonce() {
-	new_test_ext().execute_with(|| {
-		let trx1 = get_transaction_from_bytes(RawTransaction1::get());
-
-		let from = recover_signer(&trx1).unwrap();
-		let origin: <Runtime as frame_system::Config>::RuntimeOrigin =
-			pallet_ethereum::Origin::EthereumTransaction(from).into();
-
-		let error = crate::Pallet::<Runtime>::send_sponsored_transaction(
-			origin.clone(),
-			trx1.clone(),
-			Sponsor::get(),
-			1u64,
-			MetaTransaction1Signature::get(),
-		)
-		.unwrap_err();
-
-		assert!(matches!(
-			error,
-			DispatchError::Other("Invalid metatransaction nonce")
+			DispatchError::Other("Transaction object is invalid")
 		));
 	});
 }
@@ -82,7 +54,6 @@ fn fail_to_execute_meta_transaction_twice_with_invalid_trx() {
 			origin.clone(),
 			trx0.clone(),
 			Sponsor::get(),
-			0u64,
 			MetaTransaction0Signature::get(),
 		)
 		.unwrap_err();
@@ -122,7 +93,6 @@ fn fail_to_execute_meta_transaction_twice_with_invalid_trx_signature() {
 			origin.clone(),
 			trx0.clone(),
 			Sponsor::get(),
-			0u64,
 			MetaTransaction0Signature::get(),
 		)
 		.unwrap_err();
@@ -137,7 +107,7 @@ fn fail_to_execute_meta_transaction_twice_with_invalid_trx_signature() {
 #[test]
 fn fail_to_execute_meta_transaction_with_wrong_meta_signature() {
 	new_test_ext().execute_with(|| {
-		let trx1 = get_transaction_from_bytes(RawTransaction1::get());
+		let trx1 = get_transaction_from_bytes(RawTransaction0::get());
 
 		let from = recover_signer(&trx1).unwrap();
 		let origin: <Runtime as frame_system::Config>::RuntimeOrigin =
@@ -147,8 +117,7 @@ fn fail_to_execute_meta_transaction_with_wrong_meta_signature() {
 			origin.clone(),
 			trx1.clone(),
 			Sponsor::get(),
-			0u64,
-			MetaTransaction1Signature::get(),
+			hex::decode("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap(),
 		)
 		.unwrap_err();
 
@@ -174,7 +143,6 @@ fn fees_managed_correctly_native_token_transaction() {
 			origin.clone(),
 			trx0.clone(),
 			Sponsor::get(),
-			0u64,
 			MetaTransaction0Signature::get(),
 		)
 		.unwrap();
@@ -198,7 +166,6 @@ fn fees_managed_correctly_deploy_contract() {
 			origin.clone(),
 			trx0.clone(),
 			Sponsor::get(),
-			0u64,
 			MetaDeploymentSignature::get(),
 		)
 		.unwrap();
