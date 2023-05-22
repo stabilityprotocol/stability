@@ -4,9 +4,10 @@ use core::{marker::PhantomData, ops::Mul};
 
 use ethereum::TransactionV2;
 use fp_ethereum::TransactionData;
-use pallet_evm::FeeCalculator;
+use fp_evm::{CheckEvmTransaction, CheckEvmTransactionConfig, FeeCalculator};
+use pallet_ethereum::InvalidTransactionWrapper;
 use pallet_user_fee_selector::UserFeeTokenController;
-use sp_core::{H160, U256};
+use sp_core::{Get, H160, U256};
 use sp_runtime::transaction_validity::{
 	InvalidTransaction, TransactionValidity, TransactionValidityError, ValidTransactionBuilder,
 };
@@ -65,6 +66,22 @@ where
 		gas_price: U256,
 	) -> TransactionValidity {
 		let transaction_data: TransactionData = transaction.into();
+
+		let (account, _) = pallet_evm::Pallet::<T>::account_basic(origin);
+
+		CheckEvmTransaction::<InvalidTransactionWrapper>::new(
+			CheckEvmTransactionConfig {
+				evm_config: <T as pallet_evm::Config>::config(),
+				block_gas_limit: <T as pallet_evm::Config>::BlockGasLimit::get(),
+				base_fee: <T as pallet_evm::Config>::FeeCalculator::min_gas_price().0,
+				chain_id: <T as pallet_evm::Config>::ChainId::get(),
+				is_transactional: true,
+			},
+			transaction_data.clone().into(),
+		)
+		.validate_in_pool_for(&account)
+		.and_then(|v| v.with_base_fee())
+		.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Payment))?;
 
 		ValidTransactionBuilder::default()
 			.and_provides((origin, transaction_data.nonce))
