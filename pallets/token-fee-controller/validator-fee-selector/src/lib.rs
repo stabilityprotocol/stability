@@ -11,6 +11,7 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
+
 	use super::*;
 	use core::str::FromStr;
 
