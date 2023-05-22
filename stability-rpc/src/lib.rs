@@ -15,10 +15,10 @@ use std::{
 	sync::Arc,
 };
 
-// #[cfg(test)]
-// mod mock;
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct StabilityOutput<T> {
