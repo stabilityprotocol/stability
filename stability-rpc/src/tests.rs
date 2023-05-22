@@ -19,7 +19,6 @@ sp_api::mock_impl_runtime_apis! {
 	}
 
 	impl fp_rpc::EthereumRuntimeRPCApi<Block> for TestRuntimeApi {}
-	impl rpc_eth_extension_api::EthExtensionRpcApi<Block> for TestRuntimeApi {}
 }
 
 #[tokio::test]
