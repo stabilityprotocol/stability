@@ -44,6 +44,10 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
 						"KW7fmVoR3DnYBEX8DwBfPZR2QBLf4uTQvXNm7zweVRWvXqJyt",
 						"5GzRrcmG4kztd31FPWEcr51B3Jd2GZPh6ZjpxwzymopHuViN",
 					),
+					get_authority_from_pubkeys(
+						"KWBJUVzDvXYKakKX1wuHKqxxH5qg751fHwtaG15KYpuPReU9x",
+						"5FqhzMYnwsDx4uZYiGVXxJWqvtGwTgMEgYvziEkihE6tfov7",
+					),
 				],
 				vec![get_account_id_from_public(
 					"KWECfQF69Vr61qop6NVpesYrnw5WRS4M816286K7NUuVAn2zd",
