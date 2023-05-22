@@ -251,6 +251,7 @@ impl<T: Config> Pallet<T> {
 	fn unapprove_validator(validator_id: T::AccountId) -> DispatchResult {
 		let mut approved_set = <ApprovedValidators<T>>::get();
 		approved_set.retain(|v| *v != validator_id);
+		<ApprovedValidators<T>>::put(approved_set);
 		Ok(())
 	}
 
