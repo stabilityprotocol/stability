@@ -17,12 +17,16 @@ sp_api::mock_impl_runtime_apis! {
 			H160::from_str("0xf25F864329C44b2aA103De1dFf6fA020b85D8C07").expect("Bad account id format")]
 		}
 	}
+
+	impl fp_rpc::EthereumRuntimeRPCApi<Block> for TestRuntimeApi {}
+	impl rpc_eth_extension_api::EthExtensionRpcApi<Block> for TestRuntimeApi {}
 }
 
 #[tokio::test]
 async fn get_supported_tokens_should_return_expected_addr() {
 	let client = Arc::new(TestApi {});
-	let api = StabilityRpc::<TestApi, Block>::new(client);
+	let pool = Arc::new(MockedMempool::default());
+	let api = StabilityRpc::<TestApi, MockedMempool, Block>::new(client, pool);
 	let result = api.get_validator_list(None);
 	assert_eq!(true, result.is_ok());
 	let result_unwrap = result.unwrap().value as Vec<H160>;
@@ -38,7 +42,8 @@ async fn get_supported_tokens_should_return_expected_addr() {
 #[tokio::test]
 async fn get_validator_list_should_return_a_validator_list() {
 	let client = Arc::new(TestApi {});
-	let api = StabilityRpc::<TestApi, Block>::new(client);
+	let pool = Arc::new(MockedMempool::default());
+	let api = StabilityRpc::<TestApi, MockedMempool, Block>::new(client, pool);
 	let result = api.get_supported_tokens(None);
 	assert_eq!(true, result.is_ok());
 	let result_unwrap = result.unwrap().value as Vec<H160>;
