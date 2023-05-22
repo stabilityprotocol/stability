@@ -8510,6 +8510,7 @@ dependencies = [
  "parity-scale-codec",
  "rpc-eth-extension-api",
  "sc-client-api",
+ "sc-service",
  "sc-transaction-pool-api",
  "scale-info",
  "serde",
