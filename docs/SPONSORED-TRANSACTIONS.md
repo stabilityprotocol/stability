@@ -21,7 +21,7 @@ The message that the sponsor has to sign is the following
 Note:
 
 - `${TransactionHash}` is a `0x` prefixed hexadecimal string
-- `Nonce` is a decimal number
+- `${Nonce}` is a decimal number
 
 ### API
 

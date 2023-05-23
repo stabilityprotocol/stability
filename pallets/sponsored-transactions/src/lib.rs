@@ -67,7 +67,7 @@ pub mod pallet {
 					)
 					.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::BadProof))?;
 
-					Self::ensure_transaction_unicity(&from, &transaction)
+					Self::pool_ensure_transaction_unicity(&from, &transaction)
 						.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Call))?;
 
 					let transaction_data: TransactionData = transaction.into();
@@ -129,7 +129,7 @@ pub mod pallet {
 			)
 			.map_err(|_| DispatchError::Other("Invalid metatransaction signature"))?;
 
-			Self::ensure_transaction_unicity(&from, &transaction)
+			Self::block_ensure_transaction_unicity(&from, &transaction)
 				.map_err(|_| DispatchError::Other("Transaction object is invalid"))?;
 
 			let (gas_limit, gas_price) = Self::get_transaction_gas_info(&transaction)
@@ -200,7 +200,7 @@ pub mod pallet {
 			}
 		}
 
-		fn ensure_transaction_unicity(
+		fn block_ensure_transaction_unicity(
 			origin: &H160,
 			transaction: &pallet_ethereum::Transaction,
 		) -> Result<(), ()> {
@@ -220,6 +220,33 @@ pub mod pallet {
 				transaction_data.into(),
 			)
 			.validate_in_block_for(&who)
+			.and_then(|v| v.with_chain_id())
+			.and_then(|v| v.with_base_fee())
+			.map_err(|_| ())?;
+
+			Ok(())
+		}
+
+		fn pool_ensure_transaction_unicity(
+			origin: &H160,
+			transaction: &pallet_ethereum::Transaction,
+		) -> Result<(), ()> {
+			let transaction_data: TransactionData = transaction.into();
+
+			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
+			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
+
+			fp_evm::CheckEvmTransaction::<pallet_ethereum::InvalidTransactionWrapper>::new(
+				CheckEvmTransactionConfig {
+					evm_config: T::config(),
+					block_gas_limit: T::BlockGasLimit::get(),
+					base_fee,
+					chain_id: T::ChainId::get(),
+					is_transactional: true,
+				},
+				transaction_data.into(),
+			)
+			.validate_in_pool_for(&who)
 			.and_then(|v| v.with_chain_id())
 			.and_then(|v| v.with_base_fee())
 			.map_err(|_| ())?;
