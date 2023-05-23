@@ -178,6 +178,23 @@ where
 	#[precompile::view]
 	fn get_validator_list(handle: &mut impl PrecompileHandle) -> EvmResult<Vec<Address>> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+		let validators = pallet_validator_set::ApprovedValidators::<Runtime>::get();
+
+		let validators_h160: Vec<H160> = validators
+			.iter()
+			.map(|v| Runtime::AccountIdMapping::into_evm_address(v))
+			.collect();
+
+		Ok(validators_h160
+			.iter()
+			.map(|v| Into::<Address>::into(*v))
+			.collect())
+	}
+
+	#[precompile::public("getActiveValidatorList()")]
+	#[precompile::view]
+	fn get_active_validator_list(handle: &mut impl PrecompileHandle) -> EvmResult<Vec<Address>> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		let validators = pallet_validator_set::Validators::<Runtime>::get();
 
 		let validators_h160: Vec<H160> = validators
