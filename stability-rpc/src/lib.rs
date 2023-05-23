@@ -4,7 +4,6 @@ use jsonrpsee::{
 	proc_macros::rpc,
 	types::error::{CallError, ErrorObject},
 };
-use rpc_eth_extension_api::EthExtensionRpcApi;
 use sc_transaction_pool_api::TransactionSource;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
@@ -39,13 +38,9 @@ pub trait StabilityRpcEndpoints<BlockHash> {
 	async fn send_sponsored_transaction(
 		&self,
 		transaction_req: Bytes,
-		meta_trx_nonce: u64,
 		meta_trx_sponsor: H160,
 		meta_trx_sponsor_signature: Bytes,
 	) -> RpcResult<H256>;
-
-	#[method(name = "stability_getSponsorNonce")]
-	async fn get_sponsor_nonce(&self, address: H160) -> RpcResult<u64>;
 }
 
 pub struct StabilityRpc<C, P, Block> {
@@ -71,7 +66,7 @@ where
 	Block: BlockT,
 	C: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
 	C::Api: StabilityRpcRuntimeApi<Block>,
-	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block> + rpc_eth_extension_api::EthExtensionRpcApi<Block>,
+	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
 	Pool: sc_transaction_pool_api::TransactionPool<Block = Block> + Send + Sync + 'static,
 {
 	fn get_supported_tokens(
@@ -107,7 +102,6 @@ where
 	async fn send_sponsored_transaction(
 		&self,
 		transaction: Bytes,
-		meta_trx_nonce: u64,
 		meta_trx_sponsor: H160,
 		meta_trx_sponsor_signature: Bytes,
 	) -> RpcResult<H256> {
@@ -130,7 +124,6 @@ where
 			.convert_sponsored_transaction(
 				&block_hash,
 				transaction.clone(),
-				meta_trx_nonce,
 				meta_trx_sponsor,
 				meta_trx_sponsor_signature.to_vec(),
 			)
@@ -145,16 +138,6 @@ where
 				error::Error::Custom(format!("Unable to submit transaction: {:?}", e).into())
 			})
 			.await
-	}
-
-	async fn get_sponsor_nonce(&self, address: H160) -> RpcResult<u64> {
-		let block_hash = BlockId::hash(self.client.info().best_hash);
-		self.client
-			.runtime_api()
-			.get_sponsor_nonce(&block_hash, address)
-			.map_err(|e| {
-				error::Error::Custom(format!("Unable to get sponsor nonce: {:?}", e).into())
-			})
 	}
 }
 

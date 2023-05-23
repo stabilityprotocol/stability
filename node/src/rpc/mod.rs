@@ -55,7 +55,6 @@ where
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: fp_rpc::ConvertTransactionRuntimeApi<Block>,
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
-	C::Api: rpc_eth_extension_api::EthExtensionRpcApi<Block>,
 	C::Api: stability_rpc::StabilityRpcRuntimeApi<Block>,
 	P: TransactionPool<Block = Block> + 'static,
 	A: ChainApi<Block = Block> + 'static,

@@ -26,7 +26,6 @@ async-trait = { workspace = true }
 stability-rpc-api = { workspace = true, default-features = false }
 sc-transaction-pool-api = { workspace = true }
 pallet-sponsored-transactions = { workspace = true }
-rpc-eth-extension-api = { workspace = true }
 futures-util = { version = "0.3.17" }
 jsonrpsee-core = { version = "0.18.1" }
 

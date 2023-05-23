@@ -1243,17 +1243,11 @@ impl_runtime_apis! {
 			.collect()
 
 		}
-	}
 
-	impl rpc_eth_extension_api::EthExtensionRpcApi<Block> for Runtime {
-		fn convert_sponsored_transaction(transaction: EthereumTransaction, meta_trx_nonce : u64, meta_trx_sponsor: H160, meta_trx_sponsor_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
+		fn convert_sponsored_transaction(transaction: EthereumTransaction, meta_trx_sponsor: H160, meta_trx_sponsor_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
 			UncheckedExtrinsic::new_unsigned(
-				pallet_sponsored_transactions::Call::<Runtime>::send_sponsored_transaction { transaction, meta_trx_nonce, meta_trx_sponsor, meta_trx_sponsor_signature }.into(),
+				pallet_sponsored_transactions::Call::<Runtime>::send_sponsored_transaction { transaction,  meta_trx_sponsor, meta_trx_sponsor_signature }.into(),
 			)
-		}
-
-		fn get_sponsor_nonce(sponsor: H160) -> u64 {
-			pallet_sponsored_transactions::SponsorNonce::<Runtime>::get(sponsor)
 		}
 	}
 

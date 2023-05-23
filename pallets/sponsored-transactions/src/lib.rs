@@ -53,23 +53,19 @@ pub mod pallet {
 				Call::send_sponsored_transaction {
 					transaction,
 					meta_trx_sponsor,
-					meta_trx_nonce,
-					meta_trx_sponsor_signature: _,
+					meta_trx_sponsor_signature,
 				} => {
-					match SponsorNonce::<T>::get(meta_trx_sponsor.clone()) {
-						nonce if nonce > *meta_trx_nonce => {
-							Err(TransactionValidityError::Invalid(InvalidTransaction::Stale))
-						}
-						nonce if nonce < *meta_trx_nonce => Err(TransactionValidityError::Invalid(
-							InvalidTransaction::Future,
-						)),
-						_ => Ok(()),
-					}?;
-
 					let from =
 						Self::ensure_transaction_signature(transaction.clone()).map_err(|_| {
 							TransactionValidityError::Invalid(InvalidTransaction::BadProof)
 						})?;
+
+					Self::ensure_meta_transaction_sponsor(
+						transaction.clone(),
+						meta_trx_sponsor.clone(),
+						meta_trx_sponsor_signature.clone(),
+					)
+					.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::BadProof))?;
 
 					Self::ensure_transaction_unicity(&from, &transaction)
 						.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Call))?;
@@ -119,12 +115,8 @@ pub mod pallet {
 			_origin: OriginFor<T>,
 			transaction: pallet_ethereum::Transaction,
 			meta_trx_sponsor: H160,
-			meta_trx_nonce: u64,
 			meta_trx_sponsor_signature: Vec<u8>,
 		) -> DispatchResult {
-			Self::ensure_sponsor_nonce(meta_trx_sponsor, meta_trx_nonce)
-				.map_err(|_| DispatchError::Other("Invalid metatransaction nonce"))?;
-
 			SponsorNonce::<T>::mutate(meta_trx_sponsor.clone(), |nonce| *nonce += 1);
 
 			let from = Self::ensure_transaction_signature(transaction.clone())
@@ -132,7 +124,6 @@ pub mod pallet {
 
 			Self::ensure_meta_transaction_sponsor(
 				transaction.clone(),
-				meta_trx_nonce,
 				meta_trx_sponsor,
 				meta_trx_sponsor_signature,
 			)
@@ -187,22 +178,13 @@ pub mod pallet {
 			}
 		}
 
-		fn ensure_sponsor_nonce(sponsor: H160, nonce: u64) -> Result<(), ()> {
-			if SponsorNonce::<T>::get(sponsor.clone()) == nonce {
-				Ok(())
-			} else {
-				Err(())
-			}
-		}
-
 		fn ensure_meta_transaction_sponsor(
 			transaction: pallet_ethereum::Transaction,
-			meta_trx_nonce: u64,
 			expected_sponsor: H160,
 			meta_trx_sponsor_signature: Vec<u8>,
 		) -> Result<(), ()> {
 			let meta_trx_internal_message: Vec<u8> =
-				Self::get_meta_transaction_signing_message(transaction.clone(), meta_trx_nonce);
+				Self::get_meta_transaction_signing_message(transaction.clone());
 
 			let eip191_message =
 				stbl_tools::eth::build_eip191_message_hash(meta_trx_internal_message);
@@ -311,11 +293,8 @@ pub mod pallet {
 			Ok(())
 		}
 
-		pub fn get_meta_transaction_signing_message(
-			trx: pallet_ethereum::Transaction,
-			meta_trx_nonce: u64,
-		) -> Vec<u8> {
-			let mut message = Vec::new();
+		pub fn get_meta_transaction_signing_message(trx: pallet_ethereum::Transaction) -> Vec<u8> {
+			let mut message: Vec<u8> = Vec::new();
 
 			let trx_hash = trx.hash();
 			let trx_bytes_hash = trx_hash.as_bytes();
@@ -323,10 +302,6 @@ pub mod pallet {
 
 			message.extend_from_slice(b"I consent to be a sponsor of transaction: 0x");
 			message.extend_from_slice(trx_hash_string.as_bytes());
-			message.extend_from_slice(b" with nonce: ");
-			message.extend_from_slice(
-				stbl_tools::misc::u64_to_buffer_in_ascii(meta_trx_nonce).as_slice(),
-			);
 
 			return message;
 		}
@@ -341,7 +316,7 @@ pub mod pallet {
 					address[0..12].copy_from_slice(&[0u8; 12]);
 					address.to_vec()
 				}
-				Err(_) => [0u8; 0].to_vec(),
+				Err(_) => return None,
 			};
 
 			return Some(H160::from_slice(&result[12..32]));
