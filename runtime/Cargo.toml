@@ -57,6 +57,7 @@ std = [
     'pallet-root-controller/std',
     'pallet-supported-tokens-manager/std',
     'pallet-validator-set/std',
+    'pallet-validator-fee-selector/std',
     'pallet-session/std',
     'pallet-im-online/std',
     'pallet-upgrade-runtime-proposal/std',
