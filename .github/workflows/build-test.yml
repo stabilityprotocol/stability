@@ -24,7 +24,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: $
-          password: ${{ secrets.TOKEN_FOR_GITHUB }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build docker image for testing
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
