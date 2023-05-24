@@ -7,4 +7,6 @@ interface ValidatorController {
     function removeValidator(address validator) external; // onlyOwner
 
     function getValidatorList() external view returns (address[] memory);
+
+    function getActiveValidatorList() external view returns (address[] memory);
 }
