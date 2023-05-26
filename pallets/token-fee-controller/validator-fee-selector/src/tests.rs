@@ -2,7 +2,7 @@ use frame_support::parameter_types;
 use pallet_supported_tokens_manager::SupportedTokensManager;
 use sp_core::{H160};
 
-use crate::mock::{ExtBuilder, MockSupportedTokensManager, ValidatorFeeSelector, MeaninglessTokenAddress, NotSupportedToken, Runtime, RuntimeCall, RuntimeOrigin};
+use crate::mock::{ExtBuilder, MockSupportedTokensManager, ValidatorFeeSelector, MeaninglessTokenAddress, NotSupportedToken, Runtime, };
 
 parameter_types! {
 	pub MeaninglessAccount: H160 = H160::from_low_u64_le(1);
@@ -100,26 +100,7 @@ fn updated_token_conversion_rate() {
     });
 }
 
-#[test]
-fn update_default_controller_from_root() {
-    ExtBuilder::default().build().execute_with(|| {
-        let origin = RuntimeOrigin::signed(MeaninglessAccount::get());
-        let call =  Box::new(RuntimeCall::ValidatorFeeSelector(crate::Call::<Runtime>::update_default_controller{controller: MeaninglessAccount::get()}));
 
-        assert_eq!(<ValidatorFeeSelector as crate::ValidatorFeeTokenController>::conversion_rate_controller(
-            MeaninglessAccount::get()
-        ), crate::GenesisConfig::default().initial_default_conversion_rate_controller);
-
-        assert!(pallet_root_controller::Pallet::<Runtime>::dispatch_as_root(
-            origin,
-            call
-        ).is_ok());
-
-        assert_eq!(<ValidatorFeeSelector as crate::ValidatorFeeTokenController>::conversion_rate_controller(
-            MeaninglessAccount::get()
-        ), MeaninglessAccount::get());
-    });
-}
 
 #[test]
 fn not_supported_by_validator_if_not_supported_by_chain() {

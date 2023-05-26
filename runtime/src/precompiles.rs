@@ -69,6 +69,7 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 					ValidatorFeeManagerPrecompile<
 						R,
 						<FeeController as StabilityFeeController>::Validator,
+						DefaultOwner,
 					>,
 				>,
 				PrecompileAt<

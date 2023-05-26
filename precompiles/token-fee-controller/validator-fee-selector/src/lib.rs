@@ -25,14 +25,87 @@ use fp_evm::PrecompileHandle;
 use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
 use frame_support::parameter_types;
 
+use frame_support::pallet_prelude::{StorageValue, ValueQuery};
+use frame_support::traits::StorageInstance;
+
 use precompile_utils::prelude::*;
-use sp_core::{H160, U256};
+use sp_core::{Get, H160, H256, U256};
 use sp_std::marker::PhantomData;
+
+pub trait InstanceToPrefix {
+	/// Prefix used for the Owner storage.
+	type OwnerPrefix: StorageInstance;
+
+	/// Prefix used for the ClaimableOwner storage.
+	type ClaimableOwnerPrefix: StorageInstance;
+}
+
+// We use a macro to implement the trait for () and the 16 substrate Instance.
+macro_rules! impl_prefix {
+	($instance:ident, $name:literal) => {
+		// Using `paste!` we generate a dedicated module to avoid collisions
+		// between each instance `Approves` struct.
+		paste::paste! {
+			mod [<_impl_prefix_ $instance:snake>] {
+				use super::*;
+
+
+				pub struct Owner;
+
+				impl StorageInstance for Owner {
+					const STORAGE_PREFIX: &'static str = "Owner";
+
+					fn pallet_prefix() -> &'static str {
+						$name
+					}
+				}
+
+				pub struct ClaimableOwner;
+
+				impl StorageInstance for ClaimableOwner {
+					const STORAGE_PREFIX: &'static str = "ClaimableOwner";
+
+					fn pallet_prefix() -> &'static str {
+						$name
+					}
+				}
+
+
+				impl InstanceToPrefix for $instance {
+					type OwnerPrefix = Owner;
+					type ClaimableOwnerPrefix = ClaimableOwner;
+				}
+			}
+		}
+	};
+}
+
+type Instance0 = ();
+
+impl_prefix!(Instance0, "VFSOwnable");
 
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod tests;
+
+/// Solidity selector of the Transfer log, which is the Keccak of the Log signature.
+pub const SELECTOR_LOG_TOKEN_SUPPORT_CHANGE: [u8; 32] = keccak256!("TokenSupportChange(address)");
+
+/// Solidity selector of the Withdraw log, which is the Keccak of the Log signature.
+pub const SELECTOR_LOG_NEW_OWNER: [u8; 32] = keccak256!("NewOwner(address)");
+pub const SELECTOR_LOG_TRANSFER_OWNER: [u8; 32] =
+	keccak256!("OwnershipTransferStarted(address,address)");
+
+pub type OwnerStorage<Instance, DefaultOwner> =
+	StorageValue<<Instance as InstanceToPrefix>::OwnerPrefix, H160, ValueQuery, DefaultOwner>;
+
+pub type ClaimableOwnerStorage<Instance> = StorageValue<
+	<Instance as InstanceToPrefix>::ClaimableOwnerPrefix,
+	H160,
+	ValueQuery,
+	ZeroAddress,
+>;
 
 /// Solidity selector of the Token Acceptance Changed log, which is the Keccak of the Log signature.
 pub const SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED: [u8; 32] =
@@ -53,15 +126,17 @@ parameter_types! {
 pub struct ValidatorFeeManagerPrecompile<
 	Runtime,
 	ValidatorFeeTokenController,
+	DefaultOwner,
 	Instance: 'static = (),
->(PhantomData<(Runtime, ValidatorFeeTokenController, Instance)>);
+>(PhantomData<(Runtime, ValidatorFeeTokenController, DefaultOwner, Instance)>);
 
 #[precompile_utils::precompile]
-impl<Runtime, ValidatorFeeTokenController, Instance>
-	ValidatorFeeManagerPrecompile<Runtime, ValidatorFeeTokenController, Instance>
+impl<Runtime, ValidatorFeeTokenController, DefaultOwner, Instance>
+	ValidatorFeeManagerPrecompile<Runtime, ValidatorFeeTokenController, DefaultOwner, Instance>
 where
+	DefaultOwner: Get<H160> + 'static,
 	ValidatorFeeTokenController: pallet_validator_fee_selector::ValidatorFeeTokenController,
-	Instance: 'static,
+	Instance: 'static + InstanceToPrefix,
 	Runtime: pallet_evm::Config + pallet_timestamp::Config + pallet_validator_set::Config,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
@@ -86,8 +161,8 @@ where
 		}
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-    
-    ValidatorFeeTokenController::update_fee_token_acceptance(
+
+		ValidatorFeeTokenController::update_fee_token_acceptance(
 			msg_sender,
 			token_address.into(),
 			acceptance_value,
@@ -139,7 +214,7 @@ where
 		}
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-    
+
 		ValidatorFeeTokenController::update_conversion_rate_controller(
 			msg_sender,
 			cr_controller.into(),
@@ -148,7 +223,7 @@ where
 			revert(b"ValidatorFeeTokenController: default token conversion rate cannot be updated")
 		})?;
 
-    handle.record_log_costs_manual(2, 64)?;
+		handle.record_log_costs_manual(2, 64)?;
 		log2(
 			handle.context().address,
 			SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
@@ -168,5 +243,108 @@ where
 	) -> EvmResult<Address> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		Ok(ValidatorFeeTokenController::conversion_rate_controller(validator.into()).into())
+	}
+
+	#[precompile::public("updateDefaultController(address)")]
+	#[precompile::view]
+	fn update_default_controller(
+		handle: &mut impl PrecompileHandle,
+		controller: Address,
+	) -> EvmResult<()> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+		let msg_sender = handle.context().caller;
+
+		if Self::owner(handle)? != Address(msg_sender) {
+			return Err(revert(
+				"ValidatorFeeTokenController: sender is not the owner",
+			));
+		}
+
+		ValidatorFeeTokenController::update_default_controller(controller.into()).map_err(
+			|_| revert("ValidatorFeeTokenController: failed to update default controller"),
+		)?;
+		Ok(())
+	}
+
+	#[precompile::public("owner()")]
+	#[precompile::view]
+	fn owner(handle: &mut impl PrecompileHandle) -> EvmResult<Address> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		Ok(OwnerStorage::<Instance, DefaultOwner>::get().into())
+	}
+
+	#[precompile::public("pendingOwner()")]
+	#[precompile::view]
+	fn pending_owner(handle: &mut impl PrecompileHandle) -> EvmResult<Address> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		Ok(ClaimableOwnerStorage::<Instance>::get().into())
+	}
+
+	#[precompile::public("transferOwnership(address)")]
+	fn transfer_ownership(handle: &mut impl PrecompileHandle, new_owner: Address) -> EvmResult {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let msg_sender = handle.context().caller;
+		let owner = OwnerStorage::<Instance, DefaultOwner>::get();
+
+		if msg_sender != owner {
+			return Err(revert("ValidatorFeeTokenController: Sender is not owner"));
+		}
+
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+		ClaimableOwnerStorage::<Instance>::mutate(move |claimable_owner| {
+			*claimable_owner = new_owner.into();
+		});
+
+		let target_new_owner: H160 = new_owner.into();
+
+		handle.record_log_costs_manual(2, 32)?;
+		log2(
+			handle.context().address,
+			SELECTOR_LOG_TRANSFER_OWNER,
+			Into::<H256>::into(owner),
+			EvmDataWriter::new()
+				.write(Into::<H256>::into(target_new_owner))
+				.build(),
+		)
+		.record(handle)?;
+
+		Ok(())
+	}
+
+	#[precompile::public("acceptOwnership()")]
+	fn claim_ownership(handle: &mut impl PrecompileHandle) -> EvmResult {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let msg_sender = handle.context().caller;
+
+		let target_new_owner = ClaimableOwnerStorage::<Instance>::get();
+
+		if target_new_owner != msg_sender {
+			return Err(revert(
+				"ValidatorFeeTokenController: Target owner is not the claimer",
+			));
+		}
+
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+		ClaimableOwnerStorage::<Instance>::kill();
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
+		OwnerStorage::<Instance, DefaultOwner>::mutate(|owner| {
+			*owner = target_new_owner;
+		});
+
+		handle.record_log_costs_manual(1, 32)?;
+		log1(
+			handle.context().address,
+			SELECTOR_LOG_NEW_OWNER,
+			EvmDataWriter::new()
+				.write(Into::<H256>::into(target_new_owner))
+				.build(),
+		)
+		.record(handle)?;
+
+		Ok(())
 	}
 }
