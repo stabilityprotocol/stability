@@ -1,20 +1,167 @@
 use precompile_utils::{
-	prelude::{log2, log3, Address},
+	prelude::{log1, log2, log3, Address},
 	testing::{CryptoAlith, Precompile1, PrecompileTesterExt},
 	EvmDataWriter,
 };
-use sp_core::H160;
+use sp_core::{H160, H256};
 
 use crate::{
-	mock::MeaninglessTokenAddress,
-	mock::{ExtBuilder, NonCryptoAlith, PCall, Precompiles, PrecompilesValue, Runtime},
-	DefaultAcceptance, SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
+	mock::{
+		DefaultOwner, ExtBuilder, MeaninglessTokenAddress, NonCryptoAlith, PCall, Precompiles,
+		PrecompilesValue, Runtime, UnpermissionedAccount, UnpermissionedAccount2,
+	},
+	DefaultAcceptance, SELECTOR_LOG_NEW_OWNER, SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
 	SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
 };
 
 // No test of invalid selectors since we have a fallback behavior (deposit).
 fn precompiles() -> Precompiles<Runtime> {
 	PrecompilesValue::get()
+}
+
+// Ownable
+
+#[test]
+fn owner_correctly_init() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(DefaultOwner::get(), Precompile1, PCall::owner {})
+			.execute_returns_encoded(Into::<H256>::into(DefaultOwner::get()));
+	})
+}
+
+#[test]
+
+fn transfer_ownership_set_target_if_owner_twice() {
+	ExtBuilder::default().build().execute_with(|| {
+		let new_owner = UnpermissionedAccount::get();
+		let other_owner = UnpermissionedAccount2::get();
+
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::transfer_ownership {
+					new_owner: precompile_utils::data::Address(new_owner),
+				},
+			)
+			.execute_some();
+
+		precompiles()
+			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
+			.execute_returns_encoded(Into::<H256>::into(new_owner));
+
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::transfer_ownership {
+					new_owner: precompile_utils::data::Address(other_owner),
+				},
+			)
+			.execute_some();
+
+		precompiles()
+			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
+			.execute_returns_encoded(Into::<H256>::into(other_owner));
+	})
+}
+
+#[test]
+fn fail_transfer_ownership_if_not_owner() {
+	ExtBuilder::default().build().execute_with(|| {
+		let new_owner = UnpermissionedAccount::get();
+
+		precompiles()
+			.prepare_test(
+				new_owner,
+				Precompile1,
+				PCall::transfer_ownership {
+					new_owner: precompile_utils::data::Address(new_owner),
+				},
+			)
+			.execute_reverts(|x| {
+				x.eq_ignore_ascii_case(b"ValidatorFeeTokenController: Sender is not owner")
+			});
+	})
+}
+
+#[test]
+fn fail_claim_ownership_if_not_claimable() {
+	let new_owner = UnpermissionedAccount::get();
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(new_owner, Precompile1, PCall::claim_ownership {})
+			.execute_reverts(|x| {
+				x.eq_ignore_ascii_case(
+					b"ValidatorFeeTokenController: Target owner is not the claimer",
+				)
+			})
+	});
+}
+
+#[test]
+fn claim_ownership_if_claimable() {
+	let owner = DefaultOwner::get();
+	let new_owner = UnpermissionedAccount::get();
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				owner,
+				Precompile1,
+				PCall::transfer_ownership {
+					new_owner: precompile_utils::data::Address(new_owner),
+				},
+			)
+			.execute_some();
+
+		precompiles()
+			.prepare_test(new_owner, Precompile1, PCall::claim_ownership {})
+			.expect_log(log1(
+				Precompile1,
+				SELECTOR_LOG_NEW_OWNER,
+				EvmDataWriter::new()
+					.write(Into::<H256>::into(new_owner))
+					.build(),
+			))
+			.execute_some();
+
+		precompiles()
+			.prepare_test(new_owner, Precompile1, PCall::owner {})
+			.execute_returns_encoded(Into::<H256>::into(new_owner));
+	});
+}
+
+#[test]
+fn update_default_controller() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::update_default_controller {
+					controller: MeaninglessTokenAddress::get().into(),
+				},
+			)
+			.execute_some();
+	})
+}
+
+#[test]
+fn fail_update_default_controller() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				UnpermissionedAccount::get(),
+				Precompile1,
+				PCall::update_default_controller {
+					controller: MeaninglessTokenAddress::get().into(),
+				},
+			)
+			.execute_reverts(|x| {
+				x.eq_ignore_ascii_case(b"ValidatorFeeTokenController: sender is not the owner")
+			});
+	})
 }
 
 // fee token acceptance management

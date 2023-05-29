@@ -180,6 +180,10 @@ impl pallet_validator_fee_selector::ValidatorFeeTokenController for MockValidato
 	) -> Result<(), Self::Error> {
 		Ok(Default::default())
 	}
+
+	fn update_default_controller(_controller: H160) -> Result<(), Self::Error> {
+		Ok(())
+	}
 }
 
 pub struct MockPrefix;

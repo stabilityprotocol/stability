@@ -1,7 +1,6 @@
 use sc_transaction_pool_api::InPoolTransaction;
-use sp_api::{ApiError, ApiRef, ProvideRuntimeApi};
+use sp_api::{ApiRef, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
-use sp_core::H160;
 use sp_runtime::{
 	generic::BlockId,
 	traits::{Block as BlockT, NumberFor, Zero},
@@ -73,9 +72,9 @@ impl sc_service::TransactionPool for MockedMempool {
 
 	fn submit_at(
 		&self,
-		at: &BlockId<Self::Block>,
-		source: sc_transaction_pool_api::TransactionSource,
-		xts: Vec<sc_transaction_pool_api::TransactionFor<Self>>,
+		_at: &BlockId<Self::Block>,
+		_source: sc_transaction_pool_api::TransactionSource,
+		_xts: Vec<sc_transaction_pool_api::TransactionFor<Self>>,
 	) -> sc_transaction_pool_api::PoolFuture<
 		Vec<Result<sc_transaction_pool_api::TxHash<Self>, Self::Error>>,
 		Self::Error,
@@ -85,18 +84,18 @@ impl sc_service::TransactionPool for MockedMempool {
 
 	fn submit_one(
 		&self,
-		at: &BlockId<Self::Block>,
-		source: sc_transaction_pool_api::TransactionSource,
-		xt: sc_transaction_pool_api::TransactionFor<Self>,
+		_at: &BlockId<Self::Block>,
+		_source: sc_transaction_pool_api::TransactionSource,
+		_xt: sc_transaction_pool_api::TransactionFor<Self>,
 	) -> sc_transaction_pool_api::PoolFuture<sc_transaction_pool_api::TxHash<Self>, Self::Error> {
 		todo!()
 	}
 
 	fn submit_and_watch(
 		&self,
-		at: &BlockId<Self::Block>,
-		source: sc_transaction_pool_api::TransactionSource,
-		xt: sc_transaction_pool_api::TransactionFor<Self>,
+		_at: &BlockId<Self::Block>,
+		_source: sc_transaction_pool_api::TransactionSource,
+		_xt: sc_transaction_pool_api::TransactionFor<Self>,
 	) -> sc_transaction_pool_api::PoolFuture<
 		std::pin::Pin<Box<sc_transaction_pool_api::TransactionStatusStreamFor<Self>>>,
 		Self::Error,
@@ -106,7 +105,7 @@ impl sc_service::TransactionPool for MockedMempool {
 
 	fn ready_at(
 		&self,
-		at: NumberFor<Self::Block>,
+		_at: NumberFor<Self::Block>,
 	) -> std::pin::Pin<
 		Box<
 			dyn futures_util::Future<
@@ -133,7 +132,7 @@ impl sc_service::TransactionPool for MockedMempool {
 
 	fn remove_invalid(
 		&self,
-		hashes: &[sc_transaction_pool_api::TxHash<Self>],
+		_hashes: &[sc_transaction_pool_api::TxHash<Self>],
 	) -> Vec<sc_service::Arc<Self::InPoolTransaction>> {
 		todo!()
 	}
@@ -155,7 +154,10 @@ impl sc_service::TransactionPool for MockedMempool {
 
 	fn on_broadcasted(
 		&self,
-		propagations: std::collections::HashMap<sc_transaction_pool_api::TxHash<Self>, Vec<String>>,
+		_propagations: std::collections::HashMap<
+			sc_transaction_pool_api::TxHash<Self>,
+			Vec<String>,
+		>,
 	) {
 		// std::collections::HashMap::<sc_transaction_pool_api::TxHash<Self>, Vec<String>>::new();
 		todo!()
@@ -163,14 +165,14 @@ impl sc_service::TransactionPool for MockedMempool {
 
 	fn hash_of(
 		&self,
-		xt: &sc_transaction_pool_api::TransactionFor<Self>,
+		_xt: &sc_transaction_pool_api::TransactionFor<Self>,
 	) -> sc_transaction_pool_api::TxHash<Self> {
 		todo!()
 	}
 
 	fn ready_transaction(
 		&self,
-		hash: &sc_transaction_pool_api::TxHash<Self>,
+		_hash: &sc_transaction_pool_api::TxHash<Self>,
 	) -> Option<sc_service::Arc<Self::InPoolTransaction>> {
 		None
 	}
