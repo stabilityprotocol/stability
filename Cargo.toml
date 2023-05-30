@@ -27,6 +27,7 @@ members = [
     'pallets/upgrade-runtime-proposal',
     'pallets/custom-balances',
     'pallets/sponsored-transactions',
+    'pallets/keep-alive',
     'primitives/tools',
 	'pallets/root-controller',
     'stability-rpc',
@@ -200,6 +201,8 @@ precompile-supported-tokens-manager = { path = "./precompiles/token-fee-controll
 pallet-fee-rewards-vault = { path = "./pallets/fee-rewards-vault", default-features = false }
 precompile-fee-rewards-vault-controller = { path = "./precompiles/fee-rewards-vault-controller", default-features = false }
 precompile-upgrade-runtime-controller = { path = "./precompiles/upgrade-runtime-controller", default-features = false }
+pallet-keep-alive = { path = "./pallets/keep-alive", default-features = false }
+
 # Stability Test
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }
 stability-test-runtime = { path = "./test-utils/stability-runtime", default-features = false }

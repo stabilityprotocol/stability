@@ -4770,6 +4770,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-keep-alive"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-validator-set",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+ "stbl-core-primitives",
+]
+
+[[package]]
 name = "pallet-root-controller"
 version = "1.0.0"
 dependencies = [

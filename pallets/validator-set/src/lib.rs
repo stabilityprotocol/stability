@@ -352,6 +352,12 @@ impl<T: Config> ValidatorSetWithIdentification<T::AccountId> for Pallet<T> {
 	type IdentificationOf = ValidatorOf<T>;
 }
 
+impl<T: Config> StabilityValidatorSet<T::AccountId> for Pallet<T> {
+	fn approved_validators() -> Vec<T::AccountId> {
+		<ApprovedValidators<T>>::get()
+	}
+}
+
 // Offence reporting and unresponsiveness management.
 impl<T: Config, O: Offence<(T::AccountId, T::AccountId)>>
 	ReportOffence<T::AccountId, (T::AccountId, T::AccountId), O> for Pallet<T>
@@ -372,4 +378,8 @@ impl<T: Config, O: Offence<(T::AccountId, T::AccountId)>>
 	) -> bool {
 		false
 	}
+}
+
+pub trait StabilityValidatorSet<AccountId> {
+	fn approved_validators() -> Vec<AccountId>;
 }
