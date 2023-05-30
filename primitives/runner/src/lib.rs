@@ -849,7 +849,7 @@ where
 		if transfer.value == U256::zero() {
 			return Ok(());
 		} else {
-			Err(ExitError::OutOfFund)
+			Err(ExitError::InvalidCode(evm::Opcode(0x34)))
 		}
 	}
 
