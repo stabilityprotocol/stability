@@ -9,10 +9,7 @@ use evm::{
 };
 use fp_evm::{CallInfo, CreateInfo, ExecutionInfo, Log, Vicinity};
 use frame_support::sp_runtime::traits::UniqueSaturatedInto;
-use frame_support::{
-	traits::{Currency, ExistenceRequirement},
-	weights::Weight,
-};
+use frame_support::weights::Weight;
 use pallet_evm::Pallet;
 use pallet_evm::{
 	AccountCodes, AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, Error,
@@ -396,8 +393,7 @@ where
 				config,
 			)?;
 		}
-		// input length greater than 2 means that we are calling a contract
-		// where only the first two bytes are just the 0x prefix
+		// input isn't empty means that we are calling a contract
 		if input.len() > 0 {
 			let precompiles = T::PrecompilesValue::get();
 			Self::execute(
@@ -415,7 +411,7 @@ where
 				},
 			)
 		} else {
-			// input less than 2 (0x) means that we are doing a regular ETH transfer
+			// input is empty, we are just transfering tokens
 			// we get the user fee token address from the source account
 			let user_token_address = U::get_user_fee_token(source);
 			// substract the value from the user
@@ -720,7 +716,8 @@ impl<'vicinity, 'config, T: Config> BackendT for SubstrateStackState<'vicinity, 
 		let (account, _) = Pallet::<T>::account_basic(&address);
 
 		evm::backend::Basic {
-			balance: account.balance,
+			//internal balance is not used in stability
+			balance: U256::zero(),
 			nonce: account.nonce,
 		}
 	}
@@ -849,19 +846,11 @@ where
 	}
 
 	fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
-		let source = T::AddressMapping::into_account_id(transfer.source);
-		let target = T::AddressMapping::into_account_id(transfer.target);
-
-		T::Currency::transfer(
-			&source,
-			&target,
-			transfer
-				.value
-				.try_into()
-				.map_err(|_| ExitError::OutOfFund)?,
-			ExistenceRequirement::AllowDeath,
-		)
-		.map_err(|_| ExitError::OutOfFund)
+		if transfer.value == U256::zero() {
+			return Ok(());
+		} else {
+			Err(ExitError::OutOfFund)
+		}
 	}
 
 	fn reset_balance(&mut self, _address: H160) {
