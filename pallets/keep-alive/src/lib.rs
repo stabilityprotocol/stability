@@ -47,7 +47,6 @@
 
 use codec::{Decode, Encode};
 use frame_support::traits::Get;
-use frame_support::traits::OneSessionHandler;
 use frame_support::traits::ValidatorSet;
 use frame_support::traits::ValidatorSetWithIdentification;
 use frame_system::{
@@ -138,7 +137,6 @@ pub mod pallet {
 	pub trait Config: CreateSignedTransaction<Call<Self>> + frame_system::Config {
 		/// The identifier type for an offchain worker.
 		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
-
 		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
@@ -369,7 +367,21 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		pub fn is_online(account_id: T::AccountId) -> bool {
 			let current_session = T::ValidatorSet::session_index();
-			<ReceivedHeartbeats<T>>::contains_key(current_session, account_id)
+			Self::is_online_at_session(current_session, account_id)
+		}
+
+		pub fn is_online_at_session(session_index: SessionIndex, account_id: T::AccountId) -> bool {
+			<ReceivedHeartbeats<T>>::contains_key(session_index, account_id)
+		}
+
+		pub fn online_validators_at_session(session_index: SessionIndex) -> Vec<T::AccountId> {
+			<ReceivedHeartbeats<T>>::iter_prefix(session_index)
+				.map(|(account_id, _)| account_id)
+				.collect::<Vec<_>>()
+		}
+		pub fn online_validators(session_index: SessionIndex) -> Vec<T::AccountId> {
+			let current_session = T::ValidatorSet::session_index();
+			Self::online_validators_at_session(current_session)
 		}
 
 		/// A helper function to fetch the price, sign payload and send an unsigned transaction
@@ -441,10 +453,4 @@ pub mod pallet {
 				.build()
 		}
 	}
-}
-
-impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
-	type Key = T::AuthorityId;
-
-	fn on_before_session_ending() {}
 }
