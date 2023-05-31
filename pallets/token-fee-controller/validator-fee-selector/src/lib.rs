@@ -21,8 +21,6 @@ pub mod pallet {
 		Blake2_128Concat,
 	};
 
-	use frame_system::pallet_prelude::OriginFor;
-
 	use pallet_evm::Runner;
 	use pallet_supported_tokens_manager::SupportedTokensManager;
 	use sp_core::{H160, H256, U256};
@@ -115,17 +113,6 @@ pub mod pallet {
 		}
 	}
 
-	#[pallet::call]
-	impl<T: Config> Pallet<T> {
-		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
-		pub fn update_default_controller(origin: OriginFor<T>, controller: H160) -> DispatchResult {
-			frame_system::ensure_root(origin)?;
-			Self::set_default_controller(controller);
-			Ok(())
-		}
-	}
-
 	impl<T: Config> ValidatorFeeTokenController for Pallet<T> {
 		type Error = ValidatorFeeTokenError;
 
@@ -200,6 +187,11 @@ pub mod pallet {
 				Ok(())
 			}
 		}
+
+		fn update_default_controller(controller: H160) -> Result<(), Self::Error> {
+			Self::set_default_controller(controller);
+			Ok(())
+		}
 	}
 }
 
@@ -222,6 +214,8 @@ pub trait ValidatorFeeTokenController {
 		validator: H160,
 		conversion_rate_controller: H160,
 	) -> Result<(), Self::Error>;
+
+	fn update_default_controller(controller: H160) -> Result<(), Self::Error>;
 }
 
 pub trait ValidatorSupportedTokens {

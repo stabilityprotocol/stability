@@ -1,6 +1,7 @@
 use core::str::FromStr;
 
 use frame_support::parameter_types;
+use pallet_supported_tokens_manager::SupportedTokensManager as SupportedTokensManagerT;
 use precompile_utils::{
 	prelude::{log1, Address},
 	testing::{Precompile1, PrecompileTesterExt},
@@ -11,7 +12,7 @@ use sp_core::{H160, H256};
 use crate::{
 	mock::{
 		DefaultOwner, ExtBuilder, InitialDefaultTokenFee, PCall, Precompiles, PrecompilesValue,
-		Runtime,
+		Runtime, SupportedTokensManager,
 	},
 	SELECTOR_LOG_NEW_OWNER,
 };
@@ -271,4 +272,58 @@ fn add_token_and_remove_after() {
 			)
 			.execute_returns_encoded(false);
 	});
+}
+
+#[test]
+fn update_default_controller() {
+	ExtBuilder::default().build().execute_with(|| {
+		<SupportedTokensManager as SupportedTokensManagerT>::add_supported_token(
+			MeaninglessTokenAddress::get(),
+			Default::default(),
+		)
+		.unwrap();
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::update_default_token {
+					token: MeaninglessTokenAddress::get().into(),
+				},
+			)
+			.execute_returns(Default::default());
+	})
+}
+
+#[test]
+fn fail_update_default_token() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				UnpermissionedAccount::get(),
+				Precompile1,
+				PCall::update_default_token {
+					token: MeaninglessTokenAddress::get().into(),
+				},
+			)
+			.execute_reverts(|x| {
+				x.eq_ignore_ascii_case(b"SupportedTokensManager: Caller is not the owner")
+			});
+	})
+}
+
+#[test]
+fn fail_update_default_token_is_not_supported() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::update_default_token {
+					token: MeaninglessTokenAddress::get().into(),
+				},
+			)
+			.execute_reverts(|x| {
+				x.eq_ignore_ascii_case(b"SupportedTokensManager: Target token is not supported")
+			});
+	})
 }

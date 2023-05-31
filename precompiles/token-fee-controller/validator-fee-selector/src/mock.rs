@@ -111,7 +111,9 @@ impl pallet_balances::Config for Runtime {
 
 parameter_types! {
 	pub MockDefaultFeeToken: H160 = H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
-	pub MeaninglessTokenAddress:H160 = H160::from_str("0xdAC17F958D2ee523a2206206994597C13D831ec7").expect("invalid address");
+	pub UnpermissionedAccount:H160 = H160::from_str("0x1000000000000000000000000000000000000000").expect("invalid address");
+	pub UnpermissionedAccount2:H160 = H160::from_str("0x2000000000000000000000000000000000000000").expect("invalid address");
+	pub MeaninglessTokenAddress: H160 = H160::from_str("0x3000000000000000000000000000000000000000").expect("invalid address");
 }
 
 pub struct MockSupportedTokensManager;
@@ -153,16 +155,24 @@ impl pallet_validator_fee_selector::Config for Runtime {
 	type SimulatorRunner = pallet_evm::runner::stack::Runner<Self>;
 }
 
+parameter_types! {
+	pub DefaultOwner : H160 = H160::from_str("0x2dEA828C816cC4D7CF195E0D220CB75354f47F2F").unwrap();
+}
+
 pub type Precompiles<R> = PrecompileSetBuilder<
 	R,
 	PrecompileAt<
 		AddressU64<1>,
-		ValidatorFeeManagerPrecompile<R, pallet_validator_fee_selector::Pallet<R>>,
+		ValidatorFeeManagerPrecompile<R, pallet_validator_fee_selector::Pallet<R>, DefaultOwner>,
 	>,
 >;
 
-pub type PCall =
-	ValidatorFeeManagerPrecompileCall<Runtime, pallet_validator_fee_selector::Pallet<Runtime>, ()>;
+pub type PCall = ValidatorFeeManagerPrecompileCall<
+	Runtime,
+	pallet_validator_fee_selector::Pallet<Runtime>,
+	DefaultOwner,
+	(),
+>;
 
 parameter_types! {
 		pub BlockGasLimit: U256 = U256::max_value();

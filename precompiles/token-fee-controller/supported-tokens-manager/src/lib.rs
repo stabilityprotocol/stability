@@ -156,7 +156,9 @@ where
 {
 	#[precompile::public("addToken(address,bytes32)")]
 	fn add_token(handle: &mut impl PrecompileHandle, token: Address, slot: H256) -> EvmResult<()> {
-		Self::require_owner(handle.context().caller)?;
+		let msg_sender = handle.context().caller;
+
+		Self::require_owner(handle, msg_sender)?;
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		match SupportedTokensManager::add_supported_token(token.into(), slot) {
@@ -196,7 +198,9 @@ where
 	#[precompile::public("removeToken(address)")]
 	fn remove_token(handle: &mut impl PrecompileHandle, token: Address) -> EvmResult<()> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		Self::require_owner(handle.context().caller)?;
+		let msg_sender = handle.context().caller;
+
+		Self::require_owner(handle, msg_sender)?;
 
 		handle.record_log_costs_manual(2, 32)?;
 		log2(
@@ -216,10 +220,26 @@ where
 		}
 	}
 
-	fn require_owner(caller: H160) -> EvmResult<()> {
-		let owner = OwnerStorage::<Instance, DefaultOwner>::get();
+	#[precompile::public("updateDefaultToken(address)")]
+	#[precompile::view]
+	fn update_default_token(handle: &mut impl PrecompileHandle, token: Address) -> EvmResult<()> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
-		if caller != owner {
+		let msg_sender = handle.context().caller;
+
+		Self::require_owner(handle, msg_sender)
+			.map_err(|_| revert("SupportedTokensManager: Caller is not the owner"))?;
+
+		SupportedTokensManager::set_default_token(token.into())
+			.map_err(|_| revert("SupportedTokensManager: Target token is not supported"))?;
+
+		Ok(())
+	}
+
+	fn require_owner(handle: &mut impl PrecompileHandle, caller: H160) -> EvmResult<()> {
+		let owner = Self::owner(handle)?;
+
+		if caller != owner.into() {
 			return Err(revert("SupportedTokensManager: Caller is not the owner"));
 		}
 
@@ -228,7 +248,7 @@ where
 
 	#[precompile::public("owner()")]
 	#[precompile::view]
-	fn owner(handle: &mut impl PrecompileHandle) -> EvmResult<H256> {
+	fn owner(handle: &mut impl PrecompileHandle) -> EvmResult<Address> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
 		Ok(OwnerStorage::<Instance, DefaultOwner>::get().into())

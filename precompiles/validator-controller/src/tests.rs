@@ -357,3 +357,23 @@ fn get_default_validator_list() {
 				);
 		});
 }
+
+#[test]
+fn get_default_active_validator_list() {
+	let sender = UnpermissionedAccount::get();
+	let validator = ValidatorInitial::get();
+	let validators = vec![validator.clone()];
+	ExtBuilder::default()
+		.with_validators(validators.clone())
+		.build()
+		.execute_with(|| {
+			precompiles()
+				.prepare_test(sender, Precompile1, PCall::get_active_validator_list {})
+				.execute_returns_encoded(
+					validators
+						.iter()
+						.map(|v| account_id_to_evm_address(*v))
+						.collect::<Vec<Address>>(),
+				);
+		});
+}
