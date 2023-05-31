@@ -47,28 +47,24 @@
 
 use codec::{Decode, Encode};
 use frame_support::traits::Get;
+use frame_support::traits::OneSessionHandler;
+use frame_support::traits::ValidatorSet;
 use frame_support::traits::ValidatorSetWithIdentification;
 use frame_system::{
 	self as system,
 	offchain::{
-		AppCrypto, CreateSignedTransaction, SendSignedTransaction, SendUnsignedTransaction,
-		SignedPayload, Signer, SigningTypes, SubmitTransaction,
+		AppCrypto, CreateSignedTransaction, SendUnsignedTransaction, SignedPayload, Signer,
+		SigningTypes,
 	},
 };
-use lite_json::json::JsonValue;
 use sp_core::crypto::KeyTypeId;
+use sp_runtime::offchain::storage::{MutateStorageError, StorageRetrievalError, StorageValueRef};
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::{
-	offchain::{
-		http,
-		storage::{MutateStorageError, StorageRetrievalError, StorageValueRef},
-		Duration,
-	},
-	traits::Zero,
 	transaction_validity::{InvalidTransaction, TransactionValidity, ValidTransaction},
 	RuntimeDebug,
 };
-use sp_std::vec::Vec;
+use sp_staking::SessionIndex;
 
 // #[cfg(test)]
 // mod tests;
@@ -118,6 +114,7 @@ pub mod crypto {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, scale_info::TypeInfo)]
 pub struct KeepAlivePayload<Public, BlockNumber> {
 	block_number: BlockNumber,
+	session_index: SessionIndex,
 	public: Public,
 }
 
@@ -179,26 +176,9 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		/// Offchain Worker entry point.
-		///
-		/// By implementing `fn offchain_worker` you declare a new offchain worker.
-		/// This function will be called when the node is fully synced and a new best block is
-		/// successfully imported.
-		/// Note that it's not guaranteed for offchain workers to run on EVERY block, there might
-		/// be cases where some blocks are skipped, or for some the worker runs twice (re-orgs),
-		/// so the code should be able to handle that.
-		/// You can use `Local Storage` API to coordinate runs of the worker.
 		fn offchain_worker(block_number: T::BlockNumber) {
-			// Note that having logs compiled to WASM may cause the size of the blob to increase
-			// significantly. You can use `RuntimeDebug` custom derive to hide details of the types
-			// in WASM. The `sp-api` crate also provides a feature `disable-logging` to disable
-			// all logging and thus, remove any logging from the WASM.
 			log::info!("pallet-keep-alive offchain_worker");
 
-			// Since off-chain workers are just part of the runtime code, they have direct access
-			// to the storage and other included pallets.
-			//
-			// We can easily import `frame_system` and retrieve a block hash of the parent block.
 			let parent_hash = <system::Pallet<T>>::block_hash(block_number - 1u32.into());
 			log::debug!(
 				"Current block: {:?} (parent hash: {:?})",
@@ -206,24 +186,66 @@ pub mod pallet {
 				parent_hash
 			);
 
-			let signer = Signer::<T, T::AuthorityId>::all_accounts();
+			// check if heartbeat is needed
+			const RECENTLY_SENT: () = ();
+			let val = StorageValueRef::persistent(b"keep-alive::last_send");
+			let res = val.mutate(
+				|last_send: Result<Option<T::BlockNumber>, StorageRetrievalError>| {
+					match last_send {
+						// If we already have a value in storage and the block number is recent enough
+						// we avoid sending another transaction at this time.
+						Ok(Some(block)) if block_number < block + T::GracePeriod::get() => {
+							Err(RECENTLY_SENT)
+						}
+						// In every other case we attempt to acquire the lock and send a transaction.
+						_ => Ok(block_number),
+					}
+				},
+			);
 
-			if signer.can_sign() {
-				log::debug!("Sending unsigned txn for block {:?}", block_number);
+			match res {
+				Ok(block_number) => {
+					let signer = Signer::<T, T::AuthorityId>::all_accounts();
 
-				// For this example we are going to send both signed and unsigned transactions
-				// depending on the block number.
-				// Usually it's enough to choose one or the other.
-				let res = Self::send_unsigned_for_all_accounts(block_number);
-				if let Err(e) = res {
-					log::error!("Error: {}", e);
+					if signer.can_sign() {
+						log::debug!("Sending unsigned txn for block {:?}", block_number);
+
+						// For this example we are going to send both signed and unsigned transactions
+						// depending on the block number.
+						// Usually it's enough to choose one or the other.
+						let session_index = T::ValidatorSet::session_index();
+						let res = Self::send_unsigned_for_all_accounts(block_number, session_index);
+						if let Err(e) = res {
+							log::error!("Error: {}", e);
+						}
+					} else {
+						log::trace!(
+							target: "runtime::keep-alive",
+							"Skipping heartbeat at {:?}. Not a validator.",
+							block_number,
+						)
+					}
 				}
-			} else {
-				log::trace!(
-					target: "runtime::keep-alive",
-					"Skipping heartbeat at {:?}. Not a validator.",
-					block_number,
-				)
+				// We are in the grace period, we should not send a transaction this time.
+				Err(MutateStorageError::ValueFunctionFailed(RECENTLY_SENT)) => {
+					log::trace!(
+						target: "runtime::keep-alive",
+						"Skipping heartbeat at {:?}. Recently sent.",
+						block_number,
+					)
+				}
+				// We wanted to send a transaction, but failed to write the block number (acquire a
+				// lock). This indicates that another offchain worker that was running concurrently
+				// most likely executed the same logic and succeeded at writing to storage.
+				// Thus we don't really want to send the transaction, knowing that the other run
+				// already did.
+				Err(MutateStorageError::ConcurrentModification(_)) => {
+					log::trace!(
+						target: "runtime::keep-alive",
+						"Skipping heartbeat at {:?}. Concurrent lock.",
+						block_number,
+					)
+				}
 			}
 		}
 	}
@@ -240,6 +262,25 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			// This ensures that the function can only be called via unsigned transaction.
 			ensure_none(origin)?;
+
+			let msg_account_id = keep_alive_payload.public.clone().into_account();
+
+			// check if the received heartbeat is valid.
+			ensure!(
+				T::StbleValidatorSet::is_approved_validator(&msg_account_id),
+				Error::<T>::InvalidKey
+			);
+
+			// stores the received heartbeat in the storage.
+			let current_session = T::ValidatorSet::session_index();
+			ReceivedHeartbeats::<T>::insert(current_session, msg_account_id.clone(), true);
+
+			Self::deposit_event(Event::HeartbeatSubmitted(
+				msg_account_id,
+				keep_alive_payload.block_number,
+				keep_alive_payload.session_index,
+			));
+
 			// now increment the block number at which we expect next unsigned transaction.
 			let current_block = <system::Pallet<T>>::block_number();
 			<NextUnsignedAt<T>>::put(current_block + T::UnsignedInterval::get());
@@ -247,12 +288,19 @@ pub mod pallet {
 		}
 	}
 
+	/// Errors for the pallet.
+	#[pallet::error]
+	pub enum Error<T> {
+		/// Non existent public key.
+		InvalidKey,
+	}
+
 	/// Events for the pallet.
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Event generated when a new heartbeat is submitted.
-		HeartbeatSubmitted(T::AccountId, T::BlockNumber),
+		HeartbeatSubmitted(T::AccountId, T::BlockNumber, u32 /* session_index */),
 	}
 
 	#[pallet::validate_unsigned]
@@ -271,13 +319,6 @@ pub mod pallet {
 				ref signature,
 			} = call
 			{
-				let signature_valid =
-					SignedPayload::<T>::verify::<T::AuthorityId>(payload, signature.clone());
-
-				if !signature_valid {
-					return InvalidTransaction::BadProof.into();
-				}
-
 				// check if its from approved validator
 				let public_key = SignedPayload::<T>::public(payload);
 				let msg_account_id = public_key.into_account();
@@ -285,6 +326,14 @@ pub mod pallet {
 
 				if !approved_vals.contains(&msg_account_id) {
 					return InvalidTransaction::BadSigner.into();
+				}
+
+				// expensive, should be in the last position
+				let signature_valid =
+					SignedPayload::<T>::verify::<T::AuthorityId>(payload, signature.clone());
+
+				if !signature_valid {
+					return InvalidTransaction::BadProof.into();
 				}
 
 				Self::validate_transaction_parameters(&payload.block_number)
@@ -303,28 +352,43 @@ pub mod pallet {
 	#[pallet::getter(fn next_unsigned_at)]
 	pub(super) type NextUnsignedAt<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
 
+	/// For each session index we stored the validators that have submitted a heartbeat.
+	/// SessionIndex-> Validator-AccountId -> bool
+	#[pallet::storage]
+	#[pallet::getter(fn received_heartbeats)]
+	pub(crate) type ReceivedHeartbeats<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		SessionIndex,
+		Blake2_128Concat,
+		T::AccountId,
+		bool,
+		ValueQuery,
+	>;
+
 	impl<T: Config> Pallet<T> {
+		pub fn is_online(account_id: T::AccountId) -> bool {
+			let current_session = T::ValidatorSet::session_index();
+			<ReceivedHeartbeats<T>>::contains_key(current_session, account_id)
+		}
+
 		/// A helper function to fetch the price, sign payload and send an unsigned transaction
 		fn send_unsigned_for_all_accounts(
 			block_number: T::BlockNumber,
+			session_index: u32,
 		) -> Result<(), &'static str> {
 			let next_unsigned_at = <NextUnsignedAt<T>>::get();
 			if next_unsigned_at > block_number {
 				return Err("Too early to send unsigned transaction");
 			}
 
-			// -- Sign using all accounts
+			// Sign using all accounts that are capable of signing transactions.
 			let transaction_results = Signer::<T, T::AuthorityId>::all_accounts()
 				.send_unsigned_transaction(
-					|account| {
-						Self::deposit_event(Event::HeartbeatSubmitted(
-							account.clone().public.into_account(),
-							block_number,
-						));
-						KeepAlivePayload {
-							block_number,
-							public: account.public.clone(),
-						}
+					|account| KeepAlivePayload {
+						block_number,
+						session_index,
+						public: account.public.clone(),
 					},
 					|payload, signature| Call::submit_heartbeat_unsigned_with_signed_payload {
 						keep_alive_payload: payload,
@@ -377,4 +441,10 @@ pub mod pallet {
 				.build()
 		}
 	}
+}
+
+impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
+	type Key = T::AuthorityId;
+
+	fn on_before_session_ending() {}
 }

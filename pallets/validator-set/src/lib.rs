@@ -356,6 +356,10 @@ impl<T: Config> StabilityValidatorSet<T::AccountId> for Pallet<T> {
 	fn approved_validators() -> Vec<T::AccountId> {
 		<ApprovedValidators<T>>::get()
 	}
+
+	fn is_approved_validator(validator_id: &T::AccountId) -> bool {
+		<ApprovedValidators<T>>::get().contains(validator_id)
+	}
 }
 
 // Offence reporting and unresponsiveness management.
@@ -382,4 +386,6 @@ impl<T: Config, O: Offence<(T::AccountId, T::AccountId)>>
 
 pub trait StabilityValidatorSet<AccountId> {
 	fn approved_validators() -> Vec<AccountId>;
+
+	fn is_approved_validator(validator_id: &AccountId) -> bool;
 }
