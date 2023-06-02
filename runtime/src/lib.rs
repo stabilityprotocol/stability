@@ -32,6 +32,8 @@ use sp_core::{
 };
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::traits::IdentityLookup;
+use sp_runtime::MultiSignature;
+use sp_runtime::MultiSigner;
 use sp_runtime::{
 	create_runtime_str, generic,
 	generic::Era,
@@ -155,7 +157,6 @@ pub mod opaque {
 		pub struct SessionKeys {
 			pub aura: Aura,
 			pub grandpa: Grandpa,
-			pub im_online: ImOnline,
 		}
 	}
 }
@@ -597,13 +598,6 @@ impl pallet_session::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
-	pub const MaxKeys: u32 = 10_000;
-	pub const MaxPeerInHeartbeats: u32 = 10_000;
-	pub const MaxPeerDataEncodingSize: u32 = 1_000;
-}
-
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
 	RuntimeCall: From<LocalCall>,
@@ -661,17 +655,20 @@ where
 	type OverarchingCall = RuntimeCall;
 }
 
-impl pallet_im_online::Config for Runtime {
+parameter_types! {
+	pub const GracePeriod: u32 = SESSION_MINUTES_DURATION * MINUTES;
+	pub const UnsignedInterval: u32 = 60 / 2; // Every 30 blocks or 2 ticks per session
+	pub const UnsignedPriority: u64 = 100;
+}
+
+impl pallet_keep_alive::Config for Runtime {
 	type AuthorityId = ImOnlineId;
 	type RuntimeEvent = RuntimeEvent;
-	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-	type ValidatorSet = ValidatorSet;
+	type StbleValidatorSet = ValidatorSet;
 	type ReportUnresponsiveness = ValidatorSet;
-	type UnsignedPriority = ImOnlineUnsignedPriority;
-	type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
-	type MaxKeys = MaxKeys;
-	type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
-	type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
+	type GracePeriod = GracePeriod;
+	type UnsignedInterval = UnsignedInterval;
+	type UnsignedPriority = UnsignedPriority;
 }
 
 parameter_types! {
@@ -724,7 +721,7 @@ construct_runtime!(
 		Timestamp: pallet_timestamp,
 		ValidatorSet: pallet_validator_set,
 		Session: pallet_session,
-		ImOnline: pallet_im_online,
+		KeepAlive: pallet_keep_alive,
 		Aura: pallet_aura,
 		Grandpa: pallet_grandpa,
 		Balances: pallet_custom_balances,

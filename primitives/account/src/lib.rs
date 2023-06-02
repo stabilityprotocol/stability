@@ -107,6 +107,7 @@ impl From<ecdsa::Signature> for EthereumSignature {
 		EthereumSignature(x)
 	}
 }
+
 impl sp_runtime::traits::Verify for EthereumSignature {
 	type Signer = EthereumSigner;
 	fn verify<L: sp_runtime::traits::Lazy<[u8]>>(&self, mut msg: L, signer: &AccountId20) -> bool {

@@ -18,7 +18,6 @@ frame-system = { workspace = true }
 pallet-session = { workspace = true }
 scale-info = { workspace = true }
 syn = { workspace = true }
-pallet-keep-alive = { workspace = true }
 
 [dev-dependencies]
 serde = { version = '1.0.126',features = ['derive'] }
@@ -38,6 +37,5 @@ std = [
     'sp-std/std',
     'sp-runtime/std',
     'pallet-session/std',
-    'pallet-keep-alive/std'
 ]
 try-runtime = ['frame-support/try-runtime']

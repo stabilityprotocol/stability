@@ -59,9 +59,9 @@ std = [
     'pallet-validator-set/std',
     'pallet-validator-fee-selector/std',
     'pallet-session/std',
-    'pallet-im-online/std',
     'pallet-upgrade-runtime-proposal/std',
     'pallet-dnt-fee-controller/std',
+    'pallet-keep-alive/std',
     'stbl-primitives-fee-compatible-api/std',
     'precompile-upgrade-runtime-controller/std',
     'runner/std',
@@ -122,7 +122,6 @@ pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-dnt-fee-controller = { workspace = true }
 pallet-session = { workspace = true }
-pallet-im-online = { workspace = true }
 sp-application-crypto = { workspace = true }
 # Frontier
 fp-rpc = { workspace = true }
@@ -156,6 +155,7 @@ pallet-supported-tokens-manager = { workspace = true }
 precompile-supported-tokens-manager = { workspace = true }
 pallet-validator-set = { workspace = true }
 pallet-upgrade-runtime-proposal = { workspace = true }
+pallet-keep-alive = { workspace = true }
 precompile-upgrade-runtime-controller = { workspace = true }
 runner = { workspace = true }
 precompile-fee-rewards-vault-controller = { workspace = true }

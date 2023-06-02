@@ -23,7 +23,6 @@ use frame_support::{
 };
 use log;
 pub use pallet::*;
-use pallet_keep_alive::KeepAlive;
 use sp_runtime::traits::{Convert, Zero};
 use sp_staking::offence::{Offence, OffenceError, ReportOffence};
 use sp_std::{collections::btree_set::BTreeSet, prelude::*};
@@ -48,9 +47,6 @@ pub mod pallet {
 		/// Minimum number of validators to leave in the validator set during
 		/// auto removal.
 		type MinAuthorities: Get<u32>;
-
-		/// Validator status manager
-		type KeepAlive = KeepAlive<Self>;
 	}
 
 	#[pallet::pallet]
@@ -293,11 +289,7 @@ impl<T: Config> Pallet<T> {
 // being rotated.
 impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
 	// Plan a new session and provide new validator set.
-	fn new_session(new_session: u32) -> Option<Vec<T::AccountId>> {
-		// Last session online validators
-		let previous_session = new_session.saturating_sub(1);
-		let online_validators = T::KeepAlive::online_validators_at_session(previous_session);
-
+	fn new_session(_new_session: u32) -> Option<Vec<T::AccountId>> {
 		// Remove any offline validators. This will only work when the runtime
 		// also has the im-online pallet.
 		Self::remove_offline_validators();
@@ -360,7 +352,7 @@ impl<T: Config> ValidatorSetWithIdentification<T::AccountId> for Pallet<T> {
 	type IdentificationOf = ValidatorOf<T>;
 }
 
-impl<T: Config> StabilityValidatorSet<T::AccountId> for Pallet<T> {
+impl<T: Config> StabilityValidatorSet<T> for Pallet<T> {
 	fn approved_validators() -> Vec<T::AccountId> {
 		<ApprovedValidators<T>>::get()
 	}
@@ -371,29 +363,26 @@ impl<T: Config> StabilityValidatorSet<T::AccountId> for Pallet<T> {
 }
 
 // Offence reporting and unresponsiveness management.
-impl<T: Config, O: Offence<(T::AccountId, T::AccountId)>>
-	ReportOffence<T::AccountId, (T::AccountId, T::AccountId), O> for Pallet<T>
+impl<T: Config, O: Offence<T::AccountId>> ReportOffence<T::AccountId, T::AccountId, O>
+	for Pallet<T>
 {
 	fn report_offence(_reporters: Vec<T::AccountId>, offence: O) -> Result<(), OffenceError> {
 		let offenders = offence.offenders();
 
-		for (v, _) in offenders.into_iter() {
+		for v in offenders.into_iter() {
 			Self::mark_for_removal(v);
 		}
 
 		Ok(())
 	}
 
-	fn is_known_offence(
-		_offenders: &[(T::AccountId, T::AccountId)],
-		_time_slot: &O::TimeSlot,
-	) -> bool {
+	fn is_known_offence(_offenders: &[T::AccountId], _time_slot: &O::TimeSlot) -> bool {
 		false
 	}
 }
 
-pub trait StabilityValidatorSet<AccountId> {
-	fn approved_validators() -> Vec<AccountId>;
+pub trait StabilityValidatorSet<T: Config> {
+	fn approved_validators() -> Vec<T::AccountId>;
 
-	fn is_approved_validator(validator_id: &AccountId) -> bool;
+	fn is_approved_validator(validator_id: &T::AccountId) -> bool;
 }

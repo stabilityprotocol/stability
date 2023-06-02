@@ -1,52 +1,8 @@
-// This file is part of Substrate.
-
-// Copyright (C) Parity Technologies (UK) Ltd.
-// SPDX-License-Identifier: Apache-2.0
-
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// 	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-//! <!-- markdown-link-check-disable -->
-//! # Offchain Worker Example Pallet
-//!
-//! The Offchain Worker Example: A simple pallet demonstrating
-//! concepts, APIs and structures common to most offchain workers.
-//!
-//! Run `cargo doc --package pallet-example-offchain-worker --open` to view this module's
-//! documentation.
-//!
-//! - [`Config`]
-//! - [`Call`]
-//! - [`Pallet`]
-//!
-//! **This pallet serves as an example showcasing Substrate off-chain worker and is not meant to
-//! be used in production.**
-//!
-//! ## Overview
-//!
-//! In this example we are going to build a very simplistic, naive and definitely NOT
-//! production-ready oracle for BTC/USD price.
-//! Offchain Worker (OCW) will be triggered after every block, fetch the current price
-//! and prepare either signed or unsigned transaction to feed the result back on chain.
-//! The on-chain logic will simply aggregate the results and store last `64` values to compute
-//! the average price.
-//! Additional logic in OCW is put in place to prevent spamming the network with both signed
-//! and unsigned transactions, and custom `UnsignedValidator` makes sure that there is only
-//! one unsigned transaction floating in the network.
-
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
 use frame_support::traits::Get;
+use frame_support::traits::OneSessionHandler;
 use frame_support::traits::ValidatorSet;
 use frame_support::traits::ValidatorSetWithIdentification;
 use frame_system::{
@@ -56,14 +12,18 @@ use frame_system::{
 		SigningTypes,
 	},
 };
+use pallet_validator_set::StabilityValidatorSet;
+use sp_application_crypto::RuntimeAppPublic;
 use sp_core::crypto::KeyTypeId;
 use sp_runtime::offchain::storage::{MutateStorageError, StorageRetrievalError, StorageValueRef};
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::{
 	transaction_validity::{InvalidTransaction, TransactionValidity, ValidTransaction},
-	RuntimeDebug,
+	Perbill, RuntimeDebug, Saturating,
 };
+use sp_staking::offence::{Kind, Offence, ReportOffence};
 use sp_staking::SessionIndex;
+use sp_std::prelude::*;
 
 // #[cfg(test)]
 // mod tests;
@@ -88,6 +48,7 @@ pub mod crypto {
 		traits::Verify,
 		MultiSignature, MultiSigner,
 	};
+
 	app_crypto!(ecdsa, KEY_TYPE);
 
 	pub struct TestAuthId;
@@ -123,6 +84,11 @@ impl<T: SigningTypes> SignedPayload<T> for KeepAlivePayload<T::Public, T::BlockN
 	}
 }
 
+/// A type for representing the validator id in a session.
+pub type ValidatorId<T> = <<T as Config>::StbleValidatorSet as ValidatorSet<
+	<T as frame_system::Config>::AccountId,
+>>::ValidatorId;
+
 pub use pallet::*;
 
 #[frame_support::pallet]
@@ -131,18 +97,27 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use pallet_validator_set::StabilityValidatorSet;
+	use sp_runtime::app_crypto::ecdsa;
 
 	/// This pallet's configuration trait
 	#[pallet::config]
-	pub trait Config: CreateSignedTransaction<Call<Self>> + frame_system::Config {
+	pub trait Config:
+		CreateSignedTransaction<Call<Self>> + frame_system::Config + pallet_validator_set::Config
+	{
 		/// The identifier type for an offchain worker.
-		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
+		type AuthorityId: AppCrypto<ecdsa::Public, ecdsa::Signature> + Decode + RuntimeAppPublic;
+
 		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-		type ValidatorSet: ValidatorSetWithIdentification<Self::AccountId>;
+		type StbleValidatorSet: StabilityValidatorSet<Self>
+			+ ValidatorSetWithIdentification<Self::AccountId>;
 
-		type StbleValidatorSet: StabilityValidatorSet<Self::AccountId>;
+		type ReportUnresponsiveness: ReportOffence<
+			Self::AccountId,
+			Self::AccountId,
+			UnresponsivenessOffence<Self::AccountId>,
+		>;
 
 		// Configuration parameters
 
@@ -211,7 +186,7 @@ pub mod pallet {
 						// For this example we are going to send both signed and unsigned transactions
 						// depending on the block number.
 						// Usually it's enough to choose one or the other.
-						let session_index = T::ValidatorSet::session_index();
+						let session_index = T::StbleValidatorSet::session_index();
 						let res = Self::send_unsigned_for_all_accounts(block_number, session_index);
 						if let Err(e) = res {
 							log::error!("Error: {}", e);
@@ -270,7 +245,7 @@ pub mod pallet {
 			);
 
 			// stores the received heartbeat in the storage.
-			let current_session = T::ValidatorSet::session_index();
+			let current_session = T::StbleValidatorSet::session_index();
 			ReceivedHeartbeats::<T>::insert(current_session, msg_account_id.clone(), true);
 
 			Self::deposit_event(Event::HeartbeatSubmitted(
@@ -299,6 +274,8 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// Event generated when a new heartbeat is submitted.
 		HeartbeatSubmitted(T::AccountId, T::BlockNumber, u32 /* session_index */),
+		AllGood,
+		SomeOffline(Vec<T::AccountId>),
 	}
 
 	#[pallet::validate_unsigned]
@@ -366,7 +343,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		pub fn is_online(account_id: T::AccountId) -> bool {
-			let current_session = T::ValidatorSet::session_index();
+			let current_session = T::StbleValidatorSet::session_index();
 			Self::is_online_at_session(current_session, account_id)
 		}
 
@@ -379,8 +356,8 @@ pub mod pallet {
 				.map(|(account_id, _)| account_id)
 				.collect::<Vec<_>>()
 		}
-		pub fn online_validators(session_index: SessionIndex) -> Vec<T::AccountId> {
-			let current_session = T::ValidatorSet::session_index();
+		pub fn online_validators() -> Vec<T::AccountId> {
+			let current_session = T::StbleValidatorSet::session_index();
 			Self::online_validators_at_session(current_session)
 		}
 
@@ -451,6 +428,106 @@ pub mod pallet {
 				// claim a reward.
 				.propagate(true)
 				.build()
+		}
+	}
+}
+
+impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
+	type Public = T::AuthorityId;
+}
+
+impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
+	type Key = T::AuthorityId;
+
+	fn on_genesis_session<'a, I: 'a>(_validators: I) {}
+
+	fn on_new_session<'a, I: 'a>(_changed: bool, _validators: I, _queued_validators: I) {}
+
+	fn on_before_session_ending() {
+		let session_index = T::StbleValidatorSet::session_index();
+		let approved_validators = T::StbleValidatorSet::approved_validators();
+
+		let offenders = approved_validators
+			.iter()
+			.filter_map(|validator| {
+				if !Self::is_online_at_session(session_index, validator.clone()) {
+					Some(validator.clone())
+				} else {
+					None
+				}
+			})
+			.collect::<Vec<_>>();
+
+		// Remove all received heartbeats and number of authored blocks from the
+		// current session, they have already been processed and won't be needed anymore.
+		let _removed_heartbeats =
+			ReceivedHeartbeats::<T>::clear_prefix(session_index, u32::MAX, None);
+
+		if offenders.is_empty() {
+			Self::deposit_event(Event::<T>::AllGood);
+		} else {
+			Self::deposit_event(Event::<T>::SomeOffline(offenders.clone()));
+
+			let validator_set_count = approved_validators.len() as u32;
+			let offence = UnresponsivenessOffence {
+				session_index,
+				validator_set_count,
+				offenders,
+			};
+			if let Err(e) = T::ReportUnresponsiveness::report_offence(vec![], offence) {
+				sp_runtime::print(e);
+			}
+		}
+	}
+
+	fn on_disabled(_i: u32) {}
+}
+
+/// An offence that is filed if a validator didn't send a heartbeat message.
+#[derive(RuntimeDebug)]
+#[cfg_attr(feature = "std", derive(Clone, PartialEq, Eq))]
+pub struct UnresponsivenessOffence<Offender> {
+	/// The current session index in which we report the unresponsive validators.
+	///
+	/// It acts as a time measure for unresponsiveness reports and effectively will always point
+	/// at the end of the session.
+	pub session_index: SessionIndex,
+	/// The size of the approved validator set.
+	pub validator_set_count: u32,
+	/// Authorities that were unresponsive during the current era.
+	pub offenders: Vec<Offender>,
+}
+
+impl<Offender: Clone> Offence<Offender> for UnresponsivenessOffence<Offender> {
+	const ID: Kind = *b"k-keep-alive:off";
+	type TimeSlot = SessionIndex;
+
+	fn offenders(&self) -> Vec<Offender> {
+		self.offenders.clone()
+	}
+
+	fn session_index(&self) -> SessionIndex {
+		self.session_index
+	}
+
+	fn validator_set_count(&self) -> u32 {
+		self.validator_set_count
+	}
+
+	fn time_slot(&self) -> Self::TimeSlot {
+		self.session_index
+	}
+
+	fn slash_fraction(&self, offenders: u32) -> Perbill {
+		let validator_set_count = self.validator_set_count();
+		// the formula is min((3 * (k - (n / 10 + 1))) / n, 1) * 0.07
+		// basically, 10% can be offline with no slash, but after that, it linearly climbs up to 7%
+		// when 13/30 are offline (around 5% when 1/3 are offline).
+		if let Some(threshold) = offenders.checked_sub(validator_set_count / 10 + 1) {
+			let x = Perbill::from_rational(3 * threshold, validator_set_count);
+			x.saturating_mul(Perbill::from_percent(7))
+		} else {
+			Perbill::default()
 		}
 	}
 }

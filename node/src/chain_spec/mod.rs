@@ -131,7 +131,6 @@ pub fn base_genesis(
 				})
 				.collect::<Vec<_>>(),
 		},
-		im_online: ImOnlineConfig { keys: vec![] },
 		validator_set: ValidatorSetConfig {
 			initial_validators: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
 		},
