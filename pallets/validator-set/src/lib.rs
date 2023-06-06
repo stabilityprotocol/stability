@@ -342,6 +342,8 @@ impl<T: Config> ValidatorSet<T::AccountId> for Pallet<T> {
 	}
 
 	fn validators() -> Vec<Self::ValidatorId> {
+		// It doesn't return the actual list the validators because this is gonna be consume by im_online
+		// and we want it to work over the full list of validators
 		<ApprovedValidators<T>>::get()
 			.iter()
 			.map(|v| T::ValidatorIdOf::convert(v.clone()).unwrap())
