@@ -21,6 +21,9 @@ stbl-core-primitives = { workspace = true, default-features = false }
 sp-application-crypto = { workspace = true, default-features = false }
 pallet-validator-set = { workspace = true, default-features = false }
 sp-staking = { workspace = true, default-features = false }
+stbl-tools = { workspace = true }
+sha3 = { workspace = true }
+pallet-custom-balances = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]
@@ -35,6 +38,7 @@ std = [
 	"sp-keystore",
 	"sp-runtime/std",
 	"sp-std/std",
-	"sp-staking/std"
+	"sp-staking/std",
+	"pallet-custom-balances/std"
 ]
 try-runtime = ["frame-support/try-runtime"]

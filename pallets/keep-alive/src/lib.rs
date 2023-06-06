@@ -12,9 +12,12 @@ use frame_system::{
 		SigningTypes,
 	},
 };
+use pallet_custom_balances::AccountIdMapping;
 use pallet_validator_set::StabilityValidatorSet;
+use sha3::{Digest, Keccak256};
 use sp_application_crypto::RuntimeAppPublic;
 use sp_core::crypto::KeyTypeId;
+use sp_core::{H160, H256};
 use sp_runtime::offchain::storage::{MutateStorageError, StorageRetrievalError, StorageValueRef};
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::{
@@ -97,15 +100,17 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use pallet_validator_set::StabilityValidatorSet;
-	use sp_runtime::app_crypto::ecdsa;
 
 	/// This pallet's configuration trait
 	#[pallet::config]
 	pub trait Config:
-		CreateSignedTransaction<Call<Self>> + frame_system::Config + pallet_validator_set::Config
+		CreateSignedTransaction<Call<Self>>
+		+ frame_system::Config
+		+ pallet_validator_set::Config
+		+ pallet_custom_balances::Config
 	{
 		/// The identifier type for an offchain worker.
-		type AuthorityId: AppCrypto<ecdsa::Public, ecdsa::Signature> + Decode + RuntimeAppPublic;
+		type AuthorityId: Decode + RuntimeAppPublic;
 
 		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -118,6 +123,8 @@ pub mod pallet {
 			Self::AccountId,
 			UnresponsivenessOffence<Self::AccountId>,
 		>;
+
+		type AccountIdMapping: AccountIdMapping<Self>;
 
 		// Configuration parameters
 
@@ -178,26 +185,26 @@ pub mod pallet {
 
 			match res {
 				Ok(block_number) => {
-					let signer = Signer::<T, T::AuthorityId>::all_accounts();
+					// let signer = Signer::<T, T::AuthorityId>::all_accounts();
 
-					if signer.can_sign() {
-						log::debug!("Sending unsigned txn for block {:?}", block_number);
+					// if signer.can_sign() {
+					// 	log::debug!("Sending unsigned txn for block {:?}", block_number);
 
-						// For this example we are going to send both signed and unsigned transactions
-						// depending on the block number.
-						// Usually it's enough to choose one or the other.
-						let session_index = T::StbleValidatorSet::session_index();
-						let res = Self::send_unsigned_for_all_accounts(block_number, session_index);
-						if let Err(e) = res {
-							log::error!("Error: {}", e);
-						}
-					} else {
-						log::trace!(
-							target: "runtime::keep-alive",
-							"Skipping heartbeat at {:?}. Not a validator.",
-							block_number,
-						)
-					}
+					// 	// For this example we are going to send both signed and unsigned transactions
+					// 	// depending on the block number.
+					// 	// Usually it's enough to choose one or the other.
+					// 	let session_index = T::StbleValidatorSet::session_index();
+					// 	let res = Self::send_unsigned_for_all_accounts(block_number, session_index);
+					// 	if let Err(e) = res {
+					// 		log::error!("Error: {}", e);
+					// 	}
+					// } else {
+					// 	log::trace!(
+					// 		target: "runtime::keep-alive",
+					// 		"Skipping heartbeat at {:?}. Not a validator.",
+					// 		block_number,
+					// 	)
+					// }
 				}
 				// We are in the grace period, we should not send a transaction this time.
 				Err(MutateStorageError::ValueFunctionFailed(RECENTLY_SENT)) => {
@@ -231,7 +238,7 @@ pub mod pallet {
 		pub fn submit_heartbeat_unsigned_with_signed_payload(
 			origin: OriginFor<T>,
 			keep_alive_payload: KeepAlivePayload<T::Public, T::BlockNumber>,
-			_signature: T::Signature,
+			_signature: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
 			// This ensures that the function can only be called via unsigned transaction.
 			ensure_none(origin)?;
@@ -258,6 +265,24 @@ pub mod pallet {
 			let current_block = <system::Pallet<T>>::block_number();
 			<NextUnsignedAt<T>>::put(current_block + T::UnsignedInterval::get());
 			Ok(().into())
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		pub fn get_meta_trx_signer(signature: Vec<u8>, message: &[u8; 32]) -> Option<H160> {
+			let result = match sp_io::crypto::secp256k1_ecdsa_recover(
+				signature.as_slice().try_into().unwrap(),
+				message,
+			) {
+				Ok(pubkey) => {
+					let mut address = sp_io::hashing::keccak_256(&pubkey);
+					address[0..12].copy_from_slice(&[0u8; 12]);
+					address.to_vec()
+				}
+				Err(_) => return None,
+			};
+
+			return Some(H160::from_slice(&result[12..32]));
 		}
 	}
 
@@ -294,24 +319,25 @@ pub mod pallet {
 				ref signature,
 			} = call
 			{
-				// check if its from approved validator
-				let public_key = SignedPayload::<T>::public(payload);
-				let msg_account_id = public_key.into_account();
-				let approved_vals = T::StbleValidatorSet::approved_validators();
+				// recover signer
+				let mut m = [0u8; 32];
+				m.copy_from_slice(Keccak256::digest(&payload.encode()).as_slice());
+				let signer = Self::get_meta_trx_signer(signature.clone(), &m);
 
-				if !approved_vals.contains(&msg_account_id) {
-					return InvalidTransaction::BadSigner.into();
+				match signer {
+					Some(addr) => {
+						let approved_vals = T::StbleValidatorSet::approved_validators()
+							.iter_mut()
+							.map(|v| <T as pallet::Config>::AccountIdMapping::into_evm_address(v))
+							.collect::<Vec<H160>>();
+
+						if !approved_vals.contains(&addr) {
+							return InvalidTransaction::BadSigner.into();
+						}
+						Self::validate_transaction_parameters(&payload.block_number)
+					}
+					_ => InvalidTransaction::BadSigner.into(),
 				}
-
-				// expensive, should be in the last position
-				let signature_valid =
-					SignedPayload::<T>::verify::<T::AuthorityId>(payload, signature.clone());
-
-				if !signature_valid {
-					return InvalidTransaction::BadProof.into();
-				}
-
-				Self::validate_transaction_parameters(&payload.block_number)
 			} else {
 				InvalidTransaction::Call.into()
 			}
@@ -362,37 +388,37 @@ pub mod pallet {
 		}
 
 		/// A helper function to fetch the price, sign payload and send an unsigned transaction
-		fn send_unsigned_for_all_accounts(
-			block_number: T::BlockNumber,
-			session_index: u32,
-		) -> Result<(), &'static str> {
-			let next_unsigned_at = <NextUnsignedAt<T>>::get();
-			if next_unsigned_at > block_number {
-				return Err("Too early to send unsigned transaction");
-			}
+		// fn send_unsigned_for_all_accounts(
+		// 	block_number: T::BlockNumber,
+		// 	session_index: u32,
+		// ) -> Result<(), &'static str> {
+		// 	let next_unsigned_at = <NextUnsignedAt<T>>::get();
+		// 	if next_unsigned_at > block_number {
+		// 		return Err("Too early to send unsigned transaction");
+		// 	}
 
-			// Sign using all accounts that are capable of signing transactions.
-			let transaction_results = Signer::<T, T::AuthorityId>::all_accounts()
-				.send_unsigned_transaction(
-					|account| KeepAlivePayload {
-						block_number,
-						session_index,
-						public: account.public.clone(),
-					},
-					|payload, signature| Call::submit_heartbeat_unsigned_with_signed_payload {
-						keep_alive_payload: payload,
-						signature,
-					},
-				);
+		// 	// Sign using all accounts that are capable of signing transactions.
+		// 	let transaction_results = Signer::<T, T::AuthorityId>::all_accounts()
+		// 		.send_unsigned_transaction(
+		// 			|account| KeepAlivePayload {
+		// 				block_number,
+		// 				session_index,
+		// 				public: account.public.clone(),
+		// 			},
+		// 			|payload, signature| Call::submit_heartbeat_unsigned_with_signed_payload {
+		// 				keep_alive_payload: payload,
+		// 				signature,
+		// 			},
+		// 		);
 
-			for (_account_id, result) in transaction_results.into_iter() {
-				if result.is_err() {
-					return Err("Unable to submit transaction");
-				}
-			}
+		// 	for (_account_id, result) in transaction_results.into_iter() {
+		// 		if result.is_err() {
+		// 			return Err("Unable to submit transaction");
+		// 		}
+		// 	}
 
-			Ok(())
-		}
+		// 	Ok(())
+		// }
 
 		fn validate_transaction_parameters(block_number: &T::BlockNumber) -> TransactionValidity {
 			// Now let's check if the transaction has any chance to succeed.

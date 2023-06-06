@@ -59,17 +59,8 @@ pub mod aura {
 pub mod imonline {
 	use sp_runtime::{
 		app_crypto::{app_crypto, ecdsa},
-		traits::Verify,
 		KeyTypeId,
 	};
 
 	app_crypto!(ecdsa, KeyTypeId(*b"imon"));
-
-	impl frame_system::offchain::AppCrypto<<super::Signature as Verify>::Signer, super::Signature>
-		for Public
-	{
-		type RuntimeAppPublic = Public;
-		type GenericSignature = Signature;
-		type GenericPublic = Signer;
-	}
 }

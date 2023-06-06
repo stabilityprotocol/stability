@@ -669,6 +669,7 @@ impl pallet_keep_alive::Config for Runtime {
 	type GracePeriod = GracePeriod;
 	type UnsignedInterval = UnsignedInterval;
 	type UnsignedPriority = UnsignedPriority;
+	type AccountIdMapping = AccountIdToH160Mapping;
 }
 
 parameter_types! {
