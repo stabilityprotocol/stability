@@ -263,26 +263,6 @@ impl<T: Config> Pallet<T> {
 			"Offline validator marked for auto removal."
 		);
 	}
-
-	// Removes offline validators from the validator set and clears the offline
-	// cache. It is called in the session change hook and removes the validators
-	// who were reported offline during the session that is ending. We do not
-	// check for `MinAuthorities` here, because the offline validators will not
-	// produce blocks and will have the same overall effect on the runtime.
-	fn remove_offline_validators() {
-		let validators_to_remove: BTreeSet<_> = <OfflineValidators<T>>::get().into_iter().collect();
-
-		// Delete from active validator set.
-		<Validators<T>>::mutate(|vs| vs.retain(|v| !validators_to_remove.contains(v)));
-		log::debug!(
-			target: LOG_TARGET,
-			"Initiated removal of {:?} offline validators.",
-			validators_to_remove.len()
-		);
-
-		// Clear the offline validator list to avoid repeated deletion.
-		<OfflineValidators<T>>::put(Vec::<T::AccountId>::new());
-	}
 }
 
 // Provides the new set of validators to the session module when session is
@@ -292,7 +272,26 @@ impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
 	fn new_session(_new_index: u32) -> Option<Vec<T::AccountId>> {
 		// Remove any offline validators. This will only work when the runtime
 		// also has the im-online pallet.
-		Self::remove_offline_validators();
+		let validators_to_remove: BTreeSet<_> = <OfflineValidators<T>>::get().into_iter().collect();
+
+		// Get new list of validators
+		let binding = Self::approved_validators();
+		let new_validators_list = binding
+			.iter()
+			.filter(|v| !validators_to_remove.contains(v))
+			.collect::<Vec<_>>();
+
+		// replace validators
+		<Validators<T>>::put(new_validators_list);
+
+		log::debug!(
+			target: LOG_TARGET,
+			"Initiated removal of {:?} offline validators.",
+			validators_to_remove.len()
+		);
+
+		// Clear the offline validator list to avoid repeated deletion.
+		<OfflineValidators<T>>::put(Vec::<T::AccountId>::new());
 
 		log::debug!(
 			target: LOG_TARGET,
@@ -343,7 +342,10 @@ impl<T: Config> ValidatorSet<T::AccountId> for Pallet<T> {
 	}
 
 	fn validators() -> Vec<Self::ValidatorId> {
-		pallet_session::Pallet::<T>::validators()
+		<ApprovedValidators<T>>::get()
+			.iter()
+			.map(|v| T::ValidatorIdOf::convert(v.clone()).unwrap())
+			.collect::<Vec<Self::ValidatorId>>()
 	}
 }
 
@@ -372,4 +374,20 @@ impl<T: Config, O: Offence<(T::AccountId, T::AccountId)>>
 	) -> bool {
 		false
 	}
+}
+
+impl<T: Config> StbleValidatorSet<T> for Pallet<T> {
+	fn approved_validators() -> Vec<T::AccountId> {
+		<ApprovedValidators<T>>::get()
+	}
+
+	fn active_validators() -> Vec<T::AccountId> {
+		<Validators<T>>::get()
+	}
+}
+
+pub trait StbleValidatorSet<T: Config> {
+	fn approved_validators() -> Vec<T::AccountId>;
+
+	fn active_validators() -> Vec<T::AccountId>;
 }

@@ -32,6 +32,7 @@ use frame_support::storage::types::{StorageValue, ValueQuery};
 
 use frame_support::traits::StorageInstance;
 use pallet_custom_balances::AccountIdMapping;
+use pallet_validator_set::StbleValidatorSet;
 use precompile_utils::prelude::*;
 
 use sp_core::Get;
@@ -178,7 +179,7 @@ where
 	#[precompile::view]
 	fn get_validator_list(handle: &mut impl PrecompileHandle) -> EvmResult<Vec<Address>> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		let validators = pallet_validator_set::ApprovedValidators::<Runtime>::get();
+		let validators = pallet_validator_set::Pallet::<Runtime>::approved_validators();
 
 		let validators_h160: Vec<H160> = validators
 			.iter()
@@ -195,7 +196,7 @@ where
 	#[precompile::view]
 	fn get_active_validator_list(handle: &mut impl PrecompileHandle) -> EvmResult<Vec<Address>> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		let validators = pallet_validator_set::Validators::<Runtime>::get();
+		let validators = pallet_validator_set::Pallet::<Runtime>::active_validators();
 
 		let validators_h160: Vec<H160> = validators
 			.iter()
