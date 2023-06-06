@@ -269,7 +269,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		pub fn get_meta_trx_signer(signature: Vec<u8>, message: &[u8; 32]) -> Option<H160> {
+		pub fn get_transaction_signer(signature: Vec<u8>, message: &[u8; 32]) -> Option<H160> {
 			let result = match sp_io::crypto::secp256k1_ecdsa_recover(
 				signature.as_slice().try_into().unwrap(),
 				message,
@@ -322,7 +322,7 @@ pub mod pallet {
 				// recover signer
 				let mut m = [0u8; 32];
 				m.copy_from_slice(Keccak256::digest(&payload.encode()).as_slice());
-				let signer = Self::get_meta_trx_signer(signature.clone(), &m);
+				let signer = Self::get_transaction_signer(signature.clone(), &m);
 
 				match signer {
 					Some(addr) => {
