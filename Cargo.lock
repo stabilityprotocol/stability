@@ -4994,6 +4994,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
+ "pallet-custom-balances",
  "pallet-session",
  "parity-scale-codec",
  "scale-info",
@@ -5003,6 +5004,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "stbl-tools",
  "syn 1.0.109",
 ]
 
@@ -8484,6 +8486,7 @@ dependencies = [
  "stbl-cli-authorship",
  "stbl-core-primitives",
  "stbl-primitives-fee-compatible-api",
+ "stbl-primitives-validator-health",
  "stbl-tools",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
@@ -8605,6 +8608,7 @@ dependencies = [
  "stability-rpc-api",
  "stbl-core-primitives",
  "stbl-primitives-fee-compatible-api",
+ "stbl-primitives-validator-health",
  "stbl-tools",
  "stbl-transaction-validator",
  "substrate-wasm-builder",
@@ -8806,6 +8810,16 @@ dependencies = [
  "parity-scale-codec",
  "sp-api",
  "sp-runtime",
+]
+
+[[package]]
+name = "stbl-primitives-validator-health"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

@@ -23,6 +23,8 @@ use frame_support::{
 };
 use log;
 pub use pallet::*;
+use pallet_custom_balances::AccountIdMapping;
+use sp_core::H160;
 use sp_runtime::traits::{Convert, Zero};
 use sp_staking::offence::{Offence, OffenceError, ReportOffence};
 use sp_std::{collections::btree_set::BTreeSet, prelude::*};
@@ -37,7 +39,9 @@ pub mod pallet {
 	/// Configure the pallet by specifying the parameters and types on which it
 	/// depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_session::Config {
+	pub trait Config:
+		frame_system::Config + pallet_session::Config + pallet_custom_balances::Config
+	{
 		/// The Event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
@@ -47,6 +51,8 @@ pub mod pallet {
 		/// Minimum number of validators to leave in the validator set during
 		/// auto removal.
 		type MinAuthorities: Get<u32>;
+
+		type AccountIdMapping: AccountIdMapping<Self>;
 	}
 
 	#[pallet::pallet]
@@ -188,6 +194,82 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		/// Add an approved validator again when it comes back online.
+		///
+		/// For this call, the dispatch origin must be the validator itself.
+		#[pallet::call_index(3)]
+		#[pallet::weight(0)]
+		pub fn add_validator_again_signed(
+			_origin: OriginFor<T>,
+			validator_id: T::AccountId,
+			signature: Vec<u8>,
+		) -> DispatchResult {
+			let recovered_address = Self::ensure_message_signature(validator_id.clone(), signature)
+				.map_err(|_| Error::<T>::BadOrigin)?;
+
+			let validator_id_h160 =
+				<T as pallet::Config>::AccountIdMapping::into_evm_address(&validator_id.clone());
+
+			ensure!(
+				recovered_address == validator_id_h160,
+				Error::<T>::BadOrigin
+			);
+			ensure!(
+				<ApprovedValidators<T>>::get().contains(&validator_id),
+				Error::<T>::ValidatorNotApproved
+			);
+
+			Self::do_add_validator(validator_id)?;
+
+			Ok(())
+		}
+	}
+
+	#[pallet::validate_unsigned]
+	impl<T: Config> ValidateUnsigned for Pallet<T> {
+		type Call = Call<T>;
+
+		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+			match call {
+				Call::add_validator_again_signed {
+					validator_id,
+					signature,
+				} => {
+					// Check that the validator is in the approved list.
+					if !<ApprovedValidators<T>>::get().contains(validator_id) {
+						return InvalidTransaction::BadProof.into();
+					}
+
+					// Check that the validator is not in the validator set.
+					if <Validators<T>>::get().contains(validator_id) {
+						return InvalidTransaction::BadProof.into();
+					}
+
+					// Check that the signature is valid. In last position because it's CPU expensive
+					let recovered_address =
+						Self::ensure_message_signature(validator_id.clone(), signature.clone());
+
+					let validator_id_h160 =
+						<T as pallet::Config>::AccountIdMapping::into_evm_address(
+							&validator_id.clone(),
+						);
+
+					if recovered_address.is_err() || recovered_address.unwrap() != validator_id_h160
+					{
+						return InvalidTransaction::BadProof.into();
+					}
+
+					ValidTransaction::with_tag_prefix("ValidatorSetValidatorBackOnline")
+						.priority(100u64)
+						.and_provides((validator_id, call.clone()))
+						.longevity(3)
+						.propagate(true)
+						.build()
+				}
+				_ => InvalidTransaction::Call.into(),
+			}
+		}
 	}
 }
 
@@ -262,6 +344,38 @@ impl<T: Config> Pallet<T> {
 			target: LOG_TARGET,
 			"Offline validator marked for auto removal."
 		);
+	}
+
+	fn generate_secure_message(validator_id: T::AccountId) -> Vec<u8> {
+		// signature should include the validator's account id + "-" + current_session_index
+		let mut message: Vec<u8> = Vec::new();
+		message.extend_from_slice(
+			<T as pallet::Config>::AccountIdMapping::into_evm_address(&validator_id.clone())
+				.as_bytes(),
+		);
+		message.extend_from_slice(b"-");
+		message.extend_from_slice(&pallet_session::Pallet::<T>::current_index().to_be_bytes());
+		return message;
+	}
+
+	// Ensures that the signature is coming from a validator for this session
+	fn ensure_message_signature(
+		validator_id: T::AccountId,
+		signature: Vec<u8>,
+	) -> Result<H160, ()> {
+		let message = Self::generate_secure_message(validator_id.clone());
+		// recover the address from the signature
+		match sp_io::crypto::secp256k1_ecdsa_recover(
+			signature.as_slice().try_into().unwrap(),
+			stbl_tools::misc::kecckak256(&message).as_fixed_bytes(),
+		) {
+			Ok(pubkey) => {
+				let mut address = sp_io::hashing::keccak_256(&pubkey);
+				address[0..12].copy_from_slice(&[0u8; 12]);
+				Ok(H160::from_slice(&address[12..32]))
+			}
+			Err(_) => Err(()),
+		}
 	}
 }
 

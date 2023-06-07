@@ -578,6 +578,7 @@ impl pallet_validator_set::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type AddRemoveOrigin = EnsureRootOrHalfTechCommittee;
 	type MinAuthorities = MinAuthorities;
+	type AccountIdMapping = AccountIdToH160Mapping;
 }
 
 parameter_types! {
@@ -1247,6 +1248,21 @@ impl_runtime_apis! {
 		fn convert_sponsored_transaction(transaction: EthereumTransaction, meta_trx_sponsor: H160, meta_trx_sponsor_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
 			UncheckedExtrinsic::new_unsigned(
 				pallet_sponsored_transactions::Call::<Runtime>::send_sponsored_transaction { transaction,  meta_trx_sponsor, meta_trx_sponsor_signature }.into(),
+			)
+		}
+	}
+
+	impl stbl_primitives_validator_health::ValidatorHealth<Block, AccountId> for Runtime {
+		fn convert_add_validator_again_transaction(
+			validator_id: AccountId,
+			signature: Vec<u8>,
+		) -> <Block as BlockT>::Extrinsic {
+			UncheckedExtrinsic::new_unsigned(
+				pallet_validator_set::Call::<Runtime>::add_validator_again_signed {
+					validator_id,
+					signature,
+				}
+				.into(),
 			)
 		}
 	}

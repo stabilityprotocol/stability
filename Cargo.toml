@@ -220,3 +220,4 @@ sha3 = { version = "0.9", default-features = false }
 stability-rpc = { path = "./stability-rpc", default-features = false }
 stability-rpc-api = { path = "./primitives/stability-rpc-api", default-features = false }
 stbl-transaction-validator = { path = "./primitives/transaction-validator", default-features = false }
+stbl-primitives-validator-health = { path = "./primitives/validator-health", default-features = false }

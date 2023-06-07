@@ -18,6 +18,8 @@ frame-system = { workspace = true }
 pallet-session = { workspace = true }
 scale-info = { workspace = true }
 syn = { workspace = true }
+pallet-custom-balances = { workspace = true }
+stbl-tools = { workspace = true }
 
 [dev-dependencies]
 serde = { version = '1.0.126',features = ['derive'] }

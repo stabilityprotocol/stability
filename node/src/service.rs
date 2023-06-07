@@ -15,7 +15,12 @@ use sp_core::U256;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
 // Runtime
+use account::{AccountId20, EthereumSigner};
 use sc_service::KeystoreContainer;
+use sp_api::ProvideRuntimeApi;
+use sp_core::crypto::KeyTypeId;
+use sp_keystore::SyncCryptoStore;
+use sp_runtime::traits::IdentifyAccount;
 use stability_runtime::{opaque::Block, Hash, TransactionConverter};
 
 use crate::{
@@ -263,7 +268,8 @@ where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
 	RuntimeApi: Send + Sync + 'static,
 	RuntimeApi::RuntimeApi: RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>
-		+ stability_rpc::StabilityRpcRuntimeApi<Block>,
+		+ stability_rpc::StabilityRpcRuntimeApi<Block>
+		+ stbl_primitives_validator_health::ValidatorHealth<Block, AccountId20>,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	let build_import_queue = if sealing.is_some() {
@@ -472,7 +478,7 @@ where
 			_,
 		>(sc_consensus_aura::StartAuraParams {
 			slot_duration,
-			client,
+			client: client.clone(),
 			select_chain,
 			block_import,
 			proposer_factory,
@@ -540,6 +546,27 @@ where
 	}
 
 	network_starter.start_network();
+
+	// Every time that we boot up the node, we try to get inside the validator active set
+	// This will help us to be able to produce blocks as soon as possible
+	// and to recover from offline spans as fast as possible
+	if role.is_authority() {
+		let api = client.runtime_api();
+		// Validator keys
+		let keys = SyncCryptoStore::ecdsa_public_keys(
+			&*keystore_container.sync_keystore(),
+			KeyTypeId::try_from("aura").unwrap_or_default(),
+		);
+		let signer = EthereumSigner::from(keys[0]);
+		let val_account_id = signer.into_account();
+
+		// let signature = signer.
+
+		// sign message with validator key - validator address + "-" + session_index
+
+		// api.convert_add_validator_again_transaction(validator, None)?;
+	}
+
 	Ok(task_manager)
 }
 

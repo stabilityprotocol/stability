@@ -180,10 +180,11 @@ where
 	fn get_validator_list(handle: &mut impl PrecompileHandle) -> EvmResult<Vec<Address>> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		let validators = pallet_validator_set::Pallet::<Runtime>::approved_validators();
-
 		let validators_h160: Vec<H160> = validators
 			.iter()
-			.map(|v| Runtime::AccountIdMapping::into_evm_address(v))
+			.map(|v| {
+				<Runtime as pallet_custom_balances::Config>::AccountIdMapping::into_evm_address(v)
+			})
 			.collect();
 
 		Ok(validators_h160
@@ -200,7 +201,9 @@ where
 
 		let validators_h160: Vec<H160> = validators
 			.iter()
-			.map(|v| Runtime::AccountIdMapping::into_evm_address(v))
+			.map(|v| {
+				<Runtime as pallet_custom_balances::Config>::AccountIdMapping::into_evm_address(v)
+			})
 			.collect();
 
 		Ok(validators_h160
