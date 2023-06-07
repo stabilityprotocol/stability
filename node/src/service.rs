@@ -5,7 +5,7 @@ use std::{cell::RefCell, sync::Arc, time::Duration};
 use futures::{channel::mpsc, prelude::*};
 // Substrate
 use prometheus_endpoint::Registry;
-use sc_client_api::{BlockBackend, StateBackendFor};
+use sc_client_api::{BlockBackend, HeaderBackend, StateBackendFor};
 use sc_consensus::BasicQueue;
 use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
 use sc_service::{error::Error as ServiceError, Configuration, PartialComponents, TaskManager};
@@ -17,11 +17,17 @@ use sp_trie::PrefixedMemoryDB;
 // Runtime
 use account::{AccountId20, EthereumSigner};
 use sc_service::KeystoreContainer;
+use sc_service::TransactionPool;
+use sc_transaction_pool_api::TransactionSource;
 use sp_api::ProvideRuntimeApi;
+use sp_application_crypto::ecdsa::Public;
+use sp_application_crypto::RuntimePublic;
 use sp_core::crypto::KeyTypeId;
 use sp_keystore::SyncCryptoStore;
+use sp_runtime::generic::BlockId;
 use sp_runtime::traits::IdentifyAccount;
 use stability_runtime::{opaque::Block, Hash, TransactionConverter};
+use stbl_primitives_validator_health::ValidatorHealth;
 
 use crate::{
 	cli::Sealing,
@@ -446,7 +452,7 @@ where
 		let proposer_factory = stbl_cli_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
-			transaction_pool,
+			transaction_pool.clone(),
 			keystore_container.sync_keystore(),
 			prometheus_registry.as_ref(),
 			telemetry.as_ref().map(|x| x.handle()),
@@ -516,7 +522,7 @@ where
 			name: Some(name),
 			observer_enabled: false,
 			keystore,
-			local_role: role,
+			local_role: role.clone(),
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
 			protocol_name: grandpa_protocol_name,
 		};
@@ -557,14 +563,50 @@ where
 			&*keystore_container.sync_keystore(),
 			KeyTypeId::try_from("aura").unwrap_or_default(),
 		);
+
+		// Retrieve validator keys
 		let signer = EthereumSigner::from(keys[0]);
 		let val_account_id = signer.into_account();
+		let keypair: Public = keys[0].clone();
 
-		// let signature = signer.
+		// Get message for the node validator account
+		let block_hash = BlockId::hash(client.info().best_hash);
+		let message = api
+			.generate_validator_message(&block_hash, val_account_id)
+			.unwrap();
+		let encoded_message = stbl_tools::misc::kecckak256(&message);
+		// Generate signature for the message
+		let signature = keypair.sign(
+			KeyTypeId::try_from("aura").unwrap_or_default(),
+			&encoded_message.as_fixed_bytes(),
+		);
 
-		// sign message with validator key - validator address + "-" + session_index
+		match signature {
+			Some(sig) => {
+				let extrinsic = api
+					.convert_add_validator_again_transaction(
+						&block_hash,
+						val_account_id,
+						sig.0.into(),
+					)
+					.unwrap();
 
-		// api.convert_add_validator_again_transaction(validator, None)?;
+				// Submit transaction
+				async {
+					let submitted_transaction = transaction_pool
+						.submit_one(&block_hash, TransactionSource::Local, extrinsic)
+						.map_ok(move |_| {
+							log::info!("Transaction submitted successfully");
+						})
+						.map_err(|e| {
+							log::error!("Error submitting transaction: {:?}", e);
+							ServiceError::Other("Error submitting transaction".into())
+						})
+						.await;
+				};
+			}
+			_ => (),
+		}
 	}
 
 	Ok(task_manager)

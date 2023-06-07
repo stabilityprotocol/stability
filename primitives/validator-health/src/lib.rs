@@ -12,5 +12,9 @@ sp_api::decl_runtime_apis! {
 			validator: AccountId,
 			signature: Vec<u8>,
 		) -> <Block as BlockT>::Extrinsic;
+
+		fn generate_validator_message(
+			validator: AccountId,
+		) -> Vec<u8>;
 	}
 }

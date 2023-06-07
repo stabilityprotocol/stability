@@ -346,7 +346,7 @@ impl<T: Config> Pallet<T> {
 		);
 	}
 
-	fn generate_secure_message(validator_id: T::AccountId) -> Vec<u8> {
+	pub fn generate_secure_message(validator_id: T::AccountId) -> Vec<u8> {
 		// signature should include the validator's account id + "-" + current_session_index
 		let mut message: Vec<u8> = Vec::new();
 		message.extend_from_slice(

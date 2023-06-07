@@ -1265,6 +1265,10 @@ impl_runtime_apis! {
 				.into(),
 			)
 		}
+
+		fn generate_validator_message(validator_id: AccountId) -> Vec<u8> {
+			<pallet_validator_set::Pallet<Runtime>>::generate_secure_message(validator_id)
+		}
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
