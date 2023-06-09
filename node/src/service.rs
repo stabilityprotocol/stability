@@ -5,7 +5,7 @@ use std::{cell::RefCell, sync::Arc, time::Duration};
 use futures::{channel::mpsc, prelude::*};
 // Substrate
 use prometheus_endpoint::Registry;
-use sc_client_api::{BlockBackend, HeaderBackend, StateBackendFor};
+use sc_client_api::{BlockBackend, StateBackendFor};
 use sc_consensus::BasicQueue;
 use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
 use sc_service::{error::Error as ServiceError, Configuration, PartialComponents, TaskManager};
@@ -15,19 +15,8 @@ use sp_core::U256;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
 // Runtime
-use account::{AccountId20, EthereumSigner};
 use sc_service::KeystoreContainer;
-use sc_service::TransactionPool;
-use sc_transaction_pool_api::TransactionSource;
-use sp_api::ProvideRuntimeApi;
-use sp_application_crypto::ecdsa::Public;
-use sp_application_crypto::RuntimePublic;
-use sp_core::crypto::KeyTypeId;
-use sp_keystore::SyncCryptoStore;
-use sp_runtime::generic::BlockId;
-use sp_runtime::traits::IdentifyAccount;
 use stability_runtime::{opaque::Block, Hash, TransactionConverter};
-use stbl_primitives_validator_health::ValidatorHealth;
 
 use crate::{
 	cli::Sealing,
@@ -36,6 +25,7 @@ use crate::{
 		new_frontier_partial, spawn_frontier_tasks, FrontierBackend, FrontierBlockImport,
 		FrontierPartialComponents,
 	},
+	keepalive::{KeepAlive, KeepAliveActions},
 };
 pub use crate::{
 	client::{Client, TemplateRuntimeExecutor},
@@ -274,8 +264,7 @@ where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
 	RuntimeApi: Send + Sync + 'static,
 	RuntimeApi::RuntimeApi: RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>
-		+ stability_rpc::StabilityRpcRuntimeApi<Block>
-		+ stbl_primitives_validator_health::ValidatorHealth<Block, AccountId20>,
+		+ stability_rpc::StabilityRpcRuntimeApi<Block>,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	let build_import_queue = if sealing.is_some() {
@@ -557,56 +546,9 @@ where
 	// This will help us to be able to produce blocks as soon as possible
 	// and to recover from offline spans as fast as possible
 	if role.is_authority() {
-		let api = client.runtime_api();
-		// Validator keys
-		let keys = SyncCryptoStore::ecdsa_public_keys(
-			&*keystore_container.sync_keystore(),
-			KeyTypeId::try_from("aura").unwrap_or_default(),
-		);
-
-		// Retrieve validator keys
-		let signer = EthereumSigner::from(keys[0]);
-		let val_account_id = signer.into_account();
-		let keypair: Public = keys[0].clone();
-
-		// Get message for the node validator account
-		let block_hash = BlockId::hash(client.info().best_hash);
-		let message = api
-			.generate_validator_message(&block_hash, val_account_id)
-			.unwrap();
-		let encoded_message = stbl_tools::misc::kecckak256(&message);
-		// Generate signature for the message
-		let signature = keypair.sign(
-			KeyTypeId::try_from("aura").unwrap_or_default(),
-			&encoded_message.as_fixed_bytes(),
-		);
-
-		match signature {
-			Some(sig) => {
-				let extrinsic = api
-					.convert_add_validator_again_transaction(
-						&block_hash,
-						val_account_id,
-						sig.0.into(),
-					)
-					.unwrap();
-
-				// Submit transaction
-				async {
-					let submitted_transaction = transaction_pool
-						.submit_one(&block_hash, TransactionSource::Local, extrinsic)
-						.map_ok(move |_| {
-							log::info!("Transaction submitted successfully");
-						})
-						.map_err(|e| {
-							log::error!("Error submitting transaction: {:?}", e);
-							ServiceError::Other("Error submitting transaction".into())
-						})
-						.await;
-				};
-			}
-			_ => (),
-		}
+		let keep_alive =
+			KeepAlive::new(client, transaction_pool, keystore_container.sync_keystore());
+		keep_alive.do_validator_available_again();
 	}
 
 	Ok(task_manager)

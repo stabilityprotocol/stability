@@ -238,12 +238,12 @@ pub mod pallet {
 				} => {
 					// Check that the validator is in the approved list.
 					if !<ApprovedValidators<T>>::get().contains(validator_id) {
-						return InvalidTransaction::BadProof.into();
+						return InvalidTransaction::BadMandatory.into();
 					}
 
 					// Check that the validator is not in the validator set.
 					if <Validators<T>>::get().contains(validator_id) {
-						return InvalidTransaction::BadProof.into();
+						return InvalidTransaction::BadMandatory.into();
 					}
 
 					// Check that the signature is valid. In last position because it's CPU expensive
@@ -353,8 +353,6 @@ impl<T: Config> Pallet<T> {
 			<T as pallet::Config>::AccountIdMapping::into_evm_address(&validator_id.clone())
 				.as_bytes(),
 		);
-		message.extend_from_slice(b"-");
-		message.extend_from_slice(&pallet_session::Pallet::<T>::current_index().to_be_bytes());
 		return message;
 	}
 
