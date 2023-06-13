@@ -54,6 +54,8 @@ sp-transaction-pool = { workspace = true, features = ["std"] }
 sp-trie = { workspace = true, features = ["std"] }
 sp-keystore = { workspace = true, features = ["std"] }
 pallet-im-online = { workspace = true }
+sp-externalities = { workspace = true }
+sp-io = { workspace = true }
 # These dependencies are used for RPC
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-transaction-payment-rpc = { workspace = true }
@@ -64,6 +66,7 @@ frame-benchmarking = { workspace = true, optional = true }
 frame-benchmarking-cli = { workspace = true, optional = true }
 frame-system = { workspace = true }
 pallet-transaction-payment = { workspace = true }
+futures-timer = { workspace = true }
 
 # Frontier
 fc-cli = { workspace = true }

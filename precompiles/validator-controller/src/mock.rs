@@ -200,6 +200,7 @@ impl pallet_validator_set::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type AddRemoveOrigin = EnsureRoot<AccountId>;
 	type MinAuthorities = MinAuthorities;
+	type AccountIdMapping = AccountIdToH160Mapping;
 }
 
 thread_local! {

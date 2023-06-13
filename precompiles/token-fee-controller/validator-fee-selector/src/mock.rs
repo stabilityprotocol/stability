@@ -27,10 +27,8 @@ use std::collections::BTreeMap;
 
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
 use pallet_session::{SessionHandler, ShouldEndSession};
-use precompile_utils::{
-	precompile_set::*,
-	testing::{CryptoAlith, MockAccount},
-};
+use pallet_validator_set::Validators;
+use precompile_utils::precompile_set::*;
 use sp_core::{H160, H256, U256};
 use sp_runtime::{
 	impl_opaque_keys,
@@ -44,7 +42,7 @@ impl_opaque_keys! {
 	}
 }
 
-pub type AccountId = MockAccount;
+pub type AccountId = stbl_core_primitives::AccountId;
 pub type Balance = u128;
 pub type BlockNumber = u32;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
@@ -222,12 +220,38 @@ impl ShouldEndSession<BlockNumber> for TestShouldEndSession {
 parameter_types! {
 	pub const MinAuthorities: u32 = 1u32;
 }
+
+pub struct MockUserFeeTokenController;
+impl pallet_user_fee_selector::UserFeeTokenController for MockUserFeeTokenController {
+	type Error = ();
+	fn get_user_fee_token(_account: H160) -> H160 {
+		MeaninglessTokenAddress::get()
+	}
+	fn set_user_fee_token(_account: H160, _token: H160) -> Result<(), Self::Error> {
+		Ok(())
+	}
+	fn balance_of(_account: H160) -> U256 {
+		Default::default()
+	}
+}
+
+pub struct AccountIdToH160Mapping;
+impl pallet_custom_balances::AccountIdMapping<Runtime> for AccountIdToH160Mapping {
+	fn into_evm_address(address: &AccountId) -> H160 {
+		(*address).into()
+	}
+}
+
+impl pallet_custom_balances::Config for Runtime {
+	type AccountIdMapping = AccountIdToH160Mapping;
+	type UserFeeTokenController = MockUserFeeTokenController;
+}
+
 impl pallet_validator_set::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-
 	type AddRemoveOrigin = EnsureRoot<AccountId>;
-
 	type MinAuthorities = MinAuthorities;
+	type AccountIdMapping = AccountIdToH160Mapping;
 }
 
 impl pallet_session::Config for Runtime {
@@ -324,7 +348,7 @@ impl ExtBuilder {
 		.expect("Pallet validator fee selector storage can be assimilated");
 
 		pallet_validator_set::GenesisConfig::<Runtime> {
-			initial_validators: vec![CryptoAlith.into()],
+			initial_validators: Validators::get(),
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet validator set storage can be assimilated");

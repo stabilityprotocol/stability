@@ -23,6 +23,7 @@ stbl-tools = { workspace = true }
 
 [dev-dependencies]
 serde = { version = '1.0.126',features = ['derive'] }
+pallet-user-fee-selector = { workspace = true }
 
 
 [features]

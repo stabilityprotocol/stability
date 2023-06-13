@@ -205,12 +205,14 @@ pub mod pallet {
 			validator_id: T::AccountId,
 			signature: Vec<u8>,
 		) -> DispatchResult {
+			log::debug!("add_validator_again_signed: {:?}", validator_id);
 			let recovered_address = Self::ensure_message_signature(validator_id.clone(), signature)
 				.map_err(|_| Error::<T>::BadOrigin)?;
 
 			let validator_id_h160 =
 				<T as pallet::Config>::AccountIdMapping::into_evm_address(&validator_id.clone());
 
+			log::debug!("add_validator_again_signed: {:?}", validator_id_h160);
 			ensure!(
 				recovered_address == validator_id_h160,
 				Error::<T>::BadOrigin
@@ -220,6 +222,7 @@ pub mod pallet {
 				Error::<T>::ValidatorNotApproved
 			);
 
+			log::debug!("aaaaaahh");
 			Self::do_add_validator(validator_id)?;
 
 			Ok(())
@@ -236,29 +239,36 @@ pub mod pallet {
 					validator_id,
 					signature,
 				} => {
+					log::debug!("TENGO SIDA");
 					// Check that the validator is in the approved list.
 					if !<ApprovedValidators<T>>::get().contains(validator_id) {
 						return InvalidTransaction::BadMandatory.into();
 					}
+					log::debug!("TENGO SIDASO");
 
 					// Check that the validator is not in the validator set.
 					if <Validators<T>>::get().contains(validator_id) {
 						return InvalidTransaction::BadMandatory.into();
 					}
+					log::debug!("TENGO SIDASO0");
 
 					// Check that the signature is valid. In last position because it's CPU expensive
 					let recovered_address =
 						Self::ensure_message_signature(validator_id.clone(), signature.clone());
 
+					log::debug!("TENGO SIDASO1");
 					let validator_id_h160 =
 						<T as pallet::Config>::AccountIdMapping::into_evm_address(
 							&validator_id.clone(),
 						);
 
+					log::debug!("TENGO SIDASO2");
 					if recovered_address.is_err() || recovered_address.unwrap() != validator_id_h160
 					{
 						return InvalidTransaction::BadProof.into();
 					}
+
+					log::debug!("TENGO SIDASO3");
 
 					ValidTransaction::with_tag_prefix("ValidatorSetValidatorBackOnline")
 						.priority(100u64)
@@ -293,8 +303,10 @@ impl<T: Config> Pallet<T> {
 			!<Validators<T>>::get().contains(&validator_id),
 			Error::<T>::Duplicate
 		);
+		log::debug!("aaaaaahh2");
 		<Validators<T>>::mutate(|v| v.push(validator_id.clone()));
 
+		log::debug!("aaaaaahh3");
 		Self::deposit_event(Event::ValidatorAdditionInitiated(validator_id.clone()));
 		log::debug!(target: LOG_TARGET, "Validator addition initiated.");
 
@@ -454,12 +466,7 @@ impl<T: Config> ValidatorSet<T::AccountId> for Pallet<T> {
 	}
 
 	fn validators() -> Vec<Self::ValidatorId> {
-		// It doesn't return the actual list the validators because this is gonna be consume by im_online
-		// and we want it to work over the full list of validators
-		<ApprovedValidators<T>>::get()
-			.iter()
-			.map(|v| T::ValidatorIdOf::convert(v.clone()).unwrap())
-			.collect::<Vec<Self::ValidatorId>>()
+		pallet_session::Pallet::<T>::validators()
 	}
 }
 

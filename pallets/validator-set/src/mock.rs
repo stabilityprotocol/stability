@@ -7,7 +7,7 @@ use crate as validator_set;
 use frame_support::{parameter_types, traits::GenesisBuild, BasicExternalities};
 use frame_system::EnsureRoot;
 use pallet_session::*;
-use sp_core::{crypto::key_types::DUMMY, H256};
+use sp_core::{crypto::key_types::DUMMY, H256, U256};
 use sp_runtime::{
 	impl_opaque_keys,
 	testing::{Header, UintAuthorityId},
@@ -15,6 +15,7 @@ use sp_runtime::{
 	KeyTypeId, RuntimeAppPublic,
 };
 use std::cell::RefCell;
+use std::str::FromStr;
 
 impl_opaque_keys! {
 	pub struct MockSessionKeys {
@@ -109,8 +110,8 @@ pub struct TestShouldEndSession;
 impl ShouldEndSession<u64> for TestShouldEndSession {
 	fn should_end_session(now: u64) -> bool {
 		let l = SESSION_LENGTH.with(|l| *l.borrow());
-		now % l == 0 ||
-			FORCE_SESSION_END.with(|l| {
+		now % l == 0
+			|| FORCE_SESSION_END.with(|l| {
 				let r = *l.borrow();
 				*l.borrow_mut() = false;
 				r
@@ -123,9 +124,16 @@ pub fn authorities() -> Vec<UintAuthorityId> {
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-	let keys: Vec<_> = NEXT_VALIDATORS
-		.with(|l| l.borrow().iter().cloned().map(|i| (i, i, UintAuthorityId(i).into())).collect());
+	let mut t = frame_system::GenesisConfig::default()
+		.build_storage::<Test>()
+		.unwrap();
+	let keys: Vec<_> = NEXT_VALIDATORS.with(|l| {
+		l.borrow()
+			.iter()
+			.cloned()
+			.map(|i| (i, i, UintAuthorityId(i).into()))
+			.collect()
+	});
 	BasicExternalities::execute_with_storage(&mut t, || {
 		for (ref k, ..) in &keys {
 			frame_system::Pallet::<Test>::inc_providers(k);
@@ -148,6 +156,7 @@ parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 	pub BlockWeights: frame_system::limits::BlockWeights =
 		frame_system::limits::BlockWeights::simple_max(frame_support::weights::Weight::from_ref_time(1024));
+	pub MeaninglessTokenAddress : H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
 }
 
 impl frame_system::Config for Test {
@@ -181,10 +190,37 @@ parameter_types! {
 	pub const MinAuthorities: u32 = 2;
 }
 
+pub struct MockUserFeeTokenController;
+impl pallet_user_fee_selector::UserFeeTokenController for MockUserFeeTokenController {
+	type Error = ();
+	fn get_user_fee_token(_account: H160) -> H160 {
+		MeaninglessTokenAddress::get()
+	}
+	fn set_user_fee_token(_account: H160, _token: H160) -> Result<(), Self::Error> {
+		Ok(())
+	}
+	fn balance_of(_account: H160) -> U256 {
+		Default::default()
+	}
+}
+
+pub struct AccountIdToH160Mapping;
+impl crate::AccountIdMapping<Test> for AccountIdToH160Mapping {
+	fn into_evm_address(address: &AccountId) -> H160 {
+		(*address).into()
+	}
+}
+
+impl pallet_custom_balances::Config for Test {
+	type AccountIdMapping = AccountIdToH160Mapping;
+	type UserFeeTokenController = MockUserFeeTokenController;
+}
+
 impl validator_set::Config for Test {
 	type AddRemoveOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type MinAuthorities = MinAuthorities;
+	type AccountIdMapping = AccountIdToH160Mapping;
 }
 
 impl pallet_session::Config for Test {

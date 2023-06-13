@@ -4,6 +4,7 @@ use std::{cell::RefCell, sync::Arc, time::Duration};
 
 use futures::{channel::mpsc, prelude::*};
 // Substrate
+use futures::executor::block_on;
 use prometheus_endpoint::Registry;
 use sc_client_api::{BlockBackend, StateBackendFor};
 use sc_consensus::BasicQueue;
@@ -25,7 +26,7 @@ use crate::{
 		new_frontier_partial, spawn_frontier_tasks, FrontierBackend, FrontierBlockImport,
 		FrontierPartialComponents,
 	},
-	keepalive::{KeepAlive, KeepAliveActions},
+	keepalive::KeepAlive,
 };
 pub use crate::{
 	client::{Client, TemplateRuntimeExecutor},
@@ -408,7 +409,7 @@ where
 	spawn_frontier_tasks(
 		&task_manager,
 		client.clone(),
-		backend,
+		backend.clone(),
 		frontier_backend,
 		filter_pool,
 		overrides,
@@ -546,9 +547,12 @@ where
 	// This will help us to be able to produce blocks as soon as possible
 	// and to recover from offline spans as fast as possible
 	if role.is_authority() {
-		let keep_alive =
-			KeepAlive::new(client, transaction_pool, keystore_container.sync_keystore());
-		keep_alive.do_validator_available_again();
+		let make_available = crate::keepalive::do_validator_available_again(KeepAlive {
+			client,
+			pool: transaction_pool,
+			keystore: keystore_container.sync_keystore(),
+		});
+		block_on(make_available);
 	}
 
 	Ok(task_manager)

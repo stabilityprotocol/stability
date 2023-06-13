@@ -12,6 +12,9 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use account::AccountId20;
 use account::EthereumSigner;
 use codec::{Decode, Encode};
+
+use log::info;
+
 use core::str::FromStr;
 use frame_support::pallet_prelude::EnsureOrigin;
 use frame_support::pallet_prelude::InvalidTransaction;
@@ -1257,6 +1260,7 @@ impl_runtime_apis! {
 			validator_id: AccountId,
 			signature: Vec<u8>,
 		) -> <Block as BlockT>::Extrinsic {
+			info!("🥲 convert_add_validator_again_transaction");
 			UncheckedExtrinsic::new_unsigned(
 				pallet_validator_set::Call::<Runtime>::add_validator_again_signed {
 					validator_id,

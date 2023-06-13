@@ -38,12 +38,13 @@ libsecp256k1 = "0.7"
 serde = { version = "1.0.100" }
 pallet-session = { workspace = true }
 sha3 = "0.10"
-
+pallet-custom-balances = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
 precompile-utils = { workspace = true, features = [ "testing" ] }
-
 pallet-timestamp ={ workspace = true }
 scale-info = { version = "2.0", default-features = false, features = [ "derive" ] }
 sp-runtime = { workspace = true }
+stbl-core-primitives = { workspace = true}
 
 [features]
 default = [ "std" ]
