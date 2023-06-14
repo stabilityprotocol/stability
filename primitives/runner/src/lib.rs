@@ -146,7 +146,7 @@ where
 
 		let custom_fee_info = stbl_tools::custom_fee::custom_info_from_fee_params(
 			base_fee,
-			max_fee_per_gas.unwrap(),
+			max_fee_per_gas,
 			max_priority_fee_per_gas,
 		);
 

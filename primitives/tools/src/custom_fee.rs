@@ -13,7 +13,7 @@ impl CustomFeeInfo {
 		let data: TransactionData = transaction.into();
 		custom_info_from_fee_params(
 			base_fee,
-			data.max_fee_per_gas.or(data.gas_price).unwrap(),
+			data.max_fee_per_gas.or(data.gas_price),
 			data.max_priority_fee_per_gas,
 		)
 	}
@@ -21,15 +21,15 @@ impl CustomFeeInfo {
 
 pub fn custom_info_from_fee_params(
 	base_fee: U256,
-	max_fee_per_gas: U256,
+	max_fee_per_gas: Option<U256>,
 	max_priority_fee_per_gas: Option<U256>,
 ) -> CustomFeeInfo {
 	CustomFeeInfo {
 		max_conversion_rate: max_priority_fee_per_gas
-			.map(|_| (max_fee_per_gas, 1_000_000_000.into())),
+			.map(|_| (max_fee_per_gas.unwrap(), 1_000_000_000.into())),
 		max_fee_per_gas: max_priority_fee_per_gas
 			.map(|max_priority_fee_per_gas| max_priority_fee_per_gas.saturating_add(base_fee))
-			.unwrap_or(max_fee_per_gas),
+			.unwrap_or(max_fee_per_gas.unwrap_or_default()),
 		max_priority_fee_per_gas,
 	}
 }
@@ -55,8 +55,11 @@ mod test {
 
 	#[test]
 	fn custom_info_from_fee_params_for_trx_v1() {
-		let info =
-			custom_info_from_fee_params(U256::from(1_000_000_000), U256::from(1_000_000_000), None);
+		let info = custom_info_from_fee_params(
+			U256::from(1_000_000_000),
+			Some(U256::from(1_000_000_000)),
+			None,
+		);
 
 		assert_eq!(info.max_priority_fee_per_gas, None);
 		assert_eq!(info.max_fee_per_gas, U256::from(1_000_000_000));
@@ -67,7 +70,7 @@ mod test {
 	fn custom_info_from_fee_params_for_trx_v2() {
 		let info = custom_info_from_fee_params(
 			U256::from(1_000_000_000),
-			U256::from(2_000_000_000),
+			Some(U256::from(2_000_000_000)),
 			Some(U256::from(500_000_000)),
 		);
 
@@ -77,5 +80,14 @@ mod test {
 			info.max_conversion_rate,
 			Some((U256::from(2_000_000_000), U256::from(1_000_000_000)))
 		);
+	}
+
+	#[test]
+	fn custom_info_from_fee_params_for_read_trx() {
+		let info = custom_info_from_fee_params(U256::from(1_000_000_000), None, None);
+
+		assert_eq!(info.max_priority_fee_per_gas, None);
+		assert_eq!(info.max_fee_per_gas, U256::from(0));
+		assert_eq!(info.max_conversion_rate, None);
 	}
 }

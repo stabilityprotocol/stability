@@ -130,11 +130,9 @@ pub fn transaction_gas_price(
 ) -> Result<U256, ()> {
 	let data: TransactionData = transaction.into();
 
-	let effective_gas_price = crate::some_or_err!(data.max_fee_per_gas.or(data.gas_price), || ());
-
 	let max_fee_per_gas = crate::custom_fee::custom_info_from_fee_params(
 		base_fee,
-		effective_gas_price,
+		data.max_fee_per_gas.or(data.gas_price),
 		data.max_priority_fee_per_gas,
 	)
 	.max_fee_per_gas;
