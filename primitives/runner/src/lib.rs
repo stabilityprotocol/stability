@@ -144,35 +144,13 @@ where
 			});
 		}
 
-		let (total_fee_per_gas, _actual_priority_fee_per_gas) =
-			match (max_fee_per_gas, max_priority_fee_per_gas, is_transactional) {
-				// Zero max_fee_per_gas for validated transactional calls exist in XCM -> EVM
-				// because fees are already withdrawn in the xcm-executor.
-				(Some(max_fee), _, true) if max_fee.is_zero() => (U256::zero(), U256::zero()),
-				// With no tip, we pay exactly the base_fee
-				(Some(_), None, _) => (base_fee, U256::zero()),
-				// With tip, we include as much of the tip on top of base_fee that we can, never
-				// exceeding max_fee_per_gas
-				(Some(max_fee_per_gas), Some(max_priority_fee_per_gas), _) => {
-					let actual_priority_fee_per_gas = max_fee_per_gas
-						.saturating_sub(base_fee)
-						.min(max_priority_fee_per_gas);
-					(
-						base_fee.saturating_add(actual_priority_fee_per_gas),
-						actual_priority_fee_per_gas,
-					)
-				}
-				// Gas price check is skipped for non-transactional calls that don't
-				// define a `max_fee_per_gas` input.
-				(None, _, false) => (Default::default(), U256::zero()),
-				// Unreachable, previously validated. Handle gracefully.
-				_ => {
-					return Err(RunnerError {
-						error: Error::<T>::GasPriceTooLow,
-						weight,
-					})
-				}
-			};
+		let custom_fee_info = stbl_tools::custom_fee::custom_info_from_fee_params(
+			base_fee,
+			max_fee_per_gas.unwrap(),
+			max_priority_fee_per_gas,
+		);
+
+		let total_fee_per_gas = custom_fee_info.max_fee_per_gas;
 
 		// After eip-1559 we make sure the account can pay both the evm execution and priority fees.
 		let total_fee =
@@ -187,12 +165,22 @@ where
 		let validator = <pallet_evm::Pallet<T>>::find_author();
 		let vault = FC::get_fee_vault();
 
-		let conversion_rate = FC::get_transaction_conversion_rate(source, validator, token);
+		let validator_conversion_rate =
+			FC::get_transaction_conversion_rate(source, validator, token);
+
+		let actual_conversion_rate =
+			if custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
+				validator_conversion_rate
+			} else {
+				custom_fee_info.max_conversion_rate.unwrap()
+			};
 
 		// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
-		FC::withdraw_fee(source, token, conversion_rate, total_fee).map_err(|_| RunnerError {
-			error: Error::<T>::FeeOverflow,
-			weight,
+		FC::withdraw_fee(source, token, actual_conversion_rate, total_fee).map_err(|_| {
+			RunnerError {
+				error: Error::<T>::FeeOverflow,
+				weight,
+			}
 		})?;
 
 		// Execute the EVM call.
@@ -224,20 +212,20 @@ where
 			is_transactional
 		);
 
-		FC::correct_fee(source, token, conversion_rate, total_fee, actual_fee).map_err(|_| {
-			RunnerError {
+		FC::correct_fee(source, token, actual_conversion_rate, total_fee, actual_fee).map_err(
+			|_| RunnerError {
 				error: Error::<T>::FeeOverflow,
 				weight,
-			}
-		})?;
+			},
+		)?;
 
 		let (validator_fee, dapp_fee) =
-			FC::pay_fees(token, conversion_rate, actual_fee, validator, dapp).map_err(|_| {
-				RunnerError {
+			FC::pay_fees(token, actual_conversion_rate, actual_fee, validator, dapp).map_err(
+				|_| RunnerError {
 					error: Error::<T>::FeeOverflow,
 					weight,
-				}
-			})?;
+				},
+			)?;
 
 		executor
 			.log(

@@ -50,6 +50,7 @@ use sp_version::RuntimeVersion;
 use stability_config::{MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use stbl_core_primitives::aura::Public as AuraId;
 use stbl_core_primitives::imonline::Public as ImOnlineId;
+use stbl_tools::custom_fee::CustomFeeInfo;
 use stbl_transaction_validator::FallbackTransactionValidator;
 // Substrate FRAME
 #[cfg(feature = "with-paritydb-weights")]
@@ -1204,8 +1205,15 @@ impl_runtime_apis! {
 
 				let source_address = source_address_option.unwrap();
 
-
 				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
+
+				let validator_conversion_rate = <pallet_validator_fee_selector::Pallet<Runtime>>::conversion_rate(source_address, validator.into(), source_fee_token);
+
+				let custom_fee_info = CustomFeeInfo::new(BaseFee::base_fee_per_gas(), &transaction);
+
+				if !custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
+					return false
+				}
 
 				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
 			} else if let RuntimeCall::MetaTransactions(send_sponsored_transaction { transaction, .. }) = tx.0.function {
@@ -1219,6 +1227,15 @@ impl_runtime_apis! {
 
 
 				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
+
+
+				let validator_conversion_rate = <pallet_validator_fee_selector::Pallet<Runtime>>::conversion_rate(source_address, validator.into(), source_fee_token);
+
+				let custom_fee_info = CustomFeeInfo::new(BaseFee::base_fee_per_gas(), &transaction);
+
+				if !custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
+					return false
+				}
 
 				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
 			}

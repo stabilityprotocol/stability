@@ -69,19 +69,26 @@ where
 
 		let (account, _) = pallet_evm::Pallet::<T>::account_basic(origin);
 
+		let base_fee = <T as pallet_evm::Config>::FeeCalculator::min_gas_price().0;
+
 		CheckEvmTransaction::<InvalidTransactionWrapper>::new(
 			CheckEvmTransactionConfig {
 				evm_config: <T as pallet_evm::Config>::config(),
 				block_gas_limit: <T as pallet_evm::Config>::BlockGasLimit::get(),
-				base_fee: <T as pallet_evm::Config>::FeeCalculator::min_gas_price().0,
+				base_fee: base_fee.clone(),
 				chain_id: <T as pallet_evm::Config>::ChainId::get(),
 				is_transactional: true,
 			},
 			transaction_data.clone().into(),
 		)
 		.validate_in_pool_for(&account)
-		.and_then(|v| v.with_base_fee())
 		.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Payment))?;
+
+		if gas_price < base_fee {
+			return Err(TransactionValidityError::Invalid(
+				InvalidTransaction::Payment,
+			));
+		}
 
 		ValidTransactionBuilder::default()
 			.and_provides((origin, transaction_data.nonce))
