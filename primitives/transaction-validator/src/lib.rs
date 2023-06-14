@@ -36,7 +36,7 @@ where
 			let base_fee = <T as pallet_evm::Config>::FeeCalculator::min_gas_price().0;
 
 			let gas_price = stbl_tools::eth::transaction_gas_price(base_fee, &transaction, true)
-				.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Custom(0)))?;
+				.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Payment))?;
 
 			let transaction_data: TransactionData = (transaction).into();
 			let total_transaction_price =
