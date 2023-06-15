@@ -72,6 +72,10 @@ pub mod pallet {
 	#[pallet::getter(fn validators_to_remove)]
 	pub type OfflineValidators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn pending_validators)]
+	pub type PendingValidators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -241,11 +245,6 @@ pub mod pallet {
 						return InvalidTransaction::BadMandatory.into();
 					}
 
-					// Check that the validator is not in the validator set.
-					if <Validators<T>>::get().contains(validator_id) {
-						return InvalidTransaction::BadMandatory.into();
-					}
-
 					// Check that the signature is valid. In last position because it's CPU expensive
 					let recovered_address =
 						Self::ensure_message_signature(validator_id.clone(), signature.clone());
@@ -289,11 +288,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn do_add_validator(validator_id: T::AccountId) -> DispatchResult {
+		// We dont check if the validator is already in the set, because maybe the validator
+		// is not in sync
 		ensure!(
-			!<Validators<T>>::get().contains(&validator_id),
+			!<PendingValidators<T>>::get().contains(&validator_id),
 			Error::<T>::Duplicate
 		);
-		<Validators<T>>::mutate(|v| v.push(validator_id.clone()));
+		<PendingValidators<T>>::mutate(|v| v.push(validator_id.clone()));
 
 		Self::deposit_event(Event::ValidatorAdditionInitiated(validator_id.clone()));
 		log::debug!(target: LOG_TARGET, "Validator addition initiated.");
@@ -375,6 +376,26 @@ impl<T: Config> Pallet<T> {
 			Err(_) => Err(()),
 		}
 	}
+
+	// Removes offline validators from the validator set and clears the offline
+	// cache. It is called in the session change hook and removes the validators
+	// who were reported offline during the session that is ending. We do not
+	// check for `MinAuthorities` here, because the offline validators will not
+	// produce blocks and will have the same overall effect on the runtime.
+	fn remove_offline_validators() {
+		let validators_to_remove: BTreeSet<_> = <OfflineValidators<T>>::get().into_iter().collect();
+
+		// Delete from active validator set.
+		<Validators<T>>::mutate(|vs| vs.retain(|v| !validators_to_remove.contains(v)));
+		log::debug!(
+			target: LOG_TARGET,
+			"Initiated removal of {:?} offline validators.",
+			validators_to_remove.len()
+		);
+
+		// Clear the offline validator list to avoid repeated deletion.
+		<OfflineValidators<T>>::put(Vec::<T::AccountId>::new());
+	}
 }
 
 // Provides the new set of validators to the session module when session is
@@ -384,33 +405,25 @@ impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
 	fn new_session(_new_index: u32) -> Option<Vec<T::AccountId>> {
 		// Remove any offline validators. This will only work when the runtime
 		// also has the im-online pallet.
-		let validators_to_remove: BTreeSet<_> = <OfflineValidators<T>>::get().into_iter().collect();
-
-		// Get new list of validators
-		let binding = Self::approved_validators();
-		let new_validators_list = binding
-			.iter()
-			.filter(|v| !validators_to_remove.contains(v))
-			.collect::<Vec<_>>();
-
-		// replace validators
-		<Validators<T>>::put(new_validators_list);
-
-		log::debug!(
-			target: LOG_TARGET,
-			"Initiated removal of {:?} offline validators.",
-			validators_to_remove.len()
-		);
-
-		// Clear the offline validator list to avoid repeated deletion.
-		<OfflineValidators<T>>::put(Vec::<T::AccountId>::new());
+		Self::remove_offline_validators();
 
 		log::debug!(
 			target: LOG_TARGET,
 			"New session called; updated validator set provided."
 		);
 
-		Some(Self::validators())
+		let mut new_validators = Self::validators().clone();
+		Self::pending_validators().into_iter().for_each(|v| {
+			if !new_validators.contains(&v) {
+				new_validators.push(v);
+			}
+		});
+		// Replace new list of validators
+		<Validators<T>>::put(new_validators.clone());
+		// Clear pending validators
+		<PendingValidators<T>>::put(Vec::<T::AccountId>::new());
+
+		Some(new_validators)
 	}
 
 	fn end_session(_end_index: u32) {}
@@ -454,7 +467,12 @@ impl<T: Config> ValidatorSet<T::AccountId> for Pallet<T> {
 	}
 
 	fn validators() -> Vec<Self::ValidatorId> {
-		pallet_session::Pallet::<T>::validators()
+		// It doesn't return the actual list the validators because this is gonna be consume by im_online
+		// and we want it to work over the full list of validators
+		<ApprovedValidators<T>>::get()
+			.iter()
+			.map(|v| T::ValidatorIdOf::convert(v.clone()).unwrap())
+			.collect::<Vec<Self::ValidatorId>>()
 	}
 }
 

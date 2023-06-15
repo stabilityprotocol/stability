@@ -35,7 +35,7 @@ pub async fn do_validator_available_again<A, TP>(
 	TP: sc_transaction_pool_api::TransactionPool<Block = Block> + 'static,
 {
 	{
-		info!("🥲 Starting KeepAlive");
+		info!("🏛️ Trying to adding back the validator to ValidatorSet");
 
 		let api = client.runtime_api();
 		let block_hash = BlockId::hash(client.info().best_hash);
@@ -48,16 +48,11 @@ pub async fn do_validator_available_again<A, TP>(
 		let signer = EthereumSigner::from(keys[0]);
 		let val_account_id = signer.into_account();
 
-		info!("🥲 Signer: {:?}", val_account_id.clone());
-		info!("🥲 KEys: {:?}", keys.len());
 		// Get message for the node validator account
 		let message = api
 			.generate_validator_message(&block_hash, val_account_id)
 			.unwrap();
-		info!("🥲 Message: {:?}", message.clone());
 		let encoded_message = stbl_tools::misc::kecckak256(&message);
-
-		info!("🥲 tengo sida");
 
 		let tmp_signature = SyncCryptoStore::ecdsa_sign_prehashed(
 			&*keystore,
@@ -66,22 +61,20 @@ pub async fn do_validator_available_again<A, TP>(
 			encoded_message.as_fixed_bytes(),
 		)
 		.unwrap();
-		info!("🥲 signature: {:?}", tmp_signature.clone());
 
 		let sig = tmp_signature.unwrap();
 		let extrinsic = api
 			.convert_add_validator_again_transaction(&block_hash, val_account_id, sig.0.into())
 			.unwrap();
 
-		info!("🥲 extrinsic {:?}", extrinsic.clone());
 		// Submit transaction
 		let _submitted_transaction = pool
 			.submit_one(&block_hash, TransactionSource::Local, extrinsic)
 			.map_ok(move |_| {
-				info!("🥲 Transaction submitted successfully");
+				info!("🏛️ Re-submitted validator on ValidatorSet");
 			})
 			.map_err(|e| {
-				info!("🥲🥲🥲 Error submitting transaction: {:?}", e);
+				info!("🏛️ Error adding back to ValidatorSet: {:?}", e);
 				ServiceError::Other("Error submitting transaction".into())
 			})
 			.await;
