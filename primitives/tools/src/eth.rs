@@ -1,4 +1,5 @@
 pub use ethereum::TransactionV2 as Transaction;
+use fp_ethereum::TransactionData;
 use sha3::Digest;
 use sp_core::U256;
 use sp_core::{Encode, H160, H256};
@@ -127,33 +128,19 @@ pub fn transaction_gas_price(
 	transaction: &Transaction,
 	is_transactional: bool,
 ) -> Result<U256, ()> {
-	let (max_fee_per_gas, max_priority_fee_per_gas) = {
-		match transaction {
-			Transaction::Legacy(t) => (Some(t.gas_price), Some(t.gas_price)),
-			Transaction::EIP2930(t) => (Some(t.gas_price), Some(t.gas_price)),
-			Transaction::EIP1559(t) => (Some(t.max_fee_per_gas), Some(t.max_priority_fee_per_gas)),
-		}
-	};
+	let data: TransactionData = transaction.into();
 
-	match (max_fee_per_gas, max_priority_fee_per_gas, is_transactional) {
-		// Zero max_fee_per_gas for validated transactional calls exist in XCM -> EVM
-		// because fees are already withdrawn in the xcm-executor.
-		(Some(max_fee), _, true) if max_fee.is_zero() => Ok(U256::zero()),
-		// With no tip, we pay exactly the base_fee
-		(Some(_), None, _) => Ok(base_fee.into()),
-		// With tip, we include as much of the tip on top of base_fee that we can, never
-		// exceeding max_fee_per_gas
-		(Some(max_fee_per_gas), Some(max_priority_fee_per_gas), _) => {
-			let actual_priority_fee_per_gas = max_fee_per_gas
-				.saturating_sub(base_fee.into())
-				.min(max_priority_fee_per_gas);
-			Ok(actual_priority_fee_per_gas.saturating_add(base_fee.into()))
-		}
-		// Gas price check is skipped for non-transactional calls that don't
-		// define a `max_fee_per_gas` input.
-		(None, _, false) => Ok(Default::default()),
-		// Unreachable, previously validated. Handle gracefully.
-		_ => Err(()),
+	let max_fee_per_gas = crate::custom_fee::custom_info_from_fee_params(
+		base_fee,
+		data.max_fee_per_gas.or(data.gas_price),
+		data.max_priority_fee_per_gas,
+	)
+	.max_fee_per_gas;
+
+	if max_fee_per_gas < base_fee && is_transactional {
+		return Err(());
+	} else {
+		Ok(max_fee_per_gas)
 	}
 }
 

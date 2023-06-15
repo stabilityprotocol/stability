@@ -109,8 +109,8 @@ pub struct TestShouldEndSession;
 impl ShouldEndSession<u64> for TestShouldEndSession {
 	fn should_end_session(now: u64) -> bool {
 		let l = SESSION_LENGTH.with(|l| *l.borrow());
-		now % l == 0 ||
-			FORCE_SESSION_END.with(|l| {
+		now % l == 0
+			|| FORCE_SESSION_END.with(|l| {
 				let r = *l.borrow();
 				*l.borrow_mut() = false;
 				r
@@ -123,9 +123,16 @@ pub fn authorities() -> Vec<UintAuthorityId> {
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-	let keys: Vec<_> = NEXT_VALIDATORS
-		.with(|l| l.borrow().iter().cloned().map(|i| (i, i, UintAuthorityId(i).into())).collect());
+	let mut t = frame_system::GenesisConfig::default()
+		.build_storage::<Test>()
+		.unwrap();
+	let keys: Vec<_> = NEXT_VALIDATORS.with(|l| {
+		l.borrow()
+			.iter()
+			.cloned()
+			.map(|i| (i, i, UintAuthorityId(i).into()))
+			.collect()
+	});
 	BasicExternalities::execute_with_storage(&mut t, || {
 		for (ref k, ..) in &keys {
 			frame_system::Pallet::<Test>::inc_providers(k);

@@ -8813,6 +8813,7 @@ name = "stbl-tools"
 version = "0.1.0"
 dependencies = [
  "ethereum",
+ "fp-ethereum",
  "hex",
  "pallet-evm",
  "sha3 0.10.8",
