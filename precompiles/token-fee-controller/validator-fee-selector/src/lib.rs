@@ -246,7 +246,6 @@ where
 	}
 
 	#[precompile::public("updateDefaultController(address)")]
-	#[precompile::view]
 	fn update_default_controller(
 		handle: &mut impl PrecompileHandle,
 		controller: Address,
@@ -264,6 +263,14 @@ where
 			|_| revert("ValidatorFeeTokenController: failed to update default controller"),
 		)?;
 		Ok(())
+	}
+
+	#[precompile::public("defaultController()")]
+	#[precompile::view]
+	fn default_controller(handle: &mut impl PrecompileHandle) -> EvmResult<Address> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		Ok(ValidatorFeeTokenController::conversion_rate_controller(H160::zero()).into())
 	}
 
 	#[precompile::public("owner()")]
