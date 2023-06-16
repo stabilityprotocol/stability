@@ -221,7 +221,6 @@ where
 	}
 
 	#[precompile::public("updateDefaultToken(address)")]
-	#[precompile::view]
 	fn update_default_token(handle: &mut impl PrecompileHandle, token: Address) -> EvmResult<()> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
@@ -234,6 +233,13 @@ where
 			.map_err(|_| revert("SupportedTokensManager: Target token is not supported"))?;
 
 		Ok(())
+	}
+
+	#[precompile::public("defaultToken()")]
+	fn default_token(handle: &mut impl PrecompileHandle) -> EvmResult<Address> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		Ok(SupportedTokensManager::get_default_token().into())
 	}
 
 	fn require_owner(handle: &mut impl PrecompileHandle, caller: H160) -> EvmResult<()> {

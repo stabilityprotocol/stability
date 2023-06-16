@@ -15,6 +15,10 @@ interface ValidatorFeeTokenSelector {
         uint256 denominator
     ) external;
 
+    function updateDefaultController(address tokenAddress) external;
+
+    function defaultController() external view returns (address);
+
     function tokenConversionRate(
         address validator,
         address tokenAddress
