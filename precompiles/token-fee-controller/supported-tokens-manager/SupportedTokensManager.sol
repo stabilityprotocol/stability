@@ -9,4 +9,8 @@ interface SupportedTokensManager {
     function isTokenSupported(address token) external view returns (bool);
 
     function removeToken(address token) external;
+
+    function updateDefaultToken(address token) external;
+
+    function defaultToken() external view returns (address);
 }
