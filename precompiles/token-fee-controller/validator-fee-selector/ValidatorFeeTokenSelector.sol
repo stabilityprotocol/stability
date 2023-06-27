@@ -14,7 +14,7 @@ interface ValidatorFeeTokenSelector {
     function updateDefaultController(address tokenAddress) external;
 
     // view functions
-    function conversionRateController() external view returns (address);
+    function conversionRateController(address validator) external view returns (address);
 
     function defaultController() external view returns (address);
 }
