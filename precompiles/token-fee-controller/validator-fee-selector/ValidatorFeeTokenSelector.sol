@@ -9,18 +9,12 @@ interface ValidatorFeeTokenSelector {
         address tokenAddress
     ) external view returns (bool);
 
-    function setTokenConversionRate(
-        address tokenAddress,
-        uint256 numerator,
-        uint256 denominator
-    ) external;
+    function updateConversionRateController(address controller) external;
 
     function updateDefaultController(address tokenAddress) external;
 
-    function defaultController() external view returns (address);
+    // view functions
+    function conversionRateController() external view returns (address);
 
-    function tokenConversionRate(
-        address validator,
-        address tokenAddress
-    ) external view returns (uint256, uint256);
+    function defaultController() external view returns (address);
 }
