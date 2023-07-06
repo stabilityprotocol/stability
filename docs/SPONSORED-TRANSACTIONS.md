@@ -35,9 +35,3 @@ For executing a sponsored transaction a new a Stability's RPC method has been cr
   - Sponsor address: Sponsor of the transaction
   - Sponsor signaure: Signature of the signing sponsored transaction message
 - It submits a transaction to the mempool as long as the transaction met all the prechecks
-
-`stability_getSponsorNonce`:
-
-- It receives one arguments:
-  - Sponsor address
-- It returns the count of sponsored transactions by the given address
