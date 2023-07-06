@@ -31,7 +31,6 @@ For executing a sponsored transaction a new a Stability's RPC method has been cr
 
 - It receives three arguments:
   - Raw signed transaction (same format as in eth_sendRawTransaction)
-  - Sponsor nonce: The count of sponsored transaction by the sponsor
   - Sponsor address: Sponsor of the transaction
   - Sponsor signaure: Signature of the signing sponsored transaction message
 - It submits a transaction to the mempool as long as the transaction met all the prechecks
