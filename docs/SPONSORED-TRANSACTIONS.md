@@ -6,22 +6,20 @@ Sponsored transactions is a new type of transaction in which a third-party pays 
 
 ## How they work?
 
-Sponsored transactions contains three key elements:
+Sponsored transactions contains two key elements:
 
 - Signed transaction: A standard user-signed EVM transaction that would demostrate Stability nodes that the user agreed to execute that transaction
-- Sponsor nonce: A incrementing counter that would make imposible to execute twice the same metatransaction.
 - Sponsored transaction signature: The sponsor needs to sign the message described below so this proof could be used in Stabiliy nodes.
 
 ### Sponsor signing message
 
 The message that the sponsor has to sign is the following
 
-`I consent to be a sponsor of transaction: ${TransactionHash} with nonce: ${Nonce}`
+`I consent to be a sponsor of transaction: ${TransactionHash}`
 
 Note:
 
 - `${TransactionHash}` is a `0x` prefixed hexadecimal string
-- `${Nonce}` is a decimal number
 
 ### API
 
