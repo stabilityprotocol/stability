@@ -22,5 +22,5 @@ fn ui() {
 
 #[test]
 fn expand() {
-	macrotest::expand_without_refresh("tests/precompile/expand/**/*.rs");
+	macrotest::expand("tests/precompile/expand/**/*.rs");
 }

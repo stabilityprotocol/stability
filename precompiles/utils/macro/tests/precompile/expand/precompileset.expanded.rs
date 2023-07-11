@@ -14,26 +14,32 @@ where
     /// PrecompileSet discrimiant. Allows to knows if the address maps to an asset id,
     /// and if this is the case which one.
     fn discriminant(address: H160) -> Option<Discriminant> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("discriminant")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("discriminant")),
+            );
+        }
     }
     fn total_supply(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<U256> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("total_supply")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("total_supply")),
+            );
+        }
     }
     fn balance_of(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
         who: Address,
     ) -> EvmResult<U256> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("balance_of")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("balance_of")),
+            );
+        }
     }
     fn allowance(
         asset_id: Discriminant,
@@ -41,9 +47,11 @@ where
         owner: Address,
         spender: Address,
     ) -> EvmResult<U256> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("allowance")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("allowance")),
+            );
+        }
     }
     fn approve(
         asset_id: Discriminant,
@@ -51,9 +59,11 @@ where
         spender: Address,
         value: U256,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("approve")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("approve")),
+            );
+        }
     }
     fn approve_inner(
         asset_id: Discriminant,
@@ -62,9 +72,11 @@ where
         spender: H160,
         value: U256,
     ) -> EvmResult {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("approve_inner")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("approve_inner")),
+            );
+        }
     }
     fn transfer(
         asset_id: Discriminant,
@@ -72,9 +84,11 @@ where
         to: Address,
         value: U256,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("transfer")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("transfer")),
+            );
+        }
     }
     fn transfer_from(
         asset_id: Discriminant,
@@ -83,33 +97,41 @@ where
         to: Address,
         value: U256,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("transfer_from")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("transfer_from")),
+            );
+        }
     }
     fn name(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<UnboundedBytes> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("name")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("name")),
+            );
+        }
     }
     fn symbol(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<UnboundedBytes> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("symbol")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("symbol")),
+            );
+        }
     }
     fn decimals(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<u8> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("decimals")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("decimals")),
+            );
+        }
     }
     fn mint(
         asset_id: Discriminant,
@@ -117,9 +139,11 @@ where
         to: Address,
         value: U256,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("mint")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("mint")),
+            );
+        }
     }
     fn burn(
         asset_id: Discriminant,
@@ -127,52 +151,66 @@ where
         from: Address,
         value: U256,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("burn")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("burn")),
+            );
+        }
     }
     fn freeze(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
         account: Address,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("freeze")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("freeze")),
+            );
+        }
     }
     fn thaw(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
         account: Address,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("thaw")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("thaw")),
+            );
+        }
     }
     fn freeze_asset(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("freeze_asset")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("freeze_asset")),
+            );
+        }
     }
     fn thaw_asset(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("thaw_asset")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("thaw_asset")),
+            );
+        }
     }
     fn transfer_ownership(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
         owner: Address,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("transfer_ownership")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!(
+                    "not yet implemented: {0}", format_args!("transfer_ownership"),
+                ),
+            );
+        }
     }
     fn set_team(
         asset_id: Discriminant,
@@ -181,9 +219,11 @@ where
         admin: Address,
         freezer: Address,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("set_team")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("set_team")),
+            );
+        }
     }
     fn set_metadata(
         asset_id: Discriminant,
@@ -192,17 +232,21 @@ where
         symbol: BoundedString<GetAssetsStringLimit<Runtime>>,
         decimals: u8,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("set_metadata")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("set_metadata")),
+            );
+        }
     }
     fn clear_metadata(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<bool> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("clear_metadata")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("clear_metadata")),
+            );
+        }
     }
     fn eip2612_permit(
         asset_id: Discriminant,
@@ -215,28 +259,34 @@ where
         r: H256,
         s: H256,
     ) -> EvmResult {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("eip2612_permit")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("eip2612_permit")),
+            );
+        }
     }
     fn eip2612_nonces(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
         owner: Address,
     ) -> EvmResult<U256> {
-        ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("eip2612_nonces")),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!("not yet implemented: {0}", format_args!("eip2612_nonces")),
+            );
+        }
     }
     fn eip2612_domain_separator(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<H256> {
-        ::core::panicking::panic_fmt(
-            format_args!(
-                "not yet implemented: {0}", format_args!("eip2612_domain_separator")
-            ),
-        )
+        {
+            ::core::panicking::panic_fmt(
+                format_args!(
+                    "not yet implemented: {0}", format_args!("eip2612_domain_separator"),
+                ),
+            );
+        }
     }
 }
 #[allow(non_camel_case_types)]
@@ -768,7 +818,7 @@ where
             Self::__phantom(_, _) => {
                 ::core::panicking::panic_fmt(
                     format_args!("__phantom variant should not be used"),
-                )
+                );
             }
         };
         Ok(PrecompileOutput {
@@ -1008,7 +1058,7 @@ where
             Self::__phantom(_, _) => {
                 ::core::panicking::panic_fmt(
                     format_args!("__phantom variant should not be used"),
-                )
+                );
             }
         }
     }
@@ -1061,7 +1111,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "allowance"
+                            "allowance",
                         ),
                     ),
                 );
@@ -1079,7 +1129,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "approve"
+                            "approve",
                         ),
                     ),
                 );
@@ -1097,7 +1147,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "balance_of"
+                            "balance_of",
                         ),
                     ),
                 );
@@ -1115,7 +1165,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "burn"
+                            "burn",
                         ),
                     ),
                 );
@@ -1133,7 +1183,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "clear_metadata"
+                            "clear_metadata",
                         ),
                     ),
                 );
@@ -1151,7 +1201,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "decimals"
+                            "decimals",
                         ),
                     ),
                 );
@@ -1169,7 +1219,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "eip2612_domain_separator"
+                            "eip2612_domain_separator",
                         ),
                     ),
                 );
@@ -1187,7 +1237,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "eip2612_nonces"
+                            "eip2612_nonces",
                         ),
                     ),
                 );
@@ -1208,7 +1258,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "eip2612_permit"
+                            "eip2612_permit",
                         ),
                     ),
                 );
@@ -1226,7 +1276,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "freeze"
+                            "freeze",
                         ),
                     ),
                 );
@@ -1244,7 +1294,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "freeze_asset"
+                            "freeze_asset",
                         ),
                     ),
                 );
@@ -1262,7 +1312,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "mint"
+                            "mint",
                         ),
                     ),
                 );
@@ -1280,7 +1330,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "name"
+                            "name",
                         ),
                     ),
                 );
@@ -1305,7 +1355,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "set_metadata"
+                            "set_metadata",
                         ),
                     ),
                 );
@@ -1326,7 +1376,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "set_team"
+                            "set_team",
                         ),
                     ),
                 );
@@ -1344,7 +1394,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "symbol"
+                            "symbol",
                         ),
                     ),
                 );
@@ -1362,7 +1412,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "thaw"
+                            "thaw",
                         ),
                     ),
                 );
@@ -1380,7 +1430,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "thaw_asset"
+                            "thaw_asset",
                         ),
                     ),
                 );
@@ -1398,7 +1448,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "total_supply"
+                            "total_supply",
                         ),
                     ),
                 );
@@ -1416,7 +1466,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "transfer"
+                            "transfer",
                         ),
                     ),
                 );
@@ -1437,7 +1487,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "transfer_from"
+                            "transfer_from",
                         ),
                     ),
                 );
@@ -1455,7 +1505,7 @@ where
                     ::core::option::Option::Some(
                         format_args!(
                             "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "transfer_ownership"
+                            "transfer_ownership",
                         ),
                     ),
                 );
