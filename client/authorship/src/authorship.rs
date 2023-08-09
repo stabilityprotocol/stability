@@ -78,6 +78,10 @@ pub struct ProposerFactory<A, B, C, PR> {
 
 	/// Reference to Keystore
 	keystore: SyncCryptoStorePtr,
+
+	/// HTTP URL of the private pool from which the node will retrieve zero-gas transactions
+	zero_gas_tx_pool: Option<String>,
+
 	/// Prometheus Link,
 	metrics: PrometheusMetrics,
 	/// The default block size limit.
@@ -110,6 +114,7 @@ impl<A, B, C> ProposerFactory<A, B, C, DisableProofRecording> {
 		client: Arc<C>,
 		transaction_pool: Arc<A>,
 		keystore: SyncCryptoStorePtr,
+		zero_gas_tx_pool: Option<String>,
 		prometheus: Option<&PrometheusRegistry>,
 		telemetry: Option<TelemetryHandle>,
 	) -> Self {
@@ -117,6 +122,7 @@ impl<A, B, C> ProposerFactory<A, B, C, DisableProofRecording> {
 			spawn_handle: Box::new(spawn_handle),
 			transaction_pool,
 			keystore,
+			zero_gas_tx_pool,
 			metrics: PrometheusMetrics::new(prometheus),
 			default_block_size_limit: DEFAULT_BLOCK_SIZE_LIMIT,
 			soft_deadline_percent: DEFAULT_SOFT_DEADLINE_PERCENT,
@@ -140,6 +146,7 @@ impl<A, B, C> ProposerFactory<A, B, C, EnableProofRecording> {
 		client: Arc<C>,
 		transaction_pool: Arc<A>,
 		keystore: SyncCryptoStorePtr,
+		zero_gas_tx_pool: Option<String>,
 		prometheus: Option<&PrometheusRegistry>,
 		telemetry: Option<TelemetryHandle>,
 	) -> Self {
@@ -148,6 +155,7 @@ impl<A, B, C> ProposerFactory<A, B, C, EnableProofRecording> {
 			spawn_handle: Box::new(spawn_handle),
 			transaction_pool,
 			keystore,
+			zero_gas_tx_pool,
 			metrics: PrometheusMetrics::new(prometheus),
 			default_block_size_limit: DEFAULT_BLOCK_SIZE_LIMIT,
 			soft_deadline_percent: DEFAULT_SOFT_DEADLINE_PERCENT,
@@ -227,6 +235,7 @@ where
 			parent_number: *parent_header.number(),
 			transaction_pool: self.transaction_pool.clone(),
 			keystore: self.keystore.clone(),
+			zero_gas_tx_pool: self.zero_gas_tx_pool.clone(),
 			now,
 			metrics: self.metrics.clone(),
 			default_block_size_limit: self.default_block_size_limit,
@@ -276,6 +285,7 @@ pub struct Proposer<B, Block: BlockT, C, A: TransactionPool, PR> {
 	parent_number: <<Block as BlockT>::Header as HeaderT>::Number,
 	transaction_pool: Arc<A>,
 	keystore: SyncCryptoStorePtr,
+	zero_gas_tx_pool: Option<String>,
 	now: Box<dyn Fn() -> time::Instant + Send + Sync>,
 	metrics: PrometheusMetrics,
 	default_block_size_limit: usize,
@@ -425,92 +435,95 @@ where
 
 		let block_size_limit = block_size_limit.unwrap_or(self.default_block_size_limit);
 
-		let raw_zero_gas_transactions =  reqwest::get("http://localhost:8080/txs").await.unwrap().json::<RawZeroGasTransactionResponse>().await.unwrap();
-
-		let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.into_iter();
-
 		
-		let end_reason = loop {
+		if let Some(zero_gas_tx_pool) = self.zero_gas_tx_pool {
+			let raw_zero_gas_transactions =  reqwest::get(zero_gas_tx_pool).await.unwrap().json::<RawZeroGasTransactionResponse>().await.unwrap();
+
+			let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.into_iter();
 	
-			let pending_hex_string_tx = if let Some(tx) = pending_raw_zero_gas_transactions.next() {
-				tx
-			} else {
-				break EndProposingReason::NoMoreTransactions;
-			};
-
-			let now = (self.now)();
-			if now > deadline {
-				debug!(
-					"Consensus deadline reached when pushing block transactions, \
-					proceeding with proposing."
-				);
-				break EndProposingReason::HitDeadline;
-			}
-
-			let pending_raw_tx = hex::decode(pending_hex_string_tx).unwrap();
-
-			let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
-
-			let pending_tx = self
-			.client
-			.runtime_api()
-			.convert_zero_gas_transaction(&self.parent_id, ethereum_transaction.clone()).unwrap();
-
-
-			let block_size =
-				block_builder.estimate_block_size(self.include_proof_in_block_size_estimation);
-			
-			if block_size + pending_tx.encoded_size() > block_size_limit {
-				if skipped < MAX_SKIPPED_TRANSACTIONS {
-					skipped += 1;
-					debug!(
-						"Transaction would overflow the block size limit, \
-						 but will try {} more transactions before quitting.",
-						MAX_SKIPPED_TRANSACTIONS - skipped,
-					);
-					continue;
-				} else if now < soft_deadline {
-					debug!(
-						"Transaction would overflow the block size limit, \
-						 but we still have time before the soft deadline, so \
-						 we will try a bit more."
-					);
-					continue;
+			loop {
+				let pending_hex_string_tx = if let Some(tx) = pending_raw_zero_gas_transactions.next() {
+					tx
 				} else {
-					debug!("Reached block size limit, proceeding with proposing.");
-					break EndProposingReason::HitBlockSizeLimit;
+					break EndProposingReason::NoMoreTransactions;
+				};
+	
+				let now = (self.now)();
+				if now > deadline {
+					debug!(
+						"Consensus deadline reached when pushing block transactions, \
+						proceeding with proposing."
+					);
+					break EndProposingReason::HitDeadline;
 				}
-			}
-
-			trace!("[{:?}] Pushing to the block.", ethereum_transaction.hash());
-			match sc_block_builder::BlockBuilder::push(&mut block_builder, pending_tx) {
-				Ok(()) => {
-					transaction_pushed = true;
-					debug!("[{:?}] Pushed to the block.", ethereum_transaction.hash());
-				}
-				Err(ApplyExtrinsicFailed(Validity(e))) if e.exhausted_resources() => {
+	
+				let pending_raw_tx = hex::decode(pending_hex_string_tx).unwrap();
+	
+				let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
+	
+				let pending_tx = self
+				.client
+				.runtime_api()
+				.convert_zero_gas_transaction(&self.parent_id, ethereum_transaction.clone()).unwrap();
+	
+	
+	
+				let block_size =
+					block_builder.estimate_block_size(self.include_proof_in_block_size_estimation);
+				
+				if block_size + pending_tx.encoded_size() > block_size_limit {
 					if skipped < MAX_SKIPPED_TRANSACTIONS {
 						skipped += 1;
 						debug!(
-							"Block seems full, but will try {} more transactions before quitting.",
+							"Transaction would overflow the block size limit, \
+							 but will try {} more transactions before quitting.",
 							MAX_SKIPPED_TRANSACTIONS - skipped,
 						);
-					} else if (self.now)() < soft_deadline {
+						continue;
+					} else if now < soft_deadline {
 						debug!(
-							"Block seems full, but we still have time before the soft deadline, \
-							 so we will try a bit more before quitting."
+							"Transaction would overflow the block size limit, \
+							 but we still have time before the soft deadline, so \
+							 we will try a bit more."
 						);
+						continue;
 					} else {
-						debug!("Reached block weight limit, proceeding with proposing.");
-						break EndProposingReason::HitBlockWeightLimit;
+						debug!("Reached block size limit, proceeding with proposing.");
+						break EndProposingReason::HitBlockSizeLimit;
 					}
 				}
-				Err(e) => {
-					debug!("[{:?}] Invalid transaction: {}", ethereum_transaction.hash(), e);
+	
+				trace!("[{:?}] Pushing to the block.", ethereum_transaction.hash());
+				match sc_block_builder::BlockBuilder::push(&mut block_builder, pending_tx) {
+					Ok(()) => {
+						transaction_pushed = true;
+						debug!("[{:?}] Pushed to the block.", ethereum_transaction.hash());
+					}
+					Err(ApplyExtrinsicFailed(Validity(e))) if e.exhausted_resources() => {
+						if skipped < MAX_SKIPPED_TRANSACTIONS {
+							skipped += 1;
+							debug!(
+								"Block seems full, but will try {} more transactions before quitting.",
+								MAX_SKIPPED_TRANSACTIONS - skipped,
+							);
+						} else if (self.now)() < soft_deadline {
+							debug!(
+								"Block seems full, but we still have time before the soft deadline, \
+								 so we will try a bit more before quitting."
+							);
+						} else {
+							debug!("Reached block weight limit, proceeding with proposing.");
+							break EndProposingReason::HitBlockWeightLimit;
+						}
+					}
+					Err(e) => {
+						debug!("[{:?}] Invalid transaction: {}", ethereum_transaction.hash(), e);
+					}
 				}
-			}
+			};
+		}
 
-		};
+
 
 		let mut t1 = self.transaction_pool.ready_at(self.parent_number).fuse();
 		let mut t2 =
