@@ -203,6 +203,22 @@ fn fail_add_token_if_already_added() {
 }
 
 #[test]
+fn fail_add_token_if_address_zero() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::add_token {
+					token: H160::zero().into(),
+					slot: H256::from_low_u64_be(0),
+				},
+			)
+			.execute_reverts(|x| x == b"SupportedTokensManager: Invalid address");
+	});
+}
+
+#[test]
 fn fail_remove_token_if_not_added() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
@@ -219,6 +235,21 @@ fn fail_remove_token_if_not_added() {
 				)
 			})
 	});
+}
+
+#[test]
+fn zero_address_should_not_be_included_never() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::is_token_supported {
+					token: sp_core::H160::zero().into(),
+				},
+			)
+			.execute_returns_encoded(false);
+	})
 }
 
 #[test]
@@ -308,6 +339,21 @@ fn fail_update_default_token() {
 			.execute_reverts(|x| {
 				x.eq_ignore_ascii_case(b"SupportedTokensManager: Caller is not the owner")
 			});
+	})
+}
+
+#[test]
+fn fail_update_default_token_to_zero() {
+	ExtBuilder::default().build().execute_with(|| {
+		precompiles()
+			.prepare_test(
+				DefaultOwner::get(),
+				Precompile1,
+				PCall::update_default_token {
+					token: H160::zero().into(),
+				},
+			)
+			.execute_reverts(|x| x == b"SupportedTokensManager: Invalid address");
 	})
 }
 

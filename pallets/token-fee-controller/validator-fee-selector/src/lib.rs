@@ -91,7 +91,7 @@ pub mod pallet {
 	impl Default for GenesisConfig {
 		fn default() -> Self {
 			Self {
-				initial_default_conversion_rate_controller: H160::from_str(
+				initial_default_conversion_rate_controller: <H160 as core::str::FromStr>::from_str(
 					"0x444212d6E4827893A70d19921E383130281Cda4a",
 				)
 				.expect("invalid address"),
