@@ -64,6 +64,10 @@ where
 	fn set_fee_token(handle: &mut impl PrecompileHandle, token_address: Address) -> EvmResult {
 		let msg_sender = handle.context().caller;
 
+		if token_address == H160::zero().into() {
+			return Err(revert(b"UserFeeTokenController: zero address is invalid"));
+		}
+
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		match UserFeeTokenController::set_user_fee_token(msg_sender.into(), token_address.into()) {
 			Err(_) => {
