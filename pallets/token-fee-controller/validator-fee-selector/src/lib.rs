@@ -13,7 +13,6 @@ mod tests;
 pub mod pallet {
 
 	use super::*;
-	use core::str::FromStr;
 
 	use frame_support::{
 		pallet_prelude::*,
