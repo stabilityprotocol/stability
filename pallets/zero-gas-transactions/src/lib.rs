@@ -12,6 +12,7 @@ pub use pallet::*;
 pub mod pallet {
 	use super::*;
 	use fp_ethereum::TransactionData;
+	use fp_evm::FeeCalculator;
 	use frame_support::dispatch::GetDispatchInfo;
 	use frame_support::pallet_prelude::{StorageMap, *};
 	use frame_support::sp_runtime::traits::UniqueSaturatedInto;
@@ -56,6 +57,9 @@ pub mod pallet {
 						})?;
 
 					let transaction_data: TransactionData = transaction.into();
+
+					Self::pool_ensure_transaction_unicity(&from, transaction)
+						.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Call))?;
 
 					return sp_runtime::transaction_validity::ValidTransactionBuilder::default()
 						.and_provides((from, transaction_data.nonce))
@@ -139,6 +143,33 @@ pub mod pallet {
 				None => Err(()),
 				Some(address) => Ok(address),
 			}
+		}
+
+		fn pool_ensure_transaction_unicity(
+			origin: &H160,
+			transaction: &pallet_ethereum::Transaction,
+		) -> Result<(), ()> {
+			let transaction_data: TransactionData = transaction.into();
+
+			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
+			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
+
+			fp_evm::CheckEvmTransaction::<pallet_ethereum::InvalidTransactionWrapper>::new(
+				fp_evm::CheckEvmTransactionConfig {
+					evm_config: T::config(),
+					block_gas_limit: T::BlockGasLimit::get(),
+					base_fee,
+					chain_id: T::ChainId::get(),
+					is_transactional: true,
+				},
+				transaction_data.into(),
+			)
+			.validate_in_pool_for(&who)
+			.and_then(|v| v.with_chain_id())
+			.and_then(|v| v.with_base_fee())
+			.map_err(|_| ())?;
+
+			Ok(())
 		}
 	}
 }
