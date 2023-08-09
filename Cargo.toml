@@ -17,6 +17,7 @@ members = [
     'precompiles/upgrade-runtime-controller',
     'primitives/tools',
     'primitives/fee-compatible-api',
+    'primitives/zero-gas-transactions-api',
     'primitives/stability-rpc-api',
     'pallets/erc20-manager',
     'pallets/dnt-fee-controller',
@@ -66,6 +67,7 @@ futures-timer = "3.0.1"
 log = "0.4.17"
 parking_lot = "0.12.1"
 array-bytes = "4.1"
+bytes = "1.0"
 async-trait = "0.1.57"
 cfg-if = "1.0"
 memory-db = { version = "0.31.0", default-features = false }
@@ -192,6 +194,7 @@ pallet-root-controller = { path = "./pallets/root-controller", default-features 
 pallet-dnt-fee-controller = { path = "./pallets/dnt-fee-controller", default-features = false }
 pallet-sponsored-transactions = { path = "./pallets/sponsored-transactions", default-features = false }
 stbl-primitives-fee-compatible-api = { path = "./primitives/fee-compatible-api", default-features = false }
+stbl-primitives-zero-gas-transactions-api = { path = "./primitives/zero-gas-transactions-api", default-features = false }
 pallet-erc20-manager = { path = "./pallets/erc20-manager", default-features = false }
 pallet-upgrade-runtime-proposal = { path = "./pallets/upgrade-runtime-proposal", default-features = false }
 stbl-tools = { path = "./primitives/tools", default-features = false }
@@ -220,3 +223,4 @@ sha3 = { version = "0.9", default-features = false }
 stability-rpc = { path = "./stability-rpc", default-features = false }
 stability-rpc-api = { path = "./primitives/stability-rpc-api", default-features = false }
 stbl-transaction-validator = { path = "./primitives/transaction-validator", default-features = false }
+reqwest = { version = "0.11", features = ["json"] }

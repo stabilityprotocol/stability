@@ -38,10 +38,11 @@ use sp_core::traits::SpawnNamed;
 use sp_inherents::InherentData;
 use sp_runtime::{
 	generic::BlockId,
-	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT, IdentifyAccount},
+	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT, IdentifyAccount, Extrinsic},
 	Digest, Percent, SaturatedConversion,
 };
 use stability_runtime::AccountId;
+use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 use std::{marker::PhantomData, pin::Pin, sync::Arc, time};
 
 use prometheus_endpoint::Registry as PrometheusRegistry;
@@ -60,6 +61,12 @@ use stbl_primitives_fee_compatible_api::CompatibleFeeApi;
 pub const DEFAULT_BLOCK_SIZE_LIMIT: usize = 4 * 1024 * 1024 + 512;
 
 const DEFAULT_SOFT_DEADLINE_PERCENT: Percent = Percent::from_percent(50);
+
+
+#[derive(serde::Deserialize)]
+pub struct RawZeroGasTransactionResponse {
+	transactions: Vec<String>,
+}
 
 /// [`Proposer`] factory.
 pub struct ProposerFactory<A, B, C, PR> {
@@ -246,7 +253,8 @@ where
 		+ 'static,
 	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
 		+ BlockBuilderApi<Block>
-		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>,
+		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
+		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>,
 	PR: ProofRecording,
 {
 	type CreateProposer = future::Ready<Result<Self::Proposer, Self::Error>>;
@@ -290,7 +298,8 @@ where
 		+ 'static,
 	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
 		+ BlockBuilderApi<Block>
-		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>,
+		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
+		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>,
 	PR: ProofRecording,
 {
 	type Transaction = backend::TransactionFor<B, Block>;
@@ -351,7 +360,8 @@ where
 		+ 'static,
 	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
 		+ BlockBuilderApi<Block>
-		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>,
+		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
+		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>,
 	PR: ProofRecording,
 {
 	async fn propose_with(
@@ -408,8 +418,99 @@ where
 		let soft_deadline =
 			now + time::Duration::from_micros(self.soft_deadline_percent.mul_floor(left_micros));
 		let block_timer = time::Instant::now();
+		let mut transaction_pushed = false;
 		let mut skipped = 0;
+
 		let mut unqueue_invalid = Vec::new();
+
+		let block_size_limit = block_size_limit.unwrap_or(self.default_block_size_limit);
+
+		let raw_zero_gas_transactions =  reqwest::get("http://localhost:8080/txs").await.unwrap().json::<RawZeroGasTransactionResponse>().await.unwrap();
+
+		let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.into_iter();
+
+		
+		let end_reason = loop {
+	
+			let pending_hex_string_tx = if let Some(tx) = pending_raw_zero_gas_transactions.next() {
+				tx
+			} else {
+				break EndProposingReason::NoMoreTransactions;
+			};
+
+			let now = (self.now)();
+			if now > deadline {
+				debug!(
+					"Consensus deadline reached when pushing block transactions, \
+					proceeding with proposing."
+				);
+				break EndProposingReason::HitDeadline;
+			}
+
+			let pending_raw_tx = hex::decode(pending_hex_string_tx).unwrap();
+
+			let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
+
+			let pending_tx = self
+			.client
+			.runtime_api()
+			.convert_zero_gas_transaction(&self.parent_id, ethereum_transaction.clone()).unwrap();
+
+
+			let block_size =
+				block_builder.estimate_block_size(self.include_proof_in_block_size_estimation);
+			
+			if block_size + pending_tx.encoded_size() > block_size_limit {
+				if skipped < MAX_SKIPPED_TRANSACTIONS {
+					skipped += 1;
+					debug!(
+						"Transaction would overflow the block size limit, \
+						 but will try {} more transactions before quitting.",
+						MAX_SKIPPED_TRANSACTIONS - skipped,
+					);
+					continue;
+				} else if now < soft_deadline {
+					debug!(
+						"Transaction would overflow the block size limit, \
+						 but we still have time before the soft deadline, so \
+						 we will try a bit more."
+					);
+					continue;
+				} else {
+					debug!("Reached block size limit, proceeding with proposing.");
+					break EndProposingReason::HitBlockSizeLimit;
+				}
+			}
+
+			trace!("[{:?}] Pushing to the block.", ethereum_transaction.hash());
+			match sc_block_builder::BlockBuilder::push(&mut block_builder, pending_tx) {
+				Ok(()) => {
+					transaction_pushed = true;
+					debug!("[{:?}] Pushed to the block.", ethereum_transaction.hash());
+				}
+				Err(ApplyExtrinsicFailed(Validity(e))) if e.exhausted_resources() => {
+					if skipped < MAX_SKIPPED_TRANSACTIONS {
+						skipped += 1;
+						debug!(
+							"Block seems full, but will try {} more transactions before quitting.",
+							MAX_SKIPPED_TRANSACTIONS - skipped,
+						);
+					} else if (self.now)() < soft_deadline {
+						debug!(
+							"Block seems full, but we still have time before the soft deadline, \
+							 so we will try a bit more before quitting."
+						);
+					} else {
+						debug!("Reached block weight limit, proceeding with proposing.");
+						break EndProposingReason::HitBlockWeightLimit;
+					}
+				}
+				Err(e) => {
+					debug!("[{:?}] Invalid transaction: {}", ethereum_transaction.hash(), e);
+				}
+			}
+
+		};
 
 		let mut t1 = self.transaction_pool.ready_at(self.parent_number).fuse();
 		let mut t2 =
@@ -427,7 +528,6 @@ where
 			},
 		};
 
-		let block_size_limit = block_size_limit.unwrap_or(self.default_block_size_limit);
 
 		let keys = SyncCryptoStore::ecdsa_public_keys(
 			&*self.keystore,
@@ -438,10 +538,10 @@ where
 
 		debug!("Attempting to push transactions from the pool.");
 		debug!("Pool status: {:?}", self.transaction_pool.status());
-		let mut transaction_pushed = false;
 
 		let end_reason = loop {
-			let pending_tx = if let Some(pending_tx) = pending_iterator.next() {
+
+			let pending_tx = if let Some(pending_tx) = pending_iterator.next()  {
 				pending_tx
 			} else {
 				break EndProposingReason::NoMoreTransactions;
@@ -537,6 +637,7 @@ where
 			}
 		};
 
+		
 		if matches!(end_reason, EndProposingReason::HitBlockSizeLimit) && !transaction_pushed {
 			warn!(
 				"Hit block size limit of `{}` without including any transaction!",

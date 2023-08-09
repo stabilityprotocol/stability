@@ -1268,6 +1268,15 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block> for Runtime {
+		fn convert_zero_gas_transaction(transaction: EthereumTransaction) -> <Block as BlockT>::Extrinsic {
+			UncheckedExtrinsic::new_unsigned(
+				pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
+			)
+		}
+		
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (

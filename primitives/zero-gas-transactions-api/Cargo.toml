@@ -1,5 +1,5 @@
 [package]
-name = "stbl-primitives-zero-gas-transactionss-api"
+name = "stbl-primitives-zero-gas-transactions-api"
 version = "1.0.0"
 edition = "2021"
 

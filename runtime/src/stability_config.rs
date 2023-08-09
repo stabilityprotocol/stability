@@ -2,7 +2,7 @@ use frame_support::weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight};
 use sp_runtime::{Perbill, Permill};
 
 // Block time
-pub const MILLISECS_PER_BLOCK: u64 = 2000;
+pub const MILLISECS_PER_BLOCK: u64 = 10000;
 
 pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 

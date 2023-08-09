@@ -151,6 +151,7 @@ precompile-validator-controller = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true }
+stbl-primitives-zero-gas-transactions-api = { workspace = true }
 pallet-erc20-manager = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
 precompile-supported-tokens-manager = { workspace = true }
