@@ -138,6 +138,7 @@ pallet-evm-precompile-sha3fips = { workspace = true }
 pallet-evm-precompile-simple = { workspace = true }
 pallet-hotfix-sufficients = { workspace = true }
 pallet-sponsored-transactions = { workspace = true }
+pallet-zero-gas-transactions = { workspace = true }
 # Stability
 pallet-evm-precompile-blake2 = { workspace = true }
 pallet-evm-precompile-bn128 = { workspace = true }
@@ -165,3 +166,4 @@ stbl-transaction-validator = { workspace = true }
 stbl-core-primitives = { workspace = true }
 account = { workspace = true }
 stability-rpc-api = { workspace = true }
+stbl-primitives-zero-gas-transactionss-api = { workspace = true }

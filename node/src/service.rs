@@ -14,6 +14,7 @@ use sp_api::{ConstructRuntimeApi, TransactionFor};
 use sp_core::U256;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
+use stbl_primitives_zero_gas_transactionss_api::ZeroGasTransactionApi;
 // Runtime
 use sc_service::KeystoreContainer;
 use stability_runtime::{opaque::Block, Hash, TransactionConverter};
@@ -263,7 +264,8 @@ where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
 	RuntimeApi: Send + Sync + 'static,
 	RuntimeApi::RuntimeApi: RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>
-		+ stability_rpc::StabilityRpcRuntimeApi<Block>,
+		+ stability_rpc::StabilityRpcRuntimeApi<Block>
+		+ ZeroGasTransactionApi<Block>,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	let build_import_queue = if sealing.is_some() {

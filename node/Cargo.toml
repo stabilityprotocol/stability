@@ -86,6 +86,7 @@ account = { workspace = true, features = ["std"] }
 stbl-core-primitives = { workspace = true, features = ["std"] }
 stability-rpc = { workspace = true }
 stbl-tools = { workspace = true }
+stbl-primitives-zero-gas-transactionss-api = { workspace = true, default-features = false}
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }

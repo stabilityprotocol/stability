@@ -5007,6 +5007,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-zero-gas-transactions"
+version = "0.1.0"
+dependencies = [
+ "ethereum",
+ "ethereum-types",
+ "fp-ethereum",
+ "fp-evm",
+ "fp-rpc",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "pallet-balances",
+ "pallet-erc20-manager",
+ "pallet-ethereum",
+ "pallet-evm",
+ "pallet-evm-chain-id",
+ "pallet-fee-rewards-vault",
+ "pallet-supported-tokens-manager",
+ "pallet-timestamp",
+ "pallet-user-fee-selector",
+ "pallet-validator-fee-selector",
+ "parity-scale-codec",
+ "runner",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "stbl-tools",
+]
+
+[[package]]
 name = "parity-db"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8484,6 +8516,7 @@ dependencies = [
  "stbl-cli-authorship",
  "stbl-core-primitives",
  "stbl-primitives-fee-compatible-api",
+ "stbl-primitives-zero-gas-transactionss-api",
  "stbl-tools",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
@@ -8516,6 +8549,7 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "stability-rpc-api",
+ "stbl-primitives-zero-gas-transactionss-api",
  "substrate-test-runtime-client",
  "tokio",
 ]
@@ -8578,6 +8612,7 @@ dependencies = [
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
  "pallet-validator-set",
+ "pallet-zero-gas-transactions",
  "parity-scale-codec",
  "precompile-fee-rewards-vault-controller",
  "precompile-fee-token-selector",
@@ -8605,6 +8640,7 @@ dependencies = [
  "stability-rpc-api",
  "stbl-core-primitives",
  "stbl-primitives-fee-compatible-api",
+ "stbl-primitives-zero-gas-transactionss-api",
  "stbl-tools",
  "stbl-transaction-validator",
  "substrate-wasm-builder",
@@ -8803,6 +8839,16 @@ dependencies = [
 name = "stbl-primitives-fee-compatible-api"
 version = "1.0.0"
 dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-runtime",
+]
+
+[[package]]
+name = "stbl-primitives-zero-gas-transactionss-api"
+version = "1.0.0"
+dependencies = [
+ "fp-ethereum",
  "parity-scale-codec",
  "sp-api",
  "sp-runtime",

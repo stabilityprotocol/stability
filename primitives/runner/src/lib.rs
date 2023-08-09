@@ -162,6 +162,9 @@ where
 				})?;
 
 		let token = FC::get_transaction_fee_token(source);
+
+		let is_zero_gas_transaction: bool = token == H160::zero();
+
 		let validator = <pallet_evm::Pallet<T>>::find_author();
 		let vault = FC::get_fee_vault();
 
@@ -175,13 +178,15 @@ where
 				custom_fee_info.max_conversion_rate.unwrap()
 			};
 
-		// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
-		FC::withdraw_fee(source, token, actual_conversion_rate, total_fee).map_err(|_| {
-			RunnerError {
-				error: Error::<T>::FeeOverflow,
-				weight,
-			}
-		})?;
+		if !is_zero_gas_transaction {
+			// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
+			FC::withdraw_fee(source, token, actual_conversion_rate, total_fee).map_err(|_| {
+				RunnerError {
+					error: Error::<T>::FeeOverflow,
+					weight,
+				}
+			})?;
+		}
 
 		// Execute the EVM call.
 		let vicinity = Vicinity {
@@ -212,41 +217,43 @@ where
 			is_transactional
 		);
 
-		FC::correct_fee(source, token, actual_conversion_rate, total_fee, actual_fee).map_err(
-			|_| RunnerError {
-				error: Error::<T>::FeeOverflow,
-				weight,
-			},
-		)?;
-
-		let (validator_fee, dapp_fee) =
-			FC::pay_fees(token, actual_conversion_rate, actual_fee, validator, dapp).map_err(
+		if !is_zero_gas_transaction {
+			FC::correct_fee(source, token, actual_conversion_rate, total_fee, actual_fee).map_err(
 				|_| RunnerError {
 					error: Error::<T>::FeeOverflow,
 					weight,
 				},
 			)?;
 
-		executor
-			.log(
-				vault,
-				sp_std::vec![TRANSACTION_FEE_TOPIC.into()],
-				stbl_tools::eth::args_to_bytes(sp_std::vec![
-					token.into(),
-					stbl_tools::misc::u256_to_h256(validator_fee + dapp_fee),
-					validator.into(),
-					stbl_tools::misc::u256_to_h256(validator_fee),
-					match dapp {
-						None => H160::zero().into(),
-						Some(dapp) => dapp.into(),
+			let (validator_fee, dapp_fee) =
+				FC::pay_fees(token, actual_conversion_rate, actual_fee, validator, dapp).map_err(
+					|_| RunnerError {
+						error: Error::<T>::FeeOverflow,
+						weight,
 					},
-					stbl_tools::misc::u256_to_h256(dapp_fee),
-				]),
-			)
-			.map_err(|_| RunnerError {
-				error: Error::<T>::FeeOverflow,
-				weight,
-			})?;
+				)?;
+
+			executor
+				.log(
+					vault,
+					sp_std::vec![TRANSACTION_FEE_TOPIC.into()],
+					stbl_tools::eth::args_to_bytes(sp_std::vec![
+						token.into(),
+						stbl_tools::misc::u256_to_h256(validator_fee + dapp_fee),
+						validator.into(),
+						stbl_tools::misc::u256_to_h256(validator_fee),
+						match dapp {
+							None => H160::zero().into(),
+							Some(dapp) => dapp.into(),
+						},
+						stbl_tools::misc::u256_to_h256(dapp_fee),
+					]),
+				)
+				.map_err(|_| RunnerError {
+					error: Error::<T>::FeeOverflow,
+					weight,
+				})?;
+		}
 
 		let state = executor.into_state();
 
