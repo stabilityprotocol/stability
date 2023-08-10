@@ -160,6 +160,10 @@ where
 
 		Self::require_owner(handle, msg_sender)?;
 
+		if token == H160::zero().into() {
+			return Err(revert("SupportedTokensManager: Invalid address"));
+		}
+
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		match SupportedTokensManager::add_supported_token(token.into(), slot) {
 			Ok(_) => {
@@ -225,6 +229,10 @@ where
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 
 		let msg_sender = handle.context().caller;
+
+		if token == H160::zero().into() {
+			return Err(revert("SupportedTokensManager: Invalid address"));
+		}
 
 		Self::require_owner(handle, msg_sender)
 			.map_err(|_| revert("SupportedTokensManager: Caller is not the owner"))?;

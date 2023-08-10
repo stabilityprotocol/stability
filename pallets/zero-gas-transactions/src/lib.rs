@@ -100,18 +100,10 @@ pub mod pallet {
 			let from = Self::ensure_transaction_signature(transaction.clone())
 				.map_err(|_| DispatchError::Other("Invalid transaction signature"))?;
 
-			let user_fee_token = T::UserFeeTokenController::get_user_fee_token(from);
-
-			T::UserFeeTokenController::set_user_fee_token(from, H160::zero())
-				.map_err(|_| DispatchError::Other("Error updating user fee token"))?;
-
 			let origin: T::RuntimeOrigin =
 				pallet_ethereum::Origin::EthereumTransaction(from).into();
 			let dispatch = pallet_ethereum::Pallet::<T>::transact(origin, transaction)
 				.map_err(|_| DispatchError::Other("Signature doesn't meet with sponsor address"))?;
-
-			T::UserFeeTokenController::set_user_fee_token(from, user_fee_token)
-				.map_err(|_| DispatchError::Other("Error updating user fee token"))?;
 
 			let used_gas = Self::gas_from_actual_weight(dispatch.actual_weight.unwrap());
 
@@ -166,7 +158,6 @@ pub mod pallet {
 			)
 			.validate_in_pool_for(&who)
 			.and_then(|v| v.with_chain_id())
-			.and_then(|v| v.with_base_fee())
 			.map_err(|_| ())?;
 
 			Ok(())

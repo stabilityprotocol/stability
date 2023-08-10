@@ -163,7 +163,7 @@ where
 
 		let token = FC::get_transaction_fee_token(source);
 
-		let is_zero_gas_transaction: bool = token == H160::zero();
+		let is_zero_gas_transaction: bool = total_fee_per_gas == U256::zero();
 
 		let validator = <pallet_evm::Pallet<T>>::find_author();
 		let vault = FC::get_fee_vault();
