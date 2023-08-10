@@ -822,6 +822,7 @@ mod tests {
 			keystore_container.sync_keystore(),
 			None,
 			None,
+			None,
 		);
 
 		let cell = Mutex::new((false, time::Instant::now()));
@@ -882,6 +883,7 @@ mod tests {
 			client.clone(),
 			txpool.clone(),
 			keystore_container.sync_keystore(),
+			None,
 			None,
 			None,
 		);
@@ -950,6 +952,7 @@ mod tests {
 			client.clone(),
 			txpool.clone(),
 			keystore_container.sync_keystore(),
+			None,
 			None,
 			None,
 		);
@@ -1036,6 +1039,7 @@ mod tests {
 			client.clone(),
 			txpool.clone(),
 			keystore_container.sync_keystore(),
+			None,
 			None,
 			None,
 		);
@@ -1152,6 +1156,7 @@ mod tests {
 			keystore_container.sync_keystore(),
 			None,
 			None,
+			None,
 		);
 
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
@@ -1185,6 +1190,7 @@ mod tests {
 			client.clone(),
 			txpool.clone(),
 			keystore_container.sync_keystore(),
+			None,
 			None,
 			None,
 		);
@@ -1262,6 +1268,7 @@ mod tests {
 			client.clone(),
 			txpool.clone(),
 			keystore_container.sync_keystore(),
+			None,
 			None,
 			None,
 		);
@@ -1348,6 +1355,7 @@ mod tests {
 			keystore_container.sync_keystore(),
 			None,
 			None,
+			None,
 		);
 
 		let deadline = time::Duration::from_secs(600);
@@ -1425,6 +1433,7 @@ mod tests {
 			keystore_container.sync_keystore(),
 			None,
 			None,
+			None,
 		);
 
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
@@ -1474,6 +1483,7 @@ mod tests {
 			client.clone(),
 			txpool.clone(),
 			keystore_container.sync_keystore(),
+			None,
 			None,
 			None,
 		);
