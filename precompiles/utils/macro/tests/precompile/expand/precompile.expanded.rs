@@ -12,7 +12,14 @@ where
 {
     fn pre_check(handle: &mut impl PrecompileHandle) -> EvmResult {
         ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("pre_check")),
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["pre_check"], &[]),
+                    ),
+                ],
+            ),
         )
     }
     fn batch_some(
@@ -23,7 +30,14 @@ where
         gas_limit: BoundedVec<u64, GetArrayLimit>,
     ) -> EvmResult {
         ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("batch_some")),
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["batch_some"], &[]),
+                    ),
+                ],
+            ),
         )
     }
     fn batch_some_until_failure(
@@ -34,8 +48,16 @@ where
         gas_limit: BoundedVec<u64, GetArrayLimit>,
     ) -> EvmResult {
         ::core::panicking::panic_fmt(
-            format_args!(
-                "not yet implemented: {0}", format_args!("batch_some_until_failure")
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(
+                            &["batch_some_until_failure"],
+                            &[],
+                        ),
+                    ),
+                ],
             ),
         )
     }
@@ -47,12 +69,26 @@ where
         gas_limit: BoundedVec<u64, GetArrayLimit>,
     ) -> EvmResult {
         ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("batch_all")),
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["batch_all"], &[]),
+                    ),
+                ],
+            ),
         )
     }
     fn fallback(handle: &mut impl PrecompileHandle) -> EvmResult {
         ::core::panicking::panic_fmt(
-            format_args!("not yet implemented: {0}", format_args!("fallback")),
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["fallback"], &[]),
+                    ),
+                ],
+            ),
         )
     }
 }
@@ -198,7 +234,10 @@ where
             }
             Self::__phantom(_, _) => {
                 ::core::panicking::panic_fmt(
-                    format_args!("__phantom variant should not be used"),
+                    ::core::fmt::Arguments::new_v1(
+                        &["__phantom variant should not be used"],
+                        &[],
+                    ),
                 )
             }
         };
@@ -260,7 +299,10 @@ where
             Self::fallback {} => Default::default(),
             Self::__phantom(_, _) => {
                 ::core::panicking::panic_fmt(
-                    format_args!("__phantom variant should not be used"),
+                    ::core::fmt::Arguments::new_v1(
+                        &["__phantom variant should not be used"],
+                        &[],
+                    ),
                 )
             }
         }
@@ -305,9 +347,12 @@ pub(crate) fn __BatchPrecompile_test_solidity_signatures_inner() {
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "batch_all"
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"batch_all")],
                         ),
                     ),
                 );
@@ -331,9 +376,12 @@ pub(crate) fn __BatchPrecompile_test_solidity_signatures_inner() {
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "batch_some"
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"batch_some")],
                         ),
                     ),
                 );
@@ -357,9 +405,16 @@ pub(crate) fn __BatchPrecompile_test_solidity_signatures_inner() {
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "batch_some_until_failure"
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[
+                                ::core::fmt::ArgumentV1::new_display(
+                                    &"batch_some_until_failure",
+                                ),
+                            ],
                         ),
                     ),
                 );
@@ -375,9 +430,12 @@ pub(crate) fn __BatchPrecompile_test_solidity_signatures_inner() {
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "fallback"
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"fallback")],
                         ),
                     ),
                 );

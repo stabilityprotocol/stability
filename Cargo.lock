@@ -8865,7 +8865,9 @@ dependencies = [
  "log",
  "memory-db",
  "pallet-babe",
+ "pallet-ethereum",
  "pallet-timestamp",
+ "pallet-zero-gas-transactions",
  "parity-scale-codec",
  "sc-block-builder",
  "sc-executor",
@@ -8897,6 +8899,7 @@ dependencies = [
  "stability-test-runtime-client",
  "stbl-core-primitives",
  "stbl-primitives-fee-compatible-api",
+ "stbl-primitives-zero-gas-transactions-api",
  "substrate-wasm-builder",
  "trie-db",
 ]

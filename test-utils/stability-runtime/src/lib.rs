@@ -34,7 +34,7 @@ use sp_trie::{
 	PrefixedMemoryDB, StorageProof,
 };
 use trie_db::{Trie, TrieMut};
-
+use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use cfg_if::cfg_if;
 use frame_support::{
 	dispatch::RawOrigin,
@@ -1032,6 +1032,12 @@ cfg_if! {
 					true
 				}
 			}
+
+			impl stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block> for Runtime {
+				fn convert_zero_gas_transaction(transaction: EthereumTransaction) -> <Block as BlockT>::Extrinsic {
+					return Extrinsic::Skipped(0);
+				}
+			}
 		}
 	} else {
 		impl_runtime_apis! {
@@ -1274,6 +1280,12 @@ cfg_if! {
 						return false;
 					}
 					true
+				}
+			}
+
+			impl stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block> for Runtime {
+				fn convert_zero_gas_transaction(transaction: EthereumTransaction) -> <Block as BlockT>::Extrinsic {
+					return Extrinsic::Skipped(0);
 				}
 			}
 		}

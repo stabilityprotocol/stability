@@ -19,8 +19,6 @@ sp_api::mock_impl_runtime_apis! {
 	}
 
 	impl fp_rpc::EthereumRuntimeRPCApi<Block> for TestRuntimeApi {}
-
-	impl stbl_primitives_zero_gas_transactionss_api::ZeroGasTransactionApi<Block> for TestRuntimeApi {}
 }
 
 #[tokio::test]
