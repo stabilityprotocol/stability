@@ -38,7 +38,7 @@ use sp_core::traits::SpawnNamed;
 use sp_inherents::InherentData;
 use sp_runtime::{
 	generic::BlockId,
-	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT, IdentifyAccount, Extrinsic},
+	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT, IdentifyAccount},
 	Digest, Percent, SaturatedConversion,
 };
 use stability_runtime::AccountId;
@@ -501,14 +501,24 @@ where
 					break EndProposingReason::HitDeadline;
 				}
 	
-				let pending_raw_tx = hex::decode(pending_hex_string_tx).unwrap();
+				let pending_raw_tx = if let Ok(pending_raw_tx) = hex::decode(pending_hex_string_tx) {
+					pending_raw_tx
+				}
+				else {
+					continue;
+				};
 	
 				let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
 	
-				let pending_tx = self
+				let pending_tx =  if let Ok(pending_tx) = self
 				.client
 				.runtime_api()
-				.convert_zero_gas_transaction(&self.parent_id, ethereum_transaction.clone()).unwrap();
+				.convert_zero_gas_transaction(&self.parent_id, ethereum_transaction.clone()) {
+					pending_tx
+				}
+				else {
+					continue;
+				};
 	
 	
 	
