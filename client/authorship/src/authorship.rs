@@ -426,20 +426,64 @@ where
 		let left = deadline.saturating_duration_since(now);
 		let left_micros: u64 = left.as_micros().saturated_into();
 		let soft_deadline =
-			now + time::Duration::from_micros(self.soft_deadline_percent.mul_floor(left_micros));
+		now + time::Duration::from_micros(self.soft_deadline_percent.mul_floor(left_micros));
 		let block_timer = time::Instant::now();
 		let mut transaction_pushed = false;
 		let mut skipped = 0;
-
-		let mut unqueue_invalid = Vec::new();
-
 		let block_size_limit = block_size_limit.unwrap_or(self.default_block_size_limit);
 
-		
-		if let Some(zero_gas_tx_pool) = self.zero_gas_tx_pool {
-			let raw_zero_gas_transactions =  reqwest::get(zero_gas_tx_pool).await.unwrap().json::<RawZeroGasTransactionResponse>().await.unwrap();
 
-			let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.into_iter();
+		// First we try to push transactions from the zero gas transaction pool
+
+		let raw_zero_gas_transactions_option = if let Some(zero_gas_tx_pool) = self.zero_gas_tx_pool {
+
+			let mut request = Box::pin(reqwest::get(zero_gas_tx_pool).fuse());
+			let mut timeout = Box::pin(futures_timer::Delay::new(std::time::Duration::from_millis(100)).fuse());
+			
+
+			let result_response_raw_zero = select! {
+				res = request => {
+					match res {
+						Ok(response) => Ok(response),
+						Err(e) => {
+							error!("Error getting response from zero gas transaction pool: {}", e);
+							Err("Error getting response from zero gas transaction pool")
+						}
+					}
+				},
+				_ = timeout => {
+					error!(
+						"Timeout fired waiting for get transaction from zero gas transaction pool"
+					);
+					Err("Timeout fired waiting for get transaction from zero gas transaction pool")
+				},
+			};
+			
+			match result_response_raw_zero {
+				Ok(response) => {
+					match response.json::<RawZeroGasTransactionResponse>().await {
+						Ok(json) => Some(json),
+						Err(e) => {
+							error!("Error parsing JSON response from zero gas transaction pool: {}", e);
+							None
+						}
+					}
+				},
+				Err(e) => {
+					error!("Error getting response from zero gas transaction pool: {}", e);
+					None
+				}
+			}
+		} else {
+			None
+		};
+		
+
+		
+		// If we pull successfully from the zero gas transaction pool, we will try to push them to the block
+
+		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option {
+				let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.into_iter();
 	
 			loop {
 				let pending_hex_string_tx = if let Some(tx) = pending_raw_zero_gas_transactions.next() {
@@ -523,8 +567,7 @@ where
 			};
 		}
 
-
-
+		let mut unqueue_invalid = Vec::new();
 		let mut t1 = self.transaction_pool.ready_at(self.parent_number).fuse();
 		let mut t2 =
 			futures_timer::Delay::new(deadline.saturating_duration_since((self.now)()) / 8).fuse();
