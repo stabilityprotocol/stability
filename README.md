@@ -3,7 +3,7 @@
 Implementation of Stability blockchain in Substrate + Rust, a scalability solution for accessing the gas market.
 
 - ⛓️ Read more about [Stability Protocol](https://stabilityprotocol.com)
-- 📖 Find more resources in our [Documentation](https://stability-protocol.readme.io/)
+- 📖 Find more resources in our [Documentation](https://stability.readme.io/docs)
 - 🐦 Follow us in [Twitter](https://twitter.com/stabilityinc)
 
 ## Build & Run
