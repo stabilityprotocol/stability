@@ -31,6 +31,7 @@ sp-keyring = { workspace = true }
 sp-runtime = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true, features = ["std"] }
 stbl-primitives-zero-gas-transactions-api = { workspace = true, features = ["std"] }
+stbl-tools = { workspace = true }
 ethereum = { workspace = true }
 sp-keystore = { workspace = true }
 stability-runtime = { path = "./../../runtime", features = ["std"] }

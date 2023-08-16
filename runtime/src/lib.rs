@@ -1132,9 +1132,9 @@ impl_runtime_apis! {
 	}
 
 	impl stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block> for Runtime {
-		fn convert_zero_gas_transaction(transaction: EthereumTransaction) -> <Block as BlockT>::Extrinsic {
+		fn convert_zero_gas_transaction(transaction: EthereumTransaction, validator_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
 			UncheckedExtrinsic::new_unsigned(
-				pallet_zero_gas_transactions::Call::<Runtime>::send_zero_gas_transaction { transaction }.into(),
+				pallet_zero_gas_transactions::Call::<Runtime>::send_zero_gas_transaction { transaction, validator_signature }.into(),
 			)
 		}
 	}

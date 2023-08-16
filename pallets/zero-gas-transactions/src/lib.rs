@@ -21,6 +21,8 @@ pub mod pallet {
 	use pallet_user_fee_selector::UserFeeTokenController;
 	use sp_core::U256;
 	use sp_std::vec;
+	use sp_core::{H256};
+	use sp_std::{vec::Vec};
 
 	pub use fp_rpc::TransactionStatus;
 
@@ -50,9 +52,19 @@ pub mod pallet {
 
 		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
 			match call {
-				Call::send_zero_gas_transaction { transaction } => {
+				Call::send_zero_gas_transaction { transaction, validator_signature } => {
 					let from =
 						Self::ensure_transaction_signature(transaction.clone()).map_err(|_| {
+							TransactionValidityError::Invalid(InvalidTransaction::BadProof)
+						})?;
+
+						let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
+
+						Self::ensure_zero_gas_transaction(
+							transaction.clone(),
+							current_block_validator,
+							validator_signature.clone()
+						).map_err(|_| {
 							TransactionValidityError::Invalid(InvalidTransaction::BadProof)
 						})?;
 
@@ -96,9 +108,19 @@ pub mod pallet {
 		pub fn send_zero_gas_transaction(
 			_origin: OriginFor<T>,
 			transaction: Transaction,
+			validator_signature: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
 			let from = Self::ensure_transaction_signature(transaction.clone())
 				.map_err(|_| DispatchError::Other("Invalid transaction signature"))?;
+
+			let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
+
+			Self::ensure_zero_gas_transaction(
+					transaction.clone(),
+					current_block_validator,
+					validator_signature
+			)
+			.map_err(|_| DispatchError::Other("Invalid zero gas transaction signature"))?;
 
 			let origin: T::RuntimeOrigin =
 				pallet_ethereum::Origin::EthereumTransaction(from).into();
@@ -161,6 +183,57 @@ pub mod pallet {
 			.map_err(|_| ())?;
 
 			Ok(())
+		}
+
+		fn ensure_zero_gas_transaction(
+			transaction: pallet_ethereum::Transaction,
+			expected_validator: H160,
+			validator_signature: Vec<u8>,
+		) -> Result<(), ()> {
+			let zero_gas_trx_internal_message: Vec<u8> =
+				Self::get_zero_gas_transaction_signing_message(transaction.clone());
+
+			let eip191_message =
+				stbl_tools::eth::build_eip191_message_hash(zero_gas_trx_internal_message);
+
+			let zero_gas_trx_signer_address = Self::get_zero_gas_trx_signer(
+				validator_signature.clone(),
+				eip191_message.clone(),
+			);
+
+			match zero_gas_trx_signer_address {
+				Some(address) if address == expected_validator => Ok(()),
+				_ => Err(()),
+			}
+		}
+
+		pub fn get_zero_gas_transaction_signing_message(trx: pallet_ethereum::Transaction) -> Vec<u8> {
+			let mut message: Vec<u8> = Vec::new();
+
+			let trx_hash = trx.hash();
+			let trx_bytes_hash = trx_hash.as_bytes();
+			let trx_hash_string = hex::encode(trx_bytes_hash);
+
+			message.extend_from_slice(b"I consent to validate the transaction for free: 0x");
+			message.extend_from_slice(trx_hash_string.as_bytes());
+
+			return message;
+		}
+
+		fn get_zero_gas_trx_signer(signature: Vec<u8>, message: H256) -> Option<H160> {
+			let result = match sp_io::crypto::secp256k1_ecdsa_recover(
+				signature.as_slice().try_into().unwrap(),
+				message.as_fixed_bytes(),
+			) {
+				Ok(pubkey) => {
+					let mut address = sp_io::hashing::keccak_256(&pubkey);
+					address[0..12].copy_from_slice(&[0u8; 12]);
+					address.to_vec()
+				}
+				Err(_) => return None,
+			};
+
+			return Some(H160::from_slice(&result[12..32]));
 		}
 	}
 }

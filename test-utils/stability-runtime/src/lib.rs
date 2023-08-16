@@ -1034,7 +1034,7 @@ cfg_if! {
 			}
 
 			impl stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block> for Runtime {
-				fn convert_zero_gas_transaction(transaction: EthereumTransaction) -> <Block as BlockT>::Extrinsic {
+				fn convert_zero_gas_transaction(transaction: EthereumTransaction, validator_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
 					return Extrinsic::Skipped(0);
 				}
 			}
@@ -1284,7 +1284,7 @@ cfg_if! {
 			}
 
 			impl stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block> for Runtime {
-				fn convert_zero_gas_transaction(transaction: EthereumTransaction) -> <Block as BlockT>::Extrinsic {
+				fn convert_zero_gas_transaction(transaction: EthereumTransaction, validator_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
 					return Extrinsic::Skipped(0);
 				}
 			}

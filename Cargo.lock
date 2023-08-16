@@ -9009,6 +9009,7 @@ dependencies = [
  "stability-test-runtime-client",
  "stbl-primitives-fee-compatible-api",
  "stbl-primitives-zero-gas-transactions-api",
+ "stbl-tools",
  "substrate-prometheus-endpoint",
 ]
 
@@ -9042,6 +9043,7 @@ dependencies = [
  "parity-scale-codec",
  "sp-api",
  "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

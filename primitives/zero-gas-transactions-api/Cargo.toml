@@ -10,6 +10,7 @@ sp-runtime = { workspace = true}
 sp-api = { workspace = true}
 codec = { package = "parity-scale-codec", workspace = true }
 fp-ethereum = { workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
 
 [features]
 default = ['std']

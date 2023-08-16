@@ -509,11 +509,43 @@ where
 				};
 	
 				let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
-	
+				
+
+				let keys = SyncCryptoStore::ecdsa_public_keys(
+					&*self.keystore,
+					KeyTypeId::try_from("aura").unwrap_or_default(),
+				);
+				
+
+				let public = keys[0].clone().into();
+				let hash = ethereum_transaction.hash();
+				let hash_string = hex::encode(hash.as_bytes());
+
+
+				let mut message: Vec<u8> = Vec::new();
+				message.extend_from_slice(b"I consent to validate the transaction for free: 0x");
+				message.extend_from_slice(hash_string.as_bytes());
+
+				let eip191_message = stbl_tools::eth::build_eip191_message_hash(message.clone());
+
+				let signed_hash_option = SyncCryptoStore::ecdsa_sign_prehashed(
+					&*self.keystore,
+					KeyTypeId::try_from("aura").unwrap_or_default(),
+					&public,
+					&eip191_message.as_fixed_bytes(),
+				).expect("Could not sign the Ethereum transaction hash");
+				
+				let signed_hash = if let Some(signed_hash) = signed_hash_option {
+					signed_hash
+				}
+				else {
+					continue;
+				};
+
 				let pending_tx =  if let Ok(pending_tx) = self
 				.client
 				.runtime_api()
-				.convert_zero_gas_transaction(&self.parent_id, ethereum_transaction.clone()) {
+				.convert_zero_gas_transaction(&self.parent_id, ethereum_transaction.clone(), signed_hash.0.to_vec()) {
 					pending_tx
 				}
 				else {
