@@ -14,32 +14,47 @@ where
     /// PrecompileSet discrimiant. Allows to knows if the address maps to an asset id,
     /// and if this is the case which one.
     fn discriminant(address: H160) -> Option<Discriminant> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("discriminant")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["discriminant"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn total_supply(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<U256> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("total_supply")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["total_supply"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn balance_of(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
         who: Address,
     ) -> EvmResult<U256> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("balance_of")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["balance_of"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn allowance(
         asset_id: Discriminant,
@@ -47,11 +62,16 @@ where
         owner: Address,
         spender: Address,
     ) -> EvmResult<U256> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("allowance")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["allowance"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn approve(
         asset_id: Discriminant,
@@ -59,11 +79,16 @@ where
         spender: Address,
         value: U256,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("approve")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["approve"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn approve_inner(
         asset_id: Discriminant,
@@ -72,11 +97,16 @@ where
         spender: H160,
         value: U256,
     ) -> EvmResult {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("approve_inner")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["approve_inner"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn transfer(
         asset_id: Discriminant,
@@ -84,11 +114,16 @@ where
         to: Address,
         value: U256,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("transfer")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["transfer"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn transfer_from(
         asset_id: Discriminant,
@@ -97,41 +132,61 @@ where
         to: Address,
         value: U256,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("transfer_from")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["transfer_from"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn name(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<UnboundedBytes> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("name")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["name"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn symbol(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<UnboundedBytes> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("symbol")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["symbol"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn decimals(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<u8> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("decimals")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["decimals"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn mint(
         asset_id: Discriminant,
@@ -139,11 +194,16 @@ where
         to: Address,
         value: U256,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("mint")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["mint"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn burn(
         asset_id: Discriminant,
@@ -151,66 +211,94 @@ where
         from: Address,
         value: U256,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("burn")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["burn"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn freeze(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
         account: Address,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("freeze")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["freeze"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn thaw(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
         account: Address,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("thaw")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["thaw"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn freeze_asset(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("freeze_asset")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["freeze_asset"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn thaw_asset(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("thaw_asset")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["thaw_asset"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn transfer_ownership(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
         owner: Address,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!(
-                    "not yet implemented: {0}", format_args!("transfer_ownership"),
-                ),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["transfer_ownership"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn set_team(
         asset_id: Discriminant,
@@ -219,11 +307,16 @@ where
         admin: Address,
         freezer: Address,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("set_team")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["set_team"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn set_metadata(
         asset_id: Discriminant,
@@ -232,21 +325,31 @@ where
         symbol: BoundedString<GetAssetsStringLimit<Runtime>>,
         decimals: u8,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("set_metadata")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["set_metadata"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn clear_metadata(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<bool> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("clear_metadata")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["clear_metadata"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn eip2612_permit(
         asset_id: Discriminant,
@@ -259,34 +362,50 @@ where
         r: H256,
         s: H256,
     ) -> EvmResult {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("eip2612_permit")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["eip2612_permit"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn eip2612_nonces(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
         owner: Address,
     ) -> EvmResult<U256> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!("not yet implemented: {0}", format_args!("eip2612_nonces")),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(&["eip2612_nonces"], &[]),
+                    ),
+                ],
+            ),
+        )
     }
     fn eip2612_domain_separator(
         asset_id: Discriminant,
         handle: &mut impl PrecompileHandle,
     ) -> EvmResult<H256> {
-        {
-            ::core::panicking::panic_fmt(
-                format_args!(
-                    "not yet implemented: {0}", format_args!("eip2612_domain_separator"),
-                ),
-            );
-        }
+        ::core::panicking::panic_fmt(
+            ::core::fmt::Arguments::new_v1(
+                &["not yet implemented: "],
+                &[
+                    ::core::fmt::ArgumentV1::new_display(
+                        &::core::fmt::Arguments::new_v1(
+                            &["eip2612_domain_separator"],
+                            &[],
+                        ),
+                    ),
+                ],
+            ),
+        )
     }
 }
 #[allow(non_camel_case_types)]
@@ -817,8 +936,11 @@ where
             }
             Self::__phantom(_, _) => {
                 ::core::panicking::panic_fmt(
-                    format_args!("__phantom variant should not be used"),
-                );
+                    ::core::fmt::Arguments::new_v1(
+                        &["__phantom variant should not be used"],
+                        &[],
+                    ),
+                )
             }
         };
         Ok(PrecompileOutput {
@@ -1057,8 +1179,11 @@ where
             }
             Self::__phantom(_, _) => {
                 ::core::panicking::panic_fmt(
-                    format_args!("__phantom variant should not be used"),
-                );
+                    ::core::fmt::Arguments::new_v1(
+                        &["__phantom variant should not be used"],
+                        &[],
+                    ),
+                )
             }
         }
     }
@@ -1109,9 +1234,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "allowance",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"allowance")],
                         ),
                     ),
                 );
@@ -1127,9 +1255,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "approve",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"approve")],
                         ),
                     ),
                 );
@@ -1145,9 +1276,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "balance_of",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"balance_of")],
                         ),
                     ),
                 );
@@ -1163,9 +1297,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "burn",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"burn")],
                         ),
                     ),
                 );
@@ -1181,9 +1318,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "clear_metadata",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"clear_metadata")],
                         ),
                     ),
                 );
@@ -1199,9 +1339,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "decimals",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"decimals")],
                         ),
                     ),
                 );
@@ -1217,9 +1360,16 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "eip2612_domain_separator",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[
+                                ::core::fmt::ArgumentV1::new_display(
+                                    &"eip2612_domain_separator",
+                                ),
+                            ],
                         ),
                     ),
                 );
@@ -1235,9 +1385,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "eip2612_nonces",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"eip2612_nonces")],
                         ),
                     ),
                 );
@@ -1256,9 +1409,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "eip2612_permit",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"eip2612_permit")],
                         ),
                     ),
                 );
@@ -1274,9 +1430,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "freeze",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"freeze")],
                         ),
                     ),
                 );
@@ -1292,9 +1451,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "freeze_asset",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"freeze_asset")],
                         ),
                     ),
                 );
@@ -1310,9 +1472,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "mint",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"mint")],
                         ),
                     ),
                 );
@@ -1328,9 +1493,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "name",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"name")],
                         ),
                     ),
                 );
@@ -1353,9 +1521,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "set_metadata",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"set_metadata")],
                         ),
                     ),
                 );
@@ -1374,9 +1545,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "set_team",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"set_team")],
                         ),
                     ),
                 );
@@ -1392,9 +1566,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "symbol",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"symbol")],
                         ),
                     ),
                 );
@@ -1410,9 +1587,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "thaw",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"thaw")],
                         ),
                     ),
                 );
@@ -1428,9 +1608,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "thaw_asset",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"thaw_asset")],
                         ),
                     ),
                 );
@@ -1446,9 +1629,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "total_supply",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"total_supply")],
                         ),
                     ),
                 );
@@ -1464,9 +1650,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "transfer",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"transfer")],
                         ),
                     ),
                 );
@@ -1485,9 +1674,12 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "transfer_from",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[::core::fmt::ArgumentV1::new_display(&"transfer_from")],
                         ),
                     ),
                 );
@@ -1503,9 +1695,14 @@ where
                     &*left_val,
                     &*right_val,
                     ::core::option::Option::Some(
-                        format_args!(
-                            "{0} function signature doesn\'t match (left: attribute, right: computed from Rust types)",
-                            "transfer_ownership",
+                        ::core::fmt::Arguments::new_v1(
+                            &[
+                                "",
+                                " function signature doesn\'t match (left: attribute, right: computed from Rust types)",
+                            ],
+                            &[
+                                ::core::fmt::ArgumentV1::new_display(&"transfer_ownership"),
+                            ],
                         ),
                     ),
                 );
