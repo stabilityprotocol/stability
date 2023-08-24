@@ -55,14 +55,13 @@ pub mod pallet {
 			let user_token = FeeTokenStorage::<T>::get(account)
 				.unwrap_or(T::SupportedTokensManager::get_default_token());
 
-			(T::SupportedTokensManager::is_supported_token(user_token)
-				|| user_token == H160::zero())
-			.then(|| user_token)
-			.unwrap_or(T::SupportedTokensManager::get_default_token())
+			T::SupportedTokensManager::is_supported_token(user_token)
+				.then(|| user_token)
+				.unwrap_or(T::SupportedTokensManager::get_default_token())
 		}
 
 		fn set_user_fee_token(account: H160, token: H160) -> Result<(), Self::Error> {
-			if !T::SupportedTokensManager::is_supported_token(token) && token != H160::zero() {
+			if !T::SupportedTokensManager::is_supported_token(token) {
 				return Err(Error::<T>::UnsupportedToken);
 			}
 			FeeTokenStorage::<T>::insert(account, token);
