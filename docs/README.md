@@ -1,5 +1,6 @@
 # Docs
 
+- [Getting Started](./GETTING-STARTED.md)
 - [Decentralized native token](./DECENTRALIZED-NATIVE-TOKEN.md)
 - [Council](COUNCIL.md)
 - [Parameters](PARAMETERS.md)
