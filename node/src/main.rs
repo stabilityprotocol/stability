@@ -10,6 +10,7 @@ mod cli;
 mod client;
 mod command;
 mod eth;
+mod stability;
 mod rpc;
 mod service;
 

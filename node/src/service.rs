@@ -14,6 +14,7 @@ use sp_api::{ConstructRuntimeApi, TransactionFor};
 use sp_core::U256;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
+use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 // Runtime
 use sc_service::KeystoreContainer;
 use stability_runtime::{opaque::Block, Hash, TransactionConverter};
@@ -30,6 +31,8 @@ pub use crate::{
 	client::{Client, TemplateRuntimeExecutor},
 	eth::{db_config_dir, EthConfiguration},
 };
+
+pub use crate::stability::StabilityConfiguration;
 
 type BasicImportQueue<Client> = sc_consensus::DefaultImportQueue<Block, Client>;
 type FullPool<Client> = sc_transaction_pool::FullPool<Block, Client>;
@@ -258,12 +261,14 @@ pub fn new_full<RuntimeApi, Executor>(
 	mut config: Configuration,
 	eth_config: EthConfiguration,
 	sealing: Option<Sealing>,
+	stability_config: StabilityConfiguration,
 ) -> Result<TaskManager, ServiceError>
 where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
 	RuntimeApi: Send + Sync + 'static,
 	RuntimeApi::RuntimeApi: RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>
-		+ stability_rpc::StabilityRpcRuntimeApi<Block>,
+		+ stability_rpc::StabilityRpcRuntimeApi<Block>
+		+ ZeroGasTransactionApi<Block>,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	let build_import_queue = if sealing.is_some() {
@@ -271,6 +276,7 @@ where
 	} else {
 		build_aura_grandpa_import_queue::<RuntimeApi, Executor>
 	};
+
 
 	let PartialComponents {
 		client,
@@ -424,6 +430,7 @@ where
 				client,
 				transaction_pool,
 				keystore_container,
+				&stability_config,
 				select_chain,
 				block_import,
 				&task_manager,
@@ -442,6 +449,7 @@ where
 			client.clone(),
 			transaction_pool,
 			keystore_container.sync_keystore(),
+			stability_config.zero_gas_tx_pool.clone(),
 			prometheus_registry.as_ref(),
 			telemetry.as_ref().map(|x| x.handle()),
 		);
@@ -549,6 +557,7 @@ fn run_manual_seal_authorship<RuntimeApi, Executor>(
 	client: Arc<FullClient<RuntimeApi, Executor>>,
 	transaction_pool: Arc<FullPool<FullClient<RuntimeApi, Executor>>>,
 	keystore: KeystoreContainer,
+	stability_config: &StabilityConfiguration,
 	select_chain: FullSelectChain,
 	block_import: BoxBlockImport<FullClient<RuntimeApi, Executor>>,
 	task_manager: &TaskManager,
@@ -568,6 +577,7 @@ where
 		client.clone(),
 		transaction_pool.clone(),
 		keystore.sync_keystore(),
+		stability_config.zero_gas_tx_pool.clone(),
 		prometheus_registry,
 		telemetry.as_ref().map(|x| x.handle()),
 	);
@@ -646,8 +656,9 @@ pub fn build_full(
 	config: Configuration,
 	eth_config: EthConfiguration,
 	sealing: Option<Sealing>,
+	stability_config: StabilityConfiguration,
 ) -> Result<TaskManager, ServiceError> {
-	new_full::<stability_runtime::RuntimeApi, TemplateRuntimeExecutor>(config, eth_config, sealing)
+	new_full::<stability_runtime::RuntimeApi, TemplateRuntimeExecutor>(config, eth_config, sealing, stability_config)
 }
 
 pub fn new_chain_ops(

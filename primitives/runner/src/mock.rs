@@ -125,7 +125,7 @@ impl crate::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 	type Error = ();
 
 	fn get_transaction_fee_token(_from: H160) -> H160 {
-		Default::default()
+		return ERC20SlotZero::get();
 	}
 
 	fn get_transaction_conversion_rate(

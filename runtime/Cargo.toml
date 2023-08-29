@@ -138,6 +138,7 @@ pallet-evm-precompile-sha3fips = { workspace = true }
 pallet-evm-precompile-simple = { workspace = true }
 pallet-hotfix-sufficients = { workspace = true }
 pallet-sponsored-transactions = { workspace = true }
+pallet-zero-gas-transactions = { workspace = true }
 # Stability
 pallet-evm-precompile-blake2 = { workspace = true }
 pallet-evm-precompile-bn128 = { workspace = true }
@@ -151,6 +152,7 @@ precompile-validator-controller = { workspace = true }
 pallet-root-controller = { workspace = true }
 pallet-collective = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true }
+stbl-primitives-zero-gas-transactions-api = { workspace = true }
 pallet-erc20-manager = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
 precompile-supported-tokens-manager = { workspace = true }
@@ -161,7 +163,6 @@ runner = { workspace = true }
 precompile-fee-rewards-vault-controller = { workspace = true }
 pallet-fee-rewards-vault = { workspace = true }
 stbl-transaction-validator = { workspace = true }
-
 stbl-core-primitives = { workspace = true }
 account = { workspace = true }
 stability-rpc-api = { workspace = true }

@@ -45,6 +45,9 @@ sc-service = { workspace=true, optional = true, features = ["test-helpers"] }
 sp-state-machine = { workspace = true }
 sp-externalities = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true }
+stbl-primitives-zero-gas-transactions-api = { workspace = true }
+pallet-zero-gas-transactions = { workspace = true }
+pallet-ethereum = { workspace = true }
 # 3rd party
 cfg-if = { workspace = true }
 log = { workspace = true }

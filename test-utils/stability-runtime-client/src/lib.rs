@@ -30,11 +30,7 @@ use std::sync::Arc;
 
 pub use self::block_builder_ext::BlockBuilderExt;
 
-use sp_core::{
-	sr25519,
-	storage::{ChildInfo, Storage, StorageChild},
-	Pair,
-};
+use sp_core::{sr25519, storage::ChildInfo, Pair};
 use sp_runtime::traits::{Block as BlockT, Hash as HashT, Header as HeaderT};
 use stability_test_runtime::genesismap::{additional_storage_with_genesis, GenesisConfig};
 

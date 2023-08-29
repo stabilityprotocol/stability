@@ -30,10 +30,17 @@ sp-inherents = { workspace = true }
 sp-keyring = { workspace = true }
 sp-runtime = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true, features = ["std"] }
+stbl-primitives-zero-gas-transactions-api = { workspace = true, features = ["std"] }
+stbl-tools = { workspace = true }
+ethereum = { workspace = true }
 sp-keystore = { workspace = true }
 stability-runtime = { path = "./../../runtime", features = ["std"] }
 sc-service = { workspace = true }
 account = { workspace = true, features = ["std"] }
+reqwest = { workspace = true, features = ["json"] }
+serde = { workspace = true, features = ["derive"] }
+bytes = { workspace = true }
+hex = { workspace = true }
 
 [dev-dependencies]
 parking_lot = { workspace = true }

@@ -24,6 +24,7 @@ async-trait = { workspace = true }
 
 # local packages
 stability-rpc-api = { workspace = true, default-features = false }
+stbl-primitives-zero-gas-transactions-api = { workspace = true, default-features = false}
 sc-transaction-pool-api = { workspace = true }
 pallet-sponsored-transactions = { workspace = true }
 futures-util = { version = "0.3.17" }
