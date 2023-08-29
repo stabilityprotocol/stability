@@ -1,21 +1,20 @@
-
 ## Table of Contents
 
 1. [Introduction](#introduction)
 2. [Generating Keys](#generating-keys)
 3. [Insert Keys in the Node](#)
-3. [Running a Stability Validator Node](#running-a-stability-validator-node)
+4. [Running a Stability Validator Node](#running-a-stability-validator-node)
 
 ---
 
 ## Introduction
 
-
 In this README, we'll provide initial instructions for booting a Stability node.
 
 ## Generating Keys
 
-A Stability node uses 3 keys to operate: 
+A Stability node uses 3 keys to operate:
+
 1. ECDSA key for ImOnline Pallet
 2. ECDSA key for Aura (Stability's consensus mechanism)
 3. ED25519 key for Grandpa (Stability's finality mechanism)
@@ -30,15 +29,12 @@ To generate a SEED, you can either use a reliable SEED generation service (ensur
 
 This command will produce the SEED.
 
-
 ## Insert Keys in the Node
-
 
 To insert the keys using the seed previously generated, use the following script
 
-
 ```sh
-   ## TO RUN THIS COMMAND YOU SHOULD DEFINE 
+   ## TO RUN THIS COMMAND YOU SHOULD DEFINE
    ## $SEED - Seed phrase from which Stability keys are derived
    ## $PATH - Path where you save your node data
   ./target/release/stability key insert  \
@@ -79,6 +75,4 @@ Additionally, you can configure the following flags:
 - `--pruning archive`: Runs your node in archival mode. An archival node maintains a complete copy and allows queries on any historical chain state.
 - `--unsafe-rpc-external --rpc-cors all --unsafe-ws-external`: Use if your node will be accessed from a system external to your localhost.
 - `--bootnodes`: A list of p2p nodes for Stability to join the network. What is known as bootnodes
-
-
-
+- `--base-path`: Specifies a custom base path for the data folder
