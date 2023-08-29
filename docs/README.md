@@ -1,5 +1,6 @@
 # Docs
 
+- [Getting Started](./GETTING-STARTED.md)
 - [Decentralized native token](./DECENTRALIZED-NATIVE-TOKEN.md)
 - [Council](COUNCIL.md)
 - [Parameters](PARAMETERS.md)
@@ -9,4 +10,5 @@
 - [Transaction sorting](TRANSACTION-SORTING.md)
 - [Unified Accounts](UNIFIED-ACCOUNTS.md)
 - [Sponsored Transactions](SPONSORED-TRANSACTIONS.md)
+- [Zero Gas Transactions](ZERO-GAS-TRANSACTIONS.md)
 - [Custom RPCs](RPC.md)
