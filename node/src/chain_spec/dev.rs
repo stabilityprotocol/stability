@@ -17,7 +17,11 @@ pub fn development_config(enable_manual_seal: Option<bool>) -> DevChainSpec {
 				genesis_config: base_genesis(
 					wasm_binary,
 					// Initial PoA authorities
-					vec![authority_keys_from_seed("Alice")],
+					vec![
+						authority_keys_from_seed("Alice"),
+						authority_keys_from_seed("Bob"),
+						authority_keys_from_seed("Charlie"),
+					],
 					vec![get_account_id_from_seed::<sp_core::ecdsa::Public>("Alice")],
 					20180428,
 				),

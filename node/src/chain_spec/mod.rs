@@ -72,12 +72,8 @@ pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, ImOnl
 	)
 }
 
-pub fn session_keys(aura: AuraId, grandpa: GrandpaId, im_online: ImOnlineId) -> SessionKeys {
-	SessionKeys {
-		aura,
-		grandpa,
-		im_online,
-	}
+pub fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
+	SessionKeys { aura, grandpa }
 }
 
 pub fn get_authority_from_pubkeys(
@@ -101,7 +97,7 @@ pub fn base_genesis(
 	chain_id: u64,
 ) -> GenesisConfig {
 	use stability_runtime::{
-		AuraConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, ImOnlineConfig, SessionConfig,
+		AuraConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SessionConfig,
 		SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig,
 		ValidatorSetConfig,
 	};
@@ -126,14 +122,15 @@ pub fn base_genesis(
 					(
 						x.0.clone(),
 						x.0.clone(),
-						session_keys(x.1.clone(), x.2.clone(), x.3.clone()),
+						session_keys(x.1.clone(), x.2.clone()),
 					)
 				})
 				.collect::<Vec<_>>(),
 		},
-		im_online: ImOnlineConfig { keys: vec![] },
 		validator_set: ValidatorSetConfig {
 			initial_validators: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
+			inital_keys: initial_authorities.iter().map(|x| x.1.clone()).collect(),
+			max_blocks_missed: 5.into(),
 		},
 		// Consensus
 		aura: AuraConfig {

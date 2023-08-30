@@ -40,16 +40,13 @@ use sp_runtime::{
 		BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, Get, NumberFor, OpaqueKeys,
 		PostDispatchInfoOf, UniqueSaturatedInto, Verify,
 	},
-	transaction_validity::{
-		TransactionPriority, TransactionSource, TransactionValidity, TransactionValidityError,
-	},
+	transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
 	ApplyExtrinsicResult, Permill, SaturatedConversion,
 };
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
 use stability_config::{MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use stbl_core_primitives::aura::Public as AuraId;
-use stbl_core_primitives::imonline::Public as ImOnlineId;
 use stbl_tools::custom_fee::CustomFeeInfo;
 use stbl_transaction_validator::FallbackTransactionValidator;
 // Substrate FRAME
@@ -65,6 +62,7 @@ use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use pallet_evm::{Account as EVMAccount, FeeCalculator, Runner};
 use pallet_sponsored_transactions::Call::send_sponsored_transaction;
+use pallet_validator_set::SessionBlockManager;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime,
@@ -156,7 +154,6 @@ pub mod opaque {
 		pub struct SessionKeys {
 			pub aura: Aura,
 			pub grandpa: Grandpa,
-			pub im_online: ImOnline,
 		}
 	}
 }
@@ -413,6 +410,23 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 	}
 }
 
+pub struct FindBlockAuthorityId<F>(PhantomData<F>);
+impl<F: FindAuthor<u32>> FindAuthor<AccountId> for FindBlockAuthorityId<F> {
+	fn find_author<'a, I>(digests: I) -> Option<AccountId>
+	where
+		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
+	{
+		if let Some(author_index) = F::find_author(digests) {
+			let authority_id = Aura::authorities()[author_index as usize].clone();
+
+			let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
+			let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
+			return Some(signer.into_account().into());
+		}
+		None
+	}
+}
+
 pub struct IdentityAddressMapping;
 impl pallet_evm::AddressMapping<AccountId> for IdentityAddressMapping {
 	fn into_account_id(address: H160) -> AccountId {
@@ -575,14 +589,25 @@ type EnsureRootOrHalfTechCommittee = EitherOfDiverse<
 	pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 1, 2>,
 >;
 
+pub struct PeriodicSessionBlockManager;
+impl SessionBlockManager<BlockNumber> for PeriodicSessionBlockManager {
+	fn session_start_block(session_index: sp_staking::SessionIndex) -> BlockNumber {
+		return session_index * Period::get() + Offset::get();
+	}
+}
+
 impl pallet_validator_set::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type AddRemoveOrigin = EnsureRootOrHalfTechCommittee;
 	type MinAuthorities = MinAuthorities;
+	type SessionBlockManager = PeriodicSessionBlockManager;
+	type FindAuthor = FindBlockAuthorityId<Aura>;
+	type AuthorityId = AuraId;
+	type MaxKeys = MaxKeys;
 }
 
 parameter_types! {
-	pub const Period: u32 = SESSION_MINUTES_DURATION * MINUTES;
+	pub const Period: u32 = 6;
 	pub const Offset: u32 = 0;
 }
 
@@ -599,7 +624,6 @@ impl pallet_session::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
 	pub const MaxKeys: u32 = 10_000;
 	pub const MaxPeerInHeartbeats: u32 = 10_000;
 	pub const MaxPeerDataEncodingSize: u32 = 1_000;
@@ -662,19 +686,6 @@ where
 	type OverarchingCall = RuntimeCall;
 }
 
-impl pallet_im_online::Config for Runtime {
-	type AuthorityId = ImOnlineId;
-	type RuntimeEvent = RuntimeEvent;
-	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-	type ValidatorSet = ValidatorSet;
-	type ReportUnresponsiveness = ValidatorSet;
-	type UnsignedPriority = ImOnlineUnsignedPriority;
-	type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
-	type MaxKeys = MaxKeys;
-	type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
-	type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
-}
-
 parameter_types! {
 	pub const MaxSizeOfCode: u32 = 10 * 1024 * 1024; // 10 MB
 }
@@ -725,7 +736,6 @@ construct_runtime!(
 		Timestamp: pallet_timestamp,
 		ValidatorSet: pallet_validator_set,
 		Session: pallet_session,
-		ImOnline: pallet_im_online,
 		Aura: pallet_aura,
 		Grandpa: pallet_grandpa,
 		Balances: pallet_custom_balances,

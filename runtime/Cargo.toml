@@ -124,6 +124,7 @@ pallet-dnt-fee-controller = { workspace = true }
 pallet-session = { workspace = true }
 pallet-im-online = { workspace = true }
 sp-application-crypto = { workspace = true }
+sp-staking = { workspace = true }
 # Frontier
 fp-rpc = { workspace = true }
 fp-self-contained = { workspace = true }

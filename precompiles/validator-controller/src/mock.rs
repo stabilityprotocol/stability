@@ -319,6 +319,7 @@ impl ExtBuilder {
 
 		pallet_validator_set::GenesisConfig::<Runtime> {
 			initial_validators: self.validators,
+			inital_keys: vec![],
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet balances storage can be assimilated");
