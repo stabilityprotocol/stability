@@ -10,3 +10,4 @@
 - [Unified Accounts](UNIFIED-ACCOUNTS.md)
 - [Sponsored Transactions](SPONSORED-TRANSACTIONS.md)
 - [Custom RPCs](RPC.md)
+- [Validator connection handling](VALIDATOR-CONNECTION-HANDLING.md)
