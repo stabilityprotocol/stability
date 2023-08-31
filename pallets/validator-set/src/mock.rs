@@ -4,7 +4,12 @@
 
 use super::*;
 use crate as validator_set;
-use frame_support::{parameter_types, traits::GenesisBuild, BasicExternalities};
+use core::borrow::Borrow;
+use frame_support::{
+	parameter_types,
+	traits::{FindAuthor, GenesisBuild, StorageInstance},
+	BasicExternalities,
+};
 use frame_system::EnsureRoot;
 use pallet_session::*;
 use sp_core::{crypto::key_types::DUMMY, H256};
@@ -68,13 +73,15 @@ frame_support::construct_runtime!(
 	}
 );
 
+pub const SESSION_BLOCK_LENGTH: u64 = 6;
+
 thread_local! {
 	pub static VALIDATORS: RefCell<Vec<u64>> = RefCell::new(vec![1, 2, 3]);
 	pub static NEXT_VALIDATORS: RefCell<Vec<u64>> = RefCell::new(vec![1, 2, 3]);
 	pub static AUTHORITIES: RefCell<Vec<UintAuthorityId>> =
 		RefCell::new(vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)]);
 	pub static FORCE_SESSION_END: RefCell<bool> = RefCell::new(false);
-	pub static SESSION_LENGTH: RefCell<u64> = RefCell::new(2);
+	pub static SESSION_LENGTH: u64 = SESSION_BLOCK_LENGTH;
 	pub static SESSION_CHANGED: RefCell<bool> = RefCell::new(false);
 	pub static DISABLED: RefCell<bool> = RefCell::new(false);
 	pub static BEFORE_SESSION_END_CALLED: RefCell<bool> = RefCell::new(false);
@@ -130,7 +137,15 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		l.borrow()
 			.iter()
 			.cloned()
-			.map(|i| (i, i, UintAuthorityId(i).into()))
+			.map(|i| {
+				(
+					i,
+					i,
+					MockSessionKeys {
+						dummy: UintAuthorityId(i),
+					},
+				)
+			})
 			.collect()
 	});
 	BasicExternalities::execute_with_storage(&mut t, || {
@@ -142,7 +157,8 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	});
 	validator_set::GenesisConfig::<Test> {
 		initial_validators: keys.iter().map(|x| x.0).collect::<Vec<_>>(),
-		initial_validators: vec![],
+		inital_keys: keys.iter().map(|x| x.2.dummy.clone()).collect::<Vec<_>>(),
+		max_blocks_missed: 1.into(),
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
@@ -189,10 +205,57 @@ parameter_types! {
 	pub const MinAuthorities: u32 = 2;
 }
 
+pub struct PeriodicSessionBlockManager;
+impl SessionBlockManager<u64> for PeriodicSessionBlockManager {
+	fn session_start_block(session_index: sp_staking::SessionIndex) -> u64 {
+		return (session_index as u64) * SESSION_BLOCK_LENGTH;
+	}
+}
+
+pub struct Prefix;
+impl StorageInstance for Prefix {
+	fn pallet_prefix() -> &'static str {
+		"test"
+	}
+	const STORAGE_PREFIX: &'static str = "test";
+}
+
+pub type NextBlockValidator = StorageValue<Prefix, u64, OptionQuery>;
+
+pub type ConsensusEngineId = [u8; 4];
+
+pub struct FindBlockAuthorityId;
+impl FindAuthor<u64> for FindBlockAuthorityId {
+	fn find_author<'a, I>(digests: I) -> Option<u64>
+	where
+		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
+	{
+		return NextBlockValidator::get();
+	}
+}
+
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Test
+where
+	RuntimeCall: From<C>,
+{
+	type Extrinsic = UncheckedExtrinsic;
+	type OverarchingCall = RuntimeCall;
+}
+parameter_types! {
+	pub const MaxKeys: u32 = 100;
+}
 impl validator_set::Config for Test {
 	type AddRemoveOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type MinAuthorities = MinAuthorities;
+
+	type SessionBlockManager = PeriodicSessionBlockManager;
+
+	type FindAuthor = FindBlockAuthorityId;
+
+	type AuthorityId = UintAuthorityId;
+
+	type MaxKeys = MaxKeys;
 }
 
 impl pallet_session::Config for Test {

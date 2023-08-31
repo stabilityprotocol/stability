@@ -33,6 +33,7 @@ sha3 = "0.10"
 sp-io = { workspace = true }
 stbl-core-primitives = { workspace = true, features = ["std"] }
 pallet-user-fee-selector = { workspace = true }
+sp-staking = { workspace = true }
 
 [features]
 default = [ "std" ]

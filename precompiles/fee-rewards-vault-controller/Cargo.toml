@@ -41,6 +41,7 @@ scale-info = { version = "2.0", default-features = false, features = [ "derive" 
 sha3 = "0.10"
 sp-io = { workspace = true }
 substrate-test-runtime-client = { workspace = true }
+sp-staking = { workspace = true }
 
 [features]
 default = [ "std" ]

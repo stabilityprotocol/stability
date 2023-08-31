@@ -554,10 +554,6 @@ impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
 		// Add to offline validator list those validators who didn't mine a block in the session.
 		let validators = PreviousValidators::<T>::get();
 
-		if end_index == 0u32 {
-			return;
-		}
-
 		// Get current block number
 		let session_start_block = T::SessionBlockManager::session_start_block(end_index);
 		let session_end_block = T::SessionBlockManager::session_start_block(end_index + 1);

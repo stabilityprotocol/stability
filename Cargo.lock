@@ -4994,7 +4994,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "pallet-im-online",
  "pallet-session",
  "parity-scale-codec",
  "scale-info",
@@ -5349,6 +5348,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-staking",
  "sp-std",
  "sp-version",
  "stbl-tools",
@@ -5510,6 +5510,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-staking",
  "sp-std",
  "stbl-core-primitives",
 ]
@@ -5543,6 +5544,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-staking",
  "sp-std",
 ]
 

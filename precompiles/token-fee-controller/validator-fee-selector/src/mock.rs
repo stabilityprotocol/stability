@@ -44,6 +44,12 @@ impl_opaque_keys! {
 	}
 }
 
+impl From<UintAuthorityId> for MockSessionKeys {
+	fn from(dummy: UintAuthorityId) -> Self {
+		Self { dummy }
+	}
+}
+
 pub type AccountId = MockAccount;
 pub type Balance = u128;
 pub type BlockNumber = u32;
@@ -219,8 +225,34 @@ impl ShouldEndSession<BlockNumber> for TestShouldEndSession {
 		true
 	}
 }
+
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+where
+	RuntimeCall: From<C>,
+{
+	type Extrinsic = UncheckedExtrinsic;
+	type OverarchingCall = RuntimeCall;
+}
+
+pub struct MockSessionBlockManager;
+impl pallet_validator_set::SessionBlockManager<BlockNumber> for MockSessionBlockManager {
+	fn session_start_block(session_index: sp_staking::SessionIndex) -> BlockNumber {
+		session_index as BlockNumber
+	}
+}
+pub struct MockFindAuthor;
+impl frame_support::traits::FindAuthor<AccountId> for MockFindAuthor {
+	fn find_author<'a, I>(digests: I) -> Option<AccountId>
+	where
+		I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
+	{
+		Some(AccountId::from_u64(1))
+	}
+}
+
 parameter_types! {
 	pub const MinAuthorities: u32 = 1u32;
+	pub const MaxKeys: u32 = 1000u32;
 }
 impl pallet_validator_set::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
@@ -228,6 +260,14 @@ impl pallet_validator_set::Config for Runtime {
 	type AddRemoveOrigin = EnsureRoot<AccountId>;
 
 	type MinAuthorities = MinAuthorities;
+
+	type SessionBlockManager = MockSessionBlockManager;
+
+	type FindAuthor = MockFindAuthor;
+
+	type AuthorityId = UintAuthorityId;
+
+	type MaxKeys = MaxKeys;
 }
 
 impl pallet_session::Config for Runtime {
@@ -325,6 +365,8 @@ impl ExtBuilder {
 
 		pallet_validator_set::GenesisConfig::<Runtime> {
 			initial_validators: vec![CryptoAlith.into()],
+			inital_keys: vec![],
+			max_blocks_missed: U256::max_value(),
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet validator set storage can be assimilated");
