@@ -360,7 +360,7 @@ impl ExtBuilder {
 				.enumerate()
 				.map(|(i, _)| UintAuthorityId(i as u64))
 				.collect(),
-			max_blocks_missed: U256::max_value(),
+			max_epochs_missed: U256::max_value(),
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet balances storage can be assimilated");

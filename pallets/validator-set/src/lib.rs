@@ -17,12 +17,13 @@ mod mock;
 mod tests;
 
 use core::ops::Add;
-use sp_runtime::BoundedSlice;
-
 use frame_support::{
 	ensure,
 	pallet_prelude::*,
-	traits::{EstimateNextSessionRotation, Get, ValidatorSet, ValidatorSetWithIdentification},
+	traits::{
+		EstimateNextSessionRotation, Get, OneSessionHandler, ValidatorSet,
+		ValidatorSetWithIdentification,
+	},
 };
 use log;
 pub use pallet::*;
@@ -36,19 +37,13 @@ pub mod pallet {
 	use super::*;
 	use frame_system::{offchain::SubmitTransaction, pallet_prelude::*};
 
-	use frame_support::{traits::FindAuthor, WeakBoundedVec};
+	use frame_support::traits::FindAuthor;
 
 	use sp_application_crypto::RuntimeAppPublic;
 
 	use frame_system::offchain::SendTransactionTypes;
 
 	use sp_core::U256;
-
-	/// The current set of keys that may issue a heartbeat.
-	#[pallet::storage]
-	#[pallet::getter(fn keys)]
-	pub(crate) type Keys<T: Config> =
-		StorageValue<_, WeakBoundedVec<T::AuthorityId, T::MaxKeys>, ValueQuery>;
 
 	/// Configure the pallet by specifying the parameters and types on which it
 	/// depends.
@@ -78,12 +73,18 @@ pub mod pallet {
 			+ MaxEncodedLen;
 
 		type MaxKeys: Get<u32>;
+
+		type AccountIdOfValidator: Convert<Self::AuthorityId, Self::AccountId>;
 	}
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
+
+	#[pallet::storage]
+	#[pallet::getter(fn keys)]
+	pub type Keys<T: Config> = StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn validators)]
@@ -249,9 +250,8 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub initial_validators: Vec<T::AccountId>,
-		pub inital_keys: Vec<T::AuthorityId>,
-		pub max_blocks_missed: U256,
+		pub initial_validators: Vec<T::AuthorityId>,
+		pub max_epochs_missed: U256,
 	}
 
 	#[cfg(feature = "std")]
@@ -259,8 +259,7 @@ pub mod pallet {
 		fn default() -> Self {
 			Self {
 				initial_validators: Default::default(),
-				inital_keys: Default::default(),
-				max_blocks_missed: 5.into(),
+				max_epochs_missed: 5.into(),
 			}
 		}
 	}
@@ -285,8 +284,8 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			Pallet::<T>::initialize_validators(&self.initial_validators);
-			Pallet::<T>::initialize_keys(&self.inital_keys);
+			Pallet::<T>::initialize_validators(self.initial_validators.clone());
+			MaxMissedEpochs::<T>::put(self.max_epochs_missed.clone());
 		}
 	}
 
@@ -297,7 +296,7 @@ pub mod pallet {
 			// At index `idx`:
 			// 1. A (ImOnline) public key to be used by a validator at index `idx` to send im-online
 			//          heartbeats.
-			let authorities = Keys::<T>::get();
+			let authorities = ApprovedValidators::<T>::get();
 
 			// local keystore
 			//
@@ -310,20 +309,15 @@ pub mod pallet {
 				.into_iter()
 				.enumerate()
 				.filter_map(move |(index, authority)| {
-					local_keys
+					let account_ids = local_keys
+						.iter()
+						.map(|x| T::AccountIdOfValidator::convert(x.clone()))
+						.collect::<Vec<T::AccountId>>();
+					account_ids
 						.binary_search(&authority)
 						.ok()
 						.map(|location| (index as u32, local_keys[location].clone()))
 				})
-		}
-
-		fn initialize_keys(keys: &[T::AuthorityId]) {
-			if !keys.is_empty() {
-				assert!(Keys::<T>::get().is_empty(), "Keys are already initialized!");
-				let bounded_keys = <BoundedSlice<'_, _, T::MaxKeys>>::try_from(keys)
-					.expect("More than the maximum number of keys provided");
-				Keys::<T>::put(bounded_keys);
-			}
 		}
 	}
 
@@ -429,7 +423,7 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	fn initialize_validators(validators: &[T::AccountId]) {
+	fn initialize_validators(validators: Vec<T::AuthorityId>) {
 		assert!(
 			validators.len() as u32 >= T::MinAuthorities::get(),
 			"Initial set of validators must be at least T::MinAuthorities"
@@ -439,19 +433,24 @@ impl<T: Config> Pallet<T> {
 			"Validators are already initialized!"
 		);
 
-		<Validators<T>>::put(validators);
-		<ApprovedValidators<T>>::put(validators);
+		let account_ids: Vec<T::AccountId> = validators
+			.iter()
+			.map(|x| T::AccountIdOfValidator::convert(x.clone()))
+			.collect();
+
+		<Validators<T>>::put(account_ids.clone());
+		<ApprovedValidators<T>>::put(account_ids);
 	}
 
-	fn do_add_validator(validator_id: T::AccountId) -> DispatchResult {
+	fn do_add_validator(account_id: T::AccountId) -> DispatchResult {
 		ensure!(
-			!<Validators<T>>::get().contains(&validator_id),
+			!<Validators<T>>::get().contains(&account_id),
 			Error::<T>::Duplicate
 		);
-		<Validators<T>>::mutate(|v| v.push(validator_id.clone()));
-		<EpochsMissed<T>>::insert(validator_id.clone(), sp_core::U256::zero());
+		<Validators<T>>::mutate(|v| v.push(account_id.clone()));
+		<EpochsMissed<T>>::insert(account_id.clone(), sp_core::U256::zero());
 
-		Self::deposit_event(Event::ValidatorAdditionInitiated(validator_id.clone()));
+		Self::deposit_event(Event::ValidatorAdditionInitiated(account_id.clone()));
 		log::debug!(target: LOG_TARGET, "Validator addition initiated.");
 
 		Ok(())
@@ -472,7 +471,11 @@ impl<T: Config> Pallet<T> {
 		<Validators<T>>::put(validators);
 
 		Self::deposit_event(Event::ValidatorRemovalInitiated(validator_id.clone()));
-		log::debug!(target: LOG_TARGET, "Validator removal initiated.");
+		log::debug!(
+			target: LOG_TARGET,
+			"Validator removal initiated: {:?}",
+			validator_id.clone()
+		);
 
 		Ok(())
 	}
@@ -488,7 +491,7 @@ impl<T: Config> Pallet<T> {
 
 	fn unapprove_validator(validator_id: T::AccountId) -> DispatchResult {
 		let mut approved_set = <ApprovedValidators<T>>::get();
-		approved_set.retain(|v| *v != validator_id);
+		approved_set.retain(|v| validator_id.ne(v));
 		<ApprovedValidators<T>>::put(approved_set);
 		Ok(())
 	}
@@ -515,8 +518,19 @@ impl<T: Config> Pallet<T> {
 		PreviousValidators::<T>::put(Validators::<T>::get());
 
 		// Delete from active validator set.
-		<Validators<T>>::mutate(|vs| {
-			vs.retain(|v| <EpochsMissed<T>>::get(v) < MaxMissedEpochs::<T>::get());
+		let current_validators = <Validators<T>>::get();
+
+		current_validators.iter().for_each(|vs| {
+			let epochs_missed = <EpochsMissed<T>>::get(vs);
+			if epochs_missed >= MaxMissedEpochs::<T>::get() {
+				Self::do_remove_validator(vs.clone()).unwrap_or_else(|_| {
+					log::error!(
+						target: LOG_TARGET,
+						"Failed to remove validator: {:?}",
+						vs.clone()
+					)
+				});
+			}
 		});
 
 		ToBeAddedValidators::<T>::mutate(|pending_vs| {
@@ -606,6 +620,52 @@ pub struct ValidatorOf<T>(sp_std::marker::PhantomData<T>);
 impl<T: Config> Convert<T::ValidatorId, Option<T::ValidatorId>> for ValidatorOf<T> {
 	fn convert(account: T::ValidatorId) -> Option<T::ValidatorId> {
 		Some(account)
+	}
+}
+
+impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
+	type Public = T::AuthorityId;
+}
+
+impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
+	type Key = T::AuthorityId;
+
+	fn on_genesis_session<'a, I: 'a>(validators: I)
+	where
+		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+	{
+		let keys = validators
+			.map(|x: (&T::AccountId, T::AuthorityId)| x.1)
+			.collect::<Vec<_>>();
+		Keys::<T>::put(keys);
+	}
+
+	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, _queued_validators: I)
+	where
+		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+	{
+		if changed {
+			let new_keys = validators.map(|x| x.1).collect::<Vec<_>>();
+			let approved_validators = ApprovedValidators::<T>::get();
+			Keys::<T>::mutate(|keys| {
+				keys.retain(|x| {
+					approved_validators.contains(&T::AccountIdOfValidator::convert(x.clone()))
+				});
+				new_keys.iter().for_each(|new_key| {
+					if !keys.contains(new_key) {
+						keys.push(new_key.clone());
+					}
+				})
+			});
+		}
+	}
+
+	fn on_before_session_ending() {
+		// ignore
+	}
+
+	fn on_disabled(_i: u32) {
+		// ignore
 	}
 }
 

@@ -366,7 +366,7 @@ impl ExtBuilder {
 		pallet_validator_set::GenesisConfig::<Runtime> {
 			initial_validators: vec![CryptoAlith.into()],
 			inital_keys: vec![],
-			max_blocks_missed: U256::max_value(),
+			max_epochs_missed: U256::max_value(),
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet validator set storage can be assimilated");

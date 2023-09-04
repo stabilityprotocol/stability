@@ -383,7 +383,7 @@ impl ExtBuilder {
 					.enumerate()
 					.map(|(i, _)| UintAuthorityId(i as u64))
 					.collect::<Vec<_>>(),
-				max_blocks_missed: U256::max_value(),
+				max_epochs_missed: U256::max_value(),
 			},
 			&mut t,
 		)

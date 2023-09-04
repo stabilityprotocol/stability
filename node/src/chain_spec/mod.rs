@@ -128,9 +128,8 @@ pub fn base_genesis(
 				.collect::<Vec<_>>(),
 		},
 		validator_set: ValidatorSetConfig {
-			initial_validators: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
-			inital_keys: initial_authorities.iter().map(|x| x.1.clone()).collect(),
-			max_blocks_missed: 5.into(),
+			initial_validators: initial_authorities.iter().map(|x| x.1.clone()).collect(),
+			max_epochs_missed: 5.into(),
 		},
 		// Consensus
 		aura: AuraConfig {

@@ -156,9 +156,11 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		frame_system::Pallet::<Test>::inc_providers(&69);
 	});
 	validator_set::GenesisConfig::<Test> {
-		initial_validators: keys.iter().map(|x| x.0).collect::<Vec<_>>(),
-		inital_keys: keys.iter().map(|x| x.2.dummy.clone()).collect::<Vec<_>>(),
-		max_blocks_missed: 1.into(),
+		initial_validators: keys
+			.iter()
+			.map(|x| UintAuthorityId(x.1))
+			.collect::<Vec<_>>(),
+		max_epochs_missed: 1.into(),
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
@@ -202,7 +204,7 @@ impl frame_system::Config for Test {
 }
 
 parameter_types! {
-	pub const MinAuthorities: u32 = 2;
+	pub const MinAuthorities: u32 = 1;
 }
 
 pub struct PeriodicSessionBlockManager;
@@ -241,6 +243,12 @@ where
 	type Extrinsic = UncheckedExtrinsic;
 	type OverarchingCall = RuntimeCall;
 }
+pub struct AccountIdOfValidator;
+impl Convert<UintAuthorityId, u64> for AccountIdOfValidator {
+	fn convert(authority_id: UintAuthorityId) -> u64 {
+		authority_id.0.clone()
+	}
+}
 parameter_types! {
 	pub const MaxKeys: u32 = 100;
 }
@@ -256,6 +264,8 @@ impl validator_set::Config for Test {
 	type AuthorityId = UintAuthorityId;
 
 	type MaxKeys = MaxKeys;
+
+	type AccountIdOfValidator = AccountIdOfValidator;
 }
 
 impl pallet_session::Config for Test {

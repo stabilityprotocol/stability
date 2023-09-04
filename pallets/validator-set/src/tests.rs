@@ -88,6 +88,12 @@ fn validator_goes_off_and_reconnects() {
 
 		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(0);
 
+		for i in 0..SESSION_BLOCK_LENGTH {
+			mock_mine_block(1, i + SESSION_BLOCK_LENGTH);
+		}
+
+		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(1);
+
 		let new_validators = <pallet::Validators<Test>>::get();
 
 		assert!(new_validators.contains(&authorities()[1].0) == false);
@@ -105,10 +111,10 @@ fn validator_goes_off_and_reconnects() {
 			.expect("not to fail");
 
 		for i in 0..SESSION_BLOCK_LENGTH {
-			mock_mine_block(1, i + SESSION_BLOCK_LENGTH);
+			mock_mine_block(1, i + 2 * SESSION_BLOCK_LENGTH);
 		}
 
-		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(1);
+		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(2);
 
 		let new_validators = <pallet::Validators<Test>>::get();
 

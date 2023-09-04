@@ -30,6 +30,7 @@ use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
 	OpaqueMetadata, H160, H256, U256,
 };
+use sp_runtime::traits::Convert;
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::traits::IdentityLookup;
 use sp_runtime::{
@@ -596,6 +597,15 @@ impl SessionBlockManager<BlockNumber> for PeriodicSessionBlockManager {
 	}
 }
 
+pub struct AccountIdOfValidator;
+impl Convert<AuraId, AccountId> for AccountIdOfValidator {
+	fn convert(authority_id: AuraId) -> AccountId {
+		let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
+		let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
+		return signer.into_account().into();
+	}
+}
+
 impl pallet_validator_set::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type AddRemoveOrigin = EnsureRootOrHalfTechCommittee;
@@ -604,6 +614,7 @@ impl pallet_validator_set::Config for Runtime {
 	type FindAuthor = FindBlockAuthorityId<Aura>;
 	type AuthorityId = AuraId;
 	type MaxKeys = MaxKeys;
+	type AccountIdOfValidator = AccountIdOfValidator;
 }
 
 parameter_types! {
