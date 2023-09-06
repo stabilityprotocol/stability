@@ -110,15 +110,85 @@ fn validator_goes_off_and_reconnects() {
 		pallet::Pallet::<Test>::add_validator_again(RawOrigin::None.into(), heartbeat, signature)
 			.expect("not to fail");
 
-		for i in 0..SESSION_BLOCK_LENGTH {
-			mock_mine_block(1, i + 2 * SESSION_BLOCK_LENGTH);
-		}
-
 		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(2);
 
 		let new_validators = <pallet::Validators<Test>>::get();
 
-		assert!(new_validators.contains(&authorities()[1].0) == true);
+		assert!(new_validators.contains(&authorities()[1].0));
+	});
+}
+
+#[test]
+fn validator_tries_to_reconnect_with_mismatch_parameters() {
+	new_test_ext().execute_with(|| {
+		for i in 0..SESSION_BLOCK_LENGTH {
+			mock_mine_block(1, i);
+		}
+
+		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(0);
+
+		for i in 0..SESSION_BLOCK_LENGTH {
+			mock_mine_block(1, i + SESSION_BLOCK_LENGTH);
+		}
+
+		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(1);
+
+		let new_validators = <pallet::Validators<Test>>::get();
+
+		assert!(new_validators.contains(&authorities()[1].0) == false);
+
+		let heartbeat = Heartbeat {
+			block_number: 7,
+			session_index: 1,
+			authority_id: UintAuthorityId(2),
+			authority_index: 0,
+		};
+
+		let signature = UintAuthorityId(2).sign(&heartbeat.encode()).unwrap();
+
+		assert!(pallet::Pallet::<Test>::add_validator_again(
+			RawOrigin::None.into(),
+			heartbeat,
+			signature
+		)
+		.is_err());
+	});
+}
+
+#[test]
+fn non_approved_validator_tries_to_connect() {
+	new_test_ext().execute_with(|| {
+		for i in 0..SESSION_BLOCK_LENGTH {
+			mock_mine_block(1, i);
+		}
+
+		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(0);
+
+		for i in 0..SESSION_BLOCK_LENGTH {
+			mock_mine_block(1, i + SESSION_BLOCK_LENGTH);
+		}
+
+		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(1);
+
+		let new_validators = <pallet::Validators<Test>>::get();
+
+		assert!(new_validators.contains(&authorities()[1].0) == false);
+
+		let heartbeat = Heartbeat {
+			block_number: 7,
+			session_index: 1,
+			authority_id: UintAuthorityId(800),
+			authority_index: 0,
+		};
+
+		let signature = UintAuthorityId(800).sign(&heartbeat.encode()).unwrap();
+
+		assert!(pallet::Pallet::<Test>::add_validator_again(
+			RawOrigin::None.into(),
+			heartbeat,
+			signature
+		)
+		.is_err());
 	});
 }
 
