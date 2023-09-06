@@ -156,10 +156,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		frame_system::Pallet::<Test>::inc_providers(&69);
 	});
 	validator_set::GenesisConfig::<Test> {
-		initial_validators: keys
-			.iter()
-			.map(|x| UintAuthorityId(x.1))
-			.collect::<Vec<_>>(),
+		initial_validators: keys.iter().map(|x| x.1).collect::<Vec<_>>(),
 		max_epochs_missed: 1.into(),
 	}
 	.assimilate_storage(&mut t)
@@ -228,7 +225,7 @@ pub type ConsensusEngineId = [u8; 4];
 
 pub struct FindBlockAuthorityId;
 impl FindAuthor<u64> for FindBlockAuthorityId {
-	fn find_author<'a, I>(digests: I) -> Option<u64>
+	fn find_author<'a, I>(_digests: I) -> Option<u64>
 	where
 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{

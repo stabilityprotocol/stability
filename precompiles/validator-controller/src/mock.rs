@@ -27,7 +27,7 @@ use sp_core::crypto::key_types::DUMMY;
 use sp_core::{H160, H256, U256};
 use sp_runtime::impl_opaque_keys;
 use sp_runtime::testing::UintAuthorityId;
-use sp_runtime::traits::{BlakeTwo256, IdentityLookup, OpaqueKeys};
+use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup, OpaqueKeys};
 use sp_runtime::KeyTypeId;
 use std::cell::RefCell;
 
@@ -208,11 +208,18 @@ impl pallet_validator_set::SessionBlockManager<BlockNumber> for MockSessionBlock
 }
 pub struct MockFindAuthor;
 impl frame_support::traits::FindAuthor<AccountId> for MockFindAuthor {
-	fn find_author<'a, I>(digests: I) -> Option<AccountId>
+	fn find_author<'a, I>(_digests: I) -> Option<AccountId>
 	where
 		I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
 	{
 		Some(AccountId::default())
+	}
+}
+
+pub struct AccountIdOfValidator;
+impl Convert<UintAuthorityId, AccountId> for AccountIdOfValidator {
+	fn convert(_authority_id: UintAuthorityId) -> AccountId {
+		stbl_core_primitives::AccountId::default()
 	}
 }
 
@@ -234,6 +241,8 @@ impl pallet_validator_set::Config for Runtime {
 	type AuthorityId = UintAuthorityId;
 
 	type MaxKeys = MaxKeys;
+
+	type AccountIdOfValidator = AccountIdOfValidator;
 }
 
 thread_local! {
@@ -353,13 +362,6 @@ impl ExtBuilder {
 
 		pallet_validator_set::GenesisConfig::<Runtime> {
 			initial_validators: self.validators.clone(),
-			inital_keys: self
-				.validators
-				.clone()
-				.iter()
-				.enumerate()
-				.map(|(i, _)| UintAuthorityId(i as u64))
-				.collect(),
 			max_epochs_missed: U256::max_value(),
 		}
 		.assimilate_storage(&mut t)

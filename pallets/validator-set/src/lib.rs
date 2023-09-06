@@ -253,7 +253,7 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub initial_validators: Vec<T::AuthorityId>,
+		pub initial_validators: Vec<T::AccountId>,
 		pub max_epochs_missed: U256,
 	}
 
@@ -344,8 +344,6 @@ pub mod pallet {
 			{
 				return Err(());
 			}
-
-			let account_id = T::AccountIdOfValidator::convert(heartbeat.authority_id.clone());
 
 			Ok(())
 		}
@@ -448,27 +446,15 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	fn initialize_validators(validators: Vec<T::AuthorityId>) {
+	fn initialize_validators(account_ids: Vec<T::AccountId>) {
 		assert!(
-			validators.len() as u32 >= T::MinAuthorities::get(),
+			account_ids.len() as u32 >= T::MinAuthorities::get(),
 			"Initial set of validators must be at least T::MinAuthorities"
 		);
 		assert!(
 			<Validators<T>>::get().is_empty(),
 			"Validators are already initialized!"
 		);
-
-		let account_ids: Vec<T::AccountId> = validators
-			.iter()
-			.map(|x| {
-				log::debug!(
-					target: LOG_TARGET,
-					"Adding validator {:?}",
-					T::AccountIdOfValidator::convert(x.clone())
-				);
-				T::AccountIdOfValidator::convert(x.clone())
-			})
-			.collect();
 
 		<Validators<T>>::put(account_ids.clone());
 		<ApprovedValidators<T>>::put(account_ids);

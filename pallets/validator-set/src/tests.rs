@@ -5,7 +5,7 @@
 use super::*;
 use crate::mock::{
 	authorities, new_test_ext, NextBlockValidator, RuntimeOrigin, Session, Test, ValidatorSet,
-	SESSION_BLOCK_LENGTH, SESSION_LENGTH,
+	SESSION_BLOCK_LENGTH,
 };
 use frame_support::{assert_noop, assert_ok, pallet_prelude::*};
 use frame_system::RawOrigin;
@@ -25,10 +25,9 @@ fn simple_setup_should_work() {
 }
 
 #[test]
-fn add_validator_updates_validators_list() {
+fn add_validator_updates_approved_validators_list() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(ValidatorSet::add_validator(RuntimeOrigin::root(), 4));
-		assert_eq!(ValidatorSet::validators(), vec![1u64, 2u64, 3u64, 4u64]);
 		assert_eq!(
 			ValidatorSet::approved_validators(),
 			vec![1u64, 2u64, 3u64, 4u64]
@@ -69,7 +68,10 @@ fn remove_validator_fails_with_invalid_origin() {
 fn duplicate_check() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(ValidatorSet::add_validator(RuntimeOrigin::root(), 4));
-		assert_eq!(ValidatorSet::validators(), vec![1u64, 2u64, 3u64, 4u64]);
+		assert_eq!(
+			ValidatorSet::approved_validators(),
+			vec![1u64, 2u64, 3u64, 4u64]
+		);
 		assert_noop!(
 			ValidatorSet::add_validator(RuntimeOrigin::root(), 4),
 			Error::<Test>::Duplicate

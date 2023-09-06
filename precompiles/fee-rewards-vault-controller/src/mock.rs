@@ -9,7 +9,7 @@ use pallet_session::{SessionHandler, ShouldEndSession};
 use precompile_utils::precompile_set::*;
 use sp_core::H256;
 use sp_runtime::testing::UintAuthorityId;
-use sp_runtime::traits::OpaqueKeys;
+use sp_runtime::traits::{Convert, OpaqueKeys};
 use sp_runtime::{impl_opaque_keys, KeyTypeId};
 use sp_runtime::{
 	testing::Header,
@@ -248,11 +248,18 @@ impl pallet_validator_set::SessionBlockManager<<Test as frame_system::Config>::B
 }
 pub struct MockFindAuthor;
 impl frame_support::traits::FindAuthor<AccountId> for MockFindAuthor {
-	fn find_author<'a, I>(digests: I) -> Option<AccountId>
+	fn find_author<'a, I>(_digests: I) -> Option<AccountId>
 	where
 		I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
 	{
 		Some(AccountId::default())
+	}
+}
+
+pub struct AccountIdOfValidator;
+impl Convert<UintAuthorityId, AccountId> for AccountIdOfValidator {
+	fn convert(a: UintAuthorityId) -> AccountId {
+		AccountId::from_low_u64_be(a.0)
 	}
 }
 
@@ -274,6 +281,8 @@ impl pallet_validator_set::Config for Test {
 	type AuthorityId = UintAuthorityId;
 
 	type MaxKeys = MaxKeys;
+
+	type AccountIdOfValidator = AccountIdOfValidator;
 }
 
 impl pallet_session::Config for Test {
@@ -378,11 +387,6 @@ impl ExtBuilder {
 		pallet_validator_set::GenesisConfig::<Test>::assimilate_storage(
 			&pallet_validator_set::GenesisConfig::<Test> {
 				initial_validators: Validators::get(),
-				inital_keys: Validators::get()
-					.iter()
-					.enumerate()
-					.map(|(i, _)| UintAuthorityId(i as u64))
-					.collect::<Vec<_>>(),
 				max_epochs_missed: U256::max_value(),
 			},
 			&mut t,

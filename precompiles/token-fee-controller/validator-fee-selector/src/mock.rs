@@ -23,6 +23,7 @@ use std::str::FromStr;
 use frame_support::traits::GenesisBuild;
 use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::Weight};
 use frame_system::EnsureRoot;
+use sp_runtime::traits::Convert;
 use std::collections::BTreeMap;
 
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
@@ -242,11 +243,18 @@ impl pallet_validator_set::SessionBlockManager<BlockNumber> for MockSessionBlock
 }
 pub struct MockFindAuthor;
 impl frame_support::traits::FindAuthor<AccountId> for MockFindAuthor {
-	fn find_author<'a, I>(digests: I) -> Option<AccountId>
+	fn find_author<'a, I>(_digests: I) -> Option<AccountId>
 	where
 		I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
 	{
 		Some(AccountId::from_u64(1))
+	}
+}
+
+pub struct AccountIdOfValidator;
+impl Convert<UintAuthorityId, AccountId> for AccountIdOfValidator {
+	fn convert(a: UintAuthorityId) -> AccountId {
+		MockAccount::from_u64(a.0)
 	}
 }
 
@@ -266,6 +274,8 @@ impl pallet_validator_set::Config for Runtime {
 	type FindAuthor = MockFindAuthor;
 
 	type AuthorityId = UintAuthorityId;
+
+	type AccountIdOfValidator = AccountIdOfValidator;
 
 	type MaxKeys = MaxKeys;
 }
@@ -365,7 +375,6 @@ impl ExtBuilder {
 
 		pallet_validator_set::GenesisConfig::<Runtime> {
 			initial_validators: vec![CryptoAlith.into()],
-			inital_keys: vec![],
 			max_epochs_missed: U256::max_value(),
 		}
 		.assimilate_storage(&mut t)

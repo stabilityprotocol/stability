@@ -170,7 +170,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	state_version: 1,
 };
 
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
+pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK as u64;
 
 // Time is measured by number of blocks.
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
@@ -618,7 +618,7 @@ impl pallet_validator_set::Config for Runtime {
 }
 
 parameter_types! {
-	pub const Period: u32 = 6;
+	pub const Period: u32 = SESSION_MINUTES_DURATION * MINUTES;
 	pub const Offset: u32 = 0;
 }
 
