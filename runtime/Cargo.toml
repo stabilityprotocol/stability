@@ -59,7 +59,6 @@ std = [
     'pallet-validator-set/std',
     'pallet-validator-fee-selector/std',
     'pallet-session/std',
-    'pallet-im-online/std',
     'pallet-upgrade-runtime-proposal/std',
     'pallet-dnt-fee-controller/std',
     'stbl-primitives-fee-compatible-api/std',
@@ -122,7 +121,6 @@ pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-dnt-fee-controller = { workspace = true }
 pallet-session = { workspace = true }
-pallet-im-online = { workspace = true }
 sp-application-crypto = { workspace = true }
 sp-staking = { workspace = true }
 # Frontier

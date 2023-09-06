@@ -4750,26 +4750,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-im-online"
-version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.36#cb4f2491b00af7d7817f3a54209c26b20faa1f51"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "pallet-authorship",
- "parity-scale-codec",
- "scale-info",
- "sp-application-crypto",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-staking",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-root-controller"
 version = "1.0.0"
 dependencies = [
@@ -8446,7 +8426,6 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "log",
- "pallet-im-online",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -8569,7 +8548,6 @@ dependencies = [
  "pallet-fee-rewards-vault",
  "pallet-grandpa",
  "pallet-hotfix-sufficients",
- "pallet-im-online",
  "pallet-root-controller",
  "pallet-session",
  "pallet-sponsored-transactions",
