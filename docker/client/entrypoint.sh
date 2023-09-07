@@ -1,29 +1,33 @@
 #!/bin/bash
 
+CHAIN_TARGET=${CHAIN:-"dev"}
+if [ ! -z "$CHAIN_NAME" ]; then
+  CHAIN_TARGET="$CHAIN_NAME"
+fi
+
 if [ -n "$SEED" ]; then
-  ./target/release/stability key insert --base-path /tmp/node \
-  --keystore-path  /tmp/node/chains/alphanet/keystore \
+  ./target/release/stability key insert --base-path /data \
+  --keystore-path  /data/chains/$CHAIN_TARGET/keystore \
   --scheme ecdsa \
   --suri "$SEED" \
   --key-type aura
 
   ./target/release/stability key insert \
-  --keystore-path  /tmp/node/chains/alphanet/keystore \
-  --base-path /tmp/node \
+  --keystore-path  /data/chains/$CHAIN_TARGET/keystore \
+  --base-path /data \
   --scheme Ed25519 \
   --suri "$SEED" \
   --key-type gran
 
   ./target/release/stability key insert \
-  --keystore-path  /tmp/node/chains/alphanet/keystore \
-  --base-path /tmp/node \
+  --keystore-path  /data/chains/$CHAIN_TARGET/keystore \
+  --base-path /data \
   --scheme ecdsa \
   --suri "$SEED" \
   --key-type imon
-
 fi
 
-START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --chain alphanet --pruning archive --prometheus-external"
+START_COMMAND="./target/release/stability --base-path /data --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --pruning archive --prometheus-external --chain=$CHAIN_TARGET"
 
 if [ -n "$NODE_KEY" ]; then
   START_COMMAND="$START_COMMAND --node-key $NODE_KEY"
