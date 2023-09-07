@@ -7,20 +7,20 @@ fi
 
 if [ -n "$SEED" ]; then
   ./target/release/stability key insert --base-path /data \
-  --keystore-path  /data/chains/$CHAIN_TARGET/keystore \
+  --keystore-path  /data/chains/stability/keystore \
   --scheme ecdsa \
   --suri "$SEED" \
   --key-type aura
 
   ./target/release/stability key insert \
-  --keystore-path  /data/chains/$CHAIN_TARGET/keystore \
+  --keystore-path  /data/chains/stability/keystore \
   --base-path /data \
   --scheme Ed25519 \
   --suri "$SEED" \
   --key-type gran
 
   ./target/release/stability key insert \
-  --keystore-path  /data/chains/$CHAIN_TARGET/keystore \
+  --keystore-path  /data/chains/stability/keystore \
   --base-path /data \
   --scheme ecdsa \
   --suri "$SEED" \
