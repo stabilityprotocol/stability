@@ -18,6 +18,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT};
+use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 // Runtime
 use stability_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
 
@@ -56,6 +57,7 @@ where
 	C::Api: fp_rpc::ConvertTransactionRuntimeApi<Block>,
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
 	C::Api: stability_rpc::StabilityRpcRuntimeApi<Block>,
+	C::Api: ZeroGasTransactionApi<Block>,
 	P: TransactionPool<Block = Block> + 'static,
 	A: ChainApi<Block = Block> + 'static,
 	CT: fp_rpc::ConvertTransaction<<Block as BlockT>::Extrinsic> + Send + Sync + 'static,
