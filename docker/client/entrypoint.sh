@@ -5,29 +5,36 @@ if [ ! -z "$CHAIN_NAME" ]; then
   CHAIN_TARGET="$CHAIN_NAME"
 fi
 
+if [[ "$CHAIN_TARGET" == "dev" ]]; then
+  echo "Starting dev chain"
+  ./target/release/stability --base-path /tmp/node --dev --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --pruning archive --prometheus-external
+  exit 0
+fi
+
 if [ -n "$SEED" ]; then
-  ./target/release/stability key insert --base-path /data \
-  --keystore-path  /data/chains/stability/keystore \
+  ./target/release/stability key insert \
+  --base-path /tmp/node \
+  --chain $CHAIN_TARGET \
   --scheme ecdsa \
   --suri "$SEED" \
   --key-type aura
 
   ./target/release/stability key insert \
-  --keystore-path  /data/chains/stability/keystore \
-  --base-path /data \
+  --base-path /tmp/node \
+  --chain $CHAIN_TARGET \
   --scheme Ed25519 \
   --suri "$SEED" \
   --key-type gran
 
   ./target/release/stability key insert \
-  --keystore-path  /data/chains/stability/keystore \
-  --base-path /data \
+  --base-path /tmp/node \
+  --chain $CHAIN_TARGET \
   --scheme ecdsa \
   --suri "$SEED" \
   --key-type imon
 fi
 
-START_COMMAND="./target/release/stability --base-path /data --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --pruning archive --prometheus-external --chain=$CHAIN_TARGET"
+START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --pruning archive --prometheus-external --chain=$CHAIN_TARGET"
 
 if [ -n "$NODE_KEY" ]; then
   START_COMMAND="$START_COMMAND --node-key $NODE_KEY"
@@ -39,5 +46,6 @@ elif [ -n "$BOOTNODES" ]; then
   START_COMMAND="$START_COMMAND --bootnodes $BOOTNODES"
 fi
 
+echo "Starting $CHAIN_TARGET chain"
 eval $START_COMMAND
 
