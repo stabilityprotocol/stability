@@ -2,7 +2,7 @@ use frame_support::weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, Weight};
 use sp_runtime::{Perbill, Permill};
 
 // Block time
-pub const MILLISECS_PER_BLOCK: u32 = 2000;
+pub const MILLISECS_PER_BLOCK: u64 = 2000;
 
 pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
@@ -11,7 +11,7 @@ const COMPUTATION_BLOCK_TIME_RATIO: (u64, u64) = (2, 3); // 2 third parts of the
 
 // how much weight for normal extrinsics could be processed in a block
 pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_ref_time(WEIGHT_REF_TIME_PER_MILLIS)
-	.mul(MILLISECS_PER_BLOCK as u64)
+	.mul(MILLISECS_PER_BLOCK)
 	.mul(COMPUTATION_BLOCK_TIME_RATIO.0)
 	.div(COMPUTATION_BLOCK_TIME_RATIO.1) // 1_333_333_333_333
 	.set_proof_size(u64::MAX);
