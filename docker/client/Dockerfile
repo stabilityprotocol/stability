@@ -22,8 +22,6 @@ COPY stability-rpc ./stability-rpc
 COPY test-utils ./test-utils
 COPY Cargo.lock Cargo.toml rust-toolchain.toml ./
 
-
-
 # Download rust dependencies and build the rust binary
 RUN cargo build "--$PROFILE"
 
@@ -35,7 +33,7 @@ EXPOSE 30333 9933 9944 9615
 
 # Copy entrypoint
 
-COPY ./docker/alphanet/entrypoint.sh /usr/local/bin/
+COPY ./docker/client/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
