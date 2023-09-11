@@ -3,7 +3,6 @@
 #![cfg(test)]
 
 use super::*;
-use crate as validator_set;
 use core::borrow::Borrow;
 use frame_support::{
 	parameter_types,
@@ -68,7 +67,8 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system,
-		ValidatorSet: validator_set,
+		ValidatorSet: pallet_validator_set,
+		ValidatorKeysController: crate,
 		Session: pallet_session,
 	}
 );
@@ -125,10 +125,6 @@ impl ShouldEndSession<u64> for TestShouldEndSession {
 	}
 }
 
-pub fn authorities() -> Vec<UintAuthorityId> {
-	AUTHORITIES.with(|l| l.borrow().to_vec())
-}
-
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut t = frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
@@ -155,7 +151,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		frame_system::Pallet::<Test>::inc_providers(&4);
 		frame_system::Pallet::<Test>::inc_providers(&69);
 	});
-	validator_set::GenesisConfig::<Test> {
+	pallet_validator_set::GenesisConfig::<Test> {
 		initial_validators: keys.iter().map(|x| x.1).collect::<Vec<_>>(),
 		max_epochs_missed: 1.into(),
 	}
@@ -205,7 +201,7 @@ parameter_types! {
 }
 
 pub struct PeriodicSessionBlockManager;
-impl SessionBlockManager<u64> for PeriodicSessionBlockManager {
+impl pallet_validator_set::SessionBlockManager<u64> for PeriodicSessionBlockManager {
 	fn session_start_block(session_index: sp_staking::SessionIndex) -> u64 {
 		return (session_index as u64) * SESSION_BLOCK_LENGTH;
 	}
@@ -249,7 +245,7 @@ impl Convert<UintAuthorityId, u64> for AccountIdOfValidator {
 parameter_types! {
 	pub const MaxKeys: u32 = 100;
 }
-impl validator_set::Config for Test {
+impl pallet_validator_set::Config for Test {
 	type AddRemoveOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type MinAuthorities = MinAuthorities;
@@ -267,7 +263,7 @@ impl validator_set::Config for Test {
 
 impl pallet_session::Config for Test {
 	type ValidatorId = <Self as frame_system::Config>::AccountId;
-	type ValidatorIdOf = validator_set::ValidatorOf<Self>;
+	type ValidatorIdOf = pallet_validator_set::ValidatorOf<Self>;
 	type ShouldEndSession = TestShouldEndSession;
 	type NextSessionRotation = ();
 	type SessionManager = ValidatorSet;
@@ -275,4 +271,30 @@ impl pallet_session::Config for Test {
 	type Keys = MockSessionKeys;
 	type WeightInfo = ();
 	type RuntimeEvent = RuntimeEvent;
+}
+
+pub struct SessionKeysBuilder;
+impl crate::SessionKeysBuilder<UintAuthorityId, UintAuthorityId, MockSessionKeys>
+	for SessionKeysBuilder
+{
+	fn new(aura: UintAuthorityId, _grandpa: UintAuthorityId) -> MockSessionKeys {
+		MockSessionKeys {
+			dummy: aura.clone(),
+		}
+	}
+}
+pub struct ValidatorIdMapping;
+impl Convert<UintAuthorityId, u64> for ValidatorIdMapping {
+	fn convert(a: UintAuthorityId) -> u64 {
+		return a.0;
+	}
+}
+impl crate::Config for Test {
+	type RuntimeEvent = RuntimeEvent;
+
+	type FinalizationId = UintAuthorityId;
+
+	type SessionKeysBuilder = SessionKeysBuilder;
+
+	type ValidatorIdOfValidation = ValidatorIdMapping;
 }

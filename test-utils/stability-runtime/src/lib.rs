@@ -27,14 +27,6 @@ use codec::{Decode, Encode, Error, Input, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::{marker::PhantomData, prelude::*};
 
-use sp_application_crypto::{ecdsa, ed25519, sr25519, RuntimeAppPublic};
-use sp_core::{offchain::KeyTypeId, OpaqueMetadata, RuntimeDebug};
-use sp_trie::{
-	trie_types::{TrieDBBuilder, TrieDBMutBuilderV1},
-	PrefixedMemoryDB, StorageProof,
-};
-use trie_db::{Trie, TrieMut};
-use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use cfg_if::cfg_if;
 use frame_support::{
 	dispatch::RawOrigin,
@@ -43,9 +35,17 @@ use frame_support::{
 	weights::{RuntimeDbWeight, Weight},
 };
 use frame_system::limits::{BlockLength, BlockWeights};
+use pallet_ethereum::Transaction as EthereumTransaction;
 use sp_api::{decl_runtime_apis, impl_runtime_apis};
+use sp_application_crypto::{ecdsa, ed25519, sr25519, RuntimeAppPublic};
 pub use sp_core::hash::H256;
+use sp_core::{offchain::KeyTypeId, OpaqueMetadata, RuntimeDebug};
 use sp_inherents::{CheckInherentsResult, InherentData};
+use sp_trie::{
+	trie_types::{TrieDBBuilder, TrieDBMutBuilderV1},
+	PrefixedMemoryDB, StorageProof,
+};
+use trie_db::{Trie, TrieMut};
 
 #[cfg(feature = "std")]
 use sp_runtime::traits::NumberFor;
@@ -1034,7 +1034,7 @@ cfg_if! {
 			}
 
 			impl stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block> for Runtime {
-				fn convert_zero_gas_transaction(transaction: EthereumTransaction, validator_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
+				fn convert_zero_gas_transaction(_transaction: EthereumTransaction, _validator_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
 					return Extrinsic::Skipped(0);
 				}
 			}

@@ -16,6 +16,7 @@
 mod mock;
 mod tests;
 
+use core::ops::Add;
 use frame_support::{
 	ensure,
 	pallet_prelude::*,
@@ -24,7 +25,6 @@ use frame_support::{
 use log;
 pub use pallet::*;
 use sp_runtime::traits::{Convert, Zero};
-use sp_staking::offence::{Offence, OffenceError, ReportOffence};
 use sp_std::{collections::btree_set::BTreeSet, prelude::*};
 
 pub const LOG_TARGET: &'static str = "runtime::validator-set";
@@ -32,12 +32,22 @@ pub const LOG_TARGET: &'static str = "runtime::validator-set";
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_system::pallet_prelude::*;
+	use frame_system::{offchain::SubmitTransaction, pallet_prelude::*};
+
+	use frame_support::traits::FindAuthor;
+
+	use sp_application_crypto::RuntimeAppPublic;
+
+	use frame_system::offchain::SendTransactionTypes;
+
+	use sp_core::U256;
 
 	/// Configure the pallet by specifying the parameters and types on which it
 	/// depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_session::Config {
+	pub trait Config:
+		frame_system::Config + pallet_session::Config + SendTransactionTypes<Call<Self>>
+	{
 		/// The Event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
@@ -47,6 +57,21 @@ pub mod pallet {
 		/// Minimum number of validators to leave in the validator set during
 		/// auto removal.
 		type MinAuthorities: Get<u32>;
+
+		type SessionBlockManager: SessionBlockManager<Self::BlockNumber>;
+
+		type FindAuthor: FindAuthor<Self::AccountId>;
+
+		type AuthorityId: Member
+			+ Parameter
+			+ RuntimeAppPublic
+			+ Ord
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen;
+
+		type MaxKeys: Get<u32>;
+
+		type AccountIdOfValidator: Convert<Self::AuthorityId, Self::AccountId>;
 	}
 
 	#[pallet::pallet]
@@ -55,16 +80,42 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
+	#[pallet::getter(fn keys)]
+	pub type Keys<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+
+	#[pallet::storage]
 	#[pallet::getter(fn validators)]
 	pub type Validators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn previous_validators)]
+	pub type PreviousValidators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn approved_validators)]
 	pub type ApprovedValidators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn validators_to_remove)]
-	pub type OfflineValidators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+	#[pallet::getter(fn to_be_added_validators)]
+	pub type ToBeAddedValidators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn max_missed_epochs)]
+	pub type MaxMissedEpochs<T: Config> = StorageValue<_, U256, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn block_missed)]
+	pub type EpochsMissed<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, U256, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn block_authors)]
+	pub type BlockAuthors<T: Config> = StorageMap<
+		_,
+		Twox64Concat,
+		<T as frame_system::Config>::BlockNumber,
+		T::AccountId,
+		OptionQuery,
+	>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -89,12 +140,122 @@ pub mod pallet {
 		BadOrigin,
 	}
 
+	#[pallet::validate_unsigned]
+	impl<T: Config> ValidateUnsigned for Pallet<T> {
+		type Call = Call<T>;
+		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+			match call {
+				Call::add_validator_again {
+					heartbeat,
+					signature,
+				} => {
+					Self::ensure_unsigned_origin(heartbeat.clone(), signature.clone())
+						.map_err(|_| InvalidTransaction::BadProof)?;
+
+					let account_id =
+						T::AccountIdOfValidator::convert(heartbeat.clone().authority_id);
+
+					if ToBeAddedValidators::<T>::get().contains(&account_id) {
+						return InvalidTransaction::Call.into();
+					}
+
+					if Validators::<T>::get().contains(&account_id) {
+						return InvalidTransaction::Call.into();
+					}
+
+					let sesion_index = pallet_session::Pallet::<T>::current_index();
+					return ValidTransaction::with_tag_prefix("ValidatorSet")
+						.priority(u64::MAX)
+						.and_provides((sesion_index, heartbeat.clone().authority_id))
+						.propagate(true)
+						.build();
+				}
+				_ => InvalidTransaction::Call.into(),
+			}
+		}
+	}
+
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_finalize(block_number: BlockNumberFor<T>) {
+			let digest = <frame_system::Pallet<T>>::digest();
+			let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
+
+			if let Some(validator) = T::FindAuthor::find_author(pre_runtime_digests) {
+				BlockAuthors::<T>::insert(block_number, validator);
+			}
+		}
+
+		fn offchain_worker(now: BlockNumberFor<T>) {
+			// Only send messages if we are a potential validator.
+			if sp_io::offchain::is_validator() {
+				let approved_validators = ApprovedValidators::<T>::get();
+				Self::local_keys()
+					.into_iter()
+					.for_each(|(authority_index, key)| {
+						let validator_id = approved_validators[authority_index as usize].clone();
+						log::debug!(
+							target: LOG_TARGET,
+							"Checking heartbeat for validator {:?} ({:?}, {:?})",
+							validator_id,
+							Validators::<T>::get().contains(&validator_id),
+							ToBeAddedValidators::<T>::get().contains(&validator_id)
+						);
+						if !Validators::<T>::get().contains(&validator_id)
+							&& !ToBeAddedValidators::<T>::get().contains(&validator_id)
+						{
+							let heartbeat = Heartbeat {
+								block_number: now,
+								session_index: pallet_session::Pallet::<T>::current_index(),
+								authority_index,
+								authority_id: key.clone(),
+							};
+
+							let signature = key.clone().sign(&heartbeat.encode());
+
+							if signature.is_none() {
+								log::error!(
+									target: LOG_TARGET,
+									"Failed to sign heartbeat for validator {:?}",
+									validator_id,
+								);
+								return;
+							};
+
+							let call = Call::<T>::add_validator_again {
+								heartbeat,
+								signature: signature.unwrap(),
+							};
+
+							match SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(
+								call.into(),
+							) {
+								Err(_) => {
+									log::error!(target: LOG_TARGET, "Failed to submit transaction",);
+								}
+								_ => {
+									log::info!(
+										target: LOG_TARGET,
+										"Successfully submitted transaction",
+									);
+								}
+							};
+						};
+					});
+			} else {
+				log::trace!(
+					target: "runtime::validator-set",
+					"Skipping heartbeat at {:?}. Not a validator.",
+					now,
+				)
+			}
+		}
+	}
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		pub initial_validators: Vec<T::AccountId>,
+		pub max_epochs_missed: U256,
 	}
 
 	#[cfg(feature = "std")]
@@ -102,6 +263,7 @@ pub mod pallet {
 		fn default() -> Self {
 			Self {
 				initial_validators: Default::default(),
+				max_epochs_missed: 5.into(),
 			}
 		}
 	}
@@ -126,8 +288,81 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			Pallet::<T>::initialize_validators(&self.initial_validators);
+			Pallet::<T>::initialize_validators(self.initial_validators.clone());
+			MaxMissedEpochs::<T>::put(self.max_epochs_missed.clone());
 		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		fn local_keys() -> impl Iterator<Item = (u32, T::AuthorityId)> {
+			// on-chain storage
+			//
+			// At index `idx`:
+			// 1. A (ImOnline) public key to be used by a validator at index `idx` to send im-online
+			//          heartbeats.
+			let authorities = ApprovedValidators::<T>::get();
+
+			// local keystore
+			//
+			// All `ImOnline` public (+private) keys currently in the local keystore.
+			let mut local_keys = T::AuthorityId::all();
+
+			local_keys.sort();
+
+			authorities
+				.into_iter()
+				.enumerate()
+				.filter_map(move |(index, authority)| {
+					let account_ids = local_keys
+						.iter()
+						.map(|x| T::AccountIdOfValidator::convert(x.clone()))
+						.collect::<Vec<T::AccountId>>();
+					account_ids
+						.binary_search(&authority)
+						.ok()
+						.map(|location| (index as u32, local_keys[location].clone()))
+				})
+		}
+
+		fn ensure_unsigned_origin(
+			heartbeat: Heartbeat<T::BlockNumber, T::AuthorityId>,
+			signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
+		) -> Result<(), ()> {
+			let is_valid = heartbeat
+				.authority_id
+				.clone()
+				.verify(&heartbeat.encode(), &signature);
+
+			if !is_valid {
+				return Err(());
+			}
+
+			let approved_validators = ApprovedValidators::<T>::get();
+
+			if approved_validators.len() <= heartbeat.authority_index as usize
+				|| approved_validators[heartbeat.authority_index as usize]
+					!= T::AccountIdOfValidator::convert(heartbeat.clone().authority_id)
+			{
+				return Err(());
+			}
+
+			Ok(())
+		}
+	}
+
+	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+	pub struct Heartbeat<BlockNumber, AuthorityId>
+	where
+		BlockNumber: PartialEq + Eq + Decode + Encode,
+	{
+		/// Block number at the time heartbeat is created..
+		pub block_number: BlockNumber,
+		/// Index of the current session.
+		pub session_index: sp_staking::SessionIndex,
+		/// An index of the authority on the list of approved validators.
+		pub authority_id: AuthorityId,
+		/// An index of the authority on the list of approved validators.
+		pub authority_index: u32,
 	}
 
 	#[pallet::call]
@@ -144,8 +379,7 @@ pub mod pallet {
 		pub fn add_validator(origin: OriginFor<T>, validator_id: T::AccountId) -> DispatchResult {
 			T::AddRemoveOrigin::ensure_origin(origin)?;
 
-			Self::do_add_validator(validator_id.clone())?;
-			Self::approve_validator(validator_id)?;
+			Self::approve_validator(validator_id.clone())?;
 
 			Ok(())
 		}
@@ -168,23 +402,45 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Update max missed epochs.
+		///
+		/// The origin can be configured using the `AddRemoveOrigin` type in the
+		/// host runtime. Can also be set to sudo/root.
+		#[pallet::call_index(2)]
+		#[pallet::weight(0)]
+		pub fn update_max_missed_epochs(
+			origin: OriginFor<T>,
+			max_missed_epochs: U256,
+		) -> DispatchResult {
+			T::AddRemoveOrigin::ensure_origin(origin)?;
+
+			MaxMissedEpochs::<T>::put(max_missed_epochs);
+
+			Ok(())
+		}
+
 		/// Add an approved validator again when it comes back online.
 		///
 		/// For this call, the dispatch origin must be the validator itself.
-		#[pallet::call_index(2)]
+		#[pallet::call_index(3)]
 		#[pallet::weight(0)]
 		pub fn add_validator_again(
 			origin: OriginFor<T>,
-			validator_id: T::AccountId,
+			heartbeat: Heartbeat<T::BlockNumber, T::AuthorityId>,
+			_signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
 		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-			ensure!(who == validator_id, Error::<T>::BadOrigin);
-			ensure!(
-				<ApprovedValidators<T>>::get().contains(&validator_id),
-				Error::<T>::ValidatorNotApproved
-			);
+			ensure_none(origin)?;
 
-			Self::do_add_validator(validator_id)?;
+			let validator_account_id =
+				ApprovedValidators::<T>::get()[heartbeat.authority_index as usize].clone();
+
+			if Self::validators().contains(&validator_account_id) {
+				return DispatchError::Other("Validator already in the validator set.").into();
+			}
+
+			ToBeAddedValidators::<T>::mutate(|v| {
+				v.push(validator_account_id.clone());
+			});
 
 			Ok(())
 		}
@@ -192,9 +448,9 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	fn initialize_validators(validators: &[T::AccountId]) {
+	fn initialize_validators(account_ids: Vec<T::AccountId>) {
 		assert!(
-			validators.len() as u32 >= T::MinAuthorities::get(),
+			account_ids.len() as u32 >= T::MinAuthorities::get(),
 			"Initial set of validators must be at least T::MinAuthorities"
 		);
 		assert!(
@@ -202,21 +458,8 @@ impl<T: Config> Pallet<T> {
 			"Validators are already initialized!"
 		);
 
-		<Validators<T>>::put(validators);
-		<ApprovedValidators<T>>::put(validators);
-	}
-
-	fn do_add_validator(validator_id: T::AccountId) -> DispatchResult {
-		ensure!(
-			!<Validators<T>>::get().contains(&validator_id),
-			Error::<T>::Duplicate
-		);
-		<Validators<T>>::mutate(|v| v.push(validator_id.clone()));
-
-		Self::deposit_event(Event::ValidatorAdditionInitiated(validator_id.clone()));
-		log::debug!(target: LOG_TARGET, "Validator addition initiated.");
-
-		Ok(())
+		<Validators<T>>::put(account_ids.clone());
+		<ApprovedValidators<T>>::put(account_ids);
 	}
 
 	fn do_remove_validator(validator_id: T::AccountId) -> DispatchResult {
@@ -234,7 +477,11 @@ impl<T: Config> Pallet<T> {
 		<Validators<T>>::put(validators);
 
 		Self::deposit_event(Event::ValidatorRemovalInitiated(validator_id.clone()));
-		log::debug!(target: LOG_TARGET, "Validator removal initiated.");
+		log::debug!(
+			target: LOG_TARGET,
+			"Validator removal initiated: {:?}",
+			validator_id.clone()
+		);
 
 		Ok(())
 	}
@@ -244,24 +491,27 @@ impl<T: Config> Pallet<T> {
 			!<ApprovedValidators<T>>::get().contains(&validator_id),
 			Error::<T>::Duplicate
 		);
+		log::debug!(
+			target: LOG_TARGET,
+			"Approving validator {:?}",
+			validator_id.clone()
+		);
 		<ApprovedValidators<T>>::mutate(|v| v.push(validator_id.clone()));
 		Ok(())
 	}
 
 	fn unapprove_validator(validator_id: T::AccountId) -> DispatchResult {
 		let mut approved_set = <ApprovedValidators<T>>::get();
-		approved_set.retain(|v| *v != validator_id);
+		approved_set.retain(|v| validator_id.ne(v));
 		<ApprovedValidators<T>>::put(approved_set);
 		Ok(())
 	}
 
 	// Adds offline validators to a local cache for removal at new session.
-	fn mark_for_removal(validator_id: T::AccountId) {
-		<OfflineValidators<T>>::mutate(|v| v.push(validator_id));
-		log::debug!(
-			target: LOG_TARGET,
-			"Offline validator marked for auto removal."
-		);
+	fn increment_missed_block(validator_id: T::AccountId) {
+		<EpochsMissed<T>>::mutate(validator_id.clone(), |v| {
+			*v = v.clone().add(1);
+		});
 	}
 
 	// Removes offline validators from the validator set and clears the offline
@@ -269,19 +519,28 @@ impl<T: Config> Pallet<T> {
 	// who were reported offline during the session that is ending. We do not
 	// check for `MinAuthorities` here, because the offline validators will not
 	// produce blocks and will have the same overall effect on the runtime.
-	fn remove_offline_validators() {
-		let validators_to_remove: BTreeSet<_> = <OfflineValidators<T>>::get().into_iter().collect();
+	fn update_validators() {
+		Validators::<T>::mutate(|validators| {
+			validators.retain(|x| {
+				let missed_epochs = EpochsMissed::<T>::get(x.clone());
+				if missed_epochs < MaxMissedEpochs::<T>::get() {
+					true
+				} else {
+					log::debug!(
+						target: LOG_TARGET,
+						"Removing offline validator {:?}",
+						x.clone()
+					);
+					EpochsMissed::<T>::remove(x.clone());
+					false
+				}
+			});
 
-		// Delete from active validator set.
-		<Validators<T>>::mutate(|vs| vs.retain(|v| !validators_to_remove.contains(v)));
-		log::debug!(
-			target: LOG_TARGET,
-			"Initiated removal of {:?} offline validators.",
-			validators_to_remove.len()
-		);
-
-		// Clear the offline validator list to avoid repeated deletion.
-		<OfflineValidators<T>>::put(Vec::<T::AccountId>::new());
+			ToBeAddedValidators::<T>::take().iter().for_each(|x| {
+				log::debug!(target: LOG_TARGET, "Adding validator {:?}", x.clone());
+				validators.push(x.clone());
+			});
+		})
 	}
 }
 
@@ -289,20 +548,48 @@ impl<T: Config> Pallet<T> {
 // being rotated.
 impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
 	// Plan a new session and provide new validator set.
-	fn new_session(_new_index: u32) -> Option<Vec<T::AccountId>> {
-		// Remove any offline validators. This will only work when the runtime
-		// also has the im-online pallet.
-		Self::remove_offline_validators();
 
+	fn new_session(_new_index: u32) -> Option<Vec<T::AccountId>> {
+		let validators = Self::validators();
 		log::debug!(
 			target: LOG_TARGET,
-			"New session called; updated validator set provided."
+			"New session called; updated validator set provided: {:?}",
+			validators
 		);
 
-		Some(Self::validators())
+		Some(validators)
 	}
 
-	fn end_session(_end_index: u32) {}
+	fn end_session(end_index: u32) {
+		log::debug!(target: LOG_TARGET, "Session ended.");
+
+		// Add to offline validator list those validators who didn't mine a block in the session.
+		let validators = Validators::<T>::get();
+
+		// Get current block number
+		let session_start_block = T::SessionBlockManager::session_start_block(end_index);
+		let session_end_block = T::SessionBlockManager::session_start_block(end_index + 1);
+
+		let mut epoch_block_authors = BTreeSet::<T::AccountId>::new();
+
+		let mut i = session_start_block;
+		while i < session_end_block {
+			let block_author = BlockAuthors::<T>::get(i);
+
+			if let Some(author) = block_author {
+				epoch_block_authors.insert(author);
+			}
+			i += 1u32.into();
+		}
+
+		for validator in validators {
+			if !epoch_block_authors.contains(&validator) {
+				Self::increment_missed_block(validator);
+			}
+		}
+
+		Self::update_validators();
+	}
 
 	fn start_session(_start_index: u32) {}
 }
@@ -325,6 +612,11 @@ impl<T: Config> EstimateNextSessionRotation<T::BlockNumber> for Pallet<T> {
 	}
 }
 
+pub trait OpaqueKeysPublisher<PubKey1, PubKey2, Keys> {
+	fn publish_keys(key: PubKey1, key2: PubKey2) -> Result<(), ()>;
+	fn get_published_keys(key: PubKey1) -> Option<Keys>;
+}
+
 // Implementation of Convert trait for mapping ValidatorId with AccountId.
 pub struct ValidatorOf<T>(sp_std::marker::PhantomData<T>);
 
@@ -332,6 +624,10 @@ impl<T: Config> Convert<T::ValidatorId, Option<T::ValidatorId>> for ValidatorOf<
 	fn convert(account: T::ValidatorId) -> Option<T::ValidatorId> {
 		Some(account)
 	}
+}
+
+impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
+	type Public = T::AuthorityId;
 }
 
 impl<T: Config> ValidatorSet<T::AccountId> for Pallet<T> {
@@ -352,24 +648,6 @@ impl<T: Config> ValidatorSetWithIdentification<T::AccountId> for Pallet<T> {
 	type IdentificationOf = ValidatorOf<T>;
 }
 
-// Offence reporting and unresponsiveness management.
-impl<T: Config, O: Offence<(T::AccountId, T::AccountId)>>
-	ReportOffence<T::AccountId, (T::AccountId, T::AccountId), O> for Pallet<T>
-{
-	fn report_offence(_reporters: Vec<T::AccountId>, offence: O) -> Result<(), OffenceError> {
-		let offenders = offence.offenders();
-
-		for (v, _) in offenders.into_iter() {
-			Self::mark_for_removal(v);
-		}
-
-		Ok(())
-	}
-
-	fn is_known_offence(
-		_offenders: &[(T::AccountId, T::AccountId)],
-		_time_slot: &O::TimeSlot,
-	) -> bool {
-		false
-	}
+pub trait SessionBlockManager<BlockNumber> {
+	fn session_start_block(session_index: sp_staking::SessionIndex) -> BlockNumber;
 }

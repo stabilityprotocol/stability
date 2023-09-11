@@ -27,7 +27,7 @@ use sp_core::crypto::key_types::DUMMY;
 use sp_core::{H160, H256, U256};
 use sp_runtime::impl_opaque_keys;
 use sp_runtime::testing::UintAuthorityId;
-use sp_runtime::traits::{BlakeTwo256, IdentityLookup, OpaqueKeys};
+use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup, OpaqueKeys};
 use sp_runtime::KeyTypeId;
 use std::cell::RefCell;
 
@@ -192,14 +192,57 @@ impl pallet_evm::Config for Runtime {
 	type FindAuthor = ();
 }
 
-parameter_types! {
-	pub const MinAuthorities: u32 = 0;
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+where
+	RuntimeCall: From<C>,
+{
+	type Extrinsic = UncheckedExtrinsic;
+	type OverarchingCall = RuntimeCall;
 }
 
+pub struct MockSessionBlockManager;
+impl pallet_validator_set::SessionBlockManager<BlockNumber> for MockSessionBlockManager {
+	fn session_start_block(session_index: sp_staking::SessionIndex) -> BlockNumber {
+		session_index as BlockNumber
+	}
+}
+pub struct MockFindAuthor;
+impl frame_support::traits::FindAuthor<AccountId> for MockFindAuthor {
+	fn find_author<'a, I>(_digests: I) -> Option<AccountId>
+	where
+		I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
+	{
+		Some(AccountId::default())
+	}
+}
+
+pub struct AccountIdOfValidator;
+impl Convert<UintAuthorityId, AccountId> for AccountIdOfValidator {
+	fn convert(_authority_id: UintAuthorityId) -> AccountId {
+		stbl_core_primitives::AccountId::default()
+	}
+}
+
+parameter_types! {
+	pub const MinAuthorities: u32 = 0u32;
+	pub const MaxKeys: u32 = 1000u32;
+}
 impl pallet_validator_set::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+
 	type AddRemoveOrigin = EnsureRoot<AccountId>;
+
 	type MinAuthorities = MinAuthorities;
+
+	type SessionBlockManager = MockSessionBlockManager;
+
+	type FindAuthor = MockFindAuthor;
+
+	type AuthorityId = UintAuthorityId;
+
+	type MaxKeys = MaxKeys;
+
+	type AccountIdOfValidator = AccountIdOfValidator;
 }
 
 thread_local! {
@@ -318,7 +361,8 @@ impl ExtBuilder {
 			.expect("Frame system builds valid default genesis config");
 
 		pallet_validator_set::GenesisConfig::<Runtime> {
-			initial_validators: self.validators,
+			initial_validators: self.validators.clone(),
+			max_epochs_missed: U256::max_value(),
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet balances storage can be assimilated");

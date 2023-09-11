@@ -1,5 +1,5 @@
 [package]
-name = 'pallet-validator-set'
+name = 'pallet-validator-keys-controller'
 version = '1.0.0'
 edition = '2021'
 
@@ -16,6 +16,7 @@ frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 pallet-session = { workspace = true }
+pallet-validator-set = { workspace = true }
 scale-info = { workspace = true }
 syn = { workspace = true }
 sp-application-crypto = { workspace = true }
@@ -37,6 +38,7 @@ std = [
     'sp-io/std',
     'sp-std/std',
     'sp-runtime/std',
-    'pallet-session/std'
+    'pallet-session/std',
+    'pallet-validator-set/std'
 ]
 try-runtime = ['frame-support/try-runtime']

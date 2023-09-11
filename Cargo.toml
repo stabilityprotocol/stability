@@ -9,6 +9,7 @@ members = [
     'precompiles/utils',
     'pallets/root-controller',
     'pallets/validator-set',
+    'pallets/validator-keys-controller',
     'primitives/runner',
     'precompiles/token-fee-controller/fee-token-selector',
     'precompiles/token-fee-controller/validator-fee-selector',
@@ -146,7 +147,6 @@ pallet-collective = { version = "4.0.0-dev", git = "https://github.com/paritytec
 pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 beefy-merkle-tree  = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 pallet-session =  { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
-pallet-im-online =  { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
 # Substrate Utility
 frame-benchmarking-cli = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
@@ -212,6 +212,7 @@ pallet-user-fee-selector = { path = "./pallets/token-fee-controller/user-fee-sel
 pallet-validator-fee-selector = { path = "./pallets/token-fee-controller/validator-fee-selector", default-features = false }
 pallet-supported-tokens-manager = { path = "./pallets/token-fee-controller/supported-tokens-manager", default-features = false }
 pallet-validator-set = { path = "./pallets/validator-set", default-features = false }
+pallet-validator-keys-controller = { path = "./pallets/validator-keys-controller", default-features = false }
 pallet-custom-balances = { path = './pallets/custom-balances', default-features = false }
 runner = { path = "./primitives/runner", default-features = false }
 

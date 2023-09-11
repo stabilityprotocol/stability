@@ -12,3 +12,4 @@
 - [Sponsored Transactions](SPONSORED-TRANSACTIONS.md)
 - [Zero Gas Transactions](ZERO-GAS-TRANSACTIONS.md)
 - [Custom RPCs](RPC.md)
+- [Validator connection handling](VALIDATOR-CONNECTION-HANDLING.md)

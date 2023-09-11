@@ -172,7 +172,7 @@ fn add_validator() {
 			))
 			.execute_some();
 
-		assert_eq!(ValidatorSet::validators(), vec![validator]);
+		assert_eq!(ValidatorSet::approved_validators(), vec![validator]);
 	});
 }
 
@@ -228,7 +228,7 @@ fn add_validator_if_already_init() {
 				.execute_some();
 
 			assert_eq!(
-				ValidatorSet::validators(),
+				ValidatorSet::approved_validators(),
 				vec![initial_validator, validator]
 			);
 		})
@@ -263,7 +263,7 @@ fn add_two_validators() {
 			.execute_some();
 
 		assert_eq!(
-			ValidatorSet::validators(),
+			ValidatorSet::approved_validators(),
 			vec![validator, second_validator]
 		);
 	});

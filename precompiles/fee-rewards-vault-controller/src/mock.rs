@@ -9,7 +9,7 @@ use pallet_session::{SessionHandler, ShouldEndSession};
 use precompile_utils::precompile_set::*;
 use sp_core::H256;
 use sp_runtime::testing::UintAuthorityId;
-use sp_runtime::traits::OpaqueKeys;
+use sp_runtime::traits::{Convert, OpaqueKeys};
 use sp_runtime::{impl_opaque_keys, KeyTypeId};
 use sp_runtime::{
 	testing::Header,
@@ -29,6 +29,9 @@ impl Contains<RuntimeCall> for BlockEverything {
 		false
 	}
 }
+
+type BlockNumber = u64;
+type AccountId = H160;
 
 parameter_types! {
 	pub DefaultOwner: H160 = H160::from_str("0xa58482131a8d67725e996af72D91A849AcC0F4A1").expect("invalid address");
@@ -62,10 +65,10 @@ impl frame_system::Config for Test {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
 	type Index = u64;
-	type BlockNumber = u64;
+	type BlockNumber = BlockNumber;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = H160;
+	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type RuntimeEvent = RuntimeEvent;
@@ -227,14 +230,59 @@ impl ShouldEndSession<u64> for TestShouldEndSession {
 	}
 }
 
-parameter_types! {
-	pub const MinAuthorities: u32 = 2;
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Test
+where
+	RuntimeCall: From<C>,
+{
+	type Extrinsic = UncheckedExtrinsic;
+	type OverarchingCall = RuntimeCall;
 }
 
+pub struct MockSessionBlockManager;
+impl pallet_validator_set::SessionBlockManager<<Test as frame_system::Config>::BlockNumber>
+	for MockSessionBlockManager
+{
+	fn session_start_block(session_index: sp_staking::SessionIndex) -> BlockNumber {
+		session_index as BlockNumber
+	}
+}
+pub struct MockFindAuthor;
+impl frame_support::traits::FindAuthor<AccountId> for MockFindAuthor {
+	fn find_author<'a, I>(_digests: I) -> Option<AccountId>
+	where
+		I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
+	{
+		Some(AccountId::default())
+	}
+}
+
+pub struct AccountIdOfValidator;
+impl Convert<UintAuthorityId, AccountId> for AccountIdOfValidator {
+	fn convert(a: UintAuthorityId) -> AccountId {
+		AccountId::from_low_u64_be(a.0)
+	}
+}
+
+parameter_types! {
+	pub const MinAuthorities: u32 = 2;
+	pub const MaxKeys: u32 = 1000u32;
+}
 impl pallet_validator_set::Config for Test {
-	type AddRemoveOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
+
+	type AddRemoveOrigin = EnsureRoot<AccountId>;
+
 	type MinAuthorities = MinAuthorities;
+
+	type SessionBlockManager = MockSessionBlockManager;
+
+	type FindAuthor = MockFindAuthor;
+
+	type AuthorityId = UintAuthorityId;
+
+	type MaxKeys = MaxKeys;
+
+	type AccountIdOfValidator = AccountIdOfValidator;
 }
 
 impl pallet_session::Config for Test {
@@ -339,6 +387,7 @@ impl ExtBuilder {
 		pallet_validator_set::GenesisConfig::<Test>::assimilate_storage(
 			&pallet_validator_set::GenesisConfig::<Test> {
 				initial_validators: Validators::get(),
+				max_epochs_missed: U256::max_value(),
 			},
 			&mut t,
 		)

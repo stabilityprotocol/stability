@@ -18,6 +18,7 @@ use frame_support::pallet_prelude::InvalidTransaction;
 use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
+use opaque::SessionKeys;
 use pallet_balances::Instance1;
 use pallet_custom_balances::AccountIdMapping;
 use pallet_supported_tokens_manager::SupportedTokensManager as OtherSupportedTokensManager;
@@ -30,6 +31,7 @@ use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
 	OpaqueMetadata, H160, H256, U256,
 };
+use sp_runtime::traits::Convert;
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::traits::IdentityLookup;
 use sp_runtime::{
@@ -40,16 +42,13 @@ use sp_runtime::{
 		BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, Get, NumberFor, OpaqueKeys,
 		PostDispatchInfoOf, UniqueSaturatedInto, Verify,
 	},
-	transaction_validity::{
-		TransactionPriority, TransactionSource, TransactionValidity, TransactionValidityError,
-	},
+	transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
 	ApplyExtrinsicResult, Permill, SaturatedConversion,
 };
 use sp_std::{marker::PhantomData, prelude::*};
 use sp_version::RuntimeVersion;
 use stability_config::{MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use stbl_core_primitives::aura::Public as AuraId;
-use stbl_core_primitives::imonline::Public as ImOnlineId;
 use stbl_tools::custom_fee::CustomFeeInfo;
 use stbl_transaction_validator::FallbackTransactionValidator;
 // Substrate FRAME
@@ -65,6 +64,7 @@ use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
 use pallet_evm::{Account as EVMAccount, FeeCalculator, Runner};
 use pallet_sponsored_transactions::Call::send_sponsored_transaction;
+use pallet_validator_set::SessionBlockManager;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime,
@@ -156,7 +156,6 @@ pub mod opaque {
 		pub struct SessionKeys {
 			pub aura: Aura,
 			pub grandpa: Grandpa,
-			pub im_online: ImOnline,
 		}
 	}
 }
@@ -413,6 +412,23 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 	}
 }
 
+pub struct FindBlockAuthorityId<F>(PhantomData<F>);
+impl<F: FindAuthor<u32>> FindAuthor<AccountId> for FindBlockAuthorityId<F> {
+	fn find_author<'a, I>(digests: I) -> Option<AccountId>
+	where
+		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
+	{
+		if let Some(author_index) = F::find_author(digests) {
+			let authority_id = Aura::authorities()[author_index as usize].clone();
+
+			let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
+			let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
+			return Some(signer.into_account().into());
+		}
+		None
+	}
+}
+
 pub struct IdentityAddressMapping;
 impl pallet_evm::AddressMapping<AccountId> for IdentityAddressMapping {
 	fn into_account_id(address: H160) -> AccountId {
@@ -575,10 +591,52 @@ type EnsureRootOrHalfTechCommittee = EitherOfDiverse<
 	pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 1, 2>,
 >;
 
+pub struct PeriodicSessionBlockManager;
+impl SessionBlockManager<BlockNumber> for PeriodicSessionBlockManager {
+	fn session_start_block(session_index: sp_staking::SessionIndex) -> BlockNumber {
+		return session_index * Period::get() + Offset::get();
+	}
+}
+
+pub struct AccountIdOfValidator;
+impl Convert<AuraId, AccountId> for AccountIdOfValidator {
+	fn convert(authority_id: AuraId) -> AccountId {
+		let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
+		let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
+		return signer.into_account().into();
+	}
+}
+
 impl pallet_validator_set::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type AddRemoveOrigin = EnsureRootOrHalfTechCommittee;
 	type MinAuthorities = MinAuthorities;
+	type SessionBlockManager = PeriodicSessionBlockManager;
+	type FindAuthor = FindBlockAuthorityId<Aura>;
+	type AuthorityId = AuraId;
+	type MaxKeys = MaxKeys;
+	type AccountIdOfValidator = AccountIdOfValidator;
+}
+
+pub struct SessionKeysBuilder;
+impl pallet_validator_keys_controller::SessionKeysBuilder<AuraId, GrandpaId, SessionKeys>
+	for SessionKeysBuilder
+{
+	fn new(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
+		SessionKeys { aura, grandpa }
+	}
+}
+pub struct ValidatorIdMapping;
+impl Convert<AuraId, AccountId20> for ValidatorIdMapping {
+	fn convert(a: AuraId) -> AccountId20 {
+		AccountIdOfValidator::convert(a.clone())
+	}
+}
+impl pallet_validator_keys_controller::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type FinalizationId = GrandpaId;
+	type SessionKeysBuilder = SessionKeysBuilder;
+	type ValidatorIdOfValidation = ValidatorIdMapping;
 }
 
 parameter_types! {
@@ -599,7 +657,6 @@ impl pallet_session::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
 	pub const MaxKeys: u32 = 10_000;
 	pub const MaxPeerInHeartbeats: u32 = 10_000;
 	pub const MaxPeerDataEncodingSize: u32 = 1_000;
@@ -662,19 +719,6 @@ where
 	type OverarchingCall = RuntimeCall;
 }
 
-impl pallet_im_online::Config for Runtime {
-	type AuthorityId = ImOnlineId;
-	type RuntimeEvent = RuntimeEvent;
-	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-	type ValidatorSet = ValidatorSet;
-	type ReportUnresponsiveness = ValidatorSet;
-	type UnsignedPriority = ImOnlineUnsignedPriority;
-	type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
-	type MaxKeys = MaxKeys;
-	type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
-	type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
-}
-
 parameter_types! {
 	pub const MaxSizeOfCode: u32 = 10 * 1024 * 1024; // 10 MB
 }
@@ -724,8 +768,8 @@ construct_runtime!(
 		System: frame_system,
 		Timestamp: pallet_timestamp,
 		ValidatorSet: pallet_validator_set,
+		ValidatorKeysController: pallet_validator_keys_controller,
 		Session: pallet_session,
-		ImOnline: pallet_im_online,
 		Aura: pallet_aura,
 		Grandpa: pallet_grandpa,
 		Balances: pallet_custom_balances,
