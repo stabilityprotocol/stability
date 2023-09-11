@@ -124,7 +124,7 @@ pub mod pallet {
 				Self::offchain_publish_keys(now);
 			} else {
 				log::trace!(
-					target: "runtime::im-online",
+					target: "runtime::validator-keys-controller",
 					"Skipping heartbeat at {:?}. Not a validator.",
 					now,
 				)

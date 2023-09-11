@@ -244,7 +244,7 @@ pub mod pallet {
 					});
 			} else {
 				log::trace!(
-					target: "runtime::im-online",
+					target: "runtime::validator-set",
 					"Skipping heartbeat at {:?}. Not a validator.",
 					now,
 				)
