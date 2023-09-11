@@ -76,3 +76,15 @@ Additionally, you can configure the following flags:
 - `--unsafe-rpc-external --rpc-cors all --unsafe-ws-external`: Use if your node will be accessed from a system external to your localhost.
 - `--bootnodes`: A list of p2p nodes for Stability to join the network. What is known as bootnodes
 - `--base-path`: Specifies a custom base path for the data folder
+
+## Generating the a build spec file or Genesis file
+
+This file contains the initial genesis state that all nodes in the network agree on. The genesis state must be established when the blockchain is first started and it cannot be changed thereafter without starting an entirely new blockchain.
+
+To generate the genesis file, execute the following command:
+
+```sh
+./target/release/stability build-spec --chain alphanet --disable-default-bootnode --raw > specs/alphanet.json
+```
+
+More info: https://docs.substrate.io/build/chain-spec/
