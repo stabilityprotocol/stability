@@ -56,6 +56,7 @@ impl SubstrateCli for Cli {
 	fn load_spec(&self, id: &str) -> Result<Box<dyn ChainSpec>, String> {
 		Ok(match id {
 			"alphanet" => Box::new(chain_spec::alphanet::alphanet_config()?),
+			"betanet" => Box::new(chain_spec::betanet::betanet_config()?),
 			"" | "local" | "dev" => {
 				let enable_manual_seal = self.sealing.map(|_| true);
 				Box::new(chain_spec::dev::development_config(enable_manual_seal))

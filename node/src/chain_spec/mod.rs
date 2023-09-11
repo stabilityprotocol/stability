@@ -11,6 +11,7 @@ use sp_state_machine::BasicExternalities;
 use stability_runtime::{opaque::SessionKeys, EnableManualSeal, Signature};
 
 pub mod alphanet;
+pub mod betanet;
 pub mod dev;
 
 // The URL for the telemetry server.
