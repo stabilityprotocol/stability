@@ -144,33 +144,34 @@ pub mod pallet {
 	impl<T: Config> ValidateUnsigned for Pallet<T> {
 		type Call = Call<T>;
 		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-			if let Call::add_validator_again {
-				heartbeat,
-				signature,
-			} = call
-			{
-				Self::ensure_unsigned_origin(heartbeat.clone(), signature.clone())
-					.map_err(|_| InvalidTransaction::BadProof)?;
+			match call {
+				Call::add_validator_again {
+					heartbeat,
+					signature,
+				} => {
+					Self::ensure_unsigned_origin(heartbeat.clone(), signature.clone())
+						.map_err(|_| InvalidTransaction::BadProof)?;
 
-				let account_id = T::AccountIdOfValidator::convert(heartbeat.clone().authority_id);
+					let account_id =
+						T::AccountIdOfValidator::convert(heartbeat.clone().authority_id);
 
-				if ToBeAddedValidators::<T>::get().contains(&account_id) {
-					return InvalidTransaction::Call.into();
+					if ToBeAddedValidators::<T>::get().contains(&account_id) {
+						return InvalidTransaction::Call.into();
+					}
+
+					if Validators::<T>::get().contains(&account_id) {
+						return InvalidTransaction::Call.into();
+					}
+
+					let sesion_index = pallet_session::Pallet::<T>::current_index();
+					return ValidTransaction::with_tag_prefix("ValidatorSet")
+						.priority(u64::MAX)
+						.and_provides((sesion_index, heartbeat.clone().authority_id))
+						.propagate(true)
+						.build();
 				}
-
-				if Validators::<T>::get().contains(&account_id) {
-					return InvalidTransaction::Call.into();
-				}
-
-				let sesion_index = pallet_session::Pallet::<T>::current_index();
-				return ValidTransaction::with_tag_prefix("ValidatorSet")
-					.priority(u64::MAX)
-					.and_provides((sesion_index, heartbeat.clone().authority_id))
-					.propagate(true)
-					.build();
+				_ => InvalidTransaction::Call.into(),
 			}
-
-			return InvalidTransaction::Call.into();
 		}
 	}
 
@@ -436,6 +437,10 @@ pub mod pallet {
 			let validator_account_id =
 				ApprovedValidators::<T>::get()[heartbeat.authority_index as usize].clone();
 
+			if Self::validators().contains(&validator_account_id) {
+				return DispatchError::Other("Validator already in the validator set.").into();
+			}
+
 			ToBeAddedValidators::<T>::mutate(|v| {
 				v.push(validator_account_id.clone());
 			});
@@ -534,7 +539,7 @@ impl<T: Config> Pallet<T> {
 				}
 			});
 
-			ToBeAddedValidators::<T>::get().iter().for_each(|x| {
+			ToBeAddedValidators::<T>::take().iter().for_each(|x| {
 				log::debug!(target: LOG_TARGET, "Adding validator {:?}", x.clone());
 				validators.push(x.clone());
 			});
@@ -608,6 +613,11 @@ impl<T: Config> EstimateNextSessionRotation<T::BlockNumber> for Pallet<T> {
 	) -> (Option<T::BlockNumber>, frame_support::dispatch::Weight) {
 		(None, Zero::zero())
 	}
+}
+
+pub trait OpaqueKeysPublisher<PubKey1, PubKey2, Keys> {
+	fn publish_keys(key: PubKey1, key2: PubKey2) -> Result<(), ()>;
+	fn get_published_keys(key: PubKey1) -> Option<Keys>;
 }
 
 // Implementation of Convert trait for mapping ValidatorId with AccountId.

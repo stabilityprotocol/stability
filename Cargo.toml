@@ -9,6 +9,7 @@ members = [
     'precompiles/utils',
     'pallets/root-controller',
     'pallets/validator-set',
+    'pallets/validator-keys-controller',
     'primitives/runner',
     'precompiles/token-fee-controller/fee-token-selector',
     'precompiles/token-fee-controller/validator-fee-selector',
@@ -207,6 +208,7 @@ pallet-user-fee-selector = { path = "./pallets/token-fee-controller/user-fee-sel
 pallet-validator-fee-selector = { path = "./pallets/token-fee-controller/validator-fee-selector", default-features = false }
 pallet-supported-tokens-manager = { path = "./pallets/token-fee-controller/supported-tokens-manager", default-features = false }
 pallet-validator-set = { path = "./pallets/validator-set", default-features = false }
+pallet-validator-keys-controller = { path = "./pallets/validator-keys-controller", default-features = false }
 pallet-custom-balances = { path = './pallets/custom-balances', default-features = false }
 runner = { path = "./primitives/runner", default-features = false }
 

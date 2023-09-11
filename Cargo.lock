@@ -4967,6 +4967,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-validator-keys-controller"
+version = "1.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-session",
+ "pallet-validator-set",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "pallet-validator-set"
 version = "1.0.0"
 dependencies = [
@@ -8559,6 +8581,7 @@ dependencies = [
  "pallet-upgrade-runtime-proposal",
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
+ "pallet-validator-keys-controller",
  "pallet-validator-set",
  "parity-scale-codec",
  "precompile-fee-rewards-vault-controller",

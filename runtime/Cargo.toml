@@ -57,6 +57,7 @@ std = [
     'pallet-root-controller/std',
     'pallet-supported-tokens-manager/std',
     'pallet-validator-set/std',
+    'pallet-validator-keys-controller/std',
     'pallet-validator-fee-selector/std',
     'pallet-session/std',
     'pallet-upgrade-runtime-proposal/std',
@@ -154,6 +155,7 @@ pallet-erc20-manager = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
 precompile-supported-tokens-manager = { workspace = true }
 pallet-validator-set = { workspace = true }
+pallet-validator-keys-controller = { workspace = true }
 pallet-upgrade-runtime-proposal = { workspace = true }
 precompile-upgrade-runtime-controller = { workspace = true }
 runner = { workspace = true }

@@ -18,6 +18,7 @@ use frame_support::pallet_prelude::InvalidTransaction;
 use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
+use opaque::SessionKeys;
 use pallet_balances::Instance1;
 use pallet_custom_balances::AccountIdMapping;
 use pallet_supported_tokens_manager::SupportedTokensManager as OtherSupportedTokensManager;
@@ -617,8 +618,29 @@ impl pallet_validator_set::Config for Runtime {
 	type AccountIdOfValidator = AccountIdOfValidator;
 }
 
+pub struct SessionKeysBuilder;
+impl pallet_validator_keys_controller::SessionKeysBuilder<AuraId, GrandpaId, SessionKeys>
+	for SessionKeysBuilder
+{
+	fn new(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
+		SessionKeys { aura, grandpa }
+	}
+}
+pub struct ValidatorIdMapping;
+impl Convert<AuraId, AccountId20> for ValidatorIdMapping {
+	fn convert(a: AuraId) -> AccountId20 {
+		AccountIdOfValidator::convert(a.clone())
+	}
+}
+impl pallet_validator_keys_controller::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type FinalizationId = GrandpaId;
+	type SessionKeysBuilder = SessionKeysBuilder;
+	type ValidatorIdOfValidation = ValidatorIdMapping;
+}
+
 parameter_types! {
-	pub const Period: u32 = SESSION_MINUTES_DURATION * MINUTES;
+	pub const Period: u32 = 10;
 	pub const Offset: u32 = 0;
 }
 
@@ -746,6 +768,7 @@ construct_runtime!(
 		System: frame_system,
 		Timestamp: pallet_timestamp,
 		ValidatorSet: pallet_validator_set,
+		ValidatorKeysController: pallet_validator_keys_controller,
 		Session: pallet_session,
 		Aura: pallet_aura,
 		Grandpa: pallet_grandpa,
