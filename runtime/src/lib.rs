@@ -790,6 +790,7 @@ construct_runtime!(
 		UpgradeRuntimeProposal: pallet_upgrade_runtime_proposal,
 		FeeRewardsVault: pallet_fee_rewards_vault,
 		MetaTransactions: pallet_sponsored_transactions,
+		ZeroGasTransactions: pallet_zero_gas_transactions
 	}
 );
 
@@ -930,6 +931,11 @@ impl pallet_sponsored_transactions::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type ERC20Manager = ERC20Manager;
 	type DNTFeeController = DNTFeeController;
+}
+
+impl pallet_zero_gas_transactions::Config for Runtime {
+	type RuntimeCall = RuntimeCall;
+	type UserFeeTokenController = pallet_user_fee_selector::Pallet<Self>;
 }
 
 parameter_types! {
@@ -1167,6 +1173,14 @@ impl_runtime_apis! {
 		}
 
 		fn gas_limit_multiplier_support() {}
+	}
+
+	impl stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block> for Runtime {
+		fn convert_zero_gas_transaction(transaction: EthereumTransaction, validator_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
+			UncheckedExtrinsic::new_unsigned(
+				pallet_zero_gas_transactions::Call::<Runtime>::send_zero_gas_transaction { transaction, validator_signature }.into(),
+			)
+		}
 	}
 
 	impl fp_rpc::ConvertTransactionRuntimeApi<Block> for Runtime {

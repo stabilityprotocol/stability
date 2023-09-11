@@ -23,7 +23,7 @@ if [ -n "$SEED" ]; then
 
 fi
 
-START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --chain alphanet --pruning archive"
+START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --chain alphanet --pruning archive --prometheus-external"
 
 if [ -n "$NODE_KEY" ]; then
   START_COMMAND="$START_COMMAND --node-key $NODE_KEY"

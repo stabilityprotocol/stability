@@ -1,0 +1,239 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+use sp_core::H160;
+
+// #[cfg(test)]
+// mod mock;
+// #[cfg(test)]
+// mod tests;
+
+pub use pallet::*;
+#[frame_support::pallet]
+pub mod pallet {
+	use super::*;
+	use fp_ethereum::TransactionData;
+	use fp_evm::FeeCalculator;
+	use frame_support::dispatch::GetDispatchInfo;
+	use frame_support::pallet_prelude::{StorageMap, *};
+	use frame_support::sp_runtime::traits::UniqueSaturatedInto;
+	use frame_system::pallet_prelude::*;
+	use pallet_evm::GasWeightMapping;
+	use pallet_user_fee_selector::UserFeeTokenController;
+	use sp_core::U256;
+	use sp_std::vec;
+	use sp_core::{H256};
+	use sp_std::{vec::Vec};
+
+	pub use fp_rpc::TransactionStatus;
+
+	use pallet_ethereum::Transaction;
+
+	#[pallet::pallet]
+	#[pallet::without_storage_info]
+	pub struct Pallet<T>(_);
+
+	#[pallet::storage]
+	pub type SponsorNonce<T: Config> = StorageMap<_, Blake2_128Concat, H160, u64, ValueQuery>;
+
+	#[pallet::config]
+	pub trait Config: frame_system::Config + pallet_evm::Config + pallet_ethereum::Config {
+		type RuntimeCall: Parameter + GetDispatchInfo;
+		type UserFeeTokenController: UserFeeTokenController;
+	}
+
+	#[pallet::validate_unsigned]
+	impl<T: Config> ValidateUnsigned for Pallet<T>
+	where
+		Result<pallet_ethereum::RawOrigin, <T as frame_system::Config>::RuntimeOrigin>:
+			From<<T as frame_system::Config>::RuntimeOrigin>,
+		<T as frame_system::Config>::RuntimeOrigin: From<pallet_ethereum::RawOrigin>,
+	{
+		type Call = Call<T>;
+
+		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+			match call {
+				Call::send_zero_gas_transaction { transaction, validator_signature } => {
+					let from =
+						Self::ensure_transaction_signature(transaction.clone()).map_err(|_| {
+							TransactionValidityError::Invalid(InvalidTransaction::BadProof)
+						})?;
+
+						let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
+
+						Self::ensure_zero_gas_transaction(
+							transaction.clone(),
+							current_block_validator,
+							validator_signature.clone()
+						).map_err(|_| {
+							TransactionValidityError::Invalid(InvalidTransaction::BadProof)
+						})?;
+
+					let transaction_data: TransactionData = transaction.into();
+
+					Self::pool_ensure_transaction_unicity(&from, transaction)
+						.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Call))?;
+
+					return sp_runtime::transaction_validity::ValidTransactionBuilder::default()
+						.and_provides((from, transaction_data.nonce))
+						.priority(u64::MAX)
+						.build();
+				}
+				_ => Err(TransactionValidityError::Unknown(
+					UnknownTransaction::Custom(0),
+				)),
+			}?;
+
+			return sp_runtime::transaction_validity::ValidTransactionBuilder::default()
+				.and_provides((H160::zero(), U256::zero()))
+				.priority(u64::MAX)
+				.build();
+		}
+	}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T>
+	where
+		Result<pallet_ethereum::RawOrigin, <T as frame_system::Config>::RuntimeOrigin>:
+			From<<T as frame_system::Config>::RuntimeOrigin>,
+		<T as frame_system::Config>::RuntimeOrigin: From<pallet_ethereum::RawOrigin>,
+	{
+		#[pallet::call_index(0)]
+		#[pallet::weight({
+			let without_base_extrinsic_weight = true;
+			<T as pallet_evm::Config>::GasWeightMapping::gas_to_weight({
+				let transaction_data: TransactionData = transaction.into();
+				transaction_data.gas_limit.unique_saturated_into()
+			}, without_base_extrinsic_weight)
+		})]
+		pub fn send_zero_gas_transaction(
+			_origin: OriginFor<T>,
+			transaction: Transaction,
+			validator_signature: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			let from = Self::ensure_transaction_signature(transaction.clone())
+				.map_err(|_| DispatchError::Other("Invalid transaction signature"))?;
+
+			let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
+
+			Self::ensure_zero_gas_transaction(
+					transaction.clone(),
+					current_block_validator,
+					validator_signature
+			)
+			.map_err(|_| DispatchError::Other("Invalid zero gas transaction signature"))?;
+
+			let origin: T::RuntimeOrigin =
+				pallet_ethereum::Origin::EthereumTransaction(from).into();
+			let dispatch = pallet_ethereum::Pallet::<T>::transact(origin, transaction)
+				.map_err(|_| DispatchError::Other("Signature doesn't meet with sponsor address"))?;
+
+			let used_gas = Self::gas_from_actual_weight(dispatch.actual_weight.unwrap());
+
+			Ok(frame_support::dispatch::PostDispatchInfo {
+				actual_weight: Some(T::GasWeightMapping::gas_to_weight(
+					used_gas.unique_saturated_into(),
+					true,
+				)),
+				pays_fee: Pays::No,
+			})
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		fn gas_from_actual_weight(weight: Weight) -> u64 {
+			let actual_weight = weight.saturating_add(
+				T::BlockWeights::get()
+					.get(frame_support::dispatch::DispatchClass::Normal)
+					.base_extrinsic,
+			);
+
+			<T as pallet_evm::Config>::GasWeightMapping::weight_to_gas(actual_weight)
+		}
+
+		fn ensure_transaction_signature(
+			transaction: pallet_ethereum::Transaction,
+		) -> Result<H160, ()> {
+			match stbl_tools::eth::recover_signer(&transaction) {
+				None => Err(()),
+				Some(address) => Ok(address),
+			}
+		}
+
+		fn pool_ensure_transaction_unicity(
+			origin: &H160,
+			transaction: &pallet_ethereum::Transaction,
+		) -> Result<(), ()> {
+			let transaction_data: TransactionData = transaction.into();
+
+			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
+			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
+
+			fp_evm::CheckEvmTransaction::<pallet_ethereum::InvalidTransactionWrapper>::new(
+				fp_evm::CheckEvmTransactionConfig {
+					evm_config: T::config(),
+					block_gas_limit: T::BlockGasLimit::get(),
+					base_fee,
+					chain_id: T::ChainId::get(),
+					is_transactional: true,
+				},
+				transaction_data.into(),
+			)
+			.validate_in_pool_for(&who)
+			.and_then(|v| v.with_chain_id())
+			.map_err(|_| ())?;
+
+			Ok(())
+		}
+
+		fn ensure_zero_gas_transaction(
+			transaction: pallet_ethereum::Transaction,
+			expected_validator: H160,
+			validator_signature: Vec<u8>,
+		) -> Result<(), ()> {
+			let zero_gas_trx_internal_message: Vec<u8> =
+				Self::get_zero_gas_transaction_signing_message(transaction.clone());
+
+			let eip191_message =
+				stbl_tools::eth::build_eip191_message_hash(zero_gas_trx_internal_message);
+
+			let zero_gas_trx_signer_address = Self::get_zero_gas_trx_signer(
+				validator_signature.clone(),
+				eip191_message.clone(),
+			);
+
+			match zero_gas_trx_signer_address {
+				Some(address) if address == expected_validator => Ok(()),
+				_ => Err(()),
+			}
+		}
+
+		pub fn get_zero_gas_transaction_signing_message(trx: pallet_ethereum::Transaction) -> Vec<u8> {
+			let mut message: Vec<u8> = Vec::new();
+
+			let trx_hash = trx.hash();
+			let trx_bytes_hash = trx_hash.as_bytes();
+			let trx_hash_string = hex::encode(trx_bytes_hash);
+
+			message.extend_from_slice(b"I consent to validate the transaction for free: 0x");
+			message.extend_from_slice(trx_hash_string.as_bytes());
+
+			return message;
+		}
+
+		fn get_zero_gas_trx_signer(signature: Vec<u8>, message: H256) -> Option<H160> {
+			let result = match sp_io::crypto::secp256k1_ecdsa_recover(
+				signature.as_slice().try_into().unwrap(),
+				message.as_fixed_bytes(),
+			) {
+				Ok(pubkey) => {
+					let mut address = sp_io::hashing::keccak_256(&pubkey);
+					address[0..12].copy_from_slice(&[0u8; 12]);
+					address.to_vec()
+				}
+				Err(_) => return None,
+			};
+
+			return Some(H160::from_slice(&result[12..32]));
+		}
+	}
+}

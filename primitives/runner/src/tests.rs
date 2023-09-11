@@ -136,7 +136,7 @@ fn transaction_fee_log_emitted() {
 			stbl_tools::eth::generate_calldata("balanceOf(address)", &vec![token_addr.into()]),
 			U256::from(0),
 			u64::MAX,
-			None,
+			Some(U256::from(1)),
 			None,
 			None,
 			vec![],
