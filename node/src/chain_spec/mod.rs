@@ -167,8 +167,8 @@ pub fn base_genesis(
 						let mut storage = BTreeMap::new();
 						let initial_default_token_balance = H256::from_str("0x000000000000000000000000000000000000000000084595161401484a000000").expect("invalid hex storage value"); // 10M
 						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000002").expect("invalid hex storage key"), initial_default_token_balance);
-						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000003").expect("invalid hex storage key"), H256::from_str("0x53746162696c697479205465737400000000000000000000000000000000001c").expect("invalid hex storage value")); // Name
-						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000004").expect("invalid hex storage key"), H256::from_str("0x5354424c00000000000000000000000000000000000000000000000000000008").expect("invalid hex storage value")); // Symbol
+						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000003").expect("invalid hex storage key"), H256::from_str("0x53746162696c697479204761730000000000000000000000000000000000001a").expect("invalid hex storage value")); // Name
+						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000004").expect("invalid hex storage key"), H256::from_str("0x4741530000000000000000000000000000000000000000000000000000000006").expect("invalid hex storage value")); // Symbol
 						storage.insert(stbl_tools::eth::get_storage_address_for_mapping(main_account, H256::from_low_u64_be(0)), initial_default_token_balance);
 						storage
 					},
