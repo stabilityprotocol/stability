@@ -2,7 +2,6 @@
 
 #![cfg(test)]
 
-use frame_support::assert_noop;
 use frame_system::RawOrigin;
 use sp_runtime::testing::{TestSignature, UintAuthorityId};
 
@@ -13,21 +12,18 @@ use super::*;
 #[test]
 fn fail_validator_set_update_with_invalid_signature() {
 	new_test_ext().execute_with(|| {
-		let err = crate::Pallet::<Test>::publish_keys(
-			RawOrigin::None.into(),
-			PublishingKeys {
+		let call = crate::Call::<Test>::publish_keys {
+			keys: PublishingKeys {
 				aura: UintAuthorityId(1),
 				grandpa: UintAuthorityId(1),
 				block_number: 1u64.into(),
 			},
-			TestSignature(2, vec![]),
-		)
-		.err();
+			signature: TestSignature(5, vec![]),
+		};
 
-		assert_eq!(
-			err,
-			Some(DispatchError::Other("Failed to verify signature"))
-		);
+		let err = crate::Pallet::<Test>::validate_unsigned(TransactionSource::Local, &call).err();
+
+		assert_eq!(err, Some(InvalidTransaction::BadProof.into()));
 	});
 }
 

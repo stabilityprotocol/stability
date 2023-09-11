@@ -427,12 +427,9 @@ pub mod pallet {
 		pub fn add_validator_again(
 			origin: OriginFor<T>,
 			heartbeat: Heartbeat<T::BlockNumber, T::AuthorityId>,
-			signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
+			_signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
 		) -> DispatchResult {
 			ensure_none(origin)?;
-
-			Self::ensure_unsigned_origin(heartbeat.clone(), signature.clone())
-				.map_err(|_| DispatchError::BadOrigin)?;
 
 			let validator_account_id =
 				ApprovedValidators::<T>::get()[heartbeat.authority_index as usize].clone();

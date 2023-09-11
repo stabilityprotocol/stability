@@ -221,14 +221,9 @@ pub mod pallet {
 		pub fn publish_keys(
 			origin: OriginFor<T>,
 			keys: PublishingKeys<T::AuthorityId, T::FinalizationId, T::BlockNumber>,
-			signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
+			_signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
 		) -> DispatchResult {
 			ensure_none(origin)?;
-
-			Self::verify_signature(keys.clone(), signature.clone()).map_err(|_| {
-				log::error!(target: LOG_TARGET, "Failed to verify signature");
-				DispatchError::Other("Failed to verify signature")
-			})?;
 
 			let validator_id = T::ValidatorIdOfValidation::convert(keys.aura.clone());
 

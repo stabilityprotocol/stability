@@ -3,7 +3,6 @@
 #![cfg(test)]
 
 use super::*;
-use crate as validator_set;
 use core::borrow::Borrow;
 use frame_support::{
 	parameter_types,
@@ -124,10 +123,6 @@ impl ShouldEndSession<u64> for TestShouldEndSession {
 				r
 			})
 	}
-}
-
-pub fn authorities() -> Vec<UintAuthorityId> {
-	AUTHORITIES.with(|l| l.borrow().to_vec())
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -282,7 +277,7 @@ pub struct SessionKeysBuilder;
 impl crate::SessionKeysBuilder<UintAuthorityId, UintAuthorityId, MockSessionKeys>
 	for SessionKeysBuilder
 {
-	fn new(aura: UintAuthorityId, grandpa: UintAuthorityId) -> MockSessionKeys {
+	fn new(aura: UintAuthorityId, _grandpa: UintAuthorityId) -> MockSessionKeys {
 		MockSessionKeys {
 			dummy: aura.clone(),
 		}
