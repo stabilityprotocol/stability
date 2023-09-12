@@ -1,10 +1,10 @@
 # Unified Accounts
 
-For default, Substrate implements `sr25519` keys for block validators (for Aura & ImOnline) this generates a conflict since EVM addresses are generated with `ecdsa` keys. This is a problem since evm addresses are 20 bytes long and `sr25519` are 32 bytes long so there cannot be defined a biyective relation in which for every address in `ecdsa` has a corresponding address in `sr25519` and viceversa.
+For default, Substrate implements `sr25519` keys for block validators (for Aura) this generates a conflict since EVM addresses are generated with `ecdsa` keys. This is a problem since evm addresses are 20 bytes long and `sr25519` are 32 bytes long so there cannot be defined a biyective relation in which for every address in `ecdsa` has a corresponding address in `sr25519` and viceversa.
 
 # Our solution
 
-Since Stability is strongly `EVM-focused`, not having a common type of addresses damages user experience. For this reason, the validators (for aura & imonline) key system was changed to `ecdsa`. However, for granpa (that uses `ed25519`) the key system has keep unchanged since it didn't harm user experience of neither validator nor users.
+Since Stability is strongly `EVM-focused`, not having a common type of addresses damages user experience. For this reason, the validators (for aura) key system was changed to `ecdsa`. However, for granpa (that uses `ed25519`) the key system has keep unchanged since it didn't harm user experience of neither validator nor users.
 
 # Key configuration for validator
 

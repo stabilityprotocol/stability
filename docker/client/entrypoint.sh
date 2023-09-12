@@ -25,13 +25,6 @@ if [ -n "$SEED" ]; then
   --scheme Ed25519 \
   --suri "$SEED" \
   --key-type gran
-
-  ./target/release/stability key insert \
-  --base-path /tmp/node \
-  --chain $CHAIN_TARGET \
-  --scheme ecdsa \
-  --suri "$SEED" \
-  --key-type imon
 fi
 
 START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --pruning archive --prometheus-external --chain=$CHAIN_TARGET"
