@@ -24,7 +24,6 @@ pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 pub type DevChainSpec = sc_service::GenericChainSpec<DevGenesisExt>;
 
 pub type AuraId = stbl_core_primitives::aura::Public;
-pub type ImOnlineId = stbl_core_primitives::imonline::Public;
 
 /// Extension for the dev genesis config to support a custom changes to the genesis state.
 #[derive(Serialize, Deserialize)]
@@ -64,12 +63,11 @@ where
 }
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId) {
 	(
 		get_account_id_from_seed::<ecdsa::Public>(s),
 		get_from_seed::<AuraId>(s),
 		get_from_seed::<GrandpaId>(s),
-		get_from_seed::<ImOnlineId>(s),
 	)
 }
 
@@ -80,20 +78,19 @@ pub fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
 pub fn get_authority_from_pubkeys(
 	ecdsa_key_str: &str,
 	ed_pubkey: &str,
-) -> (AccountId, AuraId, GrandpaId, ImOnlineId) {
+) -> (AccountId, AuraId, GrandpaId) {
 	let ecdsa_pubkey = ecdsa::Public::from_string(ecdsa_key_str).unwrap();
 	(
 		(account::EthereumSigner::from(ecdsa_pubkey).into_account()),
 		AuraId::from_string(ecdsa_key_str).unwrap(),
-		GrandpaId::from_string(ed_pubkey).unwrap(),
-		ImOnlineId::from_string(ecdsa_key_str).unwrap(),
+		GrandpaId::from_string(ed_pubkey).unwrap()
 	)
 }
 
 /// Configure initial storage state for FRAME modules.
 pub fn base_genesis(
 	wasm_binary: &[u8],
-	initial_authorities: Vec<(AccountId, AuraId, GrandpaId, ImOnlineId)>,
+	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	members: Vec<AccountId>,
 	chain_id: u64,
 ) -> GenesisConfig {

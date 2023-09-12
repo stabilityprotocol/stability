@@ -298,13 +298,13 @@ pub mod pallet {
 			// on-chain storage
 			//
 			// At index `idx`:
-			// 1. A (ImOnline) public key to be used by a validator at index `idx` to send im-online
+			// 1. A public key to be used by a validator at index `idx` to send im-online
 			//          heartbeats.
 			let authorities = ApprovedValidators::<T>::get();
 
 			// local keystore
 			//
-			// All `ImOnline` public (+private) keys currently in the local keystore.
+			// All public (+private) keys currently in the local keystore.
 			let mut local_keys = T::AuthorityId::all();
 
 			local_keys.sort();

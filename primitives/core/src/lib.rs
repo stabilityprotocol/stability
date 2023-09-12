@@ -55,9 +55,3 @@ pub mod aura {
 
 	app_crypto!(ecdsa, KeyTypeId(*b"aura"));
 }
-
-pub mod imonline {
-	use sp_application_crypto::{app_crypto, ecdsa, KeyTypeId};
-
-	app_crypto!(ecdsa, KeyTypeId(*b"imon"));
-}
