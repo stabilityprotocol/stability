@@ -20,6 +20,7 @@ COPY primitives ./primitives
 COPY client ./client
 COPY stability-rpc ./stability-rpc
 COPY test-utils ./test-utils
+COPY chain-specs ./chain-specs
 COPY Cargo.lock Cargo.toml rust-toolchain.toml ./
 
 # Download rust dependencies and build the rust binary
