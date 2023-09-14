@@ -1,10 +1,6 @@
 [features]
 aura = []
-default = [
-    'std',
-    'aura',
-    'with-rocksdb-weights',
-]
+default = ['std', 'aura', 'with-rocksdb-weights']
 manual-seal = ['with-rocksdb-weights']
 runtime-benchmarks = [
     'frame-benchmarking',
@@ -67,6 +63,7 @@ std = [
     'runner/std',
     'account/std',
     'stbl-core-primitives/std',
+    'stbl-primitives-zero-gas-transactions-api/std',
     'stability-rpc-api/std',
 ]
 with-paritydb-weights = []
@@ -88,8 +85,10 @@ version = '0.0.0'
 targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies]
-codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [ "derive" ] }
-scale-info = { workspace = true, features = [ "derive" ] }
+codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
+    "derive",
+] }
+scale-info = { workspace = true, features = ["derive"] }
 serde = { workspace = true, optional = true }
 log = { workspace = true }
 # Substrate
