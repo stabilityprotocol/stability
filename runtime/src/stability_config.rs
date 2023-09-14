@@ -14,6 +14,7 @@ pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_ref_time(WEIGHT_REF_TIME_P
 	.mul(MILLISECS_PER_BLOCK)
 	.mul(COMPUTATION_BLOCK_TIME_RATIO.0)
 	.div(COMPUTATION_BLOCK_TIME_RATIO.1) // 1_333_333_333_333
+	.mul(10) // Targeting 500M gas limit
 	.set_proof_size(u64::MAX);
 
 // `.set_proof_size`, since migration to WeightV2, we have set the proof size weight for the maximum block.
@@ -40,7 +41,6 @@ pub const EXISTENTIAL_DEPOSIT: u128 = 0u128;
 pub const SESSION_MINUTES_DURATION: u32 = 2;
 
 // VALIDATOR SET
-
 pub const VALIDATOR_SET_MIN_VALIDATORS: u32 = 1;
 
 // Gas Base Fee
