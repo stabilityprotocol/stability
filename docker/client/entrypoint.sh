@@ -1,9 +1,8 @@
 #!/bin/bash
 
 if [ -n "$ENV_PATH" ] && [ -f "$ENV_PATH" ]; then
-    export $(cat "$ENV_PATH" | sed 's/#.*//g' | xargs)
+    source "$ENV_PATH"
 fi
-
 
 CHAIN_TARGET=${CHAIN:-"dev"}
 if [ ! -z "$CHAIN_NAME" ]; then

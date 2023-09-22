@@ -437,7 +437,8 @@ where
 
 		let raw_zero_gas_transactions_option = if let Some(zero_gas_tx_pool) = self.zero_gas_tx_pool {
 
-			let mut request = Box::pin(reqwest::get(zero_gas_tx_pool).fuse());
+			let http_client = reqwest::Client::new();
+			let mut request = Box::pin(http_client.post(zero_gas_tx_pool).send().fuse());
 			let mut timeout = Box::pin(futures_timer::Delay::new(std::time::Duration::from_millis(100)).fuse());
 			
 
