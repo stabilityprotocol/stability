@@ -18,7 +18,7 @@ The mechanism underlying Zero Gas Transactions is relatively straightforward. As
 
 ### External Private Mempool
 
-The validator selects the transactions from an external private mempool. This mempool is a service that exposes a GET HTTP interface and returns a list of transactions with the following format:
+The validator selects the transactions from an external private mempool. This mempool is a service that exposes a POST HTTP interface and returns a list of transactions with the following format:
 
 ```json
 {
@@ -32,7 +32,7 @@ All transactions retrieved from this mempool will be processed as Zero Gas Trans
 
 ### Setting up the External Mempool for Validators
 
-If you are a validator and wish to integrate this functionality, you simply need to configure your node with the `--zero-gas-tx-pool <URL>` parameter. This option determines the HTTP address to which the validating node will make GET requests to obtain the Zero Gas Transactions during its validation cycle.
+If you are a validator and wish to integrate this functionality, you simply need to configure your node with the `--zero-gas-tx-pool <URL>` parameter. This option determines the HTTP address to which the validating node will make POST requests to obtain the Zero Gas Transactions during its validation cycle.
 
 ## 3. Other considerations
 
