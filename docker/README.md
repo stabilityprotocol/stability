@@ -13,11 +13,11 @@
 
 Optionally, You can build and run the stability node within Docker directly. it is also possible to run tests in a docker.
 
-## Betanet
+## Running the image
 
 ### Build
 
-To build the Docker container, run the following command in the root of the project
+To build the Docker container, run the following command at the root of the project.
 
 ```
 $ docker build -f ./docker/client/Dockerfile -t stability .
@@ -42,7 +42,7 @@ To set an environment variable in the docker run, use the flag -e NAME=VALUE
 ### Example
 
 ```
-docker run -d -p 30333:30333 -p 9933:9933 -p 9944:9944 -p 9615:9615 -e SEED=account -e BOOTNODES=/ip4/... stability
+docker run -d -p 30333:30333 -p 9933:9933 -p 9944:9944 -p 9615:9615 -e SEED=account -e CHAIN="/stability/chain-specs/betanet.json" -e MODE=archive -e BOOTNODES=/ip4/... stability
 ```
 
 ## Test
