@@ -1,7 +1,7 @@
 # Docker Based Development
 
 1. [Introduction](#introduction)
-2. [Betanet](#betanet)
+2. [Running the image](#running-the-image)
    1. [Build](#build)
    2. [Run](#run)
    3. [Example](#example)
