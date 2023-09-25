@@ -46,9 +46,7 @@ if [ -n "$NODE_KEY" ]; then
   START_COMMAND="$START_COMMAND --node-key $NODE_KEY"
 fi
 
-if [ "$DEFAULT_BOOTNODE" = "yes" ]; then
-  START_COMMAND="$START_COMMAND --bootnodes /ip4/3.21.88.38/tcp/30333/p2p/12D3KooWPaen1igo2WYUFCt3EAg4AWjWoMYgmr4tCa2Yb1WfgoDB"
-elif [ -n "$BOOTNODES" ]; then
+if [ -n "$BOOTNODES" ]; then
   START_COMMAND="$START_COMMAND --bootnodes $BOOTNODES"
 fi
 
