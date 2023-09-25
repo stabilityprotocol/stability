@@ -1,9 +1,9 @@
 # Docker Based Development
 
 1. [Introduction](#introduction)
-2. [Alphanet](#alphanet)
-   1. [Build](#build-alphanet)
-   2. [Run](#build-alphanet)
+2. [Betanet](#betanet)
+   1. [Build](#build)
+   2. [Run](#run)
    3. [Example](#example)
 3. [Test](#test)
    1. [Build](#build-testing-image)
@@ -13,9 +13,9 @@
 
 Optionally, You can build and run the stability node within Docker directly. it is also possible to run tests in a docker.
 
-## Alphanet
+## Betanet
 
-### Build Alphanet
+### Build
 
 To build the Docker container, run the following command in the root of the project
 
@@ -23,10 +23,10 @@ To build the Docker container, run the following command in the root of the proj
 $ docker build -f ./docker/client/Dockerfile -t stability .
 ```
 
-### Run Alphanet
+### Run
 
 ```
-docker run -d -p 30333:30333 -p 9933:9933 -p 9944:9944 -p 9615:9615 stability
+docker run -d -p 30333:30333 -p 9933:9933 -p 9944:9944 -p 9615:9615 -e CHAIN="/stability/chain-specs/betanet.json" stability
 ```
 
 Optional environment variables:
