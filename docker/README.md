@@ -35,6 +35,7 @@ Optional environment variables:
 - CHAIN and CHAIN_NAME: If you want to use a pre-defined chain spec, you can use the CHAIN_NAME environment variable to specify the name of the chain spec to use. If you want to use a custom chain spec, you can use the CHAIN environment variable to specify the path to the chain spec file to use. If both are specified, CHAIN will be used. By default, the node will use the `dev` chain spec.
 - NODE_KEY: This environment variable allows specifying the node key to use. If not specified, the node will generate a random node key. This applies to the P2P key, not the account key.
 - BOOTNODES: This environment variable allows specifying the bootnodes to use, separated by commas. If not specified, the node will use the default bootnodes for the chain spec.
+- MODE: This environment variable allows the node to run in different pruning modes. Possible values are "full_node" or "archive". The default value is "full_node".
 
 To set an environment variable in the docker run, use the flag -e NAME=VALUE
 
