@@ -2,7 +2,9 @@
   "name": "Betanet",
   "id": "betanet",
   "chainType": "Live",
-  "bootNodes": [],
+  "bootNodes": [
+    "/dns4/s0.betanet.stble.io/tcp/30333/p2p/12D3KooWPaen1igo2WYUFCt3EAg4AWjWoMYgmr4tCa2Yb1WfgoDB"
+  ],
   "telemetryEndpoints": null,
   "protocolId": null,
   "properties": null,
