@@ -11,7 +11,6 @@ use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
 use sc_service::{error::Error as ServiceError, Configuration, PartialComponents, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sp_api::{ConstructRuntimeApi, TransactionFor};
-use sp_core::U256;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
 use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
@@ -165,7 +164,7 @@ where
 pub fn build_aura_grandpa_import_queue<RuntimeApi, Executor>(
 	client: Arc<FullClient<RuntimeApi, Executor>>,
 	config: &Configuration,
-	eth_config: &EthConfiguration,
+	_eth_config: &EthConfiguration,
 	task_manager: &TaskManager,
 	telemetry: Option<TelemetryHandle>,
 	grandpa_block_import: GrandpaBlockImport<FullClient<RuntimeApi, Executor>>,
@@ -191,7 +190,6 @@ where
 	);
 
 	let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
-	let target_gas_price = eth_config.target_gas_price;
 	let create_inherent_data_providers = move |_, ()| async move {
 		let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 		let slot =
@@ -199,8 +197,7 @@ where
 				*timestamp,
 				slot_duration,
 			);
-		let dynamic_fee = fp_dynamic_fee::InherentDataProvider(U256::from(target_gas_price));
-		Ok((slot, timestamp, dynamic_fee))
+		Ok((slot, timestamp))
 	};
 
 	let import_queue =
@@ -425,7 +422,6 @@ where
 		// manual-seal authorship
 		if let Some(sealing) = sealing {
 			run_manual_seal_authorship(
-				&eth_config,
 				sealing,
 				client,
 				transaction_pool,
@@ -455,15 +451,13 @@ where
 		);
 
 		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
-		let target_gas_price = eth_config.target_gas_price;
 		let create_inherent_data_providers = move |_, ()| async move {
 			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
 				*timestamp,
 				slot_duration,
 			);
-			let dynamic_fee = fp_dynamic_fee::InherentDataProvider(U256::from(target_gas_price));
-			Ok((slot, timestamp, dynamic_fee))
+			Ok((slot, timestamp))
 		};
 
 		let aura = sc_consensus_aura::start_aura::<
@@ -552,7 +546,6 @@ where
 }
 
 fn run_manual_seal_authorship<RuntimeApi, Executor>(
-	eth_config: &EthConfiguration,
 	sealing: Sealing,
 	client: Arc<FullClient<RuntimeApi, Executor>>,
 	transaction_pool: Arc<FullPool<FullClient<RuntimeApi, Executor>>>,
@@ -612,11 +605,9 @@ where
 		}
 	}
 
-	let target_gas_price = eth_config.target_gas_price;
 	let create_inherent_data_providers = move |_, ()| async move {
 		let timestamp = MockTimestampInherentDataProvider;
-		let dynamic_fee = fp_dynamic_fee::InherentDataProvider(U256::from(target_gas_price));
-		Ok((timestamp, dynamic_fee))
+		Ok(timestamp)
 	};
 
 	let manual_seal = match sealing {

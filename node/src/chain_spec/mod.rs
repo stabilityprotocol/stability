@@ -189,7 +189,6 @@ pub fn base_genesis(
 			},
 		},
 		ethereum: Default::default(),
-		dynamic_fee: Default::default(),
 		base_fee: Default::default(),
 		supported_tokens_manager: SupportedTokensManagerConfig {
 			initial_default_token,
