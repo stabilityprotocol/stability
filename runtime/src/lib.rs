@@ -518,13 +518,6 @@ impl pallet_validator_fee_selector::Config for Runtime {
 
 impl pallet_supported_tokens_manager::Config for Runtime {}
 
-parameter_types! {
-	pub BoundDivision: U256 = U256::from(1024);
-}
-
-impl pallet_dynamic_fee::Config for Runtime {
-	type MinGasPriceBoundDivisor = BoundDivision;
-}
 
 parameter_types! {
 	pub DefaultBaseFeePerGas: U256 = U256::from(GAS_BASE_FEE);
@@ -779,7 +772,6 @@ construct_runtime!(
 		Ethereum: pallet_ethereum,
 		EVM: pallet_evm,
 		EVMChainId: pallet_evm_chain_id,
-		DynamicFee: pallet_dynamic_fee,
 		BaseFee: pallet_base_fee,
 		HotfixSufficients: pallet_hotfix_sufficients,
 		UserFeeSelector: pallet_user_fee_selector,
