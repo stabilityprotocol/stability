@@ -9,11 +9,14 @@ pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// How much of time of block time is consumed (at most) in computing normal extrinsics
 const COMPUTATION_BLOCK_TIME_RATIO: (u64, u64) = (2, 3); // 2 third parts of the block time
 
+const COMPUTATION_POWER_MULTIPLIER: u64 = 6; // 6 times more computation power than normal
+
 // how much weight for normal extrinsics could be processed in a block
 pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_ref_time(WEIGHT_REF_TIME_PER_MILLIS)
 	.mul(MILLISECS_PER_BLOCK)
+	.mul(COMPUTATION_POWER_MULTIPLIER) 
 	.mul(COMPUTATION_BLOCK_TIME_RATIO.0)
-	.div(COMPUTATION_BLOCK_TIME_RATIO.1) // 1_333_333_333_333
+	.div(COMPUTATION_BLOCK_TIME_RATIO.1) // 8_000_000_000_000
 	.set_proof_size(u64::MAX);
 
 // `.set_proof_size`, since migration to WeightV2, we have set the proof size weight for the maximum block.
