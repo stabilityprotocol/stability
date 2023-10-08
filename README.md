@@ -1,40 +1,63 @@
-![stability](docs/media/header.png)
+![stability](docs/media/header.jpeg)
 
-Implementation of Stability blockchain in Substrate + Rust, a scalability solution for accessing the gas market.
+Built using Substrate and Rust, the Stability blockchain serves as a scalable solution for optimized gas market access.
 
 - ⛓️ Read more about [Stability Protocol](https://stabilityprotocol.com)
-- 📖 Find more resources in our [Documentation](https://stability.readme.io/docs)
-- 🐦 Follow us in [Twitter](https://twitter.com/stabilityinc)
+- 📖 Find more resources in our [Documentation](/docs/README.md)
+- 🐦 Follow us in [Twitter](https://twitter.com/stabilityinc) and [Medium](https://medium.com/stabilitynetwork)
 
-## Build & Run
+## Building and Running
 
-To build the chain, execute the following commands from the project root:
+### Compiling the Blockchain
 
-```
-$ cargo build --release
-```
+Navigate to the root directory of the project and run the following command to compile the Stability chain:
 
-To execute the chain, run:
-
-```
-$ ./target/release/stability --dev
+```bash
+cargo build --release
 ```
 
-The node also supports to use manual seal (to produce block manually through RPC).
-This is also used by the ts-tests:
+### Initiating the Node
 
-```
-$ ./target/release/stability --dev --manual-seal
+To start the Stability chain in development mode, execute this command:
+
+```bash
+./target/release/stability --dev
 ```
 
-For using a Dockerized solution you can follow the [instructions](docker/README.md) under the `docker/` folder.
+### Manual Block Sealing
+
+For manually sealing blocks via RPC, which is particularly useful for TypeScript tests, use the following command:
+
+```bash
+./target/release/stability --dev --manual-seal
+```
+
+### Docker Deployment
+
+For containerized deployment options, please refer to the Docker [guidelines](docker/README.md) available in the `docker/` directory.
 
 ## Architecture
 
-The Stability Substrate chain is based on `polkadot-v0.9.36` using the `frontier` layout.
-For building this chain, the next pallets have been imported:
+The Stability Substrate chain is built upon Polkadot version `0.9.36` and leverages the `frontier` framework to ensure full Ethereum compatibility. Our architecture incorporates a carefully selected set of pallets, each serving a unique role in the overall functionality of the blockchain.
 
-- Consensus: _AuRa, GRANDPA_
-- EVM: _pallet-evm, pallet-ethereum, pallet-dynamic-fee_
-- Substrate: _balances, session, timestamp, collective, im-online_
-- Moonbeam: _precompile-utils, balances-erc20_
+### Core Pallets
+
+#### Consensus Mechanisms
+
+- **AuRa**: An adaptive and reactive consensus algorithm.
+- **GRANDPA**: GHOST-based Recursive Ancestor Deriving Prefix Agreement.
+
+#### Ethereum Virtual Machine (EVM)
+
+- **pallet-evm**: Provides EVM functionalities, enabling the execution of Ethereum-based applications.
+- **pallet-ethereum**: Ensures compatibility with the Ethereum API.
+
+### Substrate Native Pallets
+
+- **session**: Manages session keys and validator sets.
+- **timestamp**: Responsible for on-chain timekeeping.
+- **collective**: Facilitates governance functionalities.
+
+### Third-Party Pallets
+
+- **Moonbeam's precompile-utils**: A utility pallet offering precompiled contract support.

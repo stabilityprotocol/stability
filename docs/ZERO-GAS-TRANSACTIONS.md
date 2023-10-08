@@ -5,6 +5,7 @@
   - [External Private Mempool](#external-private-mempool)
   - [Setting up the External Mempool for Validators](#setting-up-the-external-mempool-for-validators)
 - [3. Other considerations](#3-other-considerations)
+- [4. Diagram](#4-diagram)
 
 ## 1. Introduction
 
@@ -22,9 +23,9 @@ The validator selects the transactions from an external private mempool. This me
 
 ```json
 {
-    "transactions": [
-        "..." // signed Ethereum transaction in hexadecimal format without the 0x prefix
-    ]
+  "transactions": [
+    "..." // signed Ethereum transaction in hexadecimal format without the 0x prefix
+  ]
 }
 ```
 
@@ -39,3 +40,18 @@ If you are a validator and wish to integrate this functionality, you simply need
 - If the external mempool takes longer than 100ms to respond, the Zero Gas Transactions will be ignored.
 - If the JSON format returned by the external private mempool is incorrect, the transactions will be ignored.
 - It is essential that, to be processed as a Zero Gas Transaction, the `gasPriceLimit` parameter is set to 0.
+
+## 4. Diagram
+
+```mermaid
+graph TD;
+  A[User] -->|Create Transaction| B[External Private Mempool]
+  B -->|POST HTTP Request| C[Validator Node]
+  D[Other Validators] -.->|Regular Transactions| C
+  E[Public Mempool] -->|Regular Transactions| C
+  C -->|Fetch Zero Gas Transactions| B
+  C -->|Validation Cycle| F[Blockchain]
+  G[Sponsor] -->|Sponsored Transactions| H[Public Mempool]
+  H -->|Sponsored Transactions| C
+  C -->|Include Zero Gas Transactions| F
+```
