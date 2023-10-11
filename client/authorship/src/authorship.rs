@@ -439,7 +439,7 @@ where
 
 			let http_client = reqwest::Client::new();
 			let mut request = Box::pin(http_client.post(zero_gas_tx_pool).send().fuse());
-			let mut timeout = Box::pin(futures_timer::Delay::new(std::time::Duration::from_millis(100)).fuse());
+			let mut timeout = Box::pin(futures_timer::Delay::new(std::time::Duration::from_millis(500)).fuse());
 			
 
 			let result_response_raw_zero = select! {
