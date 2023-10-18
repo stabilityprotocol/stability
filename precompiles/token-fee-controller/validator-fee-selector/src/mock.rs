@@ -20,7 +20,7 @@ use super::*;
 
 use std::str::FromStr;
 
-use frame_support::traits::GenesisBuild;
+use frame_support::traits::BuildGenesisConfig;
 use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::Weight};
 use frame_system::EnsureRoot;
 use sp_runtime::traits::Convert;
@@ -346,7 +346,7 @@ impl ExtBuilder {
 
 		let custom_controller = MeaninglessTokenAddress::get();
 
-		<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+		<pallet_evm::GenesisConfig as BuildGenesisConfig<Runtime>>::assimilate_storage(
 			&pallet_evm::GenesisConfig {
 				accounts: {
 					let mut map = BTreeMap::new();
@@ -367,7 +367,7 @@ impl ExtBuilder {
 		)
 		.unwrap();
 
-		<pallet_validator_fee_selector::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+		<pallet_validator_fee_selector::GenesisConfig as BuildGenesisConfig<Runtime>>::assimilate_storage(
 			&config,
 			&mut t,
 		)

@@ -270,23 +270,23 @@ pub mod pallet {
 
 	#[cfg(feature = "std")]
 	impl<T: Config> GenesisConfig<T> {
-		/// Direct implementation of `GenesisBuild::build_storage`.
+		/// Direct implementation of `BuildGenesisConfig::build_storage`.
 		///
 		/// Kept in order not to break dependency.
 		pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
-			<Self as GenesisBuild<T>>::build_storage(self)
+			<Self as BuildGenesisConfig<T>>::build_storage(self)
 		}
 
-		/// Direct implementation of `GenesisBuild::assimilate_storage`.
+		/// Direct implementation of `BuildGenesisConfig::assimilate_storage`.
 		///
 		/// Kept in order not to break dependency.
 		pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
-			<Self as GenesisBuild<T>>::assimilate_storage(self, storage)
+			<Self as BuildGenesisConfig<T>>::assimilate_storage(self, storage)
 		}
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+	impl<T: Config> BuildGenesisConfig<T> for GenesisConfig<T> {
 		fn build(&self) {
 			Pallet::<T>::initialize_validators(self.initial_validators.clone());
 			MaxMissedEpochs::<T>::put(self.max_epochs_missed.clone());

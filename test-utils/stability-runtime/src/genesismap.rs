@@ -19,7 +19,7 @@
 
 use super::{system, wasm_binary_unwrap, AccountId, AuthorityId, Runtime};
 use codec::{Encode, Joiner, KeyedVec};
-use frame_support::traits::GenesisBuild;
+use frame_support::traits::BuildGenesisConfig;
 use sc_service::client::genesis;
 use sp_core::{
 	map,
@@ -81,7 +81,7 @@ impl GenesisConfig {
 		// Assimilate the system genesis config.
 		let mut storage =
 			Storage { top: map, children_default: self.extra_storage.children_default.clone() };
-		<system::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+		<system::GenesisConfig as BuildGenesisConfig<Runtime>>::assimilate_storage(
 			&system::GenesisConfig { authorities: self.authorities.clone() },
 			&mut storage,
 		)

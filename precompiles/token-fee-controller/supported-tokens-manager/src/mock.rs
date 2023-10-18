@@ -20,7 +20,7 @@ use super::*;
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Everything, GenesisBuild},
+	traits::{Everything, BuildGenesisConfig},
 	weights::Weight,
 };
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
@@ -177,7 +177,7 @@ impl ExtBuilder {
 			.build_storage::<Runtime>()
 			.expect("Frame system builds valid default genesis config");
 
-		GenesisBuild::<Runtime>::assimilate_storage(
+		BuildGenesisConfig::<Runtime>::assimilate_storage(
 			&pallet_supported_tokens_manager::GenesisConfig {
 				initial_default_token: InitialDefaultTokenFee::get(),
 				initial_default_token_slot: H256::from_low_u64_be(0),

@@ -100,7 +100,7 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig {
+	impl<T: Config> BuildGenesisConfig<T> for GenesisConfig {
 		fn build(&self) {
 			DefaultController::<T>::put(self.initial_default_conversion_rate_controller);
 		}

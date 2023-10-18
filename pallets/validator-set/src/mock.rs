@@ -7,7 +7,7 @@ use crate as validator_set;
 use core::borrow::Borrow;
 use frame_support::{
 	parameter_types,
-	traits::{FindAuthor, GenesisBuild, StorageInstance},
+	traits::{FindAuthor, BuildGenesisConfig, StorageInstance},
 	BasicExternalities,
 };
 use frame_system::EnsureRoot;

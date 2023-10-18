@@ -3,6 +3,7 @@
 pub use pallet::*;
 use sp_core::{H160, H256};
 use sp_std::vec::Vec;
+use frame_support::traits::BuildGenesisConfig;
 
 #[cfg(test)]
 mod mock;
@@ -120,7 +121,7 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig {
+	impl<T: Config> BuildGenesisConfig<T> for GenesisConfig {
 		fn build(&self) {
 			DefaultTokenStorage::<T>::put(self.initial_default_token);
 			SupportedTokens::<T>::put(vec![self.initial_default_token]);

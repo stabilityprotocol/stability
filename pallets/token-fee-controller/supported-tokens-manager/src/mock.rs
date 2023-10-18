@@ -22,7 +22,7 @@ use std::str::FromStr;
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Everything, GenesisBuild},
+	traits::{Everything, BuildGenesisConfig},
 };
 use sp_core::{H160, H256};
 use sp_runtime::{
@@ -132,7 +132,7 @@ impl ExtBuilder {
 			.build_storage::<Runtime>()
 			.expect("Frame system builds valid default genesis config");
 
-		GenesisBuild::<Runtime>::assimilate_storage(
+		BuildGenesisConfig::<Runtime>::assimilate_storage(
 			&crate::GenesisConfig {
 				initial_default_token: MockDefaultFeeToken::get(),
 				initial_default_token_slot: MockDefaultTokenBalanceSlot::get(),

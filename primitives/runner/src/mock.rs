@@ -24,7 +24,7 @@ use crate as StabilityRunner;
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Everything, GenesisBuild},
+	traits::{Everything, BuildGenesisConfig},
 	weights::Weight,
 };
 use hex::FromHex;
@@ -245,7 +245,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 			map
 		},
 	};
-	<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(&config, &mut t)
+	<pallet_evm::GenesisConfig as BuildGenesisConfig<Runtime>>::assimilate_storage(&config, &mut t)
 		.unwrap();
 
 	t.into()

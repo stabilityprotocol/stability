@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use frame_support::pallet_prelude::{ValueQuery, Weight};
-use frame_support::traits::{Contains, Everything, GenesisBuild, StorageInstance};
+use frame_support::traits::{Contains, Everything, BuildGenesisConfig, StorageInstance};
 use sp_core::{H160, H256, U256};
 use std::str::FromStr;
 
@@ -256,10 +256,10 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		accounts: Default::default(),
 	};
 
-	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t)
+	<pallet_evm::GenesisConfig as BuildGenesisConfig<Test>>::assimilate_storage(&evm_config, &mut t)
 		.unwrap();
 
-	<crate::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(
+	<crate::GenesisConfig as BuildGenesisConfig<Test>>::assimilate_storage(
 		&crate::GenesisConfig {
 			fee_vault_precompile_address: FeeVaultAddress::get(),
 			validator_percentage: 50.into(),

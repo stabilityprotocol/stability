@@ -1,6 +1,6 @@
 use super::*;
 
-use frame_support::traits::{ConstU32, ConstU64, Contains, GenesisBuild};
+use frame_support::traits::{ConstU32, ConstU64, Contains, BuildGenesisConfig};
 use frame_support::{parameter_types, weights::Weight};
 use frame_system::EnsureRoot;
 use hex::FromHex;
@@ -393,13 +393,13 @@ impl ExtBuilder {
 		)
 		.unwrap();
 
-		<pallet_dnt_fee_controller::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(
+		<pallet_dnt_fee_controller::GenesisConfig as BuildGenesisConfig<Test>>::assimilate_storage(
 			&dnt_config,
 			&mut t,
 		)
 		.unwrap();
 
-		<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t)
+		<pallet_evm::GenesisConfig as BuildGenesisConfig<Test>>::assimilate_storage(&evm_config, &mut t)
 			.unwrap();
 
 		let mut ext = sp_io::TestExternalities::new(t);

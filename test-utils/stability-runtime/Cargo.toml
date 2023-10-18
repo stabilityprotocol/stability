@@ -12,8 +12,6 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 
 [dependencies]
-beefy-primitives = { workspace = true, package = "sp-beefy" }
-beefy-merkle-tree = { workspace = true }
 sp-application-crypto = { workspace = true }
 sp-consensus-aura = { workspace = true }
 sp-consensus-babe = { workspace = true }
@@ -37,7 +35,7 @@ pallet-babe = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-timestamp = { workspace = true }
-sp-finality-grandpa = { workspace = true }
+sp-consensus-grandpa = { workspace = true }
 sp-trie = { workspace = true }
 sp-transaction-pool = { workspace = true }
 trie-db = { workspace = true }
@@ -69,8 +67,6 @@ default = [
 	"std",
 ]
 std = [
-	"beefy-primitives/std",
-	"beefy-merkle-tree/std",
 	"sp-application-crypto/std",
 	"sp-consensus-aura/std",
 	"sp-consensus-babe/std",
@@ -100,7 +96,7 @@ std = [
 	"frame-system/std",
 	"pallet-timestamp/std",
 	"sc-service",
-	"sp-finality-grandpa/std",
+	"sp-consensus-grandpa/std",
 	"sp-trie/std",
 	"sp-transaction-pool/std",
 	"trie-db/std",

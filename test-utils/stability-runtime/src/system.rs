@@ -80,7 +80,7 @@ mod pallet {
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig {
+	impl<T: Config> BuildGenesisConfig<T> for GenesisConfig {
 		fn build(&self) {
 			<Authorities<T>>::put(self.authorities.clone());
 		}

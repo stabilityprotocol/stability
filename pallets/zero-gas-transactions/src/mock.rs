@@ -8,7 +8,7 @@ use frame_support::{
 	construct_runtime,
 	pallet_prelude::{StorageValue, ValueQuery},
 	parameter_types,
-	traits::{Everything, GenesisBuild, StorageInstance},
+	traits::{Everything, BuildGenesisConfig, StorageInstance},
 	weights::Weight,
 };
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
@@ -263,12 +263,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	let config = pallet_evm::GenesisConfig {
 		accounts: BTreeMap::new(),
 	};
-	<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(&config, &mut t)
+	<pallet_evm::GenesisConfig as BuildGenesisConfig<Runtime>>::assimilate_storage(&config, &mut t)
 		.unwrap();
 
 	let eth_config: pallet_ethereum::GenesisConfig = Default::default();
 
-	<pallet_ethereum::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+	<pallet_ethereum::GenesisConfig as BuildGenesisConfig<Runtime>>::assimilate_storage(
 		&eth_config,
 		&mut t,
 	)

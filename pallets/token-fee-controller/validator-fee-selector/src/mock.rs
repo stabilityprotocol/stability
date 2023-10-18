@@ -24,7 +24,7 @@ use frame_support::{
 	construct_runtime,
 	pallet_prelude::{StorageValue, ValueQuery},
 	parameter_types,
-	traits::{Everything, GenesisBuild, StorageInstance},
+	traits::{Everything, BuildGenesisConfig, StorageInstance},
 	weights::Weight,
 };
 use frame_system::{EnsureSigned, RawOrigin};
@@ -254,7 +254,7 @@ impl ExtBuilder {
 		let initial_default_conversion_rate_controller =
 			crate::GenesisConfig::default().initial_default_conversion_rate_controller;
 
-		<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+		<pallet_evm::GenesisConfig as BuildGenesisConfig<Runtime>>::assimilate_storage(
 			&pallet_evm::GenesisConfig {
 				accounts: {
 					let mut map = BTreeMap::new();
@@ -275,7 +275,7 @@ impl ExtBuilder {
 		)
 		.unwrap();
 
-		<crate::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+		<crate::GenesisConfig as BuildGenesisConfig<Runtime>>::assimilate_storage(
 			&crate::GenesisConfig::default(),
 			&mut t,
 		)

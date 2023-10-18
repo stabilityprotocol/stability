@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use frame_support::pallet_prelude::Weight;
-use frame_support::traits::{Everything, GenesisBuild, StorageInstance};
+use frame_support::traits::{Everything, BuildGenesisConfig, StorageInstance};
 use sp_core::{H160, H256, U256};
 use std::str::FromStr;
 
@@ -169,7 +169,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		accounts: Default::default(),
 	};
 
-	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t)
+	<pallet_evm::GenesisConfig as BuildGenesisConfig<Test>>::assimilate_storage(&evm_config, &mut t)
 		.unwrap();
 
 	t.into()

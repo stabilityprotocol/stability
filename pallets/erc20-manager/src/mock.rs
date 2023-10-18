@@ -4,7 +4,7 @@ use super::*;
 use crate as map_svm_evm;
 
 use frame_support::pallet_prelude::Weight;
-use frame_support::traits::{Contains, Everything, GenesisBuild};
+use frame_support::traits::{Contains, Everything, BuildGenesisConfig};
 use hex::FromHex;
 use sp_core::{H256, U256};
 use std::str::FromStr;
@@ -202,14 +202,14 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 			map
 		},
 	};
-	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t)
+	<pallet_evm::GenesisConfig as BuildGenesisConfig<Test>>::assimilate_storage(&evm_config, &mut t)
 		.unwrap();
 
 	let chain_id_config = pallet_evm_chain_id::GenesisConfig {
 		chain_id: ChainId::get(),
 	};
 
-	<pallet_evm_chain_id::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(
+	<pallet_evm_chain_id::GenesisConfig as BuildGenesisConfig<Test>>::assimilate_storage(
 		&chain_id_config,
 		&mut t,
 	)
