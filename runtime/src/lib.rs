@@ -72,7 +72,7 @@ pub use frame_support::{
 	parameter_types,
 	traits::{ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, OnTimestampSet, Randomness},
 	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, WEIGHT_REF_TIME_PER_SECOND},
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight},
 		ConstantMultiplier, IdentityFee, Weight,
 	},
 	ConsensusEngineId, StorageValue,
@@ -486,6 +486,7 @@ impl pallet_evm::Config for Runtime {
 	type BlockGasLimit = BlockGasLimit;
 	type Runner = StabilityRunner<Self, DNTFeeController, pallet_user_fee_selector::Pallet<Self>>;
 	type OnChargeTransaction = ();
+	type OnCreate = ();
 	type FindAuthor = FindAuthorLinkedOrTruncated<Aura>;
 }
 

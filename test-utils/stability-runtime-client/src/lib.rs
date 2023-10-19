@@ -19,8 +19,6 @@
 
 #![warn(missing_docs)]
 
-pub mod trait_tests;
-
 mod block_builder_ext;
 
 pub use sc_consensus::LongestChain;

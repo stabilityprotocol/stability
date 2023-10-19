@@ -13,7 +13,7 @@ use frame_support::weights::Weight;
 use pallet_evm::Pallet;
 use pallet_evm::{
 	AccountCodes, AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, Error,
-	Event, FeeCalculator, PrecompileSet, Runner as RunnerT, RunnerError,
+	Event, FeeCalculator, PrecompileSet, Runner as RunnerT, RunnerError, OnCreate,
 };
 use pallet_user_fee_selector::UserFeeTokenController;
 use precompile_utils::prelude::keccak256;
@@ -475,6 +475,7 @@ where
 			is_transactional,
 			|executor| {
 				let address = executor.create_address(evm::CreateScheme::Legacy { caller: source });
+				T::OnCreate::on_create(source, address);
 				let (reason, _) =
 					executor.transact_create(source, value, init, gas_limit, access_list);
 				(reason, address)
@@ -531,6 +532,7 @@ where
 					code_hash,
 					salt,
 				});
+				T::OnCreate::on_create(source, address);
 				let (reason, _) =
 					executor.transact_create2(source, value, init, salt, gas_limit, access_list);
 				(reason, address)

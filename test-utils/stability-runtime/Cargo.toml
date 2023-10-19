@@ -62,7 +62,7 @@ stability-test-runtime-client = { workspace = true }
 futures = { workspace = true }
 
 [build-dependencies]
-substrate-wasm-builder = { workspace = true }
+substrate-wasm-builder = { workspace = true, optional = true }
 
 [features]
 default = [
@@ -105,7 +105,7 @@ std = [
 	"sp-transaction-pool/std",
 	"trie-db/std",
 	"stbl-core-primitives/std",
-
+	"substrate-wasm-builder",
 ]
 # Special feature to disable logging
 disable-logging = [ "sp-api/disable-logging" ]
