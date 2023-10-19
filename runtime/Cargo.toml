@@ -28,6 +28,7 @@ std = [
     'sp-std/std',
     'sp-transaction-pool/std',
     'sp-version/std',
+    'substrate-wasm-builder',
     'frame-executive/std',
     'frame-support/std',
     'frame-system/std',
@@ -70,7 +71,7 @@ with-paritydb-weights = []
 with-rocksdb-weights = []
 
 [build-dependencies]
-substrate-wasm-builder = { workspace = true }
+substrate-wasm-builder = { workspace = true, optional = true }
 
 [package]
 authors = ['Stability Solutions']

@@ -50,7 +50,6 @@ std = [
 	"frame-system/std",
 	"pallet-evm/std",
 	"sp-core/std",
-	"sp-io/std",
 	"sp-std/std",
 ]
 testing = [ "derive_more", "hex-literal", "scale-info", "serde", "similar-asserts", "std" ]

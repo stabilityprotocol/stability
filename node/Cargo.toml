@@ -37,22 +37,22 @@ sc-service = { workspace = true }
 sc-telemetry = { workspace = true }
 sc-transaction-pool = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
-sp-api = { workspace = true, features = ["std"] }
+sp-api = { workspace = true, features = ["default"] }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
-sp-consensus-aura = { workspace = true, features = ["std"] }
-sp-core = { workspace = true, features = ["std"] }
-sp-finality-grandpa = { workspace = true, features = ["std"] }
-sp-inherents = { workspace = true, features = ["std"] }
+sp-consensus-aura = { workspace = true, features = ["default"] }
+sp-core = { workspace = true, features = ["default"] }
+sp-finality-grandpa = { workspace = true, features = ["default"] }
+sp-inherents = { workspace = true, features = ["default"] }
 sp-keyring = { workspace = true }
-sp-offchain = { workspace = true, features = ["std"] }
-sp-runtime = { workspace = true, features = ["std"] }
-sp-session = { workspace = true, features = ["std"] }
-sp-state-machine = { workspace = true, features = ["std"] }
-sp-timestamp = { workspace = true, features = ["std"] }
-sp-transaction-pool = { workspace = true, features = ["std"] }
-sp-trie = { workspace = true, features = ["std"] }
-sp-keystore = { workspace = true, features = ["std"] }
+sp-offchain = { workspace = true, features = ["default"] }
+sp-runtime = { workspace = true, features = ["default"] }
+sp-session = { workspace = true, features = ["default"] }
+sp-state-machine = { workspace = true, features = ["default"] }
+sp-timestamp = { workspace = true, features = ["default"] }
+sp-transaction-pool = { workspace = true, features = ["default"] }
+sp-trie = { workspace = true, features = ["default"] }
+sp-keystore = { workspace = true, features = ["default"] }
 # These dependencies are used for RPC
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-transaction-payment-rpc = { workspace = true }
@@ -71,18 +71,18 @@ fc-db = { workspace = true }
 fc-mapping-sync = { workspace = true }
 fc-rpc = { workspace = true }
 fc-rpc-core = { workspace = true }
-fp-evm = { workspace = true, features = ["std"] }
-fp-rpc = { workspace = true, features = ["std"] }
-fp-storage = { workspace = true, features = ["std"] }
-stability-runtime = { path = "./../runtime", features = ["std"] }
+fp-evm = { workspace = true, features = ["default"] }
+fp-rpc = { workspace = true, features = ["default"] }
+fc-storage = { workspace = true }
+stability-runtime = { path = "./../runtime", features = ["default"] }
 
 # Stability
 stbl-cli-authorship = { workspace = true }
-stbl-primitives-fee-compatible-api = { workspace = true, features = ["std"] }
-stbl-primitives-zero-gas-transactions-api = { workspace = true, features = ["std"] }
+stbl-primitives-fee-compatible-api = { workspace = true, features = ["default"] }
+stbl-primitives-zero-gas-transactions-api = { workspace = true, features = ["default"] }
 sp-application-crypto = { workspace = true }
-account = { workspace = true, features = ["std"] }
-stbl-core-primitives = { workspace = true, features = ["std"] }
+account = { workspace = true, features = ["default"] }
+stbl-core-primitives = { workspace = true, features = ["default"] }
 stability-rpc = { workspace = true }
 stbl-tools = { workspace = true }
 
