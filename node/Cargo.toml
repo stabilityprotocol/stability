@@ -23,6 +23,7 @@ serde = { workspace = true }
 
 # Substrate
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", workspace = true }
+sc-chain-spec = { workspace = true }
 sc-cli = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
@@ -31,6 +32,7 @@ sc-consensus-manual-seal = { workspace = true }
 sc-executor = { workspace = true }
 sc-finality-grandpa = { workspace = true }
 sc-network = { workspace = true }
+sc-network-common = { workspace = true }
 sc-rpc = { workspace = true }
 sc-rpc-api = { workspace = true }
 sc-service = { workspace = true }
@@ -71,6 +73,7 @@ fc-db = { workspace = true }
 fc-mapping-sync = { workspace = true }
 fc-rpc = { workspace = true }
 fc-rpc-core = { workspace = true }
+fp-account = { workspace = true }
 fp-evm = { workspace = true, features = ["default"] }
 fp-rpc = { workspace = true, features = ["default"] }
 fc-storage = { workspace = true }

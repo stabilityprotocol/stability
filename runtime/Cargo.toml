@@ -39,6 +39,7 @@ std = [
     'pallet-transaction-payment/std',
     'frame-system-rpc-runtime-api/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
+    "fp-account/std",
     "fp-evm/std",
     'fp-rpc/std',
     'fp-self-contained/std',
@@ -125,6 +126,7 @@ pallet-session = { workspace = true }
 sp-application-crypto = { workspace = true }
 sp-staking = { workspace = true }
 # Frontier
+fp-account = { workspace = true }
 fp-evm = { workspace = true }
 fp-rpc = { workspace = true }
 fp-self-contained = { workspace = true }

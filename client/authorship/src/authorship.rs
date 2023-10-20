@@ -221,8 +221,6 @@ where
 	) -> Proposer<B, Block, C, A, PR> {
 		let parent_hash = parent_header.hash();
 
-		let id = BlockId::hash(parent_hash);
-
 		info!(
 			"🙌 Starting consensus session on top of parent {:?}",
 			parent_hash
@@ -231,7 +229,7 @@ where
 		let proposer = Proposer::<_, _, _, _, PR> {
 			spawn_handle: self.spawn_handle.clone(),
 			client: self.client.clone(),
-			parent_id: id,
+			parent_hash,
 			parent_number: *parent_header.number(),
 			transaction_pool: self.transaction_pool.clone(),
 			keystore: self.keystore.clone(),
@@ -281,7 +279,7 @@ where
 pub struct Proposer<B, Block: BlockT, C, A: TransactionPool, PR> {
 	spawn_handle: Box<dyn SpawnNamed>,
 	client: Arc<C>,
-	parent_id: BlockId<Block>,
+	parent_hash: Block::Hash,
 	parent_number: <<Block as BlockT>::Header as HeaderT>::Number,
 	transaction_pool: Arc<A>,
 	keystore: SyncCryptoStorePtr,
@@ -385,7 +383,7 @@ where
 		let propose_with_start = time::Instant::now();
 		let mut block_builder =
 			self.client
-				.new_block_at(&self.parent_id, inherent_digests, PR::ENABLED)?;
+				.new_block_at(self.parent_hash, inherent_digests, PR::ENABLED)?;
 
 		let create_inherents_start = time::Instant::now();
 		let inherents = block_builder.create_inherents(inherent_data)?;
@@ -546,7 +544,7 @@ where
 				let pending_tx =  if let Ok(pending_tx) = self
 				.client
 				.runtime_api()
-				.convert_zero_gas_transaction(&self.parent_id, ethereum_transaction.clone(), signed_hash.0.to_vec()) {
+				.convert_zero_gas_transaction(self.parent_hash, ethereum_transaction.clone(), signed_hash.0.to_vec()) {
 					pending_tx
 				}
 				else {
@@ -659,7 +657,7 @@ where
 				.client
 				.runtime_api()
 				.is_compatible_fee(
-					&self.parent_id,
+					self.parent_hash,
 					pending_tx.data().clone(),
 					validator.clone(),
 				)
@@ -1059,7 +1057,7 @@ mod tests {
 		assert_eq!(proposal.block.extrinsics().len(), 1);
 
 		let api = client.runtime_api();
-		api.execute_block(&BlockId::Hash(genesis_hash), proposal.block)
+		api.execute_block(genesis_hash, proposal.block)
 			.unwrap();
 
 		let state = backend.state_at(genesis_hash).unwrap();
