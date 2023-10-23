@@ -167,8 +167,8 @@ pub fn base_genesis(
 						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000002").expect("invalid hex storage key"), initial_default_token_balance);
 						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000003").expect("invalid hex storage key"), H256::from_str("0x53746162696c6974792047617320546f6b656e00000000000000000000000026").expect("invalid hex storage value")); // Name
 						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000004").expect("invalid hex storage key"), H256::from_str("0x5347540000000000000000000000000000000000000000000000000000000006").expect("invalid hex storage value")); // Symbol
-						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000005").expect("invalid hex storage key"), H256::from_str("0x000000000000000000000000af537bd156c7e548d0bf2cd43168dabf7af2feb5").expect("invalid hex storage value")); // Symbol
-						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000006").expect("invalid hex storage key"), H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000000").expect("invalid hex storage value")); // Symbol
+						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000005").expect("invalid hex storage key"), H256::from_str("0x000000000000000000000000af537bd156c7e548d0bf2cd43168dabf7af2feb5").expect("invalid hex storage value")); // Owner
+						storage.insert(H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000006").expect("invalid hex storage key"), H256::from_str("0x0000000000000000000000000000000000000000000000000000000000000000").expect("invalid hex storage value")); // Transfers Block Flag
 						storage.insert(stbl_tools::eth::get_storage_address_for_mapping(main_account, H256::from_low_u64_be(0)), initial_default_token_balance);
 						storage
 					},
