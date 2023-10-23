@@ -1,24 +1,25 @@
-// Copyright 2023 Stability Solutions.
-// This file is part of Stability.
+// Copyright 2019-2022 PureStake Inc.
+// This file is part of Moonbeam.
 
-// Stability is free software: you can redistribute it and/or modify
+// Moonbeam is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Stability is distributed in the hope that it will be useful,
+// Moonbeam is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
 //! Utils related to Substrate features:
 //! - Substrate call dispatch.
 //! - Substrate DB read and write costs
 
 use {
-	crate::revert,
+	crate::{evm::handle::using_precompile_handle, solidity::revert::revert},
 	core::marker::PhantomData,
 	fp_evm::{ExitError, PrecompileFailure, PrecompileHandle},
 	frame_support::{
@@ -29,6 +30,7 @@ use {
 	pallet_evm::GasWeightMapping,
 };
 
+#[derive(Debug)]
 pub enum TryDispatchError {
 	Evm(ExitError),
 	Substrate(DispatchError),
@@ -81,8 +83,7 @@ where
 		// However while Substrate handle checking weight while not making the sender pay for it,
 		// the EVM doesn't. It seems this safer to always record the costs to avoid unmetered
 		// computations.
-		let post_dispatch_info = call
-			.dispatch(origin)
+		let post_dispatch_info = using_precompile_handle(handle, || call.dispatch(origin))
 			.map_err(|e| TryDispatchError::Substrate(e.error))?;
 
 		let used_weight = post_dispatch_info.actual_weight;

@@ -7,17 +7,20 @@ use evm::{
 	executor::stack::{Accessed, StackExecutor, StackState as StackStateT, StackSubstateMetadata},
 	ExitError, ExitReason, Handler, Transfer,
 };
-use fp_evm::{CallInfo, CreateInfo, ExecutionInfo, Log, Vicinity};
+use fp_evm::{
+	CallInfo, CreateInfo, ExecutionInfo, IsPrecompileResult, Log, PrecompileSet, Vicinity,
+};
+use frame_support::traits::{Currency, ExistenceRequirement, Get, Time};
 use frame_support::sp_runtime::traits::UniqueSaturatedInto;
 use frame_support::weights::Weight;
 use pallet_evm::Pallet;
 use pallet_evm::{
 	AccountCodes, AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, Error,
-	Event, FeeCalculator, PrecompileSet, Runner as RunnerT, RunnerError, OnCreate,
+	Event, FeeCalculator, Runner as RunnerT, RunnerError, OnCreate,
 };
 use pallet_user_fee_selector::UserFeeTokenController;
 use precompile_utils::prelude::keccak256;
-use sp_core::{Get, H160, H256, U256};
+use sp_core::{H160, H256, U256};
 use sp_std::{
 	boxed::Box,
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
@@ -71,6 +74,7 @@ where
 				T::PrecompilesType,
 			>,
 		) -> (ExitReason, R),
+		R: Default,
 	{
 		let (base_fee, weight) = T::FeeCalculator::min_gas_price();
 
@@ -110,7 +114,7 @@ where
 		source: H160,
 		dapp: Option<H160>,
 		value: U256,
-		gas_limit: u64,
+		mut gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
 		max_priority_fee_per_gas: Option<U256>,
 		config: &'config evm::Config,
@@ -129,7 +133,28 @@ where
 				T::PrecompilesType,
 			>,
 		) -> (ExitReason, R),
+		R: Default,
 	{
+		// The precompile check is only used for transactional invocations. However, here we always
+		// execute the check, because the check has side effects.
+		let is_precompile = match precompiles.is_precompile(source, gas_limit) {
+			IsPrecompileResult::Answer {
+				is_precompile,
+				extra_cost,
+			} => {
+				gas_limit = gas_limit.saturating_sub(extra_cost);
+				is_precompile
+			}
+			IsPrecompileResult::OutOfGas => {
+				return Ok(ExecutionInfo {
+					exit_reason: ExitError::OutOfGas.into(),
+					value: Default::default(),
+					used_gas: gas_limit.into(),
+					logs: Default::default(),
+				})
+			}
+		};
+	
 		// Only check the restrictions of EIP-3607 if the source of the EVM operation is from an external transaction.
 		// If the source of this EVM operation is from an internal call, like from `eth_call` or `eth_estimateGas` RPC,
 		// we will skip the checks for the EIP-3607.
@@ -142,7 +167,7 @@ where
 		// projects using Frontier can have stateful precompiles that can manage funds or
 		// which calls other contracts that expects this precompile address to be trustworthy.
 		if is_transactional
-			&& (!<AccountCodes<T>>::get(source).is_empty() || precompiles.is_precompile(source))
+			&& (!<AccountCodes<T>>::get(source).is_empty() || is_precompile)
 		{
 			return Err(RunnerError {
 				error: Error::<T>::TransactionMustComeFromEOA,
@@ -677,6 +702,10 @@ impl<'vicinity, 'config, T: Config> BackendT for SubstrateStackState<'vicinity, 
 		self.vicinity.origin
 	}
 
+	fn block_randomness(&self) -> Option<H256> {
+		None
+	}
+
 	fn block_hash(&self, number: U256) -> H256 {
 		if number > U256::from(u32::MAX) {
 			H256::default()
@@ -695,7 +724,7 @@ impl<'vicinity, 'config, T: Config> BackendT for SubstrateStackState<'vicinity, 
 	}
 
 	fn block_timestamp(&self) -> U256 {
-		let now: u128 = pallet_timestamp::Pallet::<T>::get().unique_saturated_into();
+		let now: u128 = T::Timestamp::now().unique_saturated_into();
 		U256::from(now / 1000)
 	}
 
@@ -787,9 +816,10 @@ where
 		self.substate.deleted(address)
 	}
 
-	fn inc_nonce(&mut self, address: H160) {
+	fn inc_nonce(&mut self, address: H160) -> Result<(), ExitError> {
 		let account_id = T::AddressMapping::into_account_id(address);
 		frame_system::Pallet::<T>::inc_account_nonce(&account_id);
+		Ok(())
 	}
 
 	fn set_storage(&mut self, address: H160, index: H256, value: H256) {
@@ -881,6 +911,15 @@ where
 		self.substate
 			.recursive_is_cold(&|a: &Accessed| a.accessed_storage.contains(&(address, key)))
 	}
+
+	fn code_size(&self, address: H160) -> U256 {
+		U256::from(<Pallet<T>>::account_code_metadata(address).size)
+	}
+
+	fn code_hash(&self, address: H160) -> H256 {
+		<Pallet<T>>::account_code_metadata(address).hash
+	}
+
 }
 
 pub trait OnChargeDecentralizedNativeTokenFee {

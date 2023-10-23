@@ -1,5 +1,0 @@
-error: A precompile method must have a return type of `EvmResult<_>` (exposed by `precompile_utils`)
-  --> tests/precompile/compile-fail/evm-data/no-output.rs:23:2
-   |
-23 |     fn foo(test: &mut impl PrecompileHandle) {
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

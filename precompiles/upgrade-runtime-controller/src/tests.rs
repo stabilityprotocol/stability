@@ -52,7 +52,7 @@ fn owner_correctly_init() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::owner {})
-			.execute_returns_encoded(Into::<H256>::into(DefaultOwner::get()));
+			.execute_returns(Into::<H256>::into(DefaultOwner::get()));
 	})
 }
 
@@ -73,28 +73,28 @@ fn transfer_ownership_set_target_if_owner_twice() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_some();
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
-			.execute_returns_encoded(Into::<H256>::into(new_owner));
+			.execute_returns(Into::<H256>::into(new_owner));
 
 		precompiles()
 			.prepare_test(
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(other_owner),
+					new_owner: solidity::codec::Address(other_owner),
 				},
 			)
 			.execute_some();
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
-			.execute_returns_encoded(Into::<H256>::into(other_owner));
+			.execute_returns(Into::<H256>::into(other_owner));
 	})
 }
 
@@ -108,7 +108,7 @@ fn fail_transfer_ownership_if_not_owner() {
 				new_owner,
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
@@ -135,7 +135,7 @@ fn claim_ownership_if_claimable() {
 				owner,
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_some();
@@ -145,15 +145,13 @@ fn claim_ownership_if_claimable() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_LOG_NEW_OWNER,
-				EvmDataWriter::new()
-					.write(Into::<H256>::into(new_owner))
-					.build(),
+				solidity::encode_event_data(Into::<H256>::into(new_owner))
 			))
 			.execute_some();
 
 		precompiles()
 			.prepare_test(new_owner, Precompile1, PCall::owner {})
-			.execute_returns_encoded(Into::<H256>::into(new_owner));
+			.execute_returns(Into::<H256>::into(new_owner));
 	});
 }
 
@@ -182,9 +180,7 @@ fn test_set_block_application() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_SETTED__APPLICATION_BLOCK,
-				EvmDataWriter::new()
-					.write(Into::<U256>::into(block_number))
-					.build(),
+				solidity::encode_event_data(Into::<U256>::into(block_number))
 			))
 			.execute_some();
 		

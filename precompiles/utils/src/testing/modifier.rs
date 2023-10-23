@@ -1,22 +1,23 @@
-// Copyright 2023 Stability Solutions.
-// This file is part of Stability.
+// Copyright 2019-2022 PureStake Inc.
+// This file is part of Moonbeam.
 
-// Stability is free software: you can redistribute it and/or modify
+// Moonbeam is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Stability is distributed in the hope that it will be useful,
+// Moonbeam is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
 	crate::{
+		solidity::codec::Writer,
 		testing::{decode_revert_message, MockHandle},
-		EvmDataWriter,
 	},
 	fp_evm::{Context, PrecompileFailure, PrecompileSet},
 	sp_core::{H160, U256},
@@ -52,7 +53,7 @@ impl<P: PrecompileSet> PrecompilesModifierTester<P> {
 		let handle = &mut self.handle;
 		handle.is_static = true;
 		handle.context.apparent_value = U256::zero();
-		handle.input = EvmDataWriter::new_with_selector(selector).build();
+		handle.input = Writer::new_with_selector(selector).build();
 
 		let res = self.precompiles.execute(handle);
 
@@ -72,7 +73,7 @@ impl<P: PrecompileSet> PrecompilesModifierTester<P> {
 		let handle = &mut self.handle;
 		handle.is_static = false;
 		handle.context.apparent_value = U256::one();
-		handle.input = EvmDataWriter::new_with_selector(selector).build();
+		handle.input = Writer::new_with_selector(selector).build();
 
 		let res = self.precompiles.execute(handle);
 

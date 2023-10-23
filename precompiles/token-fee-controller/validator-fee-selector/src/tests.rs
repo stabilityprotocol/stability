@@ -1,7 +1,6 @@
 use precompile_utils::{
 	prelude::{log1, log2, log3, Address},
 	testing::{CryptoAlith, Precompile1, PrecompileTesterExt},
-	EvmDataWriter,
 };
 use sp_core::{H160, H256};
 
@@ -26,7 +25,7 @@ fn owner_correctly_init() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::owner {})
-			.execute_returns_encoded(Into::<H256>::into(DefaultOwner::get()));
+			.execute_returns(Into::<H256>::into(DefaultOwner::get()));
 	})
 }
 
@@ -42,28 +41,28 @@ fn transfer_ownership_set_target_if_owner_twice() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_some();
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
-			.execute_returns_encoded(Into::<H256>::into(new_owner));
+			.execute_returns(Into::<H256>::into(new_owner));
 
 		precompiles()
 			.prepare_test(
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(other_owner),
+					new_owner: solidity::codec::Address(other_owner),
 				},
 			)
 			.execute_some();
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
-			.execute_returns_encoded(Into::<H256>::into(other_owner));
+			.execute_returns(Into::<H256>::into(other_owner));
 	})
 }
 
@@ -77,7 +76,7 @@ fn fail_transfer_ownership_if_not_owner() {
 				new_owner,
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_reverts(|x| {
@@ -110,7 +109,7 @@ fn claim_ownership_if_claimable() {
 				owner,
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_some();
@@ -120,15 +119,13 @@ fn claim_ownership_if_claimable() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_LOG_NEW_OWNER,
-				EvmDataWriter::new()
-					.write(Into::<H256>::into(new_owner))
-					.build(),
+				solidity::encode_event_data(Into::<H256>::into(new_owner))
 			))
 			.execute_some();
 
 		precompiles()
 			.prepare_test(new_owner, Precompile1, PCall::owner {})
-			.execute_returns_encoded(Into::<H256>::into(new_owner));
+			.execute_returns(Into::<H256>::into(new_owner));
 	});
 }
 
@@ -178,7 +175,7 @@ fn non_default_token_address() {
 					token_address: MeaninglessTokenAddress::get().into(),
 				},
 			)
-			.execute_returns_encoded(DefaultAcceptance::get());
+			.execute_returns(DefaultAcceptance::get());
 
 		precompiles()
 			.prepare_test(
@@ -199,7 +196,7 @@ fn non_default_token_address() {
 					token_address: MeaninglessTokenAddress::get().into(),
 				},
 			)
-			.execute_returns_encoded(!DefaultAcceptance::get());
+			.execute_returns(!DefaultAcceptance::get());
 	});
 }
 
@@ -231,7 +228,7 @@ fn default_token_address() {
 					token_address: crate::mock::MockDefaultFeeToken::get().into(),
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 
 		precompiles()
 			.prepare_test(
@@ -253,7 +250,7 @@ fn default_token_address() {
 					token_address: crate::mock::MockDefaultFeeToken::get().into(),
 				},
 			)
-			.execute_returns_encoded(false);
+			.execute_returns(false);
 	});
 }
 
@@ -294,7 +291,7 @@ fn accept_token_and_revoke() {
 				SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
 				H160::from(CryptoAlith),
 				MeaninglessTokenAddress::get(),
-				EvmDataWriter::new().write(true).build(),
+				solidity::encode_event_data(true),
 			))
 			.execute_some();
 
@@ -307,7 +304,7 @@ fn accept_token_and_revoke() {
 					token_address: MeaninglessTokenAddress::get().into(),
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 
 		precompiles()
 			.prepare_test(
@@ -323,7 +320,7 @@ fn accept_token_and_revoke() {
 				SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
 				H160::from(CryptoAlith),
 				MeaninglessTokenAddress::get(),
-				EvmDataWriter::new().write(false).build(),
+				solidity::encode_event_data(false),
 			))
 			.execute_some();
 
@@ -336,7 +333,7 @@ fn accept_token_and_revoke() {
 					token_address: MeaninglessTokenAddress::get().into(),
 				},
 			)
-			.execute_returns_encoded(false);
+			.execute_returns(false);
 	});
 }
 
@@ -356,7 +353,7 @@ fn default_conversion_rate() {
 					validator: Address(CryptoAlith.into()),
 				},
 			)
-			.execute_returns_encoded(default);
+			.execute_returns(default);
 	})
 }
 
@@ -394,9 +391,7 @@ fn update_conversion_rate_controller() {
 				Precompile1,
 				SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
 				H160::from(CryptoAlith),
-				EvmDataWriter::new()
-					.write(Address(MeaninglessTokenAddress::get()))
-					.build(),
+				solidity::encode_event_data(Address(MeaninglessTokenAddress::get()))
 			))
 			.execute_some();
 
@@ -408,7 +403,7 @@ fn update_conversion_rate_controller() {
 					validator: Address(CryptoAlith.into()),
 				},
 			)
-			.execute_returns_encoded(Address(MeaninglessTokenAddress::get()));
+			.execute_returns(Address(MeaninglessTokenAddress::get()));
 	})
 }
 

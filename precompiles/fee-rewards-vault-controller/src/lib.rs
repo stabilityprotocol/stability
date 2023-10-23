@@ -139,9 +139,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(target_new_owner))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
 		)
 		.record(handle)?;
 
@@ -171,9 +169,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(target_new_owner))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
 		)
 		.record(handle)?;
 
@@ -266,8 +262,8 @@ where
 		if claimant == holder {
 			return Ok(true);
 		}
-
-		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(holder.into());
+		
+		let code = pallet_evm::AccountCodes::<Runtime>::get(Into::<H160>::into(holder));
 
 		if code.is_empty() {
 			return Ok(false);
@@ -344,7 +340,7 @@ where
 			return Err(revert("sender is not owner"));
 		}
 
-		let code = pallet_evm::Pallet::<Runtime>::account_codes::<H160>(holder.into());
+		let code = pallet_evm::AccountCodes::<Runtime>::get(Into::<H160>::into(holder));
 
 		if code.is_empty() {
 			return Err(revert("address is not a smartcontract"));

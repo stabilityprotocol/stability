@@ -1,18 +1,19 @@
-// Copyright 2023 Stability Solutions.
-// This file is part of Stability.
+// Copyright 2019-2022 PureStake Inc.
+// This file is part of Moonbeam.
 
-// Stability is free software: you can redistribute it and/or modify
+// Moonbeam is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Stability is distributed in the hope that it will be useful,
+// Moonbeam is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
 use super::*;
 use syn::{GenericArgument, Type};
 
@@ -44,7 +45,7 @@ pub fn main(_: TokenStream, input: TokenStream) -> TokenStream {
 			#(#attrs)*
 			#vis #type_token #ident #generics #eq_token #ty #semi_token
 
-			#[derive(num_enum::TryFromPrimitive, num_enum::IntoPrimitive)]
+			#[derive(num_enum::TryFromPrimitive, num_enum::IntoPrimitive, Debug)]
 			#[repr(u64)]
 			pub enum PrecompileName {
 				#(
@@ -67,7 +68,7 @@ pub fn main(_: TokenStream, input: TokenStream) -> TokenStream {
 		.into()
 	} else {
 		return quote_spanned! {
-			ty.span() => compile_error("Expected tuple");
+			ty.span() => compile_error!("Expected tuple");
 		}
 		.into();
 	}

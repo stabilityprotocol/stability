@@ -1,18 +1,19 @@
-// Copyright 2023 Stability Solutions.
-// This file is part of Stability.
+// Copyright 2019-2022 PureStake Inc.
+// This file is part of Moonbeam.
 
-// Stability is free software: you can redistribute it and/or modify
+// Moonbeam is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Stability is distributed in the hope that it will be useful,
+// Moonbeam is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
 use super::*;
 
 impl Precompile {
@@ -62,7 +63,10 @@ impl Precompile {
 				)*
 
 				#[doc(hidden)]
-				__phantom(PhantomData<( #( #type_parameters ),* )>, ::core::convert::Infallible),
+				__phantom(
+					::core::marker::PhantomData<( #( #type_parameters ),* )>,
+					::core::convert::Infallible
+				),
 			}
 		)
 	}
@@ -86,8 +90,8 @@ impl Precompile {
 			let modifier = syn::Ident::new(modifier, span);
 
 			quote!(
-				use ::precompile_utils::modifier::FunctionModifier;
-				use ::precompile_utils::handle::PrecompileHandleExt;
+				use ::precompile_utils::solidity::modifier::FunctionModifier;
+				use ::precompile_utils::evm::handle::PrecompileHandleExt;
 				handle.check_function_modifier(FunctionModifier::#modifier)?;
 			)
 		});
@@ -104,7 +108,7 @@ impl Precompile {
 				fn #fn_parse(
 					handle: &mut impl PrecompileHandle
 				) -> ::precompile_utils::EvmResult<Self> {
-					use ::precompile_utils::revert::InjectBacktrace;
+					use ::precompile_utils::solidity::revert::InjectBacktrace;
 
 					#modifier_check
 					#variant_parsing
@@ -114,7 +118,7 @@ impl Precompile {
 	}
 
 	/// Generates the parsing code for a variant, reading the input from the handle and
-	/// parsing it using EvmDataReader.
+	/// parsing it using Reader.
 	fn expand_variant_parsing_from_handle(
 		variant_ident: &syn::Ident,
 		variant: &Variant,
@@ -214,7 +218,7 @@ impl Precompile {
 				)*
 
 				pub fn encode(self) -> ::sp_std::vec::Vec<u8> {
-					use ::precompile_utils::EvmDataWriter;
+					use ::precompile_utils::solidity::codec::Writer;
 					match self {
 						#(
 							Self::#variants_ident2 { #(#variants_list),* } => {
@@ -266,11 +270,11 @@ impl Precompile {
 					.as_ref()
 					.map(|_| quote!(discriminant,));
 
-				let write_output =
-					quote_spanned!(output_span=> EvmDataWriter::new().write(output?).build());
+				let write_output = quote_spanned!(output_span=>
+					::precompile_utils::solidity::encode_return_value(output?)
+				);
 
 				quote!(
-					use ::precompile_utils::EvmDataWriter;
 					let output = <#impl_type>::#variant_ident(
 						#opt_discriminant_arg
 						handle,
@@ -286,7 +290,7 @@ impl Precompile {
 				#opt_discriminant_arg
 				handle: &mut impl PrecompileHandle
 			) -> ::precompile_utils::EvmResult<::fp_evm::PrecompileOutput> {
-				use ::precompile_utils::data::EvmDataWriter;
+				use ::precompile_utils::solidity::codec::Writer;
 				use ::fp_evm::{PrecompileOutput, ExitSucceed};
 
 				let output = match self {
@@ -317,7 +321,7 @@ impl Precompile {
 				});
 
 				quote!(
-					EvmDataWriter::new_with_selector(#selector)
+					Writer::new_with_selector(#selector)
 					#(#write_arguments)*
 					.build()
 				)
@@ -352,7 +356,7 @@ impl Precompile {
 			pub fn parse_call_data(
 				handle: &mut impl PrecompileHandle
 			) -> ::precompile_utils::EvmResult<Self> {
-				use ::precompile_utils::revert::RevertReason;
+				use ::precompile_utils::solidity::revert::RevertReason;
 
 				let input = handle.input();
 
@@ -397,11 +401,24 @@ impl Precompile {
 						&self,
 						handle: &mut impl PrecompileHandle
 					) -> Option<::precompile_utils::EvmResult<::fp_evm::PrecompileOutput>> {
-						let discriminant = match <#impl_type>::#discriminant_fn(
-							handle.code_address()
-						) {
-							Some(d) => d,
-							None => return None,
+						use ::precompile_utils::precompile_set::DiscriminantResult;
+
+						let discriminant = <#impl_type>::#discriminant_fn(
+							handle.code_address(),
+							handle.remaining_gas()
+						);
+
+						if let DiscriminantResult::Some(_, cost) | DiscriminantResult::None(cost) = discriminant {
+							let result = handle.record_cost(cost);
+							if let Err(e) = result {
+								return Some(Err(e.into()));
+							}
+						}
+
+						let discriminant = match discriminant {
+							DiscriminantResult::Some(d, _) => d,
+							DiscriminantResult::None(cost) => return None,
+							DiscriminantResult::OutOfGas => return Some(Err(ExitError::OutOfGas.into()))
 						};
 
 						#opt_pre_check
@@ -412,8 +429,8 @@ impl Precompile {
 						)
 					}
 
-					fn is_precompile(&self, address: H160) -> bool {
-						<#impl_type>::#discriminant_fn(address).is_some()
+					fn is_precompile(&self, address: H160, gas: u64) -> ::fp_evm::IsPrecompileResult {
+						<#impl_type>::#discriminant_fn(address, gas).into()
 					}
 				}
 			)
@@ -458,7 +475,7 @@ impl Precompile {
 				quote_spanned!(span=>
 					assert_eq!(
 						#solidity,
-						<(#(#types,)*) as EvmData>::solidity_type(),
+						<(#(#types,)*) as Codec>::signature(),
 						"{} function signature doesn't match (left: attribute, right: computed \
 						from Rust types)",
 						#name
@@ -476,7 +493,7 @@ impl Precompile {
 			quote!(
 				#[allow(non_snake_case)]
 				pub(crate) fn #inner_name #impl_generics () #where_clause {
-					use ::precompile_utils::data::EvmData;
+					use ::precompile_utils::solidity::Codec;
 					#(#variant_test)*
 				}
 
@@ -491,7 +508,7 @@ impl Precompile {
 			quote!(
 				#[allow(non_snake_case)]
 				pub(crate) fn #inner_name() {
-					use ::precompile_utils::data::EvmData;
+					use ::precompile_utils::solidity::Codec;
 					#(#variant_test)*
 				}
 

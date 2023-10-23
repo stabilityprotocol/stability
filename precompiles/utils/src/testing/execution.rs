@@ -1,22 +1,23 @@
-// Copyright 2023 Stability Solutions.
-// This file is part of Stability.
+// Copyright 2019-2022 PureStake Inc.
+// This file is part of Moonbeam.
 
-// Stability is free software: you can redistribute it and/or modify
+// Moonbeam is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Stability is distributed in the hope that it will be useful,
+// Moonbeam is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
 	crate::{
+		solidity::codec::Codec,
 		testing::{decode_revert_message, MockHandle, PrettyLog, SubcallHandle, SubcallTrait},
-		EvmData, EvmDataWriter,
 	},
 	fp_evm::{
 		Context, ExitError, ExitSucceed, Log, PrecompileFailure, PrecompileOutput,
@@ -152,7 +153,7 @@ impl<'p, P: PrecompileSet> PrecompilesTester<'p, P> {
 	}
 
 	/// Execute the precompile set and check it returns provided output.
-	pub fn execute_returns(mut self, output: Vec<u8>) {
+	pub fn execute_returns_raw(mut self, output: Vec<u8>) {
 		let res = self.execute();
 
 		match res {
@@ -191,8 +192,8 @@ impl<'p, P: PrecompileSet> PrecompilesTester<'p, P> {
 	}
 
 	/// Execute the precompile set and check it returns provided Solidity encoded output.
-	pub fn execute_returns_encoded(self, output: impl EvmData) {
-		self.execute_returns(EvmDataWriter::new().write(output).build())
+	pub fn execute_returns(self, output: impl Codec) {
+		self.execute_returns_raw(crate::solidity::encode_return_value(output))
 	}
 
 	/// Execute the precompile set and check if it reverts.

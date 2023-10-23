@@ -1,25 +1,32 @@
-// Copyright 2023 Stability Solutions.
-// This file is part of Stability.
+// Copyright 2019-2022 PureStake Inc.
+// This file is part of Moonbeam.
 
-// Stability is free software: you can redistribute it and/or modify
+// Moonbeam is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Stability is distributed in the hope that it will be useful,
+// Moonbeam is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
 pub mod account;
 pub mod execution;
 pub mod handle;
 pub mod modifier;
-pub mod solidity;
+mod solidity;
 
-pub use {account::*, execution::*, handle::*, modifier::*};
+pub use {
+	account::*,
+	execution::*,
+	handle::*,
+	modifier::*,
+	solidity::{check_precompile_implements_solidity_interfaces, compute_selector},
+};
 
 use fp_evm::Log;
 

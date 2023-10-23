@@ -1,18 +1,19 @@
-// Copyright 2023 Stability Solutions.
-// This file is part of Stability.
+// Copyright 2019-2022 PureStake Inc.
+// This file is part of Moonbeam.
 
-// Stability is free software: you can redistribute it and/or modify
+// Moonbeam is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Stability is distributed in the hope that it will be useful,
+// Moonbeam is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
 //! Utility module to interact with solidity file.
 
 use sp_io::hashing::keccak_256;
@@ -21,6 +22,34 @@ use std::{
 	fs::File,
 	io::{BufRead, BufReader, Read},
 };
+
+pub fn check_precompile_implements_solidity_interfaces<F>(
+	files: &[&'static str],
+	supports_selector: F,
+) where
+	F: Fn(u32) -> bool,
+{
+	for file in files {
+		for solidity_fn in get_selectors(file) {
+			assert_eq!(
+				solidity_fn.compute_selector_hex(),
+				solidity_fn.docs_selector,
+				"documented selector for '{}' did not match in file '{}'",
+				solidity_fn.signature(),
+				file,
+			);
+
+			let selector = solidity_fn.compute_selector();
+			if !supports_selector(selector) {
+				panic!(
+					"precompile don't support selector {selector:x} for function '{}' listed in file\
+					{file}",
+					solidity_fn.signature(),
+				)
+			}
+		}
+	}
+}
 
 /// Represents a declared custom type struct within a solidity file
 #[derive(Clone, Default, Debug)]

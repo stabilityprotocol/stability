@@ -1,25 +1,28 @@
-// Copyright 2023 Stability Solutions.
-// This file is part of Stability.
+// Copyright 2019-2022 PureStake Inc.
+// This file is part of Moonbeam.
 
-// Stability is free software: you can redistribute it and/or modify
+// Moonbeam is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Stability is distributed in the hope that it will be useful,
+// Moonbeam is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
 	crate::testing::PrettyLog,
+	evm::{ExitRevert, ExitSucceed},
 	fp_evm::{Context, ExitError, ExitReason, Log, PrecompileHandle, Transfer},
 	sp_core::{H160, H256},
 	sp_std::boxed::Box,
 };
 
+#[derive(Debug, Clone)]
 pub struct Subcall {
 	pub address: H160,
 	pub transfer: Option<Transfer>,
@@ -29,11 +32,41 @@ pub struct Subcall {
 	pub context: Context,
 }
 
+#[derive(Debug, Clone)]
 pub struct SubcallOutput {
 	pub reason: ExitReason,
 	pub output: Vec<u8>,
 	pub cost: u64,
 	pub logs: Vec<Log>,
+}
+
+impl SubcallOutput {
+	pub fn revert() -> Self {
+		Self {
+			reason: ExitReason::Revert(ExitRevert::Reverted),
+			output: Vec::new(),
+			cost: 0,
+			logs: Vec::new(),
+		}
+	}
+
+	pub fn succeed() -> Self {
+		Self {
+			reason: ExitReason::Succeed(ExitSucceed::Returned),
+			output: Vec::new(),
+			cost: 0,
+			logs: Vec::new(),
+		}
+	}
+
+	pub fn out_of_gas() -> Self {
+		Self {
+			reason: ExitReason::Error(ExitError::OutOfGas),
+			output: Vec::new(),
+			cost: 0,
+			logs: Vec::new(),
+		}
+	}
 }
 
 pub trait SubcallTrait: FnMut(Subcall) -> SubcallOutput + 'static {}
@@ -82,7 +115,7 @@ impl PrecompileHandle for MockHandle {
 		context: &Context,
 	) -> (ExitReason, Vec<u8>) {
 		if self
-			.record_cost(crate::costs::call_cost(
+			.record_cost(crate::evm::costs::call_cost(
 				context.apparent_value,
 				&evm::Config::london(),
 			))

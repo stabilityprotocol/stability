@@ -12,10 +12,10 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 
 [dependencies]
-beefy-primitives = { workspace = true, package = "sp-beefy" }
 pallet-beefy-mmr = { workspace = true }
 sp-application-crypto = { workspace = true }
 sp-consensus-aura = { workspace = true }
+sp-consensus-beefy = { workspace = true }
 sp-consensus-babe = { workspace = true }
 sp-block-builder = { workspace = true }
 codec = { package = "parity-scale-codec", workspace = true, features = ["derive"] }
@@ -37,7 +37,7 @@ pallet-babe = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-timestamp = { workspace = true }
-sp-finality-grandpa = { workspace = true }
+sp-consensus-grandpa = { workspace = true }
 sp-trie = { workspace = true }
 sp-transaction-pool = { workspace = true }
 trie-db = { workspace = true }
@@ -69,11 +69,11 @@ default = [
 	"std",
 ]
 std = [
-	"beefy-primitives/std",
 	"pallet-beefy-mmr/std",
 	"sp-application-crypto/std",
 	"sp-consensus-aura/std",
 	"sp-consensus-babe/std",
+	"sp-consensus-beefy/std",
 	"sp-block-builder/std",
 	"codec/std",
 	"scale-info/std",
@@ -100,7 +100,7 @@ std = [
 	"frame-system/std",
 	"pallet-timestamp/std",
 	"sc-service",
-	"sp-finality-grandpa/std",
+	"sp-consensus-grandpa/std",
 	"sp-trie/std",
 	"sp-transaction-pool/std",
 	"trie-db/std",

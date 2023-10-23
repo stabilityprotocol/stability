@@ -28,6 +28,9 @@ use std::sync::Arc;
 
 pub use self::block_builder_ext::BlockBuilderExt;
 
+use sc_chain_spec::construct_genesis_block;
+use sp_api::StateVersion;
+
 use sp_core::{sr25519, storage::ChildInfo, Pair};
 use sp_runtime::traits::{Block as BlockT, Hash as HashT, Header as HeaderT};
 use stability_test_runtime::genesismap::{additional_storage_with_genesis, GenesisConfig};
@@ -116,7 +119,7 @@ impl GenesisParameters {
 	}
 }
 
-impl stability_test_client::GenesisInit for GenesisParameters {
+impl GenesisInit for GenesisParameters {
 	fn genesis_storage(&self) -> Storage {
 		use codec::Encode;
 
@@ -143,7 +146,7 @@ impl stability_test_client::GenesisInit for GenesisParameters {
 				storage.top.clone().into_iter().chain(child_roots).collect(),
 				sp_runtime::StateVersion::V1,
 			);
-		let block: runtime::Block = client::genesis::construct_genesis_block(state_root);
+		let block: runtime::Block = construct_genesis_block(state_root, StateVersion::V1);
 		storage.top.extend(additional_storage_with_genesis(&block));
 
 		storage
@@ -261,7 +264,7 @@ impl<B> TestClientBuilderExt<B>
 		client::LocalCallExecutor<
 			stability_test_runtime::Block,
 			B,
-			sc_executor::NativeElseWasmExecutor<LocalExecutorDispatch>,
+			NativeElseWasmExecutor<LocalExecutorDispatch>,
 		>,
 		B,
 	> where
@@ -292,11 +295,6 @@ pub fn new() -> Client<Backend> {
 }
 
 /// Create a new native executor.
-pub fn new_native_executor() -> sc_executor::NativeElseWasmExecutor<LocalExecutorDispatch> {
-	sc_executor::NativeElseWasmExecutor::new(
-		sc_executor::WasmExecutionMethod::Interpreted,
-		None,
-		8,
-		2,
-	)
+pub fn new_native_executor() -> NativeElseWasmExecutor<LocalExecutorDispatch> {
+	NativeElseWasmExecutor::new(sc_executor::WasmExecutionMethod::Interpreted, None, 8, 2)
 }

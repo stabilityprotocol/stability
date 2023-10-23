@@ -5,7 +5,6 @@ use pallet_supported_tokens_manager::SupportedTokensManager as SupportedTokensMa
 use precompile_utils::{
 	prelude::{log1, Address},
 	testing::{Precompile1, PrecompileTesterExt},
-	EvmDataWriter,
 };
 use sp_core::{H160, H256};
 
@@ -27,7 +26,7 @@ fn owner_correctly_init() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::owner {})
-			.execute_returns_encoded(Into::<H256>::into(DefaultOwner::get()));
+			.execute_returns(Into::<H256>::into(DefaultOwner::get()));
 	})
 }
 
@@ -48,28 +47,28 @@ fn transfer_ownership_set_target_if_owner_twice() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_some();
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
-			.execute_returns_encoded(Into::<H256>::into(new_owner));
+			.execute_returns(Into::<H256>::into(new_owner));
 
 		precompiles()
 			.prepare_test(
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(other_owner),
+					new_owner: solidity::codec::Address(other_owner),
 				},
 			)
 			.execute_some();
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
-			.execute_returns_encoded(Into::<H256>::into(other_owner));
+			.execute_returns(Into::<H256>::into(other_owner));
 	})
 }
 
@@ -83,7 +82,7 @@ fn fail_transfer_ownership_if_not_owner() {
 				new_owner,
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_reverts(|x| {
@@ -114,7 +113,7 @@ fn claim_ownership_if_claimable() {
 				owner,
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_some();
@@ -124,15 +123,13 @@ fn claim_ownership_if_claimable() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_LOG_NEW_OWNER,
-				EvmDataWriter::new()
-					.write(Into::<H256>::into(new_owner))
-					.build(),
+				solidity::encode_event_data(Into::<H256>::into(new_owner))
 			))
 			.execute_some();
 
 		precompiles()
 			.prepare_test(new_owner, Precompile1, PCall::owner {})
-			.execute_returns_encoded(Into::<H256>::into(new_owner));
+			.execute_returns(Into::<H256>::into(new_owner));
 	});
 }
 
@@ -145,7 +142,7 @@ fn fail_add_token_if_not_owner() {
 				new_owner,
 				Precompile1,
 				PCall::add_token {
-					token: precompile_utils::data::Address(new_owner),
+					token: solidity::codec::Address(new_owner),
 					slot: H256::from_low_u64_be(0),
 				},
 			)
@@ -164,7 +161,7 @@ fn fail_remove_token_if_not_owner() {
 				new_owner,
 				Precompile1,
 				PCall::remove_token {
-					token: precompile_utils::data::Address(new_owner),
+					token: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_reverts(|x| {
@@ -181,7 +178,7 @@ fn fail_add_token_if_already_added() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::add_token {
-					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+					token: solidity::codec::Address(MeaninglessTokenAddress::get()),
 					slot: H256::from_low_u64_be(0),
 				},
 			)
@@ -192,7 +189,7 @@ fn fail_add_token_if_already_added() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::add_token {
-					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+					token: solidity::codec::Address(MeaninglessTokenAddress::get()),
 					slot: H256::from_low_u64_be(0),
 				},
 			)
@@ -226,7 +223,7 @@ fn fail_remove_token_if_not_added() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::remove_token {
-					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+					token: solidity::codec::Address(MeaninglessTokenAddress::get()),
 				},
 			)
 			.execute_reverts(|x| {
@@ -248,7 +245,7 @@ fn zero_address_should_not_be_included_never() {
 					token: sp_core::H160::zero().into(),
 				},
 			)
-			.execute_returns_encoded(false);
+			.execute_returns(false);
 	})
 }
 
@@ -260,7 +257,7 @@ fn add_token_and_remove_after() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::add_token {
-					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+					token: solidity::codec::Address(MeaninglessTokenAddress::get()),
 					slot: H256::from_low_u64_be(0),
 				},
 			)
@@ -271,14 +268,14 @@ fn add_token_and_remove_after() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::is_token_supported {
-					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+					token: solidity::codec::Address(MeaninglessTokenAddress::get()),
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::supported_tokens {})
-			.execute_returns_encoded(vec![
+			.execute_returns(vec![
 				Address(InitialDefaultTokenFee::get()),
 				Address(MeaninglessTokenAddress::get()),
 			]);
@@ -288,7 +285,7 @@ fn add_token_and_remove_after() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::remove_token {
-					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+					token: solidity::codec::Address(MeaninglessTokenAddress::get()),
 				},
 			)
 			.execute_some();
@@ -298,10 +295,10 @@ fn add_token_and_remove_after() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::is_token_supported {
-					token: precompile_utils::data::Address(MeaninglessTokenAddress::get()),
+					token: solidity::codec::Address(MeaninglessTokenAddress::get()),
 				},
 			)
-			.execute_returns_encoded(false);
+			.execute_returns(false);
 	});
 }
 

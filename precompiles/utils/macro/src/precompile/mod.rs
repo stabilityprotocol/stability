@@ -1,18 +1,19 @@
-// Copyright 2023 Stability Solutions.
-// This file is part of Stability.
+// Copyright 2019-2022 PureStake Inc.
+// This file is part of Moonbeam.
 
-// Stability is free software: you can redistribute it and/or modify
+// Moonbeam is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Stability is distributed in the hope that it will be useful,
+// Moonbeam is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
 #![doc = include_str!("../../docs/precompile_macro.md")]
 
 use proc_macro::TokenStream;
@@ -105,7 +106,7 @@ struct Variant {
 	/// A unit test will be generated to check that this selector matches
 	/// the Rust arguments.
 	///
-	/// > EvmData trait allows to generate this string at runtime only. Thus
+	/// > solidity::Codec trait allows to generate this string at runtime only. Thus
 	/// > it is required to write it manually in the selector attribute, and
 	/// > a unit test is generated to check it matches.
 	solidity_arguments_type: String,
