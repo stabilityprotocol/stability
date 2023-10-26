@@ -48,7 +48,7 @@ use std::{marker::PhantomData, pin::Pin, sync::Arc, time};
 use prometheus_endpoint::Registry as PrometheusRegistry;
 use sc_proposer_metrics::{EndProposingReason, MetricsLink as PrometheusMetrics};
 use sp_core::crypto::KeyTypeId;
-use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
+use sp_keystore::{Keystore, KeystorePtr};
 use stbl_primitives_fee_compatible_api::CompatibleFeeApi;
 
 /// Default block size limit in bytes used by [`Proposer`].
@@ -77,7 +77,7 @@ pub struct ProposerFactory<A, B, C, PR> {
 	transaction_pool: Arc<A>,
 
 	/// Reference to Keystore
-	keystore: SyncCryptoStorePtr,
+	keystore: KeystorePtr,
 
 	/// HTTP URL of the private pool from which the node will retrieve zero-gas transactions
 	zero_gas_tx_pool: Option<String>,
@@ -113,7 +113,7 @@ impl<A, B, C> ProposerFactory<A, B, C, DisableProofRecording> {
 		spawn_handle: impl SpawnNamed + 'static,
 		client: Arc<C>,
 		transaction_pool: Arc<A>,
-		keystore: SyncCryptoStorePtr,
+		keystore: KeystorePtr,
 		zero_gas_tx_pool: Option<String>,
 		prometheus: Option<&PrometheusRegistry>,
 		telemetry: Option<TelemetryHandle>,
@@ -145,7 +145,7 @@ impl<A, B, C> ProposerFactory<A, B, C, EnableProofRecording> {
 		spawn_handle: impl SpawnNamed + 'static,
 		client: Arc<C>,
 		transaction_pool: Arc<A>,
-		keystore: SyncCryptoStorePtr,
+		keystore: KeystorePtr,
 		zero_gas_tx_pool: Option<String>,
 		prometheus: Option<&PrometheusRegistry>,
 		telemetry: Option<TelemetryHandle>,
@@ -282,7 +282,7 @@ pub struct Proposer<B, Block: BlockT, C, A: TransactionPool, PR> {
 	parent_hash: Block::Hash,
 	parent_number: <<Block as BlockT>::Header as HeaderT>::Number,
 	transaction_pool: Arc<A>,
-	keystore: SyncCryptoStorePtr,
+	keystore: KeystorePtr,
 	zero_gas_tx_pool: Option<String>,
 	now: Box<dyn Fn() -> time::Instant + Send + Sync>,
 	metrics: PrometheusMetrics,
@@ -510,7 +510,7 @@ where
 				let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
 				
 
-				let keys = SyncCryptoStore::ecdsa_public_keys(
+				let keys = Keystore::ecdsa_public_keys(
 					&*self.keystore,
 					KeyTypeId::try_from("aura").unwrap_or_default(),
 				);
@@ -527,7 +527,7 @@ where
 
 				let eip191_message = stbl_tools::eth::build_eip191_message_hash(message.clone());
 
-				let signed_hash_option = SyncCryptoStore::ecdsa_sign_prehashed(
+				let signed_hash_option = Keystore::ecdsa_sign_prehashed(
 					&*self.keystore,
 					KeyTypeId::try_from("aura").unwrap_or_default(),
 					&public,
@@ -626,7 +626,7 @@ where
 		};
 
 
-		let keys = SyncCryptoStore::ecdsa_public_keys(
+		let keys = Keystore::ecdsa_public_keys(
 			&*self.keystore,
 			KeyTypeId::try_from("aura").unwrap_or_default(),
 		);
@@ -892,7 +892,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -955,7 +955,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -1024,7 +1024,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -1111,7 +1111,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -1226,7 +1226,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -1340,7 +1340,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -1425,7 +1425,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
@@ -1503,7 +1503,7 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.sync_keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
