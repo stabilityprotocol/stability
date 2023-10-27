@@ -64,7 +64,10 @@ use pallet_grandpa::{
 use fp_evm::weight_per_gas;
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction};
-use pallet_evm::{Account as EVMAccount, FeeCalculator, Runner, GasWeightMapping};
+use pallet_evm::{
+	Account as EVMAccount, EnsureAccountId20, FeeCalculator, GasWeightMapping,
+	Runner
+};
 use pallet_sponsored_transactions::Call::send_sponsored_transaction;
 use pallet_validator_set::SessionBlockManager;
 // A few exports that help ease life for downstream crates.
@@ -485,7 +488,7 @@ impl pallet_evm::Config for Runtime {
 	type FindAuthor = FindAuthorLinkedOrTruncated<Aura>;
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
-	type WeightInfo = pallet_evm::weights::SubstrateWeight<Runtime>;
+	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
 }
 
 parameter_types! {
@@ -550,7 +553,7 @@ impl pallet_base_fee::Config for Runtime {
 
 impl pallet_hotfix_sufficients::Config for Runtime {
 	type AddressMapping = IdentityAddressMapping;
-	type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
+	type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Self>;
 }
 
 parameter_types! {
@@ -570,7 +573,7 @@ impl pallet_collective::Config<TechCommitteeInstance> for Runtime {
 	type MaxProposals = CouncilMaxProposals;
 	type MaxMembers = CouncilMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
-	type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+	type WeightInfo = pallet_collective::weights::SubstrateWeight<Self>;
 	type SetMembersOrigin = EnsureRootOrHalfTechCommittee;
 	type MaxProposalWeight = MaxProposalWeight;
 }

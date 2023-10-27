@@ -45,4 +45,3 @@ hex = { workspace = true }
 [dev-dependencies]
 parking_lot = { workspace = true }
 sc-transaction-pool = { workspace = true }
-stability-test-runtime-client = { workspace = true }

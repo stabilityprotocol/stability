@@ -313,6 +313,8 @@ where
 		fee_history_cache_limit,
 	} = new_frontier_partial(&eth_config)?;
 
+	let mut net_config = sc_network::config::FullNetworkConfiguration::new(&config.network);
+
 	let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
 		&client.block_hash(0)?.expect("Genesis block exists; qed"),
 		&config.chain_spec,
@@ -321,12 +323,10 @@ where
 	let warp_sync_params = if sealing.is_some() {
 		None
 	} else {
-		config
-			.network
-			.extra_sets
-			.push(sc_consensus_grandpa::grandpa_peers_set_config(
-				grandpa_protocol_name.clone(),
-			));
+		net_config.add_notification_protocol(sc_consensus_grandpa::grandpa_peers_set_config(
+			grandpa_protocol_name.clone(),
+		));
+
 		let warp_sync: Arc<dyn sc_network::config::WarpSyncProvider<Block>> =
 			Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
 				backend.clone(),
@@ -339,6 +339,7 @@ where
 	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
+			net_config,
 			client: client.clone(),
 			transaction_pool: transaction_pool.clone(),
 			spawn_handle: task_manager.spawn_handle(),
