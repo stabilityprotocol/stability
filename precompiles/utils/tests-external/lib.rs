@@ -104,6 +104,10 @@ mod tests {
 		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = System;
 		type WeightInfo = ();
+		type MaxHolds = ();
+		type HoldIdentifier = ();
+		type FreezeIdentifier = ();
+		type MaxFreezes = ();
 	}
 
 	#[derive(Debug, Clone)]

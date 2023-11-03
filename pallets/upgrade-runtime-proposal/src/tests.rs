@@ -17,7 +17,7 @@ fn test_setup_works() {
 
 #[test]
 fn test_propose_code_works() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
@@ -52,7 +52,7 @@ fn test_propose_code_fails_if_bad_origin() {
 
 #[test]
 fn test_propose_code_fails_if_there_are_already_a_proposed_code() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
@@ -73,7 +73,7 @@ fn test_propose_code_fails_if_there_are_already_a_proposed_code() {
 
 #[test]
 fn test_propose_code_fails_invalid_proposed_code() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
@@ -90,7 +90,7 @@ fn test_propose_code_fails_invalid_proposed_code() {
 
 #[test]
 fn test_set_block_application() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
@@ -122,7 +122,7 @@ fn test_set_block_application_fails_if_bad_origin() {
 
 #[test]
 fn test_set_block_application_fails_block_is_older() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
@@ -140,7 +140,7 @@ fn test_set_block_application_fails_block_is_older() {
 
 #[test]
 fn test_set_block_application_fails_if_not_proposed_code() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
@@ -154,7 +154,7 @@ fn test_set_block_application_fails_if_not_proposed_code() {
 
 #[test]
 fn test_reject_proposed_code() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
@@ -197,7 +197,7 @@ fn test_fails_reject_proposed_code_if_no_proposed_code() {
 
 #[test]
 fn test_scheduled_update_runtime() {
-    let executor = substrate_test_runtime_client::new_native_executor();
+    let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
     let mut ext = new_test_ext();
     ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 

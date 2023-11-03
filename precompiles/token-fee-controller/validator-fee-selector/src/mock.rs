@@ -101,7 +101,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 0;
+	pub const ExistentialDeposit: u128 = 1;
 }
 
 impl pallet_balances::Config for Runtime {
@@ -114,6 +114,10 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
+	type MaxHolds = ();
+	type HoldIdentifier = ();
+	type FreezeIdentifier = ();
+	type MaxFreezes = ();
 }
 
 parameter_types! {
@@ -185,6 +189,7 @@ parameter_types! {
 		pub BlockGasLimit: U256 = U256::max_value();
 		pub PrecompilesValue: Precompiles<Runtime> = Precompiles::new();
 		pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+		pub const GasLimitPovSizeRatio: u64 = 15;
 }
 
 impl pallet_evm::Config for Runtime {
@@ -204,6 +209,10 @@ impl pallet_evm::Config for Runtime {
 	type BlockGasLimit = BlockGasLimit;
 	type BlockHashMapping = pallet_evm::SubstrateBlockHashMapping<Self>;
 	type FindAuthor = ();
+	type OnCreate = ();
+	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
+	type Timestamp = Timestamp;
+	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
 }
 
 pub struct TestSessionHandler;

@@ -182,7 +182,7 @@ impl sc_service::TransactionPool for MockedMempool {
 impl<Block: BlockT> HeaderBackend<Block> for TestApi {
 	fn header(
 		&self,
-		_id: BlockId<Block>,
+		_id: Block::Hash,
 	) -> std::result::Result<Option<Block::Header>, sp_blockchain::Error> {
 		Ok(None)
 	}
@@ -202,7 +202,7 @@ impl<Block: BlockT> HeaderBackend<Block> for TestApi {
 
 	fn status(
 		&self,
-		_id: BlockId<Block>,
+		_id: Block::Hash,
 	) -> std::result::Result<sc_client_api::blockchain::BlockStatus, sp_blockchain::Error> {
 		Ok(sc_client_api::blockchain::BlockStatus::Unknown)
 	}

@@ -6,6 +6,7 @@ use precompile_utils::{
 	prelude::{log1, Address},
 	testing::{Precompile1, PrecompileTesterExt},
 };
+use precompile_utils::prelude::*;
 use sp_core::{H160, H256};
 
 use crate::{
@@ -318,7 +319,7 @@ fn update_default_controller() {
 					token: MeaninglessTokenAddress::get().into(),
 				},
 			)
-			.execute_returns(Default::default());
+			.execute_returns(());
 	})
 }
 

@@ -1,5 +1,7 @@
 use crate::{mock::*, *};
 
+use precompile_utils::prelude::*;
+
 use precompile_utils::testing::*;
 use sha3::{Digest, Keccak256};
 

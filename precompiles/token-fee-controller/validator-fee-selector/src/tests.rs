@@ -3,6 +3,7 @@ use precompile_utils::{
 	testing::{CryptoAlith, Precompile1, PrecompileTesterExt},
 };
 use sp_core::{H160, H256};
+use precompile_utils::prelude::*;
 
 use crate::{
 	mock::{

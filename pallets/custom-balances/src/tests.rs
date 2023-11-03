@@ -403,7 +403,8 @@ fn inspect_reducible_balance_returns_actual_balance_for_zero_address() {
 		assert_eq!(
 			<CustomBalances as Inspect<AccountId>>::reducible_balance(
 				&ZeroAddress::get().into(),
-				true
+				frame_support::traits::tokens::Preservation::Preserve,
+				frame_support::traits::tokens::Fortitude::Polite
 			),
 			1u128
 		);
@@ -418,7 +419,8 @@ fn inspect_reducible_balance_returns_actual_balance_for_one_address() {
 		assert_eq!(
 			<CustomBalances as Inspect<AccountId>>::reducible_balance(
 				&OneAddress::get().into(),
-				true
+				frame_support::traits::tokens::Preservation::Preserve,
+				frame_support::traits::tokens::Fortitude::Polite
 			),
 			0u128
 		);
@@ -434,7 +436,7 @@ fn inspect_can_deposit_returns_error() {
 			<CustomBalances as Inspect<AccountId>>::can_deposit(
 				&OneAddress::get().into(),
 				10u128,
-				false
+				frame_support::traits::tokens::Provenance::Extant
 			),
 			DepositConsequence::UnknownAsset
 		);
@@ -451,7 +453,7 @@ fn inspect_can_withdraw_returns_error_when_not_enough_balance() {
 				&ZeroAddress::get().into(),
 				10u128
 			),
-			WithdrawConsequence::NoFunds
+			WithdrawConsequence::BalanceLow
 		);
 	});
 }

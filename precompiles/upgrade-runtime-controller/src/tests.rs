@@ -157,7 +157,7 @@ fn claim_ownership_if_claimable() {
 
 #[test]
 fn test_set_block_application() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
     let mut ext = ExtBuilder::default().build();
 
     ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -190,7 +190,7 @@ fn test_set_block_application() {
 
 #[test]
 fn test_fail_set_block_application_if_not_owner() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -216,7 +216,7 @@ fn test_fail_set_block_application_if_not_owner() {
 
 #[test]
 fn test_reject_proposed_code() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -246,7 +246,7 @@ fn test_reject_proposed_code() {
 
 #[test]
 fn test_fail_reject_proposed_code_if_not_owner() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
