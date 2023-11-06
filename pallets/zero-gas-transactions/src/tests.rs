@@ -188,9 +188,9 @@ fn check_correct_fee_management(called_arguments: Vec<(bool, H160, H160, U256)>)
 	for (is_deposit, token, _, amount) in called_arguments.iter() {
 		assert!(token.eq(&called_arguments[0].1));
 		if *is_deposit {
-			total_deposited = amount.saturating_add(total_deposited);
+			total_deposited = amount.checked_add(total_deposited).unwrap();
 		} else {
-			total_withdrawn = amount.saturating_add(total_withdrawn);
+			total_withdrawn = amount.checked_add(total_withdrawn).unwrap();
 		}
 	}
 	assert_eq!(total_deposited, total_withdrawn);

@@ -326,7 +326,15 @@ where
 		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
 		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
 
-		weight = weight.saturating_add(inner_weight);
+		weight = match weight.checked_add(&inner_weight) {
+			Some(v) => v,
+			None => {
+				return Err(RunnerError {
+					error: Self::Error::FeeOverflow,
+					weight,
+				})
+			}
+		};
 
 		let _ = fp_evm::CheckEvmTransaction::<Self::Error>::new(
 			fp_evm::CheckEvmTransactionConfig {
