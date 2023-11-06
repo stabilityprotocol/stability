@@ -2,18 +2,23 @@
 
 use std::{cell::RefCell, sync::Arc, time::Duration};
 
+use fc_rpc::OverrideHandle;
 use futures::{channel::mpsc, prelude::*};
 // Substrate
 use prometheus_endpoint::Registry;
 use sc_client_api::{BlockBackend, StateBackendFor};
 use sc_consensus::BasicQueue;
 use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
-use sc_service::{error::Error as ServiceError, Configuration, PartialComponents, TaskManager};
+use sc_service::{
+	error::Error as ServiceError, Configuration, PartialComponents, SpawnTaskHandle, TaskManager,
+};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sp_api::{ConstructRuntimeApi, TransactionFor};
+use sp_core::traits::SpawnEssentialNamed;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
 use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
+use tokio::sync::Semaphore;
 // Runtime
 use sc_service::KeystoreContainer;
 use stability_runtime::{opaque::Block, Hash, TransactionConverter};
@@ -25,6 +30,7 @@ use crate::{
 		new_frontier_partial, spawn_frontier_tasks, FrontierBackend, FrontierBlockImport,
 		FrontierPartialComponents,
 	},
+	rpc::TracingConfig,
 };
 pub use crate::{
 	client::{Client, TemplateRuntimeExecutor},
@@ -274,7 +280,6 @@ where
 		build_aura_grandpa_import_queue::<RuntimeApi, Executor>
 	};
 
-
 	let PartialComponents {
 		client,
 		backend,
@@ -372,9 +377,18 @@ where
 		execute_gas_limit_multiplier: eth_config.execute_gas_limit_multiplier,
 	};
 
+	let tracing_requesters = crate::rpc::spawn_tracing_tasks(
+		&task_manager,
+		client.clone(),
+		backend.clone(),
+		frontier_backend.clone(),
+		eth_rpc_params.overrides.clone(),
+	);
+
 	let rpc_builder = {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
+		let tracing_requesters = tracing_requesters.clone();
 
 		Box::new(move |deny_unsafe, subscription_task_executor| {
 			let deps = crate::rpc::FullDeps {
@@ -389,7 +403,15 @@ where
 				eth: eth_rpc_params.clone(),
 			};
 
-			crate::rpc::create_full(deps, subscription_task_executor).map_err(Into::into)
+			crate::rpc::create_full(
+				deps,
+				subscription_task_executor,
+				Some(TracingConfig {
+					tracing_requesters: tracing_requesters.clone(),
+					trace_filter_max_count: 2000u32,
+				}),
+			)
+			.map_err(Into::into)
 		})
 	};
 
@@ -410,7 +432,7 @@ where
 	spawn_frontier_tasks(
 		&task_manager,
 		client.clone(),
-		backend,
+		backend.clone(),
 		frontier_backend,
 		filter_pool,
 		overrides,
@@ -649,7 +671,12 @@ pub fn build_full(
 	sealing: Option<Sealing>,
 	stability_config: StabilityConfiguration,
 ) -> Result<TaskManager, ServiceError> {
-	new_full::<stability_runtime::RuntimeApi, TemplateRuntimeExecutor>(config, eth_config, sealing, stability_config)
+	new_full::<stability_runtime::RuntimeApi, TemplateRuntimeExecutor>(
+		config,
+		eth_config,
+		sealing,
+		stability_config,
+	)
 }
 
 pub fn new_chain_ops(

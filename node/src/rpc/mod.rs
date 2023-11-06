@@ -22,6 +22,9 @@ use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 // Runtime
 use stability_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
 
+mod tracing;
+pub use self::tracing::*;
+
 mod eth;
 pub use self::eth::{create_eth, overrides_handle, EthDeps};
 
@@ -39,10 +42,16 @@ pub struct FullDeps<C, P, A: ChainApi, CT> {
 	pub eth: EthDeps<C, P, A, CT, Block>,
 }
 
+pub struct TracingConfig {
+	pub tracing_requesters: RpcRequesters,
+	pub trace_filter_max_count: u32,
+}
+
 /// Instantiate all Full RPC extensions.
 pub fn create_full<C, P, BE, A, CT>(
 	deps: FullDeps<C, P, A, CT>,
 	subscription_task_executor: SubscriptionTaskExecutor,
+	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
 	BE: Backend<Block> + 'static,
@@ -58,10 +67,13 @@ where
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
 	C::Api: stability_rpc::StabilityRpcRuntimeApi<Block>,
 	C::Api: ZeroGasTransactionApi<Block>,
+	C::Api: moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>,
 	P: TransactionPool<Block = Block> + 'static,
 	A: ChainApi<Block = Block> + 'static,
 	CT: fp_rpc::ConvertTransaction<<Block as BlockT>::Extrinsic> + Send + Sync + 'static,
 {
+	use moonbeam_rpc_debug::*;
+	use moonbeam_rpc_trace::*;
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 	use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApiServer};
 	use stability_rpc::{StabilityRpc, StabilityRpcEndpointsServer};
@@ -89,7 +101,12 @@ where
 	}
 
 	// Ethereum compatibility RPCs
-	let io = create_eth::<_, _, _, _, _, _>(io, eth, subscription_task_executor)?;
+	let io = create_eth::<_, _, _, _, _, _>(
+		io,
+		eth,
+		subscription_task_executor,
+		optional_tracing_config,
+	)?;
 
 	Ok(io)
 }

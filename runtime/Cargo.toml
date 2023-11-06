@@ -64,9 +64,17 @@ std = [
     'stbl-core-primitives/std',
     'stbl-primitives-zero-gas-transactions-api/std',
     'stability-rpc-api/std',
+	"moonbeam-evm-tracer/std",
+	"moonbeam-rpc-primitives-debug/std",
+	"moonbeam-rpc-primitives-txpool/std",
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
+evm-tracing = [
+	"moonbeam-evm-tracer",
+	"moonbeam-rpc-primitives-debug",
+	"moonbeam-rpc-primitives-txpool",
+]
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
@@ -164,3 +172,9 @@ stbl-transaction-validator = { workspace = true }
 stbl-core-primitives = { workspace = true }
 account = { workspace = true }
 stability-rpc-api = { workspace = true }
+
+# Moonbeam evm tracer dependencies
+moonbeam-evm-tracer = { workspace = true, optional = true, default-features = false }
+moonbeam-primitives-ext = { workspace = true, optional = true, default-features = false }
+moonbeam-rpc-primitives-debug = { workspace = true, optional = true, default-features = false }
+moonbeam-rpc-primitives-txpool = { workspace = true, optional = true, default-features = false }

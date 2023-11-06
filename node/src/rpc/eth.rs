@@ -1,6 +1,8 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use jsonrpsee::RpcModule;
+use moonbeam_rpc_debug::{Debug, DebugServer};
+use moonbeam_rpc_trace::{Trace, TraceServer};
 // Substrate
 use sc_client_api::{
 	backend::{AuxStore, Backend, StateBackend, StorageProvider},
@@ -22,6 +24,8 @@ pub use fc_rpc::{
 };
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 use fp_storage::EthereumStorageSchema;
+
+use super::TracingConfig;
 
 /// Extra dependencies for Ethereum compatibility.
 pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
@@ -117,6 +121,7 @@ pub fn create_eth<C, BE, P, A, CT, B>(
 	mut io: RpcModule<()>,
 	deps: EthDeps<C, P, A, CT, B>,
 	subscription_task_executor: SubscriptionTaskExecutor,
+	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
 	C: ProvideRuntimeApi<B> + StorageProvider<B, BE> + AuxStore,
@@ -215,7 +220,17 @@ where
 		.into_rpc(),
 	)?;
 
-	io.merge(Web3::new(client).into_rpc())?;
+	io.merge(Web3::new(client.clone()).into_rpc())?;
+
+	if let Some(tracing_config) = optional_tracing_config {
+		if let Some(debug_requester) = tracing_config.tracing_requesters.debug {
+			io.merge(Debug::new(debug_requester).into_rpc())?;
+		}
+
+		if let Some(trace_requester) = tracing_config.tracing_requesters.trace {
+			io.merge(Trace::new(client, trace_requester, 20).into_rpc())?;
+		}
+	}
 
 	Ok(io)
 }
