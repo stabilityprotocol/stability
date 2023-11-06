@@ -159,14 +159,6 @@ impl<'p, P: PrecompileSet> PrecompilesTester<'p, P> {
 		match res {
 			Some(Err(PrecompileFailure::Revert { output, .. })) => {
 				let decoded = decode_revert_message(&output);
-				eprintln!(
-					"Revert message (bytes): {:?}",
-					sp_core::hexdisplay::HexDisplay::from(&decoded)
-				);
-				eprintln!(
-					"Revert message (string): {:?}",
-					core::str::from_utf8(decoded).ok()
-				);
 				panic!("Shouldn't have reverted");
 			}
 			Some(Ok(PrecompileOutput {
@@ -174,14 +166,6 @@ impl<'p, P: PrecompileSet> PrecompilesTester<'p, P> {
 				output: execution_output,
 			})) => {
 				if execution_output != output {
-					eprintln!(
-						"Output (bytes): {:?}",
-						sp_core::hexdisplay::HexDisplay::from(&execution_output)
-					);
-					eprintln!(
-						"Output (string): {:?}",
-						core::str::from_utf8(&execution_output).ok()
-					);
 					panic!("Output doesn't match");
 				}
 			}
@@ -205,14 +189,6 @@ impl<'p, P: PrecompileSet> PrecompilesTester<'p, P> {
 			Some(Err(PrecompileFailure::Revert { output, .. })) => {
 				let decoded = decode_revert_message(&output);
 				if !check(decoded) {
-					eprintln!(
-						"Revert message (bytes): {:?}",
-						sp_core::hexdisplay::HexDisplay::from(&decoded)
-					);
-					eprintln!(
-						"Revert message (string): {:?}",
-						core::str::from_utf8(decoded).ok()
-					);
 					panic!("Revert reason doesn't match !");
 				}
 			}

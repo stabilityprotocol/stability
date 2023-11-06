@@ -148,10 +148,11 @@ impl PrecompileHandle for MockHandle {
 					self.log(log.address, log.topics, log.data)
 						.expect("cannot fail");
 				}
-
 				(reason, output)
 			}
-			None => panic!("no subcall handle registered"),
+			None => {
+				panic!("no subcall handle registered");
+			}
 		}
 	}
 

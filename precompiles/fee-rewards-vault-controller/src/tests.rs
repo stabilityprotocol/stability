@@ -9,6 +9,7 @@ fn precompiles() -> Precompiles<Test> {
 	PrecompilesValue::get()
 }
 
+
 #[test]
 fn selectors() {
 	assert!(PCall::owner_selectors().contains(&0x8da5cb5b));
@@ -349,10 +350,9 @@ fn test_can_claim_reward_should_return_true_if_claimant_are_the_owner_of_the_dap
 				output.extend_from_slice(&OwnerOfDapp::get().as_bytes());
 
 				SubcallOutput {
-					reason: ExitReason::Succeed(ExitSucceed::Returned),
 					output: output,
 					cost: 1,
-					logs: vec![],
+					..SubcallOutput::succeed()
 				}
 			})
 			.execute_returns(true);
@@ -403,10 +403,9 @@ fn test_can_claim_reward_should_return_false_if_claimant_are_not_the_owner_of_th
 				output.extend_from_slice(&OwnerOfDapp::get().as_bytes());
 
 				SubcallOutput {
-					reason: ExitReason::Succeed(ExitSucceed::Returned),
 					output: output,
 					cost: 1,
-					logs: vec![],
+					..SubcallOutput::succeed()
 				}
 			})
 			.execute_returns(false);
@@ -542,10 +541,9 @@ fn test_claim_reward() {
 				let output = vec![];
 
 				SubcallOutput {
-					reason: ExitReason::Succeed(ExitSucceed::Returned),
 					output: output,
 					cost: 1,
-					logs: vec![],
+					..SubcallOutput::succeed()
 				}
 			})
 			.expect_log(log3(

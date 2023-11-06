@@ -104,11 +104,16 @@ impl AddressMapping<u64> for NumberAddressMapping {
 	}
 }
 
+const MAX_POV_SIZE: u64 = 5 * 1024 * 1024;
+
 parameter_types! {
-	pub BlockGasLimit: U256 = U256::max_value();
+	pub BlockGasLimit: U256 = U256::from(u64::MAX);
 	pub PrecompilesValue: Precompiles<Test> = Precompiles::new();
-	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
-	pub const GasLimitPovSizeRatio: u64 = 15;
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
+	pub GasLimitPovSizeRatio: u64 = {
+		let block_gas_limit = BlockGasLimit::get().min(u64::MAX.into()).low_u64();
+		block_gas_limit.saturating_div(MAX_POV_SIZE)
+	};
 }
 
 impl pallet_evm::Config for Test {

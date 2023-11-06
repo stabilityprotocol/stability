@@ -30,7 +30,7 @@ pallet-supported-tokens-manager = { workspace = true }
 pallet-validator-fee-selector = { workspace = true }
 pallet-user-fee-selector = { workspace = true }
 pallet-validator-set = { workspace = true }
-
+sp-io = { workspace = true }
 [dev-dependencies]
 hex = { workspace = true }
 pallet-balances = { workspace = true }

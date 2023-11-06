@@ -352,44 +352,6 @@ fn is_address_eoa_or_precompile<R: pallet_evm::Config>(
 	}
 }
 
-/// Common checks for precompile and precompile sets.
-/// Don't contain recursion check as precompile sets have recursion check for each member.
-fn common_checks<R: pallet_evm::Config, C: PrecompileChecks>(
-	handle: &mut impl PrecompileHandle,
-) -> EvmResult<()> {
-	let code_address = handle.code_address();
-	let caller = handle.context().caller;
-
-	// Check DELEGATECALL config.
-	let accept_delegate_call = C::accept_delegate_call().unwrap_or(false);
-	if !accept_delegate_call && code_address != handle.context().address {
-		return Err(revert("Cannot be called with DELEGATECALL or CALLCODE"));
-	}
-
-	// Extract which selector is called.
-	let selector = handle.input().get(0..4).map(|bytes| {
-		let mut buffer = [0u8; 4];
-		buffer.copy_from_slice(bytes);
-		u32::from_be_bytes(buffer)
-	});
-
-	// Is this selector callable from a smart contract?
-	let callable_by_smart_contract =
-		C::callable_by_smart_contract(caller, selector).unwrap_or(false);
-	if !callable_by_smart_contract {
-		if !is_address_eoa_or_precompile::<R>(handle, caller)? {
-			return Err(revert("Function not callable by smart contracts"));
-		}
-	}
-
-	// Is this selector callable from a precompile?
-	let callable_by_precompile = C::callable_by_precompile(caller, selector).unwrap_or(false);
-	if !callable_by_precompile && is_precompile_or_fail::<R>(caller, handle.remaining_gas())? {
-		return Err(revert("Function not callable by precompiles"));
-	}
-
-	Ok(())
-}
 
 pub fn is_precompile_or_fail<R: pallet_evm::Config>(address: H160, gas: u64) -> EvmResult<bool> {
 	match <R as pallet_evm::Config>::PrecompilesValue::get().is_precompile(address, gas) {
@@ -555,10 +517,6 @@ where
 			return None;
 		}
 
-		// Perform common checks.
-		if let Err(err) = common_checks::<R, C>(handle) {
-			return Some(Err(err));
-		}
 
 		// Check and increase recursion level if needed.
 		let recursion_limit = C::recursion_limit().unwrap_or(Some(0));
@@ -580,10 +538,9 @@ where
 		}
 
 		// Subcall protection.
-		let allow_subcalls = C::allow_subcalls().unwrap_or(false);
 		let mut handle = RestrictiveHandle {
 			handle,
-			allow_subcalls,
+			allow_subcalls: true,
 		};
 
 		let res = P::execute(&mut handle);
@@ -677,10 +634,6 @@ where
 		let code_address = handle.code_address();
 		if !is_precompile_or_fail::<R>(code_address, handle.remaining_gas()).ok()? {
 			return None;
-		}
-		// Perform common checks.
-		if let Err(err) = common_checks::<R, C>(handle) {
-			return Some(Err(err));
 		}
 
 		// Check and increase recursion level if needed.
@@ -1085,12 +1038,8 @@ impl<R: pallet_evm::Config, P: PrecompileSetFragment> PrecompileSetBuilder<R, P>
 	}
 
 	/// Return the list of addresses contained in this PrecompileSet.
-	pub fn used_addresses() -> impl Iterator<Item = R::AccountId> {
-		Self::new()
-			.inner
-			.used_addresses()
-			.into_iter()
-			.map(|x| R::AddressMapping::into_account_id(x))
+	pub fn used_addresses() -> impl Iterator<Item = H160> {
+		Self::new().inner.used_addresses().into_iter()
 	}
 
 	pub fn summarize_checks(&self) -> Vec<PrecompileCheckSummary> {
