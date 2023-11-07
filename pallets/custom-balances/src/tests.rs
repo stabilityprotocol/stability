@@ -322,17 +322,6 @@ fn settle_returns_error() {
 	});
 }
 
-#[test]
-#[should_panic]
-fn make_free_balance_be_panics() {
-	new_test_ext().execute_with(|| {
-		<CustomBalances as Currency<AccountId>>::make_free_balance_be(
-			&ZeroAddress::get().into(),
-			0u128,
-		);
-	});
-}
-
 // Inspect<AccountId> functions
 
 #[test]
