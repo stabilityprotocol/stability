@@ -86,16 +86,16 @@ pub mod pallet {
 
 		fn split(self, amount: T) -> (Self, Self) {
 			let first = self.0.min(amount);
-			let second = self.0 - first;
+			let second = self.0.saturating_sub(first);
 			(Self::new(first), Self::new(second))
 		}
 
 		fn merge(self, other: Self) -> Self {
-			Self::new(self.0 + other.0)
+			Self::new(self.0.saturating_add(other.0))
 		}
 
 		fn subsume(&mut self, other: Self) {
-			self.0 += other.0;
+			self.0 = self.0.saturating_add(other.0);
 		}
 
 		fn offset(self, _other: Self::Opposite) -> SameOrOther<Self, Self> {
