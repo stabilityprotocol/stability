@@ -240,9 +240,9 @@ pub mod pallet {
 
 		fn make_free_balance_be(
 			_who: &T::AccountId,
-			_balance: Self::Balance,
+			balance: Self::Balance,
 		) -> SignedImbalance<Self::Balance, Self::PositiveImbalance> {
-			panic!("make_free_balance_be is not allowed in this pallet")
+			SignedImbalance::Positive(NeutralImbalance::new(balance))
 		}
 	}
 
