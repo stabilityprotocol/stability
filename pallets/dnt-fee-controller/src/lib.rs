@@ -31,6 +31,7 @@ pub mod pallet {
 		ERC20WithdrawFailed,
 		ERC20DepositFailed,
 		FeeVaultOverflow,
+		InvalidConversionRate,
 		InvalidPercentage,
 	}
 
@@ -103,6 +104,10 @@ pub mod pallet {
 			conversion_rate: (U256, U256),
 			amount: U256,
 		) -> Result<(), Self::Error> {
+			if conversion_rate.1 == U256::zero() {
+				return Err(Error::<T>::InvalidConversionRate);
+			}
+
 			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get().unwrap();
 			let mapped_amount = amount
 				.saturating_mul(conversion_rate.0)
@@ -123,6 +128,10 @@ pub mod pallet {
 			paid_amount: U256,
 			actual_amount: U256,
 		) -> Result<(), Self::Error> {
+			if conversion_rate.1 == U256::zero() {
+				return Err(Error::<T>::InvalidConversionRate);
+			}
+
 			let over_fee = paid_amount.saturating_sub(actual_amount);
 			let mapped_amount = over_fee
 				.saturating_mul(conversion_rate.0)
@@ -144,6 +153,10 @@ pub mod pallet {
 			validator: H160,
 			to: Option<H160>,
 		) -> Result<(U256, U256), Self::Error> {
+			if conversion_rate.1 == U256::zero() {
+				return Err(Error::<T>::InvalidConversionRate);
+			}
+
 			let fee_in_user_token = actual_amount
 				.saturating_mul(conversion_rate.0)
 				.div_mod(conversion_rate.1)

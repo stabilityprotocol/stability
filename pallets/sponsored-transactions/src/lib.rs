@@ -307,6 +307,10 @@ pub mod pallet {
 			payee: &H160,
 			amount: U256,
 		) -> Result<(), ()> {
+			if conversion_rate.1 == U256::zero() {
+				return Err(Error::<T>::InvalidConversionRate);
+			}
+
 			let actual_amount = amount
 				.saturating_mul(conversion_rate.0)
 				.div_mod(conversion_rate.1)
