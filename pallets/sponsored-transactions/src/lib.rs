@@ -233,7 +233,7 @@ pub mod pallet {
 				},
 				transaction_data.into(),
 				None,
-				None
+				None,
 			)
 			.validate_in_block_for(&who)
 			.and_then(|v| v.with_chain_id())
@@ -262,7 +262,7 @@ pub mod pallet {
 				},
 				transaction_data.into(),
 				None,
-				None
+				None,
 			)
 			.validate_in_pool_for(&who)
 			.and_then(|v| v.with_chain_id())
@@ -330,14 +330,14 @@ pub mod pallet {
 			payee: &H160,
 			amount: U256,
 		) -> Result<(), ()> {
-			let actual_amount = match amount
-				.checked_mul(conversion_rate.0)
-				.map(|v| v.div_mod(conversion_rate.1).0)
-			{
-				Some(v) => v,
-				None => return Err(()),
-			};
+			if conversion_rate.1 == U256::zero() {
+				return Err(Error::<T>::InvalidConversionRate);
+			}
 
+			let actual_amount = amount
+				.saturating_mul(conversion_rate.0)
+				.div_mod(conversion_rate.1)
+				.0;
 			T::ERC20Manager::withdraw_amount(token.clone(), payer.clone(), actual_amount)
 				.map_err(|_| {})?;
 
