@@ -7,8 +7,9 @@ use precompile_utils::prelude::*;
 
 use crate::{
 	mock::{
-		DefaultOwner, ExtBuilder, MeaninglessTokenAddress, NonCryptoAlith, PCall, Precompiles,
-		PrecompilesValue, Runtime, UnpermissionedAccount, UnpermissionedAccount2,
+		DefaultOwner, ExtBuilder, InitialDefaultConversionRateController, MeaninglessTokenAddress,
+		NonCryptoAlith, PCall, Precompiles, PrecompilesValue, Runtime, UnpermissionedAccount,
+		UnpermissionedAccount2,
 	},
 	DefaultAcceptance, SELECTOR_LOG_NEW_OWNER, SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
 	SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
@@ -342,9 +343,7 @@ fn accept_token_and_revoke() {
 
 #[test]
 fn default_conversion_rate() {
-	let default: Address = pallet_validator_fee_selector::GenesisConfig::default()
-		.initial_default_conversion_rate_controller
-		.into();
+	let default: Address = InitialDefaultConversionRateController::get().into();
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(
