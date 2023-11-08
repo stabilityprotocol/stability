@@ -41,10 +41,18 @@ pub mod pallet {
 		DispatchAsRootOccurred { dispatch_result: DispatchResult },
 	}
 
+	impl<T: Config> Pallet<T> {
+		pub fn dispatch_as_root_weight() -> Weight {
+			Weight::from_parts(7_984_000, 0)
+				.saturating_add(Weight::from_parts(0, 1505))
+				.saturating_add(T::DbWeight::get().reads(1))
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
-		#[pallet::weight({0})]
+		#[pallet::weight(Pallet::<T>::dispatch_as_root_weight())]
 		pub fn dispatch_as_root(
 			origin: OriginFor<T>,
 			call: Box<<T as Config>::RuntimeCall>,
