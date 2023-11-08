@@ -308,7 +308,7 @@ pub mod pallet {
 			amount: U256,
 		) -> Result<(), ()> {
 			if conversion_rate.1 == U256::zero() {
-				return Err(Error::<T>::InvalidConversionRate);
+				return Err(());
 			}
 
 			let actual_amount = amount
