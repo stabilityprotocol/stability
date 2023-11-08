@@ -36,6 +36,12 @@ members = [
     'primitives/core',
     'primitives/account',
     'primitives/transaction-validator',
+    'test-utils/stability-runtime-client',
+    'test-utils/stability-runtime',
+    'test-utils/stability-client',
+    'test-utils/stability-root-testing',
+    'test-utils/stability-debug-derive',
+    'test-utils/stability-tracing'
 ]
 
 [workspace.package]
@@ -49,6 +55,11 @@ repository = "https://github.com/stabilityprotocol/stability/"
 [workspace.dependencies]
 clap = { version = "4.3", features = ["derive", "deprecated"] }
 affix = "0.1.2"
+quote = "1.0.26"
+proc-macro2 = "1.0.56"
+tracing = "0.1.29"
+tracing-core = "0.1.28"
+tracing-subscriber = "0.2.19"
 derive_more = "0.99"
 impl-trait-for-tuples = "0.2.1"
 num_enum = { version = "0.5.3", default-features = false }
@@ -74,7 +85,7 @@ futures = "0.3.28"
 futures-timer = "3.0.1"
 log = "0.4.17"
 parking_lot = "0.12.1"
-array-bytes = "4.1"
+array-bytes = "6.1"
 bytes = "1.0"
 async-trait = "0.1.57"
 cfg-if = "1.0"
@@ -165,7 +176,6 @@ frame-benchmarking-cli = { version = "4.0.0-dev", git = "https://github.com/pari
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43" }
 substrate-build-script-utils = { version = "3.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43" }
 substrate-frame-rpc-system = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43" }
-substrate-test-runtime-client = { version = "2.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43" }
 substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43" }
 sp-staking = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43", default-features = false }
 # Frontier Client
@@ -225,6 +235,12 @@ pallet-validator-set = { path = "./pallets/validator-set", default-features = fa
 pallet-validator-keys-controller = { path = "./pallets/validator-keys-controller", default-features = false }
 pallet-custom-balances = { path = './pallets/custom-balances', default-features = false }
 runner = { path = "./primitives/runner", default-features = false }
+stability-test-runtime-client = { path = "./test-utils/stability-runtime-client", default-features = false }
+stability-test-runtime = { path = "./test-utils/stability-runtime", default-features = false }
+stability-test-client = { path = "./test-utils/stability-client", default-features = false }
+stability-pallet-root-testing = { path = "./test-utils/stability-root-testing", default-features = false }
+stability-sp-debug-derive = { path = "./test-utils/stability-debug-derive", default-features = false }
+stability-sp-tracing = { path = "./test-utils/stability-tracing", default-features = false}
 
 stbl-core-primitives = { path = "primitives/core", default-features = false }
 account = { path = "primitives/account", default-features = false }

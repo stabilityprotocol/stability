@@ -5,7 +5,7 @@ use sp_runtime::{
 	generic::BlockId,
 	traits::{Block as BlockT, NumberFor, Zero},
 };
-use substrate_test_runtime_client::runtime::{Block, Extrinsic, Hash};
+use stability_test_runtime_client::runtime::{Block, Extrinsic, Hash};
 
 pub struct TestApi {}
 

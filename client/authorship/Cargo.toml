@@ -41,6 +41,7 @@ reqwest = { workspace = true, features = ["json"] }
 serde = { workspace = true, features = ["derive"] }
 bytes = { workspace = true }
 hex = { workspace = true }
+stability-test-runtime-client = { workspace = true }
 
 [dev-dependencies]
 parking_lot = { workspace = true }

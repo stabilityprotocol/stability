@@ -19,7 +19,7 @@ stbl-tools = { workspace = true }
 log = { workspace = true }
 
 [dev-dependencies]
-substrate-test-runtime-client = { workspace = true }
+stability-test-runtime-client = { workspace = true }
 sp-version = { workspace = true }
 
 [features]
