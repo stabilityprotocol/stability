@@ -26,7 +26,7 @@ $ docker build -f ./docker/client/Dockerfile -t stability .
 ### Run
 
 ```
-docker run -d -p 30333:30333 -p 9933:9933 -p 9944:9944 -p 9615:9615 -e CHAIN="/stability/chain-specs/betanet.json" stability
+docker run -d -p 30333:30333 -p 9933:9933 -p 9615:9615 -e CHAIN="/stability/chain-specs/betanet.json" stability
 ```
 
 Optional environment variables:
@@ -42,7 +42,7 @@ To set an environment variable in the docker run, use the flag -e NAME=VALUE
 ### Example
 
 ```
-docker run -d -p 30333:30333 -p 9933:9933 -p 9944:9944 -p 9615:9615 -e SEED=account -e CHAIN="/stability/chain-specs/betanet.json" -e MODE=archive -e BOOTNODES=/ip4/... stability
+docker run -d -p 30333:30333 -p 9933:9933  -p 9615:9615 -e SEED=account -e CHAIN="/stability/chain-specs/betanet.json" -e MODE=archive -e BOOTNODES=/ip4/... stability
 ```
 
 ## Test
