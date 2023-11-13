@@ -59,7 +59,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn propose_code(origin: OriginFor<T>, code: Vec<u8>) -> DispatchResultWithPostInfo {
 			T::ControlOrigin::ensure_origin(origin)?;
 
@@ -81,7 +81,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(1)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn set_block_application(
 			origin: OriginFor<T>,
 			block_number: T::BlockNumber,
@@ -104,7 +104,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(2)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn reject_proposed_code(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 

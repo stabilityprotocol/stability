@@ -276,7 +276,7 @@ pub mod pallet {
 		}
 
 		/// Get the maximum amount that `who` can withdraw/transfer successfully.
-		fn reducible_balance(who: &T::AccountId, preservation: Preservation, force: Fortitude) -> Self::Balance {
+		fn reducible_balance(who: &T::AccountId, _preservation: Preservation, _force: Fortitude) -> Self::Balance {
 			<Self as Currency<T::AccountId>>::total_balance(who)
 		}
 
@@ -288,7 +288,7 @@ pub mod pallet {
 		fn can_deposit(
 			_who: &T::AccountId,
 			_amount: Self::Balance,
-			provenance: Provenance,
+			_provenance: Provenance,
 		) -> DepositConsequence {
 			DepositConsequence::UnknownAsset
 		}

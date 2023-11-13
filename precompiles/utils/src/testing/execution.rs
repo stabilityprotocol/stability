@@ -157,8 +157,7 @@ impl<'p, P: PrecompileSet> PrecompilesTester<'p, P> {
 		let res = self.execute();
 
 		match res {
-			Some(Err(PrecompileFailure::Revert { output, .. })) => {
-				let decoded = decode_revert_message(&output);
+			Some(Err(PrecompileFailure::Revert { .. })) => {
 				panic!("Shouldn't have reverted");
 			}
 			Some(Ok(PrecompileOutput {

@@ -71,13 +71,12 @@ pub mod logger {
 	pub trait Config: frame_system::Config {}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(PhantomData<T>);
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn privileged_i32_log(origin: OriginFor<T>, i: i32) -> DispatchResultWithPostInfo {
 			// Ensure that the `origin` is `Root`.
 			ensure_root(origin)?;
@@ -86,7 +85,7 @@ pub mod logger {
 		}
 
 		#[pallet::call_index(1)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn force_fail_log(_: OriginFor<T>) -> DispatchResultWithPostInfo {
 			Err(DispatchError::BadOrigin.into())
 		}

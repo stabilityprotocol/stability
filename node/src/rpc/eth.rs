@@ -17,7 +17,6 @@ use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_core::H256;
 use sp_runtime::traits::Block as BlockT;
 // Frontier
-use fc_db::Backend as FrontierBackend;
 pub use fc_rpc::{EthBlockDataCacheTask, EthConfig, OverrideHandle, StorageOverride, TxPool};
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 pub use fc_storage::overrides_handle;

@@ -715,7 +715,7 @@ impl_runtime_apis! {
 	}
 
 	impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, RealAccountiD> for Runtime {
-		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, _: RealAccountiD) -> bool {
+		fn is_compatible_fee(_tx: <Block as BlockT>::Extrinsic, _: RealAccountiD) -> bool {
 			true
 		}
 	}

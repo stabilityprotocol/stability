@@ -13,7 +13,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 array-bytes = { workspace = true }
 async-trait = { workspace = true }
-codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
+codec = { package = "parity-scale-codec", default-features = false, features = ["derive"], workspace = true }
 futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

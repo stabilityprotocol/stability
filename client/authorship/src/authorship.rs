@@ -37,7 +37,6 @@ use sp_consensus::{DisableProofRecording, EnableProofRecording, ProofRecording, 
 use sp_core::traits::SpawnNamed;
 use sp_inherents::InherentData;
 use sp_runtime::{
-	generic::BlockId,
 	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT, IdentifyAccount},
 	Digest, Percent, SaturatedConversion,
 };

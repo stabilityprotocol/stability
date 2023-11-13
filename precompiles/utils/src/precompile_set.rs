@@ -29,7 +29,6 @@ use fp_evm::{
 };
 use frame_support::pallet_prelude::Get;
 use impl_trait_for_tuples::impl_for_tuples;
-use pallet_evm::AddressMapping;
 use sp_core::{H160, H256};
 use sp_std::{
 	cell::RefCell, collections::btree_map::BTreeMap, marker::PhantomData, ops::RangeInclusive, vec,
@@ -342,15 +341,6 @@ pub fn get_address_type<R: pallet_evm::Config>(
 	Ok(AddressType::Unknown)
 }
 
-fn is_address_eoa_or_precompile<R: pallet_evm::Config>(
-	handle: &mut impl PrecompileHandle,
-	address: H160,
-) -> Result<bool, ExitError> {
-	match get_address_type::<R>(handle, address)? {
-		AddressType::EOA | AddressType::Precompile => Ok(true),
-		_ => Ok(false),
-	}
-}
 
 
 pub fn is_precompile_or_fail<R: pallet_evm::Config>(address: H160, gas: u64) -> EvmResult<bool> {

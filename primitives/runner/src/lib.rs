@@ -15,7 +15,6 @@ use fp_evm::{
 };
 use frame_support::{
 	traits::{
-		tokens::{currency::Currency, ExistenceRequirement},
 		Get, Time,
 	},
 	weights::Weight,
@@ -263,7 +262,6 @@ where
 			_ => used_gas.into(),
 		};
 		let actual_fee = effective_gas.saturating_mul(total_fee_per_gas);
-		let actual_base_fee = effective_gas.saturating_mul(base_fee);
 
 		log::debug!(
 			target: "evm",

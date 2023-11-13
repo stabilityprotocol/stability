@@ -19,7 +19,7 @@ futures = { workspace = true }
 hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = ["server", "macros"] }
 log = { workspace = true }
-scale-codec = { package = "parity-scale-codec", workspace = true }
+scale-codec = { workspace = true, package = "parity-scale-codec" }
 serde = { workspace = true }
 
 # Substrate

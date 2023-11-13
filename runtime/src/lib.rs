@@ -61,11 +61,10 @@ use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
 // Frontier
-use fp_evm::weight_per_gas;
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction};
 use pallet_evm::{
-	Account as EVMAccount, EnsureAccountId20, FeeCalculator, GasWeightMapping, Runner,
+	Account as EVMAccount, FeeCalculator, GasWeightMapping, Runner,
 };
 use pallet_sponsored_transactions::Call::send_sponsored_transaction;
 use pallet_validator_set::SessionBlockManager;
@@ -464,7 +463,7 @@ const WEIGHT_PER_GAS: u64 = 20_000;
 
 parameter_types! {
 	pub PrecompilesValue: StabilityPrecompiles<Runtime, StabilityFeeController> = StabilityPrecompiles::<_, StabilityFeeController>::new();
-	pub WeightPerGas: Weight = Weight::from_ref_time(WEIGHT_PER_GAS);
+	pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, u64::MAX);
 	pub const GasLimitPovSizeRatio: u64 = 15;
 }
 

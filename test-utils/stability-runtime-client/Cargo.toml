@@ -10,7 +10,7 @@ publish = false
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
+codec = { package = "parity-scale-codec", default-features = false, features = ["derive"], workspace = true }
 futures = { workspace = true }
 sc-block-builder = { workspace = true }
 sc-chain-spec = { workspace = true }

@@ -69,7 +69,7 @@ parameter_types! {
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
-	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 	pub const GasLimitPovSizeRatio: u64 = 15;
 }
 

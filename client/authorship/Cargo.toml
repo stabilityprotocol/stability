@@ -12,7 +12,7 @@ repository = "https://github.com/stabilityprotocol/stability/"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-codec = { package = "parity-scale-codec", workspace = true }
+codec = { workspace = true, package = "parity-scale-codec" }
 futures = { workspace = true }
 futures-timer = { workspace = true }
 log = { workspace = true }

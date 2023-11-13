@@ -22,7 +22,7 @@ stbl-tools = { workspace = true }
 environmental = { workspace = true, optional = true }
 frame-support = { workspace = true }
 evm = { workspace = true, features = ["with-codec"] }
-codec = { package = "parity-scale-codec", workspace = true }
+codec = { workspace = true, package = "parity-scale-codec" }
 scale-info = { workspace = true}
 frame-benchmarking = { workspace = true, optional = true }
 log = { workspace = true }
