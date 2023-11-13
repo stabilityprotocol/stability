@@ -65,8 +65,7 @@ use fp_evm::weight_per_gas;
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction};
 use pallet_evm::{
-	Account as EVMAccount, EnsureAccountId20, FeeCalculator, GasWeightMapping,
-	Runner
+	Account as EVMAccount, EnsureAccountId20, FeeCalculator, GasWeightMapping, Runner,
 };
 use pallet_sponsored_transactions::Call::send_sponsored_transaction;
 use pallet_validator_set::SessionBlockManager;
@@ -75,7 +74,9 @@ pub use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
 	parameter_types,
-	traits::{ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, OnTimestampSet, Randomness, OnFinalize},
+	traits::{
+		ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, OnFinalize, OnTimestampSet, Randomness,
+	},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight},
 		ConstantMultiplier, IdentityFee, Weight,
@@ -460,7 +461,6 @@ where
 }
 
 const WEIGHT_PER_GAS: u64 = 20_000;
-
 
 parameter_types! {
 	pub PrecompilesValue: StabilityPrecompiles<Runtime, StabilityFeeController> = StabilityPrecompiles::<_, StabilityFeeController>::new();
@@ -1093,22 +1093,23 @@ impl_runtime_apis! {
 			let validate = true;
 			let evm_config = config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config());
 
+			// Estimated encoded transaction size must be based on the heaviest transaction
+			// type (EIP1559Transaction) to be compatible with all transaction types.
 			let mut estimated_transaction_len = data.len() +
-			20 + // to
-			20 + // from
-			32 + // value
-			32 + // gas_limit
-			32 + // nonce
-			1 + // TransactionAction
-			8 + // chain id
-			65; // signature
+			// pallet ethereum index: 1
+			// transact call index: 1
+			// Transaction enum variant: 1
+			// chain_id 8 bytes
+			// nonce: 32
+			// max_priority_fee_per_gas: 32
+			// max_fee_per_gas: 32
+			// gas_limit: 32
+			// action: 21 (enum varianrt + call address)
+			// value: 32
+			// access_list: 1 (empty vec size)
+			// 65 bytes signature
+			258;
 
-		if max_fee_per_gas.is_some() {
-			estimated_transaction_len += 32;
-		}
-		if max_priority_fee_per_gas.is_some() {
-			estimated_transaction_len += 32;
-		}
 		if access_list.is_some() {
 			estimated_transaction_len += access_list.encoded_size();
 		}
