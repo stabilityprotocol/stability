@@ -500,8 +500,8 @@ where
 				access_list.clone(),
 				is_transactional,
 				validate,
-				weight_limit,
-				proof_size_base_cost,
+				None,
+				None,
 				config,
 			)
 		}
