@@ -29,7 +29,7 @@ pub fn custom_info_from_fee_params(
 			.map(|_| (max_fee_per_gas.unwrap(), 1_000_000_000.into())),
 		max_fee_per_gas: max_priority_fee_per_gas
 			.map(|max_priority_fee_per_gas| max_priority_fee_per_gas.saturating_add(base_fee))
-			.unwrap_or(max_fee_per_gas.unwrap_or(base_fee)),
+			.unwrap_or(max_fee_per_gas.unwrap_or_default()),
 		max_priority_fee_per_gas,
 	}
 }
