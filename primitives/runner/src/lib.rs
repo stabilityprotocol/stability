@@ -6,24 +6,23 @@ use evm::{
 	backend::Backend as BackendT,
 	executor::stack::{Accessed, StackExecutor, StackState as StackStateT, StackSubstateMetadata},
 	gasometer::{GasCost, StorageTarget},
-	ExitError, ExitReason, Handler, Transfer, Opcode
+	ExitError, ExitReason, Handler, Opcode, Transfer,
 };
 use fp_evm::{
 	AccessedStorage, CallInfo, CreateInfo, ExecutionInfoV2, IsPrecompileResult, Log, PrecompileSet,
 	Vicinity, WeightInfo, ACCOUNT_BASIC_PROOF_SIZE, ACCOUNT_CODES_METADATA_PROOF_SIZE,
 	ACCOUNT_STORAGE_PROOF_SIZE, IS_EMPTY_CHECK_PROOF_SIZE, WRITE_PROOF_SIZE,
 };
+use frame_support::sp_runtime::traits::UniqueSaturatedInto;
 use frame_support::{
-	traits::{
-		Get, Time,
-	},
+	traits::{Get, Time},
 	weights::Weight,
 };
-use frame_support::sp_runtime::traits::UniqueSaturatedInto;
 use pallet_evm::Pallet;
 use pallet_evm::{
-	AccountCodes, AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, Error,
-	Event, FeeCalculator, Runner as RunnerT, RunnerError, OnCreate, AccountCodesMetadata
+	AccountCodes, AccountCodesMetadata, AccountStorages, AddressMapping, BalanceOf,
+	BlockHashMapping, Config, Error, Event, FeeCalculator, OnCreate, Runner as RunnerT,
+	RunnerError,
 };
 use pallet_user_fee_selector::UserFeeTokenController;
 use precompile_utils::prelude::keccak256;
@@ -148,7 +147,6 @@ where
 		) -> (ExitReason, R),
 		R: Default,
 	{
-
 		// Used to record the external costs in the evm through the StackState implementation
 		let maybe_weight_info =
 			WeightInfo::new_from_weight_limit(weight_limit, proof_size_base_cost).map_err(
@@ -157,7 +155,7 @@ where
 					weight,
 				},
 			)?;
-			
+
 		// The precompile check is only used for transactional invocations. However, here we always
 		// execute the check, because the check has side effects.
 		match precompiles.is_precompile(source, gas_limit) {
@@ -178,15 +176,13 @@ where
 			}
 		};
 
-	
 		// Only check the restrictions of EIP-3607 if the source of the EVM operation is from an external transaction.
 		// If the source of this EVM operation is from an internal call, like from `eth_call` or `eth_estimateGas` RPC,
 		// we will skip the checks for the EIP-3607.
 		//
 		// EIP-3607: https://eips.ethereum.org/EIPS/eip-3607
 		// Do not allow transactions for which `tx.sender` has any code deployed.
-		if is_transactional && !<AccountCodes<T>>::get(source).is_empty()
-		{
+		if is_transactional && !<AccountCodes<T>>::get(source).is_empty() {
 			return Err(RunnerError {
 				error: Error::<T>::TransactionMustComeFromEOA,
 				weight,
@@ -265,7 +261,7 @@ where
 
 		log::debug!(
 			target: "evm",
-			"Execution {:?} [source: {:?}, value: {}, gas_limit: {}, actual_fee: {}, used_gas: {}, effective_gas: {}, base_fee: {}, total_fee_per_gas: {}, is_transactional: {}]",
+			"Execution {:?} [source: {:?}, value: {}, gas_limit: {}, actual_fee: {}, used_gas: {}, effective_gas: {}, base_fee: {}, total_fee_per_gas: {}, is_transactional: {}, miner: {}, token_fee: {}]",
 			reason,
 			source,
 			value,
@@ -275,7 +271,9 @@ where
 			effective_gas,
 			base_fee,
 			total_fee_per_gas,
-			is_transactional
+			is_transactional,
+			validator,
+			token
 		);
 
 		if !is_zero_gas_transaction {
@@ -1255,7 +1253,6 @@ where
 			}
 		}
 	}
-
 }
 
 pub trait OnChargeDecentralizedNativeTokenFee {
