@@ -63,9 +63,7 @@ use pallet_grandpa::{
 // Frontier
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction};
-use pallet_evm::{
-	Account as EVMAccount, FeeCalculator, GasWeightMapping, Runner,
-};
+use pallet_evm::{Account as EVMAccount, FeeCalculator, GasWeightMapping, Runner};
 use pallet_sponsored_transactions::Call::send_sponsored_transaction;
 use pallet_validator_set::SessionBlockManager;
 // A few exports that help ease life for downstream crates.
@@ -463,8 +461,8 @@ const WEIGHT_PER_GAS: u64 = 20_000;
 
 parameter_types! {
 	pub PrecompilesValue: StabilityPrecompiles<Runtime, StabilityFeeController> = StabilityPrecompiles::<_, StabilityFeeController>::new();
-	pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, u64::MAX);
-	pub const GasLimitPovSizeRatio: u64 = 15;
+	pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, 0);
+	pub const GasLimitPovSizeRatio: u64 = 4;
 }
 
 impl pallet_evm::Config for Runtime {
