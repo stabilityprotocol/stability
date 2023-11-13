@@ -117,7 +117,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-	pub MockDefaultFeeToken: H160 = H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
+	pub MockDefaultFeeToken: H160 = H160::from_str("0x261FB2d971eFBBFd027A9C9Cebb8548Cf7d0d2d5").expect("invalid address");
 	pub UnpermissionedAccount:H160 = H160::from_str("0x1000000000000000000000000000000000000000").expect("invalid address");
 	pub UnpermissionedAccount2:H160 = H160::from_str("0x2000000000000000000000000000000000000000").expect("invalid address");
 	pub MeaninglessTokenAddress: H160 = H160::from_str("0x3000000000000000000000000000000000000000").expect("invalid address");

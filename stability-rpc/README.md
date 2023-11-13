@@ -16,5 +16,5 @@ $ curl 'http://localhost:9933' \
   --data '{"method":"stability_getSupportedTokens","params":[], "id":1,"jsonrpc":"2.0"}'
 
 
-{"jsonrpc":"2.0","result":{"code":200,"value":["0xdc2b93f3291030f3f7a6d9363ac37757f7ad5c43"]},"id":1}
+{"jsonrpc":"2.0","result":{"code":200,"value":["0x261FB2d971eFBBFd027A9C9Cebb8548Cf7d0d2d5"]},"id":1}
 ```
