@@ -137,12 +137,17 @@ pub mod pallet {
 
 			let (transaction_fee_token, conversion_rate) = Self::get_fee_token_info(&from);
 
+			let max_gas_used = match gas_limit.checked_mul(gas_price.into()) {
+				Some(a) => a,
+				None => return Err(DispatchError::Other("Arithmetic error due to overflow.")),
+			};
+
 			Self::transfer_fee_token(
 				&transaction_fee_token,
 				conversion_rate,
 				&meta_trx_sponsor,
 				&from,
-				gas_limit.saturating_mul(gas_price.into()),
+				max_gas_used,
 			)
 			.map_err(|_| DispatchError::Other("Failed to borrow fee token"))?;
 
@@ -151,16 +156,25 @@ pub mod pallet {
 			let dispatch = pallet_ethereum::Pallet::<T>::transact(origin, transaction)
 				.map_err(|_| DispatchError::Other("Signature doesn't meet with sponsor address"))?;
 
-			let gas_used = Self::gas_from_actual_weight(dispatch.actual_weight.unwrap());
+			let gas_used = Self::gas_from_actual_weight(dispatch.actual_weight.unwrap())
+				.map_err(|_| DispatchError::Other("Arithmetic error due to overflow."))?;
 
-			let gas_left = gas_limit.saturating_sub(gas_used.into());
+			let gas_left = match gas_limit.checked_sub(gas_used.into()) {
+				Some(v) => v,
+				None => 0.into(),
+			};
+
+			let refunding_amount = match gas_left.checked_mul(gas_price.into()) {
+				Some(amount) => amount,
+				None => return Err(DispatchError::Other("Arithmetic error due to overflow.")),
+			};
 
 			Self::transfer_fee_token(
 				&transaction_fee_token,
 				conversion_rate,
 				&from,
 				&meta_trx_sponsor,
-				gas_left.saturating_mul(gas_price.into()),
+				refunding_amount,
 			)
 			.map_err(|_| DispatchError::Other("Failed to refund fee token"))?;
 
@@ -285,14 +299,19 @@ pub mod pallet {
 			}
 		}
 
-		fn gas_from_actual_weight(weight: Weight) -> u64 {
-			let actual_weight = weight.saturating_add(
-				T::BlockWeights::get()
+		fn gas_from_actual_weight(weight: Weight) -> Result<u64, ()> {
+			let actual_weight = match weight.checked_add(
+				&T::BlockWeights::get()
 					.get(frame_support::dispatch::DispatchClass::Normal)
 					.base_extrinsic,
-			);
+			) {
+				Some(v) => v,
+				None => return Err(()),
+			};
 
-			<T as pallet_evm::Config>::GasWeightMapping::weight_to_gas(actual_weight)
+			Ok(<T as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
+				actual_weight,
+			))
 		}
 
 		fn ensure_sponsor_balance(sponsor: H160, token: H160, amount: U256) -> Result<(), ()> {
@@ -311,10 +330,14 @@ pub mod pallet {
 			payee: &H160,
 			amount: U256,
 		) -> Result<(), ()> {
-			let actual_amount = amount
-				.saturating_mul(conversion_rate.0)
-				.div_mod(conversion_rate.1)
-				.0;
+			let actual_amount = match amount
+				.checked_mul(conversion_rate.0)
+				.map(|v| v.div_mod(conversion_rate.1).0)
+			{
+				Some(v) => v,
+				None => return Err(()),
+			};
+
 			T::ERC20Manager::withdraw_amount(token.clone(), payer.clone(), actual_amount)
 				.map_err(|_| {})?;
 

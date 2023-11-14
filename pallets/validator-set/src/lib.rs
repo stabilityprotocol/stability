@@ -464,10 +464,15 @@ impl<T: Config> Pallet<T> {
 	fn do_remove_validator(validator_id: T::AccountId) -> DispatchResult {
 		let mut validators = <Validators<T>>::get();
 
+		let validators_count = match validators.len().checked_sub(1) {
+			Some(v) => v,
+			None => return Err(DispatchError::Other("Arithmetic error due to underflow.")),
+		};
+
 		// Ensuring that the post removal, target validator count doesn't go
 		// below the minimum.
 		ensure!(
-			validators.len().saturating_sub(1) as u32 >= T::MinAuthorities::get(),
+			validators_count as u32 >= T::MinAuthorities::get(),
 			Error::<T>::TooLowValidatorCount
 		);
 
