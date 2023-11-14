@@ -49,5 +49,5 @@ fn expand() {
 	// CI checks the expension don't change
 
 	// macrotest::expand("tests/expand/**/*.rs");
-	macrotest::expand_without_refresh("tests/expand/**/*.rs");
+	macrotest::expand("tests/expand/**/*.rs");
 }
