@@ -177,7 +177,7 @@ where
 			SELECTOR_LOG_VALIDATOR_TOKEN_ACCEPTANCE_CHANGED,
 			msg_sender,
 			Into::<H160>::into(token_address),
-			EvmDataWriter::new().write(acceptance_value).build(),
+			solidity::encode_event_data(acceptance_value),
 		)
 		.record(handle)?;
 
@@ -220,7 +220,7 @@ where
 			cr_controller.into(),
 		)
 		.map_err(|_| {
-			revert(b"ValidatorFeeTokenController: default token conversion rate cannot be updated")
+			revert("ValidatorFeeTokenController: default token conversion rate cannot be updated")
 		})?;
 
 		handle.record_log_costs_manual(2, 64)?;
@@ -228,7 +228,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_VALIDATOR_CONTROLLER_CHANGED,
 			msg_sender,
-			EvmDataWriter::new().write(cr_controller).build(),
+			solidity::encode_event_data(cr_controller),
 		)
 		.record(handle)?;
 
@@ -312,9 +312,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(target_new_owner))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
 		)
 		.record(handle)?;
 
@@ -346,9 +344,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(target_new_owner))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
 		)
 		.record(handle)?;
 

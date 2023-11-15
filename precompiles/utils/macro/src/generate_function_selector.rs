@@ -1,4 +1,4 @@
-// Copyright 2023 Stability Solutions.
+// Copyright 2019-2022 PureStake Inc.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -13,6 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+
 use super::*;
 
 pub fn main(_: TokenStream, input: TokenStream) -> TokenStream {
@@ -44,20 +45,20 @@ pub fn main(_: TokenStream, input: TokenStream) -> TokenStream {
 					variant_attrs.push(variant.attrs);
 				} else {
 					return quote_spanned! {
-						lit.span() => compile_error("Expected literal string");
+						lit.span() => compile_error!("Expected literal string");
 					}
 					.into();
 				}
 			}
 			Some((_eg, expr)) => {
 				return quote_spanned! {
-					expr.span() => compile_error("Expected literal");
+					expr.span() => compile_error!("Expected literal");
 				}
 				.into()
 			}
 			None => {
 				return quote_spanned! {
-					variant.span() => compile_error("Each variant must have a discriminant");
+					variant.span() => compile_error!("Each variant must have a discriminant");
 				}
 				.into()
 			}

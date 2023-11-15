@@ -17,6 +17,8 @@ fn get_balance_of(erc20: H160, address: H160) -> U256 {
 		Default::default(),
 		false,
 		false,
+		None,
+		None,
 		&pallet_evm::EvmConfig::istanbul(),
 	)
 	.unwrap()

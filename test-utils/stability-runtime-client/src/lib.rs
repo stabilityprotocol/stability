@@ -1,6 +1,6 @@
 // This file is part of Stability.
 
-// Copyright (C) 2018-2022 Parity Technologies (UK) Ltd.
+// Copyright (C) Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,15 +24,15 @@ pub mod trait_tests;
 mod block_builder_ext;
 
 pub use sc_consensus::LongestChain;
+use std::sync::Arc;
 pub use stability_test_client::*;
 pub use stability_test_runtime as runtime;
-use std::sync::Arc;
 
 pub use self::block_builder_ext::BlockBuilderExt;
 
-use sp_core::{sr25519, storage::ChildInfo, Pair};
-use sp_runtime::traits::{Block as BlockT, Hash as HashT, Header as HeaderT};
-use stability_test_runtime::genesismap::{additional_storage_with_genesis, GenesisConfig};
+use sp_core::storage::{ChildInfo, Storage, StorageChild};
+use stability_test_client::sc_executor::WasmExecutor;
+use stability_test_runtime::genesismap::GenesisStorageBuilder;
 
 /// A prelude to import in tests.
 pub mod prelude {
@@ -85,28 +85,6 @@ pub struct GenesisParameters {
 }
 
 impl GenesisParameters {
-	fn genesis_config(&self) -> GenesisConfig {
-		GenesisConfig::new(
-			vec![
-				sr25519::Public::from(Sr25519Keyring::Alice).into(),
-				sr25519::Public::from(Sr25519Keyring::Bob).into(),
-				sr25519::Public::from(Sr25519Keyring::Charlie).into(),
-			],
-			(0..16_usize)
-				.into_iter()
-				.map(|i| AccountKeyring::numeric(i).public())
-				.chain(vec![
-					AccountKeyring::Alice.into(),
-					AccountKeyring::Bob.into(),
-					AccountKeyring::Charlie.into(),
-				])
-				.collect(),
-			1000,
-			self.heap_pages_override,
-			self.extra_storage.clone(),
-		)
-	}
-
 	/// Set the wasm code that should be used at genesis.
 	pub fn set_wasm_code(&mut self, code: Vec<u8>) {
 		self.wasm_code = Some(code);
@@ -118,37 +96,13 @@ impl GenesisParameters {
 	}
 }
 
-impl stability_test_client::GenesisInit for GenesisParameters {
+impl GenesisInit for GenesisParameters {
 	fn genesis_storage(&self) -> Storage {
-		use codec::Encode;
-
-		let mut storage = self.genesis_config().genesis_map();
-
-		if let Some(ref code) = self.wasm_code {
-			storage.top.insert(
-				sp_core::storage::well_known_keys::CODE.to_vec(),
-				code.clone(),
-			);
-		}
-
-		let child_roots = storage.children_default.values().map(|child_content| {
-			let state_root =
-				<<<runtime::Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(
-					child_content.data.clone().into_iter().collect(),
-					sp_runtime::StateVersion::V1,
-				);
-			let prefixed_storage_key = child_content.child_info.prefixed_storage_key();
-			(prefixed_storage_key.into_inner(), state_root.encode())
-		});
-		let state_root =
-			<<<runtime::Block as BlockT>::Header as HeaderT>::Hashing as HashT>::trie_root(
-				storage.top.clone().into_iter().chain(child_roots).collect(),
-				sp_runtime::StateVersion::V1,
-			);
-		let block: runtime::Block = client::genesis::construct_genesis_block(state_root);
-		storage.top.extend(additional_storage_with_genesis(&block));
-
-		storage
+		GenesisStorageBuilder::default()
+			.with_heap_pages(self.heap_pages_override)
+			.with_wasm_code(&self.wasm_code)
+			.with_extra_storage(self.extra_storage.clone())
+			.build()
 	}
 }
 
@@ -166,7 +120,7 @@ pub type Client<B> = client::Client<
 	client::LocalCallExecutor<
 		stability_test_runtime::Block,
 		B,
-		sc_executor::NativeElseWasmExecutor<LocalExecutorDispatch>,
+		NativeElseWasmExecutor<LocalExecutorDispatch>,
 	>,
 	stability_test_runtime::Block,
 	stability_test_runtime::RuntimeApi,
@@ -234,10 +188,7 @@ pub trait TestClientBuilderExt<B>: Sized {
 	fn add_extra_storage<K: Into<Vec<u8>>, V: Into<Vec<u8>>>(mut self, key: K, value: V) -> Self {
 		let key = key.into();
 		assert!(!key.is_empty());
-		self.genesis_init_mut()
-			.extra_storage
-			.top
-			.insert(key, value.into());
+		self.genesis_init_mut().extra_storage.top.insert(key, value.into());
 		self
 	}
 
@@ -249,10 +200,7 @@ pub trait TestClientBuilderExt<B>: Sized {
 	/// Build the test client and longest chain selector.
 	fn build_with_longest_chain(
 		self,
-	) -> (
-		Client<B>,
-		sc_consensus::LongestChain<B, stability_test_runtime::Block>,
-	);
+	) -> (Client<B>, sc_consensus::LongestChain<B, stability_test_runtime::Block>);
 
 	/// Build the test client and the backend.
 	fn build_with_backend(self) -> (Client<B>, Arc<B>);
@@ -263,7 +211,7 @@ impl<B> TestClientBuilderExt<B>
 		client::LocalCallExecutor<
 			stability_test_runtime::Block,
 			B,
-			sc_executor::NativeElseWasmExecutor<LocalExecutorDispatch>,
+			NativeElseWasmExecutor<LocalExecutorDispatch>,
 		>,
 		B,
 	> where
@@ -275,10 +223,7 @@ impl<B> TestClientBuilderExt<B>
 
 	fn build_with_longest_chain(
 		self,
-	) -> (
-		Client<B>,
-		sc_consensus::LongestChain<B, stability_test_runtime::Block>,
-	) {
+	) -> (Client<B>, sc_consensus::LongestChain<B, stability_test_runtime::Block>) {
 		self.build_with_native_executor(None)
 	}
 
@@ -294,11 +239,6 @@ pub fn new() -> Client<Backend> {
 }
 
 /// Create a new native executor.
-pub fn new_native_executor() -> sc_executor::NativeElseWasmExecutor<LocalExecutorDispatch> {
-	sc_executor::NativeElseWasmExecutor::new(
-		sc_executor::WasmExecutionMethod::Interpreted,
-		None,
-		8,
-		2,
-	)
+pub fn new_native_or_wasm_executor() -> NativeElseWasmExecutor<LocalExecutorDispatch> {
+	NativeElseWasmExecutor::new_with_wasm_executor(WasmExecutor::builder().build())
 }

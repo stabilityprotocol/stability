@@ -16,10 +16,13 @@ pub type Client = FullClient<stability_runtime::RuntimeApi, TemplateRuntimeExecu
 
 /// Only enable the benchmarking host functions when we actually want to benchmark.
 #[cfg(feature = "runtime-benchmarks")]
-pub type HostFunctions = frame_benchmarking::benchmarking::HostFunctions;
+pub type HostFunctions = (
+	frame_benchmarking::benchmarking::HostFunctions,
+	moonbeam_primitives_ext::moonbeam_ext::HostFunctions,
+);
 /// Otherwise we use empty host functions for ext host functions.
 #[cfg(not(feature = "runtime-benchmarks"))]
-pub type HostFunctions = ();
+pub type HostFunctions = moonbeam_primitives_ext::moonbeam_ext::HostFunctions;
 
 pub struct TemplateRuntimeExecutor;
 impl NativeExecutionDispatch for TemplateRuntimeExecutor {
@@ -42,6 +45,8 @@ pub trait BaseRuntimeApiCollection:
 	+ sp_offchain::OffchainWorkerApi<Block>
 	+ sp_session::SessionKeys<Block>
 	+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
+	+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>
+	+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block>
 where
 	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
@@ -54,7 +59,9 @@ where
 		+ sp_block_builder::BlockBuilder<Block>
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_session::SessionKeys<Block>
-		+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>,
+		+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
+		+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>
+		+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block>,
 	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
@@ -64,11 +71,13 @@ pub trait RuntimeApiCollection:
 	BaseRuntimeApiCollection
 	+ EthCompatRuntimeApiCollection
 	+ sp_consensus_aura::AuraApi<Block, stbl_core_primitives::aura::Public>
-	+ sp_finality_grandpa::GrandpaApi<Block>
+	+ sp_consensus_grandpa::GrandpaApi<Block>
 	+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 	+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
 	+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
 	+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>
+	+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>
+	+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block>
 where
 	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
@@ -79,11 +88,13 @@ where
 	Api: BaseRuntimeApiCollection
 		+ EthCompatRuntimeApiCollection
 		+ sp_consensus_aura::AuraApi<Block, stbl_core_primitives::aura::Public>
-		+ sp_finality_grandpa::GrandpaApi<Block>
+		+ sp_consensus_grandpa::GrandpaApi<Block>
 		+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
 		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
-		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>,
+		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>
+		+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block>
+		+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>,
 	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }

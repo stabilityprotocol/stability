@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sp_core::{bytes::from_hex, ecdsa, H160, H256, U256};
-use sp_finality_grandpa::AuthorityId as GrandpaId;
+use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use stability_runtime::{AccountId, GenesisConfig, Precompiles, ValidatorFeeSelectorConfig};
 use std::{collections::BTreeMap, str::FromStr, vec};
 // Substrate
@@ -148,9 +148,9 @@ pub fn base_genesis(
 				let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
 				Precompiles::used_addresses()
 					.into_iter()
-					.for_each(|addr: H160| {
+					.for_each(|addr| {
 						map.insert(
-							addr,
+							H160(addr.0),
 							fp_evm::GenesisAccount {
 								nonce: Default::default(),
 								balance: Default::default(),

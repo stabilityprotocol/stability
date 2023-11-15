@@ -61,6 +61,7 @@ pub fn alphanet_config() -> Result<ChainSpec, String> {
 		None,
 		// Protocol ID
 		None,
+		// Fork id
 		None,
 		// Properties
 		None,

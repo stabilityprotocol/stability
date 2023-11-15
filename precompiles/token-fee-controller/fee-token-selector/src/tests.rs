@@ -25,7 +25,7 @@ fn default_token_address() {
 					address: Address(CryptoAlith.into()),
 				},
 			)
-			.execute_returns_encoded(Into::<H256>::into(MockDefaultFeeToken::get()));
+			.execute_returns(Into::<H256>::into(MockDefaultFeeToken::get()));
 	});
 }
 

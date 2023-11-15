@@ -10,22 +10,21 @@ publish = false
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
-
 [dependencies]
-beefy-primitives = { workspace = true, package = "sp-beefy" }
-beefy-merkle-tree = { workspace = true }
+pallet-beefy-mmr = { workspace = true }
 sp-application-crypto = { workspace = true }
 sp-consensus-aura = { workspace = true }
 sp-consensus-babe = { workspace = true }
+sp-consensus-beefy = { workspace = true }
 sp-block-builder = { workspace = true }
-codec = { package = "parity-scale-codec", workspace = true, features = ["derive"] }
-scale-info = { workspace = true, features = ["derive"] }
+parity-scale-codec = { default-features = false, features = ["derive"], workspace = true }
+scale-info = { workspace = true }
 sp-inherents = { workspace = true }
 sp-keyring = { workspace = true, optional = true }
 memory-db = { workspace = true }
 sp-offchain = { workspace = true }
 sp-core = { workspace = true }
-sp-std ={ workspace = true }
+sp-std = { workspace = true }
 sp-runtime-interface = { workspace = true }
 sp-io = { workspace = true }
 frame-support = { workspace = true }
@@ -34,48 +33,53 @@ sp-session = { workspace = true }
 sp-api = { workspace = true }
 sp-runtime = { workspace = true }
 pallet-babe = { workspace = true }
+pallet-balances = { workspace = true }
+stability-pallet-root-testing = { workspace = true }
+pallet-sudo = { workspace = true }
+frame-executive = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-timestamp = { workspace = true }
-sp-finality-grandpa = { workspace = true }
+sp-consensus-grandpa = { workspace = true }
 sp-trie = { workspace = true }
 sp-transaction-pool = { workspace = true }
 trie-db = { workspace = true }
-sc-service = { workspace=true, optional = true, features = ["test-helpers"] }
+sc-service = { workspace = true, optional = true }
 sp-state-machine = { workspace = true }
 sp-externalities = { workspace = true }
+stability-sp-debug-derive = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true }
 stbl-primitives-zero-gas-transactions-api = { workspace = true }
-pallet-zero-gas-transactions = { workspace = true }
+stbl-core-primitives = { workspace = true }
 pallet-ethereum = { workspace = true }
 # 3rd party
-cfg-if = { workspace = true }
+array-bytes = { workspace = true, optional = true}
 log = { workspace = true }
-serde = { workspace = true, optional = true, features = ["derive"] }
-stbl-core-primitives = { workspace = true }
+serde = { workspace = true, optional = true}
 
 [dev-dependencies]
+futures = { workspace = true }
 sc-block-builder = { workspace = true }
 sc-executor = { workspace = true }
 sp-consensus = { workspace = true }
 stability-test-runtime-client = { workspace = true }
-futures = { workspace = true }
+stability-sp-tracing = { workspace = true }
 
 [build-dependencies]
-substrate-wasm-builder = { workspace = true }
+substrate-wasm-builder = { workspace = true, optional = true }
 
 [features]
 default = [
 	"std",
 ]
 std = [
-	"beefy-primitives/std",
-	"beefy-merkle-tree/std",
+	"array-bytes",
 	"sp-application-crypto/std",
 	"sp-consensus-aura/std",
 	"sp-consensus-babe/std",
+	"sp-consensus-beefy/std",
 	"sp-block-builder/std",
-	"codec/std",
+	"parity-scale-codec/std",
 	"scale-info/std",
 	"sp-inherents/std",
 	"sp-keyring",
@@ -96,16 +100,19 @@ std = [
 	"sp-externalities/std",
 	"sp-state-machine/std",
 	"pallet-babe/std",
+	"pallet-beefy-mmr/std",
+	"pallet-timestamp/std",
+	"pallet-balances/std",
+	"pallet-sudo/std",
+	"stability-pallet-root-testing/std",
 	"frame-system-rpc-runtime-api/std",
 	"frame-system/std",
-	"pallet-timestamp/std",
 	"sc-service",
-	"sp-finality-grandpa/std",
+	"sp-consensus-grandpa/std",
 	"sp-trie/std",
 	"sp-transaction-pool/std",
 	"trie-db/std",
-	"stbl-core-primitives/std",
-
+	"substrate-wasm-builder",
 ]
 # Special feature to disable logging
 disable-logging = [ "sp-api/disable-logging" ]

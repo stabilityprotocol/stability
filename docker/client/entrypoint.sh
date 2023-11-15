@@ -11,7 +11,7 @@ fi
 
 if [[ "$CHAIN_TARGET" == "dev" ]]; then
   echo "Starting dev chain"
-  START_COMMAND_DEV="./target/release/stability --base-path /tmp/node --dev --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --prometheus-external"
+  START_COMMAND_DEV="./target/release/stability --base-path /tmp/node --dev --unsafe-rpc-external --rpc-cors all --prometheus-external"
 
   if [ "$MODE" = "archive" ]; then
     START_COMMAND_DEV="$START_COMMAND_DEV --pruning archive"
@@ -36,7 +36,7 @@ if [ -n "$SEED" ]; then
   --key-type gran
 fi
 
-START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --prometheus-external --chain=$CHAIN_TARGET"
+START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --rpc-port 9933 --prometheus-external --chain=$CHAIN_TARGET"
 
 if [ "$MODE" = "archive" ]; then
   START_COMMAND="$START_COMMAND --pruning archive"
@@ -52,6 +52,12 @@ fi
 
 if [ -n "$ZERO_GAS_TX_POOL" ]; then
   START_COMMAND="$START_COMMAND --zero-gas-tx-pool $ZERO_GAS_TX_POOL"
+fi
+
+if [ -n "$CUSTOM_ETH_APIS" ]; then
+    START_COMMAND="$START_COMMAND --ethapi=$CUSTOM_ETH_APIS"
+else
+    START_COMMAND="$START_COMMAND --ethapi=txpool,debug,trace"
 fi
 
 echo "Starting $CHAIN_TARGET chain"

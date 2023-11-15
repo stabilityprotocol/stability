@@ -133,9 +133,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(target_new_owner))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
 		)
 		.record(handle)?;
 
@@ -165,11 +163,8 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(target_new_owner))
-				.build(),
-		)
-		.record(handle)?;
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+		).record(handle)?;
 
 		Ok(())
 	}
@@ -234,9 +229,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_VALIDATOR_ADDED,
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(origin_id))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(origin_id))
 		)
 		.record(handle)?;
 
@@ -272,9 +265,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_VALIDATOR_REMOVED,
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(origin_id))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(origin_id))
 		)
 		.record(handle)?;
 

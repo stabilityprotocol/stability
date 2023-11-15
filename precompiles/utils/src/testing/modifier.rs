@@ -1,4 +1,4 @@
-// Copyright 2023 Stability Solutions.
+// Copyright 2019-2022 PureStake Inc.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -13,10 +13,11 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
 	crate::{
+		solidity::codec::Writer,
 		testing::{decode_revert_message, MockHandle},
-		EvmDataWriter,
 	},
 	fp_evm::{Context, PrecompileFailure, PrecompileSet},
 	sp_core::{H160, U256},
@@ -52,7 +53,7 @@ impl<P: PrecompileSet> PrecompilesModifierTester<P> {
 		let handle = &mut self.handle;
 		handle.is_static = true;
 		handle.context.apparent_value = U256::zero();
-		handle.input = EvmDataWriter::new_with_selector(selector).build();
+		handle.input = Writer::new_with_selector(selector).build();
 
 		let res = self.precompiles.execute(handle);
 
@@ -72,7 +73,7 @@ impl<P: PrecompileSet> PrecompilesModifierTester<P> {
 		let handle = &mut self.handle;
 		handle.is_static = false;
 		handle.context.apparent_value = U256::one();
-		handle.input = EvmDataWriter::new_with_selector(selector).build();
+		handle.input = Writer::new_with_selector(selector).build();
 
 		let res = self.precompiles.execute(handle);
 

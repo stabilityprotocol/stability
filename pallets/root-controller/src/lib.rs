@@ -44,7 +44,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn dispatch_as_root(
 			origin: OriginFor<T>,
 			call: Box<<T as Config>::RuntimeCall>,

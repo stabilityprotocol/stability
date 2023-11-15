@@ -19,7 +19,7 @@
 // FIXME #1021 move this into sp-consensus
 
 use account::EthereumSigner;
-use codec::Encode;
+use parity_scale_codec::Encode;
 use futures::{
 	channel::oneshot,
 	future,
@@ -37,7 +37,6 @@ use sp_consensus::{DisableProofRecording, EnableProofRecording, ProofRecording, 
 use sp_core::traits::SpawnNamed;
 use sp_inherents::InherentData;
 use sp_runtime::{
-	generic::BlockId,
 	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT, IdentifyAccount},
 	Digest, Percent, SaturatedConversion,
 };
@@ -48,7 +47,7 @@ use std::{marker::PhantomData, pin::Pin, sync::Arc, time};
 use prometheus_endpoint::Registry as PrometheusRegistry;
 use sc_proposer_metrics::{EndProposingReason, MetricsLink as PrometheusMetrics};
 use sp_core::crypto::KeyTypeId;
-use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
+use sp_keystore::{Keystore, KeystorePtr};
 use stbl_primitives_fee_compatible_api::CompatibleFeeApi;
 
 /// Default block size limit in bytes used by [`Proposer`].
@@ -77,7 +76,7 @@ pub struct ProposerFactory<A, B, C, PR> {
 	transaction_pool: Arc<A>,
 
 	/// Reference to Keystore
-	keystore: SyncCryptoStorePtr,
+	keystore: KeystorePtr,
 
 	/// HTTP URL of the private pool from which the node will retrieve zero-gas transactions
 	zero_gas_tx_pool: Option<String>,
@@ -113,7 +112,7 @@ impl<A, B, C> ProposerFactory<A, B, C, DisableProofRecording> {
 		spawn_handle: impl SpawnNamed + 'static,
 		client: Arc<C>,
 		transaction_pool: Arc<A>,
-		keystore: SyncCryptoStorePtr,
+		keystore: KeystorePtr,
 		zero_gas_tx_pool: Option<String>,
 		prometheus: Option<&PrometheusRegistry>,
 		telemetry: Option<TelemetryHandle>,
@@ -145,7 +144,7 @@ impl<A, B, C> ProposerFactory<A, B, C, EnableProofRecording> {
 		spawn_handle: impl SpawnNamed + 'static,
 		client: Arc<C>,
 		transaction_pool: Arc<A>,
-		keystore: SyncCryptoStorePtr,
+		keystore: KeystorePtr,
 		zero_gas_tx_pool: Option<String>,
 		prometheus: Option<&PrometheusRegistry>,
 		telemetry: Option<TelemetryHandle>,
@@ -221,8 +220,6 @@ where
 	) -> Proposer<B, Block, C, A, PR> {
 		let parent_hash = parent_header.hash();
 
-		let id = BlockId::hash(parent_hash);
-
 		info!(
 			"🙌 Starting consensus session on top of parent {:?}",
 			parent_hash
@@ -231,7 +228,7 @@ where
 		let proposer = Proposer::<_, _, _, _, PR> {
 			spawn_handle: self.spawn_handle.clone(),
 			client: self.client.clone(),
-			parent_id: id,
+			parent_hash,
 			parent_number: *parent_header.number(),
 			transaction_pool: self.transaction_pool.clone(),
 			keystore: self.keystore.clone(),
@@ -281,10 +278,10 @@ where
 pub struct Proposer<B, Block: BlockT, C, A: TransactionPool, PR> {
 	spawn_handle: Box<dyn SpawnNamed>,
 	client: Arc<C>,
-	parent_id: BlockId<Block>,
+	parent_hash: Block::Hash,
 	parent_number: <<Block as BlockT>::Header as HeaderT>::Number,
 	transaction_pool: Arc<A>,
-	keystore: SyncCryptoStorePtr,
+	keystore: KeystorePtr,
 	zero_gas_tx_pool: Option<String>,
 	now: Box<dyn Fn() -> time::Instant + Send + Sync>,
 	metrics: PrometheusMetrics,
@@ -385,7 +382,7 @@ where
 		let propose_with_start = time::Instant::now();
 		let mut block_builder =
 			self.client
-				.new_block_at(&self.parent_id, inherent_digests, PR::ENABLED)?;
+				.new_block_at(self.parent_hash, inherent_digests, PR::ENABLED)?;
 
 		let create_inherents_start = time::Instant::now();
 		let inherents = block_builder.create_inherents(inherent_data)?;
@@ -512,7 +509,7 @@ where
 				let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
 				
 
-				let keys = SyncCryptoStore::ecdsa_public_keys(
+				let keys = Keystore::ecdsa_public_keys(
 					&*self.keystore,
 					KeyTypeId::try_from("aura").unwrap_or_default(),
 				);
@@ -529,7 +526,7 @@ where
 
 				let eip191_message = stbl_tools::eth::build_eip191_message_hash(message.clone());
 
-				let signed_hash_option = SyncCryptoStore::ecdsa_sign_prehashed(
+				let signed_hash_option = Keystore::ecdsa_sign_prehashed(
 					&*self.keystore,
 					KeyTypeId::try_from("aura").unwrap_or_default(),
 					&public,
@@ -546,7 +543,7 @@ where
 				let pending_tx =  if let Ok(pending_tx) = self
 				.client
 				.runtime_api()
-				.convert_zero_gas_transaction(&self.parent_id, ethereum_transaction.clone(), signed_hash.0.to_vec()) {
+				.convert_zero_gas_transaction(self.parent_hash, ethereum_transaction.clone(), signed_hash.0.to_vec()) {
 					pending_tx
 				}
 				else {
@@ -628,7 +625,7 @@ where
 		};
 
 
-		let keys = SyncCryptoStore::ecdsa_public_keys(
+		let keys = Keystore::ecdsa_public_keys(
 			&*self.keystore,
 			KeyTypeId::try_from("aura").unwrap_or_default(),
 		);
@@ -659,7 +656,7 @@ where
 				.client
 				.runtime_api()
 				.is_compatible_fee(
-					&self.parent_id,
+					self.parent_hash,
 					pending_tx.data().clone(),
 					validator.clone(),
 				)
@@ -812,55 +809,36 @@ mod tests {
 	use sp_api::Core;
 	use sp_blockchain::HeaderBackend;
 	use sp_consensus::{BlockOrigin, Environment, Proposer};
-	use sp_core::Pair;
-	use sp_runtime::traits::NumberFor;
+	use sp_runtime::{generic::BlockId, traits::NumberFor, Perbill};
 	use stability_test_runtime_client::{
 		prelude::*,
-		runtime::{Extrinsic, Transfer},
+		runtime::{Block as TestBlock, Extrinsic, ExtrinsicBuilder, Transfer},
 		TestClientBuilder, TestClientBuilderExt,
 	};
 
 	const SOURCE: TransactionSource = TransactionSource::External;
 
-	fn extrinsic_included(nonce: u64) -> Extrinsic {
-		Transfer {
-			amount: Default::default(),
-			nonce,
-			from: AccountKeyring::Alice.into(),
-			to: AccountKeyring::Bob.into(),
-		}
-		.into_signed_tx()
-	}
+	// Note:
+	// Maximum normal extrinsic size for `substrate_test_runtime` is ~65% of max_block (refer to
+	// `substrate_test_runtime::RuntimeBlockWeights` for details).
+	// This extrinsic sizing allows for:
+	// - one huge xts + a lot of tiny dust
+	// - one huge, no medium,
+	// - two medium xts
+	// This is widely exploited in following tests.
+	const HUGE: u32 = 649000000;
+	const MEDIUM: u32 = 250000000;
+	const TINY: u32 = 1000;
 
-	fn extrinsic_skipped(value: u32) -> Extrinsic {
-		Extrinsic::Skipped(value)
-	}
-
-	fn exhausts_resources_extrinsic_from(who: usize) -> Extrinsic {
-		let pair = AccountKeyring::numeric(who);
-		let transfer = Transfer {
-			// increase the amount to bump priority
-			amount: 1,
-			nonce: 0,
-			from: pair.public(),
-			to: AccountKeyring::Bob.into(),
-		};
-		let signature = pair.sign(&transfer.encode()).into();
-		Extrinsic::Transfer {
-			transfer,
-			signature,
-			exhaust_resources_when_not_first: true,
-		}
+	fn extrinsic(nonce: u64) -> Extrinsic {
+		ExtrinsicBuilder::new_fill_block(Perbill::from_parts(TINY)).nonce(nonce).build()
 	}
 
 	fn chain_event<B: BlockT>(header: B::Header) -> ChainEvent<B>
 	where
 		NumberFor<B>: From<u64>,
 	{
-		ChainEvent::NewBestBlock {
-			hash: header.hash(),
-			tree_route: None,
-		}
+		ChainEvent::NewBestBlock { hash: header.hash(), tree_route: None }
 	}
 
 	#[test]
@@ -876,17 +854,13 @@ mod tests {
 			client.clone(),
 		);
 
-		block_on(txpool.submit_at(
-			&BlockId::number(0),
-			SOURCE,
-			vec![extrinsic_included(0), extrinsic_included(1)],
-		))
-		.unwrap();
+		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, vec![extrinsic(0), extrinsic(1)]))
+			.unwrap();
 
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(BlockId::Hash(client.info().genesis_hash))
+					.expect_header(client.info().genesis_hash)
 					.expect("there should be header"),
 			)),
 		);
@@ -894,33 +868,24 @@ mod tests {
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
-			&*keystore_container.sync_keystore().clone(),
+		Keystore::ecdsa_generate_new(
+			&*keystore_container.keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory = ProposerFactory::new(
-			spawner.clone(),
-			client.clone(),
-			txpool.clone(),
-			keystore_container.sync_keystore(),
-			None,
-			None,
-			None,
-		);
+		let mut proposer_factory =
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(),keystore_container.keystore(), None, None, None);
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
-			&client
-				.expect_header(BlockId::Hash(client.info().genesis_hash))
-				.unwrap(),
+			&client.expect_header(client.info().genesis_hash).unwrap(),
 			Box::new(move || {
 				let mut value = cell.lock();
 				if !value.0 {
 					value.0 = true;
-					return value.1;
+					return value.1
 				}
 				let old = value.1;
 				let new = old + time::Duration::from_secs(1);
@@ -955,35 +920,27 @@ mod tests {
 		);
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
-		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+ 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
-			&*keystore_container.sync_keystore().clone(),
+
+		 Keystore::ecdsa_generate_new(
+			&*keystore_container.keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory = ProposerFactory::new(
-			spawner.clone(),
-			client.clone(),
-			txpool.clone(),
-			keystore_container.sync_keystore(),
-			None,
-			None,
-			None,
-		);
+		let mut proposer_factory =
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
-			&client
-				.expect_header(BlockId::Hash(client.info().genesis_hash))
-				.unwrap(),
+			&client.expect_header(client.info().genesis_hash).unwrap(),
 			Box::new(move || {
 				let mut value = cell.lock();
 				if !value.0 {
 					value.0 = true;
-					return value.1;
+					return value.1
 				}
 				let new = value.1 + time::Duration::from_secs(160);
 				*value = (true, new);
@@ -1012,42 +969,32 @@ mod tests {
 
 		let genesis_hash = client.info().best_hash;
 
-		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, vec![extrinsic_included(0)]))
-			.unwrap();
+		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, vec![extrinsic(0)])).unwrap();
 
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(BlockId::number(0))
+					.expect_header(client.info().genesis_hash)
 					.expect("there should be header"),
 			)),
 		);
 
-		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
-		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
-			&*keystore_container.sync_keystore().clone(),
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+ 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		 Keystore::ecdsa_generate_new(
+			&*keystore_container.keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory = ProposerFactory::new(
-			spawner.clone(),
-			client.clone(),
-			txpool.clone(),
-			keystore_container.sync_keystore(),
-			None,
-			None,
-			None,
-		);
+		let mut proposer_factory =
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
 
 		let proposer = proposer_factory.init_with_now(
-			&client
-				.header(&BlockId::Hash(client.info().genesis_hash))
-				.unwrap()
-				.unwrap(),
+			&client.header(genesis_hash).unwrap().unwrap(),
 			Box::new(move || time::Instant::now()),
 		);
 
@@ -1059,8 +1006,7 @@ mod tests {
 		assert_eq!(proposal.block.extrinsics().len(), 1);
 
 		let api = client.runtime_api();
-		api.execute_block(&BlockId::Hash(genesis_hash), proposal.block)
-			.unwrap();
+		api.execute_block(genesis_hash, proposal.block).unwrap();
 
 		let state = backend.state_at(genesis_hash).unwrap();
 
@@ -1072,10 +1018,13 @@ mod tests {
 		);
 	}
 
+	// This test ensures that if one transaction of a user was rejected, because for example
+	// the weight limit was hit, we don't mark the other transactions of the user as invalid because
+	// the nonce is not matching.
 	#[test]
-	fn should_not_remove_invalid_transactions_when_skipping() {
+	fn should_not_remove_invalid_transactions_from_the_same_sender_after_one_was_invalid() {
 		// given
-		let mut client = Arc::new(stability_test_runtime_client::new());
+		let client = Arc::new(stability_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -1085,60 +1034,41 @@ mod tests {
 			client.clone(),
 		);
 
+		let medium = |nonce| {
+			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(MEDIUM))
+				.nonce(nonce)
+				.build()
+		};
+		let huge = |nonce| {
+			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(HUGE)).nonce(nonce).build()
+		};
+
 		block_on(txpool.submit_at(
 			&BlockId::number(0),
 			SOURCE,
-			vec![
-				extrinsic_included(0),
-				extrinsic_included(1),
-				Transfer {
-					amount: Default::default(),
-					nonce: 2,
-					from: AccountKeyring::Alice.into(),
-					to: AccountKeyring::Bob.into(),
-				}.into_resources_exhausting_tx(),
-				extrinsic_included(3),
-				Transfer {
-					amount: Default::default(),
-					nonce: 4,
-					from: AccountKeyring::Alice.into(),
-					to: AccountKeyring::Bob.into(),
-				}.into_resources_exhausting_tx(),
-				extrinsic_included(5),
-				extrinsic_included(6),
-			],
+			vec![medium(0), medium(1), huge(2), medium(3), huge(4), medium(5), medium(6)],
 		))
 		.unwrap();
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
-			&*keystore_container.sync_keystore().clone(),
+		Keystore::ecdsa_generate_new(
+			&*keystore_container.keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory = ProposerFactory::new(
-			spawner.clone(),
-			client.clone(),
-			txpool.clone(),
-			keystore_container.sync_keystore(),
-			None,
-			None,
-			None,
-		);
-
+		let mut proposer_factory =
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(),keystore_container.keystore(), None, None, None);
 		let mut propose_block = |client: &TestClient,
-		                         number,
+		                         parent_number,
 		                         expected_block_extrinsics,
 		                         expected_pool_transactions| {
-			let hash = client
-				.expect_block_hash_from_id(&BlockId::Number(number))
-				.unwrap();
+			let hash = client.expect_block_hash_from_id(&BlockId::Number(parent_number)).unwrap();
 			let proposer = proposer_factory.init_with_now(
-				&client.expect_header(BlockId::Hash(hash)).unwrap(),
+				&client.expect_header(hash).unwrap(),
 				Box::new(move || time::Instant::now()),
 			);
 
@@ -1151,16 +1081,34 @@ mod tests {
 
 			// then
 			// block should have some extrinsics although we have some more in the pool.
-			assert_eq!(txpool.ready().count(), expected_pool_transactions);
-			assert_eq!(block.extrinsics().len(), expected_block_extrinsics);
+			assert_eq!(
+				txpool.ready().count(),
+				expected_pool_transactions,
+				"at block: {}",
+				block.header.number
+			);
+			assert_eq!(
+				block.extrinsics().len(),
+				expected_block_extrinsics,
+				"at block: {}",
+				block.header.number
+			);
 
 			block
+		};
+
+		let import_and_maintain = |mut client: Arc<TestClient>, block: TestBlock| {
+			let hash = block.hash();
+			block_on(client.import(BlockOrigin::Own, block)).unwrap();
+			block_on(txpool.maintain(chain_event(
+				client.expect_header(hash).expect("there should be header"),
+			)));
 		};
 
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(BlockId::Hash(client.info().genesis_hash))
+					.expect_header(client.info().genesis_hash)
 					.expect("there should be header"),
 			)),
 		);
@@ -1168,21 +1116,28 @@ mod tests {
 
 		// let's create one block and import it
 		let block = propose_block(&client, 0, 2, 7);
-		let hashof1 = block.hash();
-		block_on(client.import(BlockOrigin::Own, block)).unwrap();
-
-		block_on(
-			txpool.maintain(chain_event(
-				client
-					.expect_header(BlockId::Hash(hashof1))
-					.expect("there should be header"),
-			)),
-		);
+		import_and_maintain(client.clone(), block);
 		assert_eq!(txpool.ready().count(), 5);
 
 		// now let's make sure that we can still make some progress
-		let block = propose_block(&client, 1, 2, 5);
-		block_on(client.import(BlockOrigin::Own, block)).unwrap();
+		let block = propose_block(&client, 1, 1, 5);
+		import_and_maintain(client.clone(), block);
+		assert_eq!(txpool.ready().count(), 4);
+
+		// again let's make sure that we can still make some progress
+		let block = propose_block(&client, 2, 1, 4);
+		import_and_maintain(client.clone(), block);
+		assert_eq!(txpool.ready().count(), 3);
+
+		// again let's make sure that we can still make some progress
+		let block = propose_block(&client, 3, 1, 3);
+		import_and_maintain(client.clone(), block);
+		assert_eq!(txpool.ready().count(), 2);
+
+		// again let's make sure that we can still make some progress
+		let block = propose_block(&client, 4, 2, 2);
+		import_and_maintain(client.clone(), block);
+		assert_eq!(txpool.ready().count(), 0);
 	}
 
 	#[test]
@@ -1197,7 +1152,7 @@ mod tests {
 			client.clone(),
 		);
 		let genesis_header = client
-			.expect_header(BlockId::Hash(client.info().genesis_hash))
+			.expect_header(client.info().genesis_hash)
 			.expect("there should be header");
 
 		let extrinsics_num = 5;
@@ -1208,42 +1163,36 @@ mod tests {
 				amount: 100,
 				nonce: 0,
 			}
-			.into_signed_tx(),
+			.into_unchecked_extrinsic(),
 		)
-		.chain((0..extrinsics_num - 1).map(|v| Extrinsic::IncludeData(vec![v as u8; 10])))
+		.chain((1..extrinsics_num as u64).map(extrinsic))
 		.collect::<Vec<_>>();
 
-		let block_limit = genesis_header.encoded_size()
-			+ extrinsics
+		let block_limit = genesis_header.encoded_size() +
+			extrinsics
 				.iter()
 				.take(extrinsics_num - 1)
 				.map(Encode::encoded_size)
-				.sum::<usize>()
-			+ Vec::<Extrinsic>::new().encoded_size();
+				.sum::<usize>() +
+			Vec::<Extrinsic>::new().encoded_size();
 
-		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, extrinsics)).unwrap();
+		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, extrinsics.clone())).unwrap();
 
 		block_on(txpool.maintain(chain_event(genesis_header.clone())));
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
-		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+ 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
-			&*keystore_container.sync_keystore().clone(),
+
+		 Keystore::ecdsa_generate_new(
+			&*keystore_container.keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory = ProposerFactory::new(
-			spawner.clone(),
-			client.clone(),
-			txpool.clone(),
-			keystore_container.sync_keystore(),
-			None,
-			None,
-			None,
-		);
+		let mut proposer_factory =
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
 
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
 
@@ -1271,18 +1220,35 @@ mod tests {
 		// Without a block limit we should include all of them
 		assert_eq!(block.extrinsics().len(), extrinsics_num);
 
+		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+
+		Keystore::ecdsa_generate_new(
+			&*keystore_container.keystore().clone(),
+			KeyTypeId::try_from("aura").unwrap(),
+			Some("//Alice"),
+		)
+		.expect("Creates authority key");
+
 		let mut proposer_factory = ProposerFactory::with_proof_recording(
 			spawner.clone(),
 			client.clone(),
 			txpool.clone(),
-			keystore_container.sync_keystore(),
+			keystore_container.keystore(),
 			None,
 			None,
 			None,
 		);
+
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
 
-		// Give it enough time
+		// Exact block_limit, which includes:
+		// 99 (header_size) + 718 (proof@initialize_block) + 246 (one Transfer extrinsic)
+		let block_limit = {
+			let builder =
+				client.new_block_at(genesis_header.hash(), Default::default(), true).unwrap();
+			builder.estimate_block_size(true) + extrinsics[0].encoded_size()
+		};
 		let block = block_on(proposer.propose(
 			Default::default(),
 			Default::default(),
@@ -1292,7 +1258,7 @@ mod tests {
 		.map(|r| r.block)
 		.unwrap();
 
-		// The block limit didn't changed, but we now include the proof in the estimation of the
+		// The block limit was increased, but we now include the proof in the estimation of the
 		// block size and thus, only the `Transfer` will fit into the block. It reads more data
 		// than we have reserved in the block limit.
 		assert_eq!(block.extrinsics().len(), 1);
@@ -1311,6 +1277,15 @@ mod tests {
 			client.clone(),
 		);
 
+		let tiny = |nonce| {
+			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(TINY)).nonce(nonce).build()
+		};
+		let huge = |who| {
+			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(HUGE))
+				.signer(AccountKeyring::numeric(who))
+				.build()
+		};
+
 		block_on(
 			txpool.submit_at(
 				&BlockId::number(0),
@@ -1318,13 +1293,9 @@ mod tests {
 				// add 2 * MAX_SKIPPED_TRANSACTIONS that exhaust resources
 				(0..MAX_SKIPPED_TRANSACTIONS * 2)
 					.into_iter()
-					.map(|i| exhausts_resources_extrinsic_from(i))
+					.map(huge)
 					// and some transactions that are okay.
-					.chain(
-						(0..MAX_SKIPPED_TRANSACTIONS)
-							.into_iter()
-							.map(|i| extrinsic_included(i as _)),
-					)
+					.chain((0..MAX_SKIPPED_TRANSACTIONS as u64).into_iter().map(tiny))
 					.collect(),
 			),
 		)
@@ -1333,37 +1304,29 @@ mod tests {
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(BlockId::Hash(client.info().genesis_hash))
+					.expect_header(client.info().genesis_hash)
 					.expect("there should be header"),
 			)),
 		);
 		assert_eq!(txpool.ready().count(), MAX_SKIPPED_TRANSACTIONS * 3);
-
+		
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
-			&*keystore_container.sync_keystore().clone(),
+		Keystore::ecdsa_generate_new(
+			&*keystore_container.keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory = ProposerFactory::new(
-			spawner.clone(),
-			client.clone(),
-			txpool.clone(),
-			keystore_container.sync_keystore(),
-			None,
-			None,
-			None,
-		);
+
+		let mut proposer_factory =
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
 
 		let cell = Mutex::new(time::Instant::now());
 		let proposer = proposer_factory.init_with_now(
-			&client
-				.expect_header(BlockId::Hash(client.info().genesis_hash))
-				.unwrap(),
+			&client.expect_header(client.info().genesis_hash).unwrap(),
 			Box::new(move || {
 				let mut value = cell.lock();
 				let old = *value;
@@ -1397,19 +1360,27 @@ mod tests {
 			client.clone(),
 		);
 
+		let tiny = |who| {
+			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(TINY))
+				.signer(AccountKeyring::numeric(who))
+				.nonce(1)
+				.build()
+		};
+		let huge = |who| {
+			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(HUGE))
+				.signer(AccountKeyring::numeric(who))
+				.build()
+		};
+
 		block_on(
 			txpool.submit_at(
 				&BlockId::number(0),
 				SOURCE,
 				(0..MAX_SKIPPED_TRANSACTIONS + 2)
 					.into_iter()
-					.map(|i| exhausts_resources_extrinsic_from(i))
+					.map(huge)
 					// and some transactions that are okay.
-					.chain(
-						(0..MAX_SKIPPED_TRANSACTIONS)
-							.into_iter()
-							.map(|i| extrinsic_included(i as _)),
-					)
+					.chain((0..MAX_SKIPPED_TRANSACTIONS + 2).into_iter().map(tiny))
 					.collect(),
 			),
 		)
@@ -1418,39 +1389,30 @@ mod tests {
 		block_on(
 			txpool.maintain(chain_event(
 				client
-					.expect_header(BlockId::Hash(client.info().genesis_hash))
+					.expect_header(client.info().genesis_hash)
 					.expect("there should be header"),
 			)),
 		);
-		assert_eq!(txpool.ready().count(), MAX_SKIPPED_TRANSACTIONS * 2 + 2);
+		assert_eq!(txpool.ready().count(), MAX_SKIPPED_TRANSACTIONS * 2 + 4);
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		SyncCryptoStore::ecdsa_generate_new(
-			&*keystore_container.sync_keystore().clone(),
+		Keystore::ecdsa_generate_new(
+			&*keystore_container.keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
-
-		let mut proposer_factory = ProposerFactory::new(
-			spawner.clone(),
-			client.clone(),
-			txpool.clone(),
-			keystore_container.sync_keystore(),
-			None,
-			None,
-			None,
-		);
+	
+		let mut proposer_factory =
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
 
 		let deadline = time::Duration::from_secs(600);
 		let cell = Arc::new(Mutex::new((0, time::Instant::now())));
 		let cell2 = cell.clone();
 		let proposer = proposer_factory.init_with_now(
-			&client
-				.expect_header(BlockId::Hash(client.info().genesis_hash))
-				.unwrap(),
+			&client.expect_header(client.info().genesis_hash).unwrap(),
 			Box::new(move || {
 				let mut value = cell.lock();
 				let (called, old) = *value;
@@ -1472,114 +1434,16 @@ mod tests {
 				.map(|r| r.block)
 				.unwrap();
 
-		// then the block should have no transactions despite some in the pool
-		assert_eq!(block.extrinsics().len(), 1);
+		// then the block should have one or two transactions. This maybe random as they are
+		// processed in parallel. The same signer and consecutive nonces for huge and tiny
+		// transactions guarantees that max two transactions will get to the block.
+		assert!(
+			(1..3).contains(&block.extrinsics().len()),
+			"Block shall contain one or two extrinsics."
+		);
 		assert!(
 			cell2.lock().0 > MAX_SKIPPED_TRANSACTIONS,
 			"Not enough calls to current time, which indicates the test might have ended because of deadline, not soft deadline"
 		);
-	}
-
-	#[test]
-	fn should_skip_transactions_if_runtime_is_compatible_fee_return_false() {
-		// given
-		let client = Arc::new(stability_test_runtime_client::new());
-		let spawner = sp_core::testing::TaskExecutor::new();
-		let txpool = BasicPool::new_full(
-			Default::default(),
-			true.into(),
-			None,
-			spawner.clone(),
-			client.clone(),
-		);
-		let genesis_header = client
-			.expect_header(BlockId::Hash(client.info().genesis_hash))
-			.expect("there should be header");
-
-		let extrinsics = vec![extrinsic_skipped(0), extrinsic_included(0)];
-
-		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, extrinsics)).unwrap();
-
-		block_on(txpool.maintain(chain_event(genesis_header.clone())));
-
-		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
-		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
-
-		SyncCryptoStore::ecdsa_generate_new(
-			&*keystore_container.sync_keystore().clone(),
-			KeyTypeId::try_from("aura").unwrap(),
-			Some("//Alice"),
-		)
-		.expect("Creates authority key");
-
-		let mut proposer_factory = ProposerFactory::new(
-			spawner.clone(),
-			client.clone(),
-			txpool.clone(),
-			keystore_container.sync_keystore(),
-			None,
-			None,
-			None,
-		);
-
-		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
-
-		let deadline = time::Duration::from_secs(300);
-		let block =
-			block_on(proposer.propose(Default::default(), Default::default(), deadline, None))
-				.map(|r| r.block)
-				.unwrap();
-
-		assert_eq!(block.extrinsics().len(), 1);
-
-		let extrinsic_in_block = &block.extrinsics()[0];
-
-		if let Extrinsic::Skipped(_) = extrinsic_in_block {
-			panic!("Skipped extrinsic should not be in block")
-		}
-	}
-
-	#[test]
-	#[should_panic = "called `Result::unwrap()` on an `Err` value: OneShotCancelled(Canceled)"]
-	fn should_panic_if_not_find_aura_key() {
-		let client = Arc::new(stability_test_runtime_client::new());
-		let spawner = sp_core::testing::TaskExecutor::new();
-		let txpool = BasicPool::new_full(
-			Default::default(),
-			true.into(),
-			None,
-			spawner.clone(),
-			client.clone(),
-		);
-		let genesis_header = client
-			.expect_header(BlockId::Hash(client.info().genesis_hash))
-			.expect("there should be header");
-
-		let extrinsics = vec![extrinsic_skipped(0), extrinsic_included(0)];
-
-		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, extrinsics)).unwrap();
-
-		block_on(txpool.maintain(chain_event(genesis_header.clone())));
-
-		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
-		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
-
-		let mut proposer_factory = ProposerFactory::new(
-			spawner.clone(),
-			client.clone(),
-			txpool.clone(),
-			keystore_container.sync_keystore(),
-			None,
-			None,
-			None,
-		);
-
-		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
-
-		let deadline = time::Duration::from_secs(300);
-
-		block_on(proposer.propose(Default::default(), Default::default(), deadline, None))
-			.map(|r| r.block)
-			.unwrap();
 	}
 }

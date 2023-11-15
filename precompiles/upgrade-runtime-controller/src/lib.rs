@@ -130,9 +130,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(target_new_owner))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
 		)
 		.record(handle)?;
 
@@ -162,9 +160,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(target_new_owner))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
 		)
 		.record(handle)?;
 
@@ -195,7 +191,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_SETTED__APPLICATION_BLOCK,
-			EvmDataWriter::new().write(block_number).build(),
+			solidity::encode_event_data(block_number),
 		)
 		.record(handle)?;
 
