@@ -35,7 +35,7 @@ impl From<UintAuthorityId> for MockSessionKeys {
 pub const KEY_ID_A: KeyTypeId = KeyTypeId([4; 4]);
 pub const KEY_ID_B: KeyTypeId = KeyTypeId([9; 4]);
 
-#[derive(Debug, Clone, codec::Encode, codec::Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, parity_scale_codec::Encode, parity_scale_codec::Decode, PartialEq, Eq)]
 pub struct PreUpgradeMockSessionKeys {
 	pub a: [u8; 32],
 	pub b: [u8; 64],

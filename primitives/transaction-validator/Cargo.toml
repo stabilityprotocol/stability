@@ -22,7 +22,7 @@ stbl-tools = { workspace = true }
 environmental = { workspace = true, optional = true }
 frame-support = { workspace = true }
 evm = { workspace = true, features = ["with-codec"] }
-codec = { workspace = true }
+parity-scale-codec = { workspace = true }
 scale-info = { workspace = true}
 frame-benchmarking = { workspace = true, optional = true }
 log = { workspace = true }
@@ -53,7 +53,7 @@ std = [
 	"evm/std",
 	"evm/with-serde",
 	"sp-core/std",
-    "codec/std",
+    "parity-scale-codec/std",
 	"scale-info/std",
 	"sp-io/std",
 	"pallet-evm/std",
