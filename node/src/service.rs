@@ -7,11 +7,9 @@ use futures::{channel::mpsc, prelude::*};
 use prometheus_endpoint::Registry;
 use sc_client_api::{BlockBackend, StateBackendFor};
 use sc_consensus::BasicQueue;
-use sc_executor::{NativeExecutionDispatch};
+use sc_executor::NativeExecutionDispatch;
 use sc_network_common::sync::warp::WarpSyncParams;
-use sc_service::{
-	error::Error as ServiceError, Configuration, PartialComponents, TaskManager,
-};
+use sc_service::{error::Error as ServiceError, Configuration, PartialComponents, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sp_api::{ConstructRuntimeApi, TransactionFor};
 use sp_runtime::traits::BlakeTwo256;
@@ -71,7 +69,7 @@ where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
 	RuntimeApi: Send + Sync + 'static,
 	RuntimeApi::RuntimeApi: BaseRuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>
-		+ EthCompatRuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
+	+ EthCompatRuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
 	Executor: NativeExecutionDispatch + 'static,
 	BIQ: FnOnce(
 		Arc<FullClient<RuntimeApi, Executor>>,
@@ -715,13 +713,7 @@ pub async fn build_full(
 	sealing: Option<Sealing>,
 	stability_config: StabilityConfiguration,
 ) -> Result<TaskManager, ServiceError> {
-	new_full::<stability_runtime::RuntimeApi, TemplateRuntimeExecutor>(
-		config,
-		eth_config,
-		sealing,
-		stability_config,
-	)
-	.await
+	new_full::<stability_runtime::RuntimeApi, TemplateRuntimeExecutor>(config, eth_config, sealing, stability_config).await
 }
 
 pub fn new_chain_ops(

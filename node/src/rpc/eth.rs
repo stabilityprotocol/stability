@@ -117,7 +117,7 @@ where
 {
 	use fc_rpc::{
 		Eth, EthApiServer, EthDevSigner, EthFilter, EthFilterApiServer, EthPubSub,
-		EthPubSubApiServer, EthSigner, Net, NetApiServer, Web3, Web3ApiServer,
+		EthPubSubApiServer, EthSigner, Net, NetApiServer, TxPoolApiServer, Web3, Web3ApiServer,
 	};
 
 	let EthDeps {
@@ -212,9 +212,11 @@ where
 		}
 
 		if let Some(trace_requester) = tracing_config.tracing_requesters.trace {
-			io.merge(Trace::new(client, trace_requester, 20).into_rpc())?;
+			io.merge(Trace::new(client.clone(), trace_requester, 20).into_rpc())?;
 		}
 	}
+	io.merge(Web3::new(client).into_rpc())?;
+	io.merge(tx_pool.into_rpc())?;
 
 	Ok(io)
 }
