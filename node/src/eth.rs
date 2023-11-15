@@ -47,6 +47,7 @@ pub enum EthApi {
 	Txpool,
 	Debug,
 	Trace,
+	None,
 }
 
 impl FromStr for EthApi {
@@ -57,6 +58,7 @@ impl FromStr for EthApi {
 			"txpool" => Self::Txpool,
 			"debug" => Self::Debug,
 			"trace" => Self::Trace,
+			"none" => Self::None,
 			_ => {
 				return Err(format!(
 					"`{}` is not recognized as a supported Ethereum Api",

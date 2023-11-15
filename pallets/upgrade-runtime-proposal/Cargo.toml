@@ -14,7 +14,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 scale-info = { workspace = true }
 syn = { workspace = true }
-codec = { workspace = true }
+parity-scale-codec = { workspace = true }
 stbl-tools = { workspace = true }
 log = { workspace = true }
 
@@ -33,7 +33,7 @@ std = [
     'sp-core/std',
     'sp-std/std',
     'sp-runtime/std',
-    'codec/std',
+    'parity-scale-codec/std',
     'log/std'
 ]
 try-runtime = ['frame-support/try-runtime']

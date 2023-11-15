@@ -11,7 +11,7 @@ sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 sp-staking = { workspace = true }
 log = { workspace = true }
-codec = { workspace = true }
+parity-scale-codec = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
@@ -29,7 +29,7 @@ serde = { version = '1.0.126',features = ['derive'] }
 default = ['std']
 runtime-benchmarks = ['frame-benchmarking']
 std = [
-    'codec/std',
+    'parity-scale-codec/std',
     'frame-benchmarking/std',
     'frame-support/std',
     'frame-system/std',
