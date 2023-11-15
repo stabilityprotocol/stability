@@ -65,7 +65,7 @@ Additionally, you can configure the following flags:
 
 - `--validator`: Assumes that you are a validator and begins validation if you are on the validators' list.
 - `--pruning archive`: Runs your node in archival mode. An archival node maintains a complete copy and allows queries on any historical chain state.
-- `--unsafe-rpc-external --rpc-cors all --unsafe-ws-external`: Use if your node will be accessed from a system external to your localhost.
+- `--unsafe-rpc-external --rpc-cors all`: Use if your node will be accessed from a system external to your localhost.
 - `--bootnodes`: A list of p2p nodes for Stability to join the network. What is known as bootnodes
 - `--base-path`: Specifies a custom base path for the data folder
 

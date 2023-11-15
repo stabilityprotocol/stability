@@ -13,7 +13,7 @@ pub mod pallet {
 	use core::marker::PhantomData;
 
 	use codec::MaxEncodedLen;
-	use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence};
+	use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence, Preservation, Provenance, Fortitude};
 	use frame_support::traits::{Imbalance, SameOrOther, TryDrop};
 	use frame_support::RuntimeDebug;
 	use frame_support::{
@@ -158,7 +158,7 @@ pub mod pallet {
 		}
 
 		fn free_balance(account: &T::AccountId) -> Self::Balance {
-			Self::total_balance(account)
+			<Self as Currency<T::AccountId>>::total_balance(account)
 		}
 
 		fn ensure_can_withdraw(
@@ -167,7 +167,7 @@ pub mod pallet {
 			_reasons: frame_support::traits::WithdrawReasons,
 			_new_balance: Self::Balance,
 		) -> Result<(), sp_runtime::DispatchError> {
-			if Self::total_balance(who) >= amount {
+			if <Self as Currency<T::AccountId>>::total_balance(who) >= amount {
 				Ok(())
 			} else {
 				Err(DispatchError::Other("Not enough balance"))
@@ -261,6 +261,10 @@ pub mod pallet {
 			<Self as Currency<T::AccountId>>::total_issuance()
 		}
 
+		fn total_balance(who: &T::AccountId) -> Self::Balance {
+			<Self as Currency<T::AccountId>>::total_balance(who)
+		}
+
 		/// The minimum balance any single account may have.
 		fn minimum_balance() -> Self::Balance {
 			<Self as Currency<T::AccountId>>::minimum_balance()
@@ -268,12 +272,12 @@ pub mod pallet {
 
 		/// Get the balance of `who`.
 		fn balance(who: &T::AccountId) -> Self::Balance {
-			Self::total_balance(who)
+			<Self as Currency<T::AccountId>>::total_balance(who)
 		}
 
 		/// Get the maximum amount that `who` can withdraw/transfer successfully.
-		fn reducible_balance(who: &T::AccountId, _keep_alive: bool) -> Self::Balance {
-			Self::total_balance(who)
+		fn reducible_balance(who: &T::AccountId, _preservation: Preservation, _force: Fortitude) -> Self::Balance {
+			<Self as Currency<T::AccountId>>::total_balance(who)
 		}
 
 		/// Returns `true` if the balance of `who` may be increased by `amount`.
@@ -284,7 +288,7 @@ pub mod pallet {
 		fn can_deposit(
 			_who: &T::AccountId,
 			_amount: Self::Balance,
-			_mint: bool,
+			_provenance: Provenance,
 		) -> DepositConsequence {
 			DepositConsequence::UnknownAsset
 		}
@@ -297,7 +301,7 @@ pub mod pallet {
 		) -> WithdrawConsequence<Self::Balance> {
 			Self::ensure_can_withdraw(_who, _amount, WithdrawReasons::all(), 0u128)
 				.map(|_| WithdrawConsequence::Success)
-				.unwrap_or(WithdrawConsequence::NoFunds)
+				.unwrap_or(WithdrawConsequence::BalanceLow)
 		}
 	}
 }

@@ -12,12 +12,7 @@ const COMPUTATION_BLOCK_TIME_RATIO: (u64, u64) = (2, 3); // 2 third parts of the
 const COMPUTATION_POWER_MULTIPLIER: u64 = 6; // 6 times more computation power than normal
 
 // how much weight for normal extrinsics could be processed in a block
-pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_ref_time(WEIGHT_REF_TIME_PER_MILLIS)
-	.mul(MILLISECS_PER_BLOCK)
-	.mul(COMPUTATION_POWER_MULTIPLIER)
-	.mul(COMPUTATION_BLOCK_TIME_RATIO.0)
-	.div(COMPUTATION_BLOCK_TIME_RATIO.1) // 8_000_000_000_000
-	.set_proof_size(u64::MAX);
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(WEIGHT_REF_TIME_PER_MILLIS * MILLISECS_PER_BLOCK * COMPUTATION_POWER_MULTIPLIER * COMPUTATION_BLOCK_TIME_RATIO.0 / COMPUTATION_BLOCK_TIME_RATIO.1, u64::MAX);
 
 // `.set_proof_size`, since migration to WeightV2, we have set the proof size weight for the maximum block.
 // https://github.com/paritytech/substrate/pull/12277

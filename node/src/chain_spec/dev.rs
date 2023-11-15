@@ -30,6 +30,7 @@ pub fn development_config(enable_manual_seal: Option<bool>) -> DevChainSpec {
 		None,
 		// Protocol ID
 		None,
+		// Fork id
 		None,
 		// Properties
 		None,

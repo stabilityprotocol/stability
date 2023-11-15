@@ -74,9 +74,9 @@ where
 		at: Option<<Block as BlockT>::Hash>,
 	) -> RpcResult<StabilityOutput<Vec<H160>>> {
 		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
+		let at = at.unwrap_or_else(|| self.client.info().best_hash);
 		let value = api
-			.get_supported_tokens(&at)
+			.get_supported_tokens(at)
 			.map_err(runtime_error_into_rpc_err);
 		Ok(StabilityOutput {
 			code: 200,
@@ -89,9 +89,9 @@ where
 		at: Option<<Block as BlockT>::Hash>,
 	) -> RpcResult<StabilityOutput<Vec<H160>>> {
 		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
+		let at = at.unwrap_or_else(|| self.client.info().best_hash);
 		let value = api
-			.get_validator_list(&at)
+			.get_validator_list(at)
 			.map_err(runtime_error_into_rpc_err);
 		Ok(StabilityOutput {
 			code: 200,
@@ -105,7 +105,7 @@ where
 		meta_trx_sponsor: H160,
 		meta_trx_sponsor_signature: Bytes,
 	) -> RpcResult<H256> {
-		let block_hash = BlockId::hash(self.client.info().best_hash);
+		let block_hash = self.client.info().best_hash;
 
 		let slice = &transaction.0[..];
 		if slice.is_empty() {
@@ -122,7 +122,7 @@ where
 			.client
 			.runtime_api()
 			.convert_sponsored_transaction(
-				&block_hash,
+				block_hash,
 				transaction.clone(),
 				meta_trx_sponsor,
 				meta_trx_sponsor_signature.to_vec(),
@@ -132,7 +132,7 @@ where
 		let transaction_hash = transaction.hash();
 
 		self.pool
-			.submit_one(&block_hash, TransactionSource::Local, extrinsic)
+			.submit_one(&BlockId::Hash(block_hash), TransactionSource::Local, extrinsic)
 			.map_ok(move |_| transaction_hash)
 			.map_err(|e| {
 				error::Error::Custom(format!("Unable to submit transaction: {:?}", e).into())

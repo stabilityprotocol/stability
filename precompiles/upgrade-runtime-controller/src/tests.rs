@@ -2,7 +2,7 @@ use crate::{mock::*, *};
 
 use precompile_utils::testing::*;
 use sha3::{Digest, Keccak256};
-use substrate_test_runtime_client::runtime::BlockNumber;
+use stability_test_runtime_client::runtime::BlockNumber;
 
 fn precompiles() -> Precompiles<Test> {
 	PrecompilesValue::get()
@@ -52,7 +52,7 @@ fn owner_correctly_init() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::owner {})
-			.execute_returns_encoded(Into::<H256>::into(DefaultOwner::get()));
+			.execute_returns(Into::<H256>::into(DefaultOwner::get()));
 	})
 }
 
@@ -73,28 +73,28 @@ fn transfer_ownership_set_target_if_owner_twice() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_some();
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
-			.execute_returns_encoded(Into::<H256>::into(new_owner));
+			.execute_returns(Into::<H256>::into(new_owner));
 
 		precompiles()
 			.prepare_test(
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(other_owner),
+					new_owner: solidity::codec::Address(other_owner),
 				},
 			)
 			.execute_some();
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
-			.execute_returns_encoded(Into::<H256>::into(other_owner));
+			.execute_returns(Into::<H256>::into(other_owner));
 	})
 }
 
@@ -108,7 +108,7 @@ fn fail_transfer_ownership_if_not_owner() {
 				new_owner,
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
@@ -135,7 +135,7 @@ fn claim_ownership_if_claimable() {
 				owner,
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_some();
@@ -145,21 +145,19 @@ fn claim_ownership_if_claimable() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_LOG_NEW_OWNER,
-				EvmDataWriter::new()
-					.write(Into::<H256>::into(new_owner))
-					.build(),
+				solidity::encode_event_data(Into::<H256>::into(new_owner))
 			))
 			.execute_some();
 
 		precompiles()
 			.prepare_test(new_owner, Precompile1, PCall::owner {})
-			.execute_returns_encoded(Into::<H256>::into(new_owner));
+			.execute_returns(Into::<H256>::into(new_owner));
 	});
 }
 
 #[test]
 fn test_set_block_application() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
     let mut ext = ExtBuilder::default().build();
 
     ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -167,7 +165,7 @@ fn test_set_block_application() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
             frame_system::RawOrigin::Root.into(),
-            substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+            stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
         ).unwrap();
 
 		let block_number = 100u32;
@@ -182,9 +180,7 @@ fn test_set_block_application() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_SETTED__APPLICATION_BLOCK,
-				EvmDataWriter::new()
-					.write(Into::<U256>::into(block_number))
-					.build(),
+				solidity::encode_event_data(Into::<U256>::into(block_number))
 			))
 			.execute_some();
 		
@@ -194,7 +190,7 @@ fn test_set_block_application() {
 
 #[test]
 fn test_fail_set_block_application_if_not_owner() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -202,7 +198,7 @@ fn test_fail_set_block_application_if_not_owner() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
 		).unwrap();
 
 		let block_number = 100u32;
@@ -220,7 +216,7 @@ fn test_fail_set_block_application_if_not_owner() {
 
 #[test]
 fn test_reject_proposed_code() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -228,7 +224,7 @@ fn test_reject_proposed_code() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
 		).unwrap();
 
 		precompiles()
@@ -250,7 +246,7 @@ fn test_reject_proposed_code() {
 
 #[test]
 fn test_fail_reject_proposed_code_if_not_owner() {
-	let executor = substrate_test_runtime_client::new_native_executor();
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -258,7 +254,7 @@ fn test_fail_reject_proposed_code_if_not_owner() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
 		).unwrap();
 
 		precompiles()

@@ -11,7 +11,7 @@ fi
 
 if [[ "$CHAIN_TARGET" == "dev" ]]; then
   echo "Starting dev chain"
-  START_COMMAND_DEV="./target/release/stability --base-path /tmp/node --dev --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --prometheus-external"
+  START_COMMAND_DEV="./target/release/stability --base-path /tmp/node --dev --unsafe-rpc-external --rpc-cors all --prometheus-external"
 
   if [ "$MODE" = "archive" ]; then
     START_COMMAND_DEV="$START_COMMAND_DEV --pruning archive"
@@ -36,7 +36,7 @@ if [ -n "$SEED" ]; then
   --key-type gran
 fi
 
-START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --unsafe-ws-external --prometheus-external --chain=$CHAIN_TARGET"
+START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --rpc-port 9933 --prometheus-external --chain=$CHAIN_TARGET"
 
 if [ "$MODE" = "archive" ]; then
   START_COMMAND="$START_COMMAND --pruning archive"

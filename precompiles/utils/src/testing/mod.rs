@@ -1,4 +1,4 @@
-// Copyright 2023 Stability Solutions.
+// Copyright 2019-2022 PureStake Inc.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -13,13 +13,20 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+
 pub mod account;
 pub mod execution;
 pub mod handle;
 pub mod modifier;
-pub mod solidity;
+mod solidity;
 
-pub use {account::*, execution::*, handle::*, modifier::*};
+pub use {
+	account::*,
+	execution::*,
+	handle::*,
+	modifier::*,
+	solidity::{check_precompile_implements_solidity_interfaces, compute_selector},
+};
 
 use fp_evm::Log;
 

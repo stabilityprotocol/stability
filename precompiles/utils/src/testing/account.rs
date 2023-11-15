@@ -1,4 +1,4 @@
-// Copyright 2023 Stability Solutions.
+// Copyright 2019-2022 PureStake Inc.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -13,6 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
 	pallet_evm::AddressMapping,
 	scale_info::TypeInfo,
@@ -115,14 +116,14 @@ macro_rules! mock_account {
 			}
 		}
 
-		impl From<$name> for H160 {
-			fn from(value: $name) -> H160 {
+		impl From<$name> for sp_core::H160 {
+			fn from(value: $name) -> sp_core::H160 {
 				MockAccount::from(value).into()
 			}
 		}
 
-		impl From<$name> for H256 {
-			fn from(value: $name) -> H256 {
+		impl From<$name> for sp_core::H256 {
+			fn from(value: $name) -> sp_core::H256 {
 				MockAccount::from(value).into()
 			}
 		}

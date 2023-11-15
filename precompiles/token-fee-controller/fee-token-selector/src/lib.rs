@@ -65,13 +65,13 @@ where
 		let msg_sender = handle.context().caller;
 
 		if token_address == H160::zero().into() {
-			return Err(revert(b"UserFeeTokenController: zero address is invalid"));
+			return Err(revert("UserFeeTokenController: zero address is invalid"));
 		}
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
 		match UserFeeTokenController::set_user_fee_token(msg_sender.into(), token_address.into()) {
 			Err(_) => {
-				return Err(revert(b"UserFeeTokenController: token not supported"));
+				return Err(revert("UserFeeTokenController: token not supported"));
 			}
 			_ => {}
 		};
@@ -81,9 +81,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_FEE_CHANGED,
 			msg_sender,
-			EvmDataWriter::new()
-				.write::<H256>(Into::<H160>::into(token_address).into())
-				.build(),
+			solidity::encode_event_data(token_address)
 		)
 		.record(handle)?;
 
