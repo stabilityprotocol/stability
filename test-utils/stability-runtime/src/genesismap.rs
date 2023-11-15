@@ -20,7 +20,7 @@
 use super::{
 	currency, substrate_test_pallet, wasm_binary_unwrap, AccountId, Balance, GenesisConfig,
 };
-use codec::Encode;
+use parity_scale_codec::Encode;
 use sc_service::construct_genesis_block;
 use sp_core::{
 	sr25519,
