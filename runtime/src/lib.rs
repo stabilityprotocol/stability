@@ -12,7 +12,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use account::AccountId20;
 use account::EthereumSigner;
-use codec::{Decode, Encode};
+use parity_scale_codec::{Decode, Encode};
 use core::str::FromStr;
 use frame_support::pallet_prelude::EnsureOrigin;
 use frame_support::pallet_prelude::InvalidTransaction;
@@ -66,6 +66,7 @@ use pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTra
 use pallet_evm::{Account as EVMAccount, FeeCalculator, GasWeightMapping, Runner};
 use pallet_sponsored_transactions::Call::send_sponsored_transaction;
 use pallet_validator_set::SessionBlockManager;
+extern crate moonbeam_rpc_primitives_txpool;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime,
@@ -1273,6 +1274,94 @@ impl_runtime_apis! {
 				pallet_ethereum::CurrentBlock::<Runtime>::get(),
 				pallet_ethereum::CurrentTransactionStatuses::<Runtime>::get()
 			)
+		}
+	}
+
+	impl moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block> for Runtime {
+		fn trace_transaction(
+			extrinsics: Vec<<Block as BlockT>::Extrinsic>,
+			traced_transaction: &pallet_ethereum::Transaction,
+		) -> Result<
+			(),
+			sp_runtime::DispatchError,
+		> {
+			use moonbeam_evm_tracer::tracer::EvmTracer;
+
+			// Apply the a subset of extrinsics: all the substrate-specific or ethereum
+			// transactions that preceded the requested transaction.
+			for ext in extrinsics.into_iter() {
+				let _ = match &ext.0.function {
+					RuntimeCall::Ethereum(pallet_ethereum::Call::transact { transaction }) => {
+						if transaction == traced_transaction {
+							EvmTracer::new().trace(|| Executive::apply_extrinsic(ext));
+							return Ok(());
+						} else {
+							Executive::apply_extrinsic(ext)
+						}
+					}
+					_ => Executive::apply_extrinsic(ext),
+				};
+			}
+			Err(sp_runtime::DispatchError::Other(
+				"Failed to find Ethereum transaction among the extrinsics.",
+			))
+		}
+
+		fn trace_block(
+			extrinsics: Vec<<Block as BlockT>::Extrinsic>,
+			known_transactions: Vec<H256>,
+		) -> Result<
+			(),
+			sp_runtime::DispatchError,
+		> {
+			use moonbeam_evm_tracer::tracer::EvmTracer;
+
+			let mut config = <Runtime as pallet_evm::Config>::config().clone();
+			config.estimate = true;
+
+			// Apply all extrinsics. Ethereum extrinsics are traced.
+			for ext in extrinsics.into_iter() {
+				match &ext.0.function {
+					RuntimeCall::Ethereum(pallet_ethereum::Call::transact { transaction }) => {
+						if known_transactions.contains(&transaction.hash()) {
+							// Each known extrinsic is a new call stack.
+							EvmTracer::emit_new();
+							EvmTracer::new().trace(|| Executive::apply_extrinsic(ext));
+						} else {
+							let _ = Executive::apply_extrinsic(ext);
+						}
+					}
+					_ => {
+						let _ = Executive::apply_extrinsic(ext);
+					}
+				};
+			}
+
+			Ok(())
+		}
+	}
+
+	impl moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block> for Runtime {
+		fn extrinsic_filter(
+			xts_ready: Vec<<Block as BlockT>::Extrinsic>,
+			xts_future: Vec<<Block as BlockT>::Extrinsic>,
+		) -> moonbeam_rpc_primitives_txpool::TxPoolResponse {
+			moonbeam_rpc_primitives_txpool::TxPoolResponse {
+				ready: xts_ready
+					.into_iter()
+					.filter_map(|xt| match xt.0.function {
+						RuntimeCall::Ethereum(pallet_ethereum::Call::transact { transaction }) => Some(transaction),
+						_ => None,
+					})
+					.collect(),
+				future: xts_future
+					.into_iter()
+					.filter_map(|xt| match xt.0.function {
+						RuntimeCall::Ethereum(pallet_ethereum::Call::transact { transaction }) => Some(transaction),
+						_ => None,
+					})
+					.collect(),
+			}
 		}
 	}
 

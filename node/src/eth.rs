@@ -13,6 +13,7 @@ use sc_network_sync::SyncingService;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sp_api::ConstructRuntimeApi;
 use sp_runtime::traits::BlakeTwo256;
+use core::str::FromStr;
 // Frontier
 pub use fc_consensus::FrontierBlockImport;
 
@@ -38,6 +39,34 @@ pub enum BackendType {
 	KeyValue,
 	/// Sql database with custom log indexing.
 	Sql,
+}
+
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum EthApi {
+	Txpool,
+	Debug,
+	Trace,
+	None,
+}
+
+impl FromStr for EthApi {
+	type Err = String;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		Ok(match s {
+			"txpool" => Self::Txpool,
+			"debug" => Self::Debug,
+			"trace" => Self::Trace,
+			"none" => Self::None,
+			_ => {
+				return Err(format!(
+					"`{}` is not recognized as a supported Ethereum Api",
+					s
+				))
+			}
+		})
+	}
 }
 
 /// The ethereum-compatibility configuration used to run a node.
@@ -88,6 +117,28 @@ pub struct EthConfiguration {
 	/// Default value is 200MB.
 	#[arg(long, default_value = "209715200")]
 	pub frontier_sql_backend_cache_size: u64,
+
+	/// Sets the maximum permits
+	#[arg(long, default_value = "10")]
+	pub ethapi_max_permits: u64,
+
+	/// Sets the maximum permits
+	#[arg(long, default_value = "500")]
+	pub trace_filter_max_count: u32,
+
+	/// Size in bytes of data a raw tracing request is allowed to use.
+	/// Bound the size of memory, stack and storage data.
+	#[arg(long, default_value = "20000000")]
+	pub tracing_raw_max_memory_usage: usize,
+
+	/// Duration (in seconds) after which the cache of `trace_filter` for a given block will be
+	/// discarded.
+	#[arg(long, default_value = "300")]
+	pub ethapi_trace_cache_duration: u64,
+
+	#[arg(long, value_delimiter = ',', default_value = "none")]
+	pub ethapi: Vec<EthApi>,
+
 }
 
 pub struct FrontierPartialComponents {

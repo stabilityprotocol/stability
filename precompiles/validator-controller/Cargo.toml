@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 # Substrate
 sp-core = { workspace = true }
-codec = { workspace = true, package = "parity-scale-codec" }
+parity-scale-codec = { workspace = true }
 frame-system = { workspace = true }
 frame-support = { workspace = true }
 sp-std = { workspace = true }

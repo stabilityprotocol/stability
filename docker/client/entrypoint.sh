@@ -54,6 +54,12 @@ if [ -n "$ZERO_GAS_TX_POOL" ]; then
   START_COMMAND="$START_COMMAND --zero-gas-tx-pool $ZERO_GAS_TX_POOL"
 fi
 
+if [ -n "$CUSTOM_ETH_APIS" ]; then
+    START_COMMAND="$START_COMMAND --ethapi=$CUSTOM_ETH_APIS"
+else
+    START_COMMAND="$START_COMMAND --ethapi=txpool,debug,trace"
+fi
+
 echo "Starting $CHAIN_TARGET chain"
 eval $START_COMMAND
 

@@ -21,8 +21,12 @@ use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 // Runtime
 use stability_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
 
+mod tracing;
+pub use self::tracing::*;
+
 mod eth;
-pub use self::eth::{create_eth, overrides_handle, EthDeps};
+pub use self::eth::{create_eth, overrides_handle, EthDeps, };
+use crate::service::EthConfiguration;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P, A: ChainApi, CT> {
@@ -49,9 +53,14 @@ where
 	type RuntimeStorageOverride =
 		fc_rpc::frontier_backend_client::SystemAccountId20StorageOverride<Block, C, BE>;
 }
+pub struct TracingConfig {
+	pub tracing_requesters: RpcRequesters,
+	pub trace_filter_max_count: u32,
+}
 
 /// Instantiate all Full RPC extensions.
 pub fn create_full<C, P, BE, A, CT>(
+	eth_config: &EthConfiguration,
 	deps: FullDeps<C, P, A, CT>,
 	subscription_task_executor: SubscriptionTaskExecutor,
 	pubsub_notification_sinks: Arc<
@@ -59,6 +68,7 @@ pub fn create_full<C, P, BE, A, CT>(
 			fc_mapping_sync::EthereumBlockNotification<Block>,
 		>,
 	>,
+	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
 	C: CallApiAt<Block> + ProvideRuntimeApi<Block>,
@@ -74,6 +84,7 @@ where
 		+ HeaderMetadata<Block, Error = BlockChainError>
 		+ StorageProvider<Block, BE>,
 	BE: Backend<Block> + 'static,
+	C::Api: moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>,
 	P: TransactionPool<Block = Block> + 'static,
 	A: ChainApi<Block = Block> + 'static,
 	CT: fp_rpc::ConvertTransaction<<Block as BlockT>::Extrinsic> + Send + Sync + 'static,
@@ -110,6 +121,8 @@ where
 		eth,
 		subscription_task_executor,
 		pubsub_notification_sinks,
+		eth_config,
+		optional_tracing_config,
 	)?;
 
 	Ok(io)

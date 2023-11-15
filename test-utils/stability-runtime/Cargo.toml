@@ -17,7 +17,7 @@ sp-consensus-aura = { workspace = true }
 sp-consensus-babe = { workspace = true }
 sp-consensus-beefy = { workspace = true }
 sp-block-builder = { workspace = true }
-codec = { package = "parity-scale-codec", default-features = false, features = ["derive"], workspace = true }
+parity-scale-codec = { default-features = false, features = ["derive"], workspace = true }
 scale-info = { workspace = true }
 sp-inherents = { workspace = true }
 sp-keyring = { workspace = true, optional = true }
@@ -79,7 +79,7 @@ std = [
 	"sp-consensus-babe/std",
 	"sp-consensus-beefy/std",
 	"sp-block-builder/std",
-	"codec/std",
+	"parity-scale-codec/std",
 	"scale-info/std",
 	"sp-inherents/std",
 	"sp-keyring",

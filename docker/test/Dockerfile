@@ -21,6 +21,7 @@ COPY primitives ./primitives
 COPY test-utils ./test-utils
 COPY client ./client
 COPY stability-rpc ./stability-rpc
+COPY vendor ./vendor
 COPY Cargo.lock Cargo.toml rust-toolchain.toml ./
 
 RUN cargo build --release --tests

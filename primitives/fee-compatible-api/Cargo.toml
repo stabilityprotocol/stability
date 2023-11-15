@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 sp-runtime = { workspace = true}
 sp-api = { workspace = true}
-codec = { workspace = true, package = "parity-scale-codec" }
+codec = { workspace = true }
 
 [features]
 default = ['std']

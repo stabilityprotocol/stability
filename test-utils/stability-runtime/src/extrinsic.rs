@@ -21,7 +21,7 @@ use crate::{
 	substrate_test_pallet::pallet::Call as PalletCall, AccountId, Balance, BalancesCall,
 	CheckSubstrateCall, Extrinsic, Index, Pair, RuntimeCall, SignedPayload, TransferData,
 };
-use codec::Encode;
+use parity_scale_codec::Encode;
 use frame_system::{CheckNonce, CheckWeight};
 use sp_core::crypto::Pair as TraitPair;
 use sp_keyring::AccountKeyring;

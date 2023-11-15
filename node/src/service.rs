@@ -26,6 +26,7 @@ use crate::{
 		new_frontier_partial, spawn_frontier_tasks, BackendType, EthCompatRuntimeApiCollection,
 		FrontierBackend, FrontierBlockImport, FrontierPartialComponents,
 	},
+	rpc::TracingConfig,
 };
 pub use crate::{
 	client::{Client, TemplateRuntimeExecutor},
@@ -295,7 +296,6 @@ where
 		build_aura_grandpa_import_queue::<RuntimeApi, Executor>
 	};
 
-
 	let PartialComponents {
 		client,
 		backend,
@@ -407,10 +407,24 @@ where
 		forced_parent_hashes: None,
 	};
 
+	let tracing_requesters = crate::rpc::spawn_tracing_tasks(
+		&eth_config.clone(),
+		&task_manager,
+		client.clone(),
+		backend.clone(),
+		match frontier_backend.clone() {
+			fc_db::Backend::KeyValue(b) => Arc::new(b),
+			fc_db::Backend::Sql(b) => Arc::new(b),
+		},
+		eth_rpc_params.overrides.clone(),
+		prometheus_registry.clone()
+	);
+
 	let rpc_builder = {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
 		let pubsub_notification_sinks = pubsub_notification_sinks.clone();
+		let tracing_requesters = tracing_requesters.clone();
 
 		Box::new(move |deny_unsafe, subscription_task_executor| {
 			let deps = crate::rpc::FullDeps {
@@ -426,9 +440,14 @@ where
 			};
 
 			crate::rpc::create_full(
+				&eth_config.clone(),
 				deps,
 				subscription_task_executor,
 				pubsub_notification_sinks.clone(),
+				Some(TracingConfig {
+					tracing_requesters: tracing_requesters.clone(),
+					trace_filter_max_count: eth_config.trace_filter_max_count,
+				}),
 			)
 			.map_err(Into::into)
 		})
@@ -452,7 +471,7 @@ where
 	spawn_frontier_tasks(
 		&task_manager,
 		client.clone(),
-		backend,
+		backend.clone(),
 		frontier_backend,
 		filter_pool,
 		overrides,

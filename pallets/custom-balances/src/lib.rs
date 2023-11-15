@@ -12,7 +12,7 @@ pub mod pallet {
 
 	use core::marker::PhantomData;
 
-	use codec::MaxEncodedLen;
+	use parity_scale_codec::MaxEncodedLen;
 	use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence, Preservation, Provenance, Fortitude};
 	use frame_support::traits::{Imbalance, SameOrOther, TryDrop};
 	use frame_support::RuntimeDebug;

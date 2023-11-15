@@ -25,7 +25,7 @@ pub mod extrinsic;
 pub mod genesismap;
 pub mod substrate_test_pallet;
 
-use codec::{Decode, Encode};
+use parity_scale_codec::{Decode, Encode};
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
@@ -1003,7 +1003,7 @@ pub mod storage_key_generator {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use codec::Encode;
+	use parity_scale_codec::Encode;
 	use frame_support::dispatch::DispatchInfo;
 	use sc_block_builder::BlockBuilderProvider;
 	use sp_api::ProvideRuntimeApi;
