@@ -37,6 +37,14 @@ Gas Limit = NORMAL_DISPATCH_RATIO * MBW / WEIGHT_PER_GAS
 Gas Limit = 0.75 * 8_000_000_000_000 / 20_000 = 300_000_000
 ```
 
+## Transactions
+
+This section provides an overview of two key parameters in our blockchain: the Transaction Gas Limit and the Gas Price.
+
+- Transaction Gas Limit: `260_000_000` gas units. This is the maximum amount of gas that a transaction can consume. This is a hard limit and cannot be changed. This limit is set to prevent DoS attacks on the network to avoid having transactions that fill the block and prevent other transactions from being included.
+- Gas Price: Fixed to `1 gwei`. This limit can be changed by the users to get their transactions mined faster or slower. This Gas Price is not definitive due to features of the blockchain like the Decentralized Native Token and the Conversion Ratios. For further info, check [DNT](./DECENTRALIZED-NATIVE-TOKEN.md) and [BSR](./BUSINESS-SHARE-REVENUE.md).
+  - When the Gas Price is set to 0 then the transaction is not paying fees and it is not included in the block. The only way to make this work is through the [Zero Gas Transaction](./ZERO-GAS-TRANSACTIONS.md) flow.
+
 ## Links
 
 - https://substrate.dev/
