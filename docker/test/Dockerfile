@@ -24,3 +24,5 @@ COPY stability-rpc ./stability-rpc
 COPY Cargo.lock Cargo.toml rust-toolchain.toml ./
 
 RUN cargo build --release --tests
+
+CMD [ "cargo", "test", "--release", "--verbose" ]
