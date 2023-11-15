@@ -136,7 +136,7 @@ pub struct EthConfiguration {
 	#[arg(long, default_value = "300")]
 	pub ethapi_trace_cache_duration: u64,
 
-	#[arg(long, value_delimiter = ',', default_value = "debug,trace")]
+	#[arg(long, value_delimiter = ',', default_value = "none")]
 	pub ethapi: Vec<EthApi>,
 
 }

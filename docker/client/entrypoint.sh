@@ -36,7 +36,7 @@ if [ -n "$SEED" ]; then
   --key-type gran
 fi
 
-START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --rpc-port 9933 --prometheus-external --chain=$CHAIN_TARGET"
+START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --rpc-port 9933 --prometheus-external --ethapi  --chain=$CHAIN_TARGET"
 
 if [ "$MODE" = "archive" ]; then
   START_COMMAND="$START_COMMAND --pruning archive"
@@ -52,6 +52,12 @@ fi
 
 if [ -n "$ZERO_GAS_TX_POOL" ]; then
   START_COMMAND="$START_COMMAND --zero-gas-tx-pool $ZERO_GAS_TX_POOL"
+fi
+
+if [ -n "$CUSTOM_ETH_APIS" ]; then
+    START_COMMAND="$START_COMMAND $CUSTOM_ETH_APIS"
+else
+    START_COMMAND="$START_COMMAND txpool,debug,trace"
 fi
 
 echo "Starting $CHAIN_TARGET chain"
