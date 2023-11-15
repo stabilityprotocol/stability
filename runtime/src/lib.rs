@@ -12,7 +12,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use account::AccountId20;
 use account::EthereumSigner;
-use codec::{Decode, Encode};
+use parity_scale_codec::{Decode, Encode};
 use core::str::FromStr;
 use frame_support::pallet_prelude::EnsureOrigin;
 use frame_support::pallet_prelude::InvalidTransaction;
