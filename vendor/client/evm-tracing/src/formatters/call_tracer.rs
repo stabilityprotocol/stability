@@ -208,9 +208,7 @@ impl super::ResponseFormatter for Formatter {
 									}),
 								) => {
 									&b[..]
-										== a.get(0..a.len() - 1).expect(
-											"non-root element while traversing trace result",
-										)
+										== &a[..]
 								}
 								_ => unreachable!(),
 							}) {
