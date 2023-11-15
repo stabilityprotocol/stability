@@ -25,7 +25,8 @@ mod tracing;
 pub use self::tracing::*;
 
 mod eth;
-pub use self::eth::{create_eth, overrides_handle, EthDeps};
+pub use self::eth::{create_eth, overrides_handle, EthDeps, };
+use crate::service::EthConfiguration;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P, A: ChainApi, CT> {
@@ -59,6 +60,7 @@ pub struct TracingConfig {
 
 /// Instantiate all Full RPC extensions.
 pub fn create_full<C, P, BE, A, CT>(
+	eth_config: &EthConfiguration,
 	deps: FullDeps<C, P, A, CT>,
 	subscription_task_executor: SubscriptionTaskExecutor,
 	pubsub_notification_sinks: Arc<
@@ -119,6 +121,7 @@ where
 		eth,
 		subscription_task_executor,
 		pubsub_notification_sinks,
+		eth_config,
 		optional_tracing_config,
 	)?;
 

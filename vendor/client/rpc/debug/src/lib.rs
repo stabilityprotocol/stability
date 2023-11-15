@@ -148,7 +148,7 @@ where
 		raw_max_memory_usage: usize,
 	) -> (impl Future<Output = ()>, DebugRequester) {
 		let (tx, mut rx): (DebugRequester, _) =
-			sc_utils::mpsc::tracing_unbounded("debug-requester");
+			sc_utils::mpsc::tracing_unbounded("debug-requester", 1000);
 
 		let fut = async move {
 			loop {

@@ -24,6 +24,7 @@ pub use fc_rpc::{EthBlockDataCacheTask, EthConfig, OverrideHandle, StorageOverri
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 pub use fc_storage::overrides_handle;
 use fp_rpc::{ConvertTransaction, ConvertTransactionRuntimeApi, EthereumRuntimeRPCApi};
+use crate::eth::{EthApi, EthConfiguration};
 
 use super::TracingConfig;
 
@@ -100,6 +101,7 @@ pub fn create_eth<C, BE, P, A, CT, B, EC: EthConfig<B, C>>(
 			fc_mapping_sync::EthereumBlockNotification<B>,
 		>,
 	>,
+	eth_config: &EthConfiguration,
 	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
@@ -215,7 +217,10 @@ where
 			io.merge(Trace::new(client.clone(), trace_requester, 20).into_rpc())?;
 		}
 	}
-	io.merge(tx_pool.into_rpc())?;
+
+	if eth_config.ethapi.contains(&EthApi::Txpool) {
+		io.merge(tx_pool.into_rpc())?;
+	}
 
 	Ok(io)
 }

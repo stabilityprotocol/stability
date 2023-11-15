@@ -440,6 +440,7 @@ where
 			};
 
 			crate::rpc::create_full(
+				&eth_config.clone(),
 				deps,
 				subscription_task_executor,
 				pubsub_notification_sinks.clone(),
