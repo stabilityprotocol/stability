@@ -18,20 +18,20 @@ use std::time::Duration;
 
 use super::*;
 
-use fc_db::Backend as BackendT;
 use fc_rpc::OverrideHandle;
 use fp_rpc::EthereumRuntimeRPCApi;
 use moonbeam_rpc_debug::{DebugHandler, DebugRequester};
 use moonbeam_rpc_trace::{CacheRequester as TraceFilterCacheRequester, CacheTask};
 use sc_client_api::BlockOf;
 use sc_service::TaskManager;
-use sp_core::{traits::SpawnEssentialNamed, H256};
+use sp_core::{H256};
 use sp_runtime::traits::Header as HeaderT;
 use tokio::sync::Semaphore;
 use sp_runtime::traits::BlakeTwo256;
 use sc_client_api::StateBackend;
 use sp_block_builder::BlockBuilder;
 use fc_db::BackendReader;
+use crate::eth::{EthConfiguration, EthApi};
 
 #[derive(Clone)]
 pub struct RpcRequesters {
@@ -41,6 +41,7 @@ pub struct RpcRequesters {
 
 // Spawn the tasks that are required to run a Moonbeam tracing node.
 pub fn spawn_tracing_tasks<B, C, BE>(
+	eth_config: &EthConfiguration,
 	task_manager: &TaskManager,
 	client: Arc<C>,
 	backend: Arc<BE>,
@@ -60,19 +61,14 @@ where
 	B::Header: HeaderT<Number = u32>,
 	BE: Backend<B> + 'static,
 	BE::State: StateBackend<BlakeTwo256>,
-{
-	let ethapi_max_permits = 1000;
-	let trace_enabled = true;
-	let debug_enabled = true;
-	let permit_pool = Arc::new(Semaphore::new(ethapi_max_permits as usize));
-	let tracing_raw_max_memory_usage = 1024 * 1024;
-	let ethapi_trace_cache_duration = 3600;
+{	
+	let permit_pool = Arc::new(Semaphore::new(eth_config.ethapi_max_permits as usize));
 
-	let (trace_filter_task, trace_filter_requester) = if trace_enabled {
+	let (trace_filter_task, trace_filter_requester) = if eth_config.ethapi.contains(&EthApi::Trace) {
 		let (trace_filter_task, trace_filter_requester) = CacheTask::create(
 			Arc::clone(&client),
 			Arc::clone(&backend),
-			Duration::from_secs(ethapi_trace_cache_duration),
+			Duration::from_secs(eth_config.ethapi_trace_cache_duration),
 			Arc::clone(&permit_pool),
 			Arc::clone(&overrides),
 			prometheus_registry.clone()
@@ -82,14 +78,14 @@ where
 		(None, None)
 	};
 
-	let (debug_task, debug_requester) = if debug_enabled {
+	let (debug_task, debug_requester) = if eth_config.ethapi.contains(&EthApi::Debug) {
 		let (debug_task, debug_requester) = DebugHandler::task(
 			Arc::clone(&client),
 			Arc::clone(&backend),
 			Arc::clone(&frontier_backend),
 			Arc::clone(&permit_pool),
 			Arc::clone(&overrides),
-			tracing_raw_max_memory_usage,
+			eth_config.tracing_raw_max_memory_usage,
 		);
 		(Some(debug_task), Some(debug_requester))
 	} else {

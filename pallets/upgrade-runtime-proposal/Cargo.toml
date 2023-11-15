@@ -14,7 +14,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 scale-info = { workspace = true }
 syn = { workspace = true }
-codec = { workspace = true, package = "parity-scale-codec" }
+codec = { workspace = true }
 stbl-tools = { workspace = true }
 log = { workspace = true }
 

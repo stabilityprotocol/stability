@@ -87,8 +87,6 @@ where
 	A: ChainApi<Block = Block> + 'static,
 	CT: fp_rpc::ConvertTransaction<<Block as BlockT>::Extrinsic> + Send + Sync + 'static,
 {
-	use moonbeam_rpc_debug::*;
-	use moonbeam_rpc_trace::*;
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 	use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApiServer};
 	use stability_rpc::{StabilityRpc, StabilityRpcEndpointsServer};

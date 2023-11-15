@@ -19,7 +19,7 @@
 // FIXME #1021 move this into sp-consensus
 
 use account::EthereumSigner;
-use codec::Encode;
+use parity_scale_codec::Encode;
 use futures::{
 	channel::oneshot,
 	future,

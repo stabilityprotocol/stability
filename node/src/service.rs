@@ -2,24 +2,21 @@
 
 use std::{cell::RefCell, path::Path, sync::Arc, time::Duration};
 
-use fc_rpc::OverrideHandle;
 use futures::{channel::mpsc, prelude::*};
 // Substrate
 use prometheus_endpoint::Registry;
 use sc_client_api::{BlockBackend, StateBackendFor};
 use sc_consensus::BasicQueue;
-use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
+use sc_executor::{NativeExecutionDispatch};
 use sc_network_common::sync::warp::WarpSyncParams;
 use sc_service::{
-	error::Error as ServiceError, Configuration, PartialComponents, SpawnTaskHandle, TaskManager,
+	error::Error as ServiceError, Configuration, PartialComponents, TaskManager,
 };
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sp_api::{ConstructRuntimeApi, TransactionFor};
-use sp_core::traits::SpawnEssentialNamed;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
 use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
-use tokio::sync::Semaphore;
 // Runtime
 use sc_service::KeystoreContainer;
 use stability_runtime::{opaque::Block, Hash, TransactionConverter};
@@ -413,6 +410,7 @@ where
 	};
 
 	let tracing_requesters = crate::rpc::spawn_tracing_tasks(
+		&eth_config.clone(),
 		&task_manager,
 		client.clone(),
 		backend.clone(),
@@ -449,7 +447,7 @@ where
 				pubsub_notification_sinks.clone(),
 				Some(TracingConfig {
 					tracing_requesters: tracing_requesters.clone(),
-					trace_filter_max_count: 2000u32,
+					trace_filter_max_count: eth_config.trace_filter_max_count,
 				}),
 			)
 			.map_err(Into::into)
