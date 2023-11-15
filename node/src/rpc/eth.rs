@@ -1,6 +1,8 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use jsonrpsee::RpcModule;
+use moonbeam_rpc_debug::{Debug, DebugServer};
+use moonbeam_rpc_trace::{Trace, TraceServer};
 // Substrate
 use sc_client_api::{
 	backend::{Backend, StorageProvider},
@@ -16,11 +18,14 @@ use sp_block_builder::BlockBuilder as BlockBuilderApi;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_core::H256;
 use sp_runtime::traits::Block as BlockT;
+use sp_runtime::traits::Header as HeaderT;
 // Frontier
 pub use fc_rpc::{EthBlockDataCacheTask, EthConfig, OverrideHandle, StorageOverride, TxPool};
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 pub use fc_storage::overrides_handle;
 use fp_rpc::{ConvertTransaction, ConvertTransactionRuntimeApi, EthereumRuntimeRPCApi};
+
+use super::TracingConfig;
 
 /// Extra dependencies for Ethereum compatibility.
 pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
@@ -95,9 +100,11 @@ pub fn create_eth<C, BE, P, A, CT, B, EC: EthConfig<B, C>>(
 			fc_mapping_sync::EthereumBlockNotification<B>,
 		>,
 	>,
+	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
 	B: BlockT<Hash = sp_core::H256>,
+	B::Header: HeaderT<Number = u32>,
 	C: CallApiAt<B> + ProvideRuntimeApi<B>,
 	C::Api: BlockBuilderApi<B> + ConvertTransactionRuntimeApi<B> + EthereumRuntimeRPCApi<B>,
 	C: BlockchainEvents<B> + 'static,
@@ -196,8 +203,17 @@ where
 		.into_rpc(),
 	)?;
 
-	io.merge(Web3::new(client).into_rpc())?;
-	io.merge(tx_pool.into_rpc())?;
+	io.merge(Web3::new(client.clone()).into_rpc())?;
+
+	if let Some(tracing_config) = optional_tracing_config {
+		if let Some(debug_requester) = tracing_config.tracing_requesters.debug {
+			io.merge(Debug::new(debug_requester).into_rpc())?;
+		}
+
+		if let Some(trace_requester) = tracing_config.tracing_requesters.trace {
+			io.merge(Trace::new(client, trace_requester, 20).into_rpc())?;
+		}
+	}
 
 	Ok(io)
 }

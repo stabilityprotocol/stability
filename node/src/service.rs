@@ -2,19 +2,24 @@
 
 use std::{cell::RefCell, path::Path, sync::Arc, time::Duration};
 
+use fc_rpc::OverrideHandle;
 use futures::{channel::mpsc, prelude::*};
 // Substrate
 use prometheus_endpoint::Registry;
 use sc_client_api::{BlockBackend, StateBackendFor};
 use sc_consensus::BasicQueue;
-use sc_executor::NativeExecutionDispatch;
+use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
 use sc_network_common::sync::warp::WarpSyncParams;
-use sc_service::{error::Error as ServiceError, Configuration, PartialComponents, TaskManager};
+use sc_service::{
+	error::Error as ServiceError, Configuration, PartialComponents, SpawnTaskHandle, TaskManager,
+};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sp_api::{ConstructRuntimeApi, TransactionFor};
+use sp_core::traits::SpawnEssentialNamed;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
 use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
+use tokio::sync::Semaphore;
 // Runtime
 use sc_service::KeystoreContainer;
 use stability_runtime::{opaque::Block, Hash, TransactionConverter};
@@ -26,6 +31,7 @@ use crate::{
 		new_frontier_partial, spawn_frontier_tasks, BackendType, EthCompatRuntimeApiCollection,
 		FrontierBackend, FrontierBlockImport, FrontierPartialComponents,
 	},
+	rpc::TracingConfig,
 };
 pub use crate::{
 	client::{Client, TemplateRuntimeExecutor},
@@ -68,7 +74,7 @@ where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
 	RuntimeApi: Send + Sync + 'static,
 	RuntimeApi::RuntimeApi: BaseRuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>
-	+ EthCompatRuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
+		+ EthCompatRuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
 	Executor: NativeExecutionDispatch + 'static,
 	BIQ: FnOnce(
 		Arc<FullClient<RuntimeApi, Executor>>,
@@ -295,7 +301,6 @@ where
 		build_aura_grandpa_import_queue::<RuntimeApi, Executor>
 	};
 
-
 	let PartialComponents {
 		client,
 		backend,
@@ -407,10 +412,23 @@ where
 		forced_parent_hashes: None,
 	};
 
+	let tracing_requesters = crate::rpc::spawn_tracing_tasks(
+		&task_manager,
+		client.clone(),
+		backend.clone(),
+		match frontier_backend.clone() {
+			fc_db::Backend::KeyValue(b) => Arc::new(b),
+			fc_db::Backend::Sql(b) => Arc::new(b),
+		},
+		eth_rpc_params.overrides.clone(),
+		prometheus_registry.clone()
+	);
+
 	let rpc_builder = {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
 		let pubsub_notification_sinks = pubsub_notification_sinks.clone();
+		let tracing_requesters = tracing_requesters.clone();
 
 		Box::new(move |deny_unsafe, subscription_task_executor| {
 			let deps = crate::rpc::FullDeps {
@@ -429,6 +447,10 @@ where
 				deps,
 				subscription_task_executor,
 				pubsub_notification_sinks.clone(),
+				Some(TracingConfig {
+					tracing_requesters: tracing_requesters.clone(),
+					trace_filter_max_count: 2000u32,
+				}),
 			)
 			.map_err(Into::into)
 		})
@@ -452,7 +474,7 @@ where
 	spawn_frontier_tasks(
 		&task_manager,
 		client.clone(),
-		backend,
+		backend.clone(),
 		frontier_backend,
 		filter_pool,
 		overrides,
@@ -695,7 +717,13 @@ pub async fn build_full(
 	sealing: Option<Sealing>,
 	stability_config: StabilityConfiguration,
 ) -> Result<TaskManager, ServiceError> {
-	new_full::<stability_runtime::RuntimeApi, TemplateRuntimeExecutor>(config, eth_config, sealing, stability_config).await
+	new_full::<stability_runtime::RuntimeApi, TemplateRuntimeExecutor>(
+		config,
+		eth_config,
+		sealing,
+		stability_config,
+	)
+	.await
 }
 
 pub fn new_chain_ops(

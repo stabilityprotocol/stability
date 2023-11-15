@@ -90,6 +90,12 @@ account = { workspace = true, features = ["default"] }
 stbl-core-primitives = { workspace = true, features = ["default"] }
 stability-rpc = { workspace = true }
 stbl-tools = { workspace = true }
+moonbeam-primitives-ext = { workspace = true }
+moonbeam-rpc-primitives-debug = { workspace = true }
+moonbeam-rpc-primitives-txpool = { workspace = true }
+moonbeam-rpc-debug = { workspace = true }
+moonbeam-rpc-trace = { workspace = true }
+tokio = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
