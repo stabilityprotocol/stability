@@ -9,7 +9,7 @@ sp-runtime = { workspace = true, default-features = false }
 sp-api = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
-codec = { package = "parity-scale-codec", workspace = true }
+codec = { workspace = true }
 
 [features]
 default = ["std"]

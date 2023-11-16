@@ -30,6 +30,8 @@ fn test_forwards_a_call_op() {
 			vec![],
 			false,
 			false,
+			None,
+			None,
 			&config,
 		);
 		let account_id = pallet_evm::HashedAddressMapping::<BlakeTwo256>::into_account_id(acc);
@@ -59,6 +61,8 @@ fn test_sends_users_token_on_call() {
 			vec![],
 			false,
 			false,
+			None,
+			None,
 			&config,
 		);
 		assert!(res.is_ok());
@@ -80,6 +84,8 @@ fn test_sends_users_token_on_call() {
 			vec![],
 			false,
 			false,
+			None,
+			None,
 			&config,
 		);
 		assert!(target.is_ok());
@@ -113,6 +119,8 @@ fn test_forwards_a_create_op() {
 			vec![],
 			false,
 			true,
+			None,
+			None,
 			&config
 		);
 		let account_id = pallet_evm::HashedAddressMapping::<BlakeTwo256>::into_account_id(acc);
@@ -142,6 +150,8 @@ fn transaction_fee_log_emitted() {
 			vec![],
 			false,
 			false,
+			None,
+			None,
 			&config,
 		);
 

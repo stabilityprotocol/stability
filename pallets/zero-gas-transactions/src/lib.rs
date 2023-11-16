@@ -19,10 +19,10 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use pallet_evm::GasWeightMapping;
 	use pallet_user_fee_selector::UserFeeTokenController;
+	use sp_core::H256;
 	use sp_core::U256;
 	use sp_std::vec;
-	use sp_core::{H256};
-	use sp_std::{vec::Vec};
+	use sp_std::vec::Vec;
 
 	pub use fp_rpc::TransactionStatus;
 
@@ -52,21 +52,23 @@ pub mod pallet {
 
 		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
 			match call {
-				Call::send_zero_gas_transaction { transaction, validator_signature } => {
+				Call::send_zero_gas_transaction {
+					transaction,
+					validator_signature,
+				} => {
 					let from =
 						Self::ensure_transaction_signature(transaction.clone()).map_err(|_| {
 							TransactionValidityError::Invalid(InvalidTransaction::BadProof)
 						})?;
 
-						let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
+					let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
 
-						Self::ensure_zero_gas_transaction(
-							transaction.clone(),
-							current_block_validator,
-							validator_signature.clone()
-						).map_err(|_| {
-							TransactionValidityError::Invalid(InvalidTransaction::BadProof)
-						})?;
+					Self::ensure_zero_gas_transaction(
+						transaction.clone(),
+						current_block_validator,
+						validator_signature.clone(),
+					)
+					.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::BadProof))?;
 
 					let transaction_data: TransactionData = transaction.into();
 
@@ -116,9 +118,9 @@ pub mod pallet {
 			let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
 
 			Self::ensure_zero_gas_transaction(
-					transaction.clone(),
-					current_block_validator,
-					validator_signature
+				transaction.clone(),
+				current_block_validator,
+				validator_signature,
 			)
 			.map_err(|_| DispatchError::Other("Invalid zero gas transaction signature"))?;
 
@@ -127,7 +129,8 @@ pub mod pallet {
 			let dispatch = pallet_ethereum::Pallet::<T>::transact(origin, transaction)
 				.map_err(|_| DispatchError::Other("Signature doesn't meet with sponsor address"))?;
 
-			let used_gas = Self::gas_from_actual_weight(dispatch.actual_weight.unwrap());
+			let used_gas = Self::gas_from_actual_weight(dispatch.actual_weight.unwrap())
+				.map_err(|_| DispatchError::Other("Arithmetic error due to overflows"))?;
 
 			Ok(frame_support::dispatch::PostDispatchInfo {
 				actual_weight: Some(T::GasWeightMapping::gas_to_weight(
@@ -140,14 +143,19 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn gas_from_actual_weight(weight: Weight) -> u64 {
-			let actual_weight = weight.saturating_add(
-				T::BlockWeights::get()
+		fn gas_from_actual_weight(weight: Weight) -> Result<u64, ()> {
+			let actual_weight = match weight.checked_add(
+				&T::BlockWeights::get()
 					.get(frame_support::dispatch::DispatchClass::Normal)
 					.base_extrinsic,
-			);
+			) {
+				Some(v) => v,
+				None => return Err(()),
+			};
 
-			<T as pallet_evm::Config>::GasWeightMapping::weight_to_gas(actual_weight)
+			Ok(<T as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
+				actual_weight,
+			))
 		}
 
 		fn ensure_transaction_signature(
@@ -177,6 +185,8 @@ pub mod pallet {
 					is_transactional: true,
 				},
 				transaction_data.into(),
+				None,
+				None
 			)
 			.validate_in_pool_for(&who)
 			.and_then(|v| v.with_chain_id())
@@ -196,10 +206,8 @@ pub mod pallet {
 			let eip191_message =
 				stbl_tools::eth::build_eip191_message_hash(zero_gas_trx_internal_message);
 
-			let zero_gas_trx_signer_address = Self::get_zero_gas_trx_signer(
-				validator_signature.clone(),
-				eip191_message.clone(),
-			);
+			let zero_gas_trx_signer_address =
+				Self::get_zero_gas_trx_signer(validator_signature.clone(), eip191_message.clone());
 
 			match zero_gas_trx_signer_address {
 				Some(address) if address == expected_validator => Ok(()),
@@ -207,7 +215,9 @@ pub mod pallet {
 			}
 		}
 
-		pub fn get_zero_gas_transaction_signing_message(trx: pallet_ethereum::Transaction) -> Vec<u8> {
+		pub fn get_zero_gas_transaction_signing_message(
+			trx: pallet_ethereum::Transaction,
+		) -> Vec<u8> {
 			let mut message: Vec<u8> = Vec::new();
 
 			let trx_hash = trx.hash();

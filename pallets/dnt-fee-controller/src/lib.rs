@@ -110,9 +110,14 @@ pub mod pallet {
 
 			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get().unwrap();
 			let mapped_amount = amount
-				.saturating_mul(conversion_rate.0)
-				.div_mod(conversion_rate.1)
-				.0;
+				.checked_mul(conversion_rate.0)
+				.map(|v| v.div_mod(conversion_rate.1).0);
+
+			let mapped_amount = match mapped_amount {
+				Some(amount) => amount,
+				None => return Err(Error::ArithmeticError),
+			};
+
 			T::ERC20Manager::withdraw_amount(token, from, mapped_amount)
 				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
 			T::ERC20Manager::deposit_amount(token, fee_vault, mapped_amount)
@@ -134,9 +139,14 @@ pub mod pallet {
 
 			let over_fee = paid_amount.saturating_sub(actual_amount);
 			let mapped_amount = over_fee
-				.saturating_mul(conversion_rate.0)
-				.div_mod(conversion_rate.1)
-				.0;
+				.checked_mul(conversion_rate.0)
+				.map(|v| v.div_mod(conversion_rate.1).0);
+
+			let mapped_amount = match mapped_amount {
+				Some(amount) => amount,
+				None => return Err(Error::ArithmeticError),
+			};
+
 			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get().unwrap();
 			T::ERC20Manager::withdraw_amount(token, fee_vault, mapped_amount)
 				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
@@ -158,9 +168,13 @@ pub mod pallet {
 			}
 
 			let fee_in_user_token = actual_amount
-				.saturating_mul(conversion_rate.0)
-				.div_mod(conversion_rate.1)
-				.0;
+				.checked_mul(conversion_rate.0)
+				.map(|v| v.div_mod(conversion_rate.1).0);
+
+			let fee_in_user_token = match fee_in_user_token {
+				Some(amount) => amount,
+				None => return Err(Error::ArithmeticError),
+			};
 
 			let validator_share = match to {
 				None => 100.into(),
@@ -168,9 +182,14 @@ pub mod pallet {
 			};
 
 			let validator_fee = fee_in_user_token
-				.saturating_mul(validator_share.into())
-				.div_mod(U256::from(100))
-				.0;
+				.checked_mul(validator_share.into())
+				.map(|v| v.div_mod(U256::from(100)).0);
+
+			let validator_fee = match validator_fee {
+				Some(a) => a,
+				None => return Err(Error::ArithmeticError),
+			};
+
 			let dapp_fee = fee_in_user_token - validator_fee;
 
 			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(

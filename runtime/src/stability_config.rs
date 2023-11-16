@@ -12,12 +12,7 @@ const COMPUTATION_BLOCK_TIME_RATIO: (u64, u64) = (2, 3); // 2 third parts of the
 const COMPUTATION_POWER_MULTIPLIER: u64 = 6; // 6 times more computation power than normal
 
 // how much weight for normal extrinsics could be processed in a block
-pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_ref_time(WEIGHT_REF_TIME_PER_MILLIS)
-	.mul(MILLISECS_PER_BLOCK)
-	.mul(COMPUTATION_POWER_MULTIPLIER) 
-	.mul(COMPUTATION_BLOCK_TIME_RATIO.0)
-	.div(COMPUTATION_BLOCK_TIME_RATIO.1) // 8_000_000_000_000
-	.set_proof_size(u64::MAX);
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(WEIGHT_REF_TIME_PER_MILLIS * MILLISECS_PER_BLOCK * COMPUTATION_POWER_MULTIPLIER * COMPUTATION_BLOCK_TIME_RATIO.0 / COMPUTATION_BLOCK_TIME_RATIO.1, u64::MAX);
 
 // `.set_proof_size`, since migration to WeightV2, we have set the proof size weight for the maximum block.
 // https://github.com/paritytech/substrate/pull/12277
@@ -32,7 +27,7 @@ pub const COUNCIL_MAX_MEMBERS: u32 = 100;
 
 pub const DEFAULT_OWNER: &str = "0xaf537bd156c7E548D0BF2CD43168dABF7aF2feb5";
 
-pub const DEFAULT_FEE_TOKEN: &str = "0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43";
+pub const DEFAULT_FEE_TOKEN: &str = "0x261FB2d971eFBBFd027A9C9Cebb8548Cf7d0d2d5";
 
 /// Minimum deposit of an account to exist.
 /// Since this minimum deposit would be reduced

@@ -1,4 +1,4 @@
-// Copyright 2023 Stability Solutions.
+// Copyright 2019-2022 PureStake Inc.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -13,10 +13,11 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
 	crate::{
+		solidity::codec::Codec,
 		testing::{decode_revert_message, MockHandle, PrettyLog, SubcallHandle, SubcallTrait},
-		EvmData, EvmDataWriter,
 	},
 	fp_evm::{
 		Context, ExitError, ExitSucceed, Log, PrecompileFailure, PrecompileOutput,
@@ -152,20 +153,11 @@ impl<'p, P: PrecompileSet> PrecompilesTester<'p, P> {
 	}
 
 	/// Execute the precompile set and check it returns provided output.
-	pub fn execute_returns(mut self, output: Vec<u8>) {
+	pub fn execute_returns_raw(mut self, output: Vec<u8>) {
 		let res = self.execute();
 
 		match res {
-			Some(Err(PrecompileFailure::Revert { output, .. })) => {
-				let decoded = decode_revert_message(&output);
-				eprintln!(
-					"Revert message (bytes): {:?}",
-					sp_core::hexdisplay::HexDisplay::from(&decoded)
-				);
-				eprintln!(
-					"Revert message (string): {:?}",
-					core::str::from_utf8(decoded).ok()
-				);
+			Some(Err(PrecompileFailure::Revert { .. })) => {
 				panic!("Shouldn't have reverted");
 			}
 			Some(Ok(PrecompileOutput {
@@ -173,14 +165,6 @@ impl<'p, P: PrecompileSet> PrecompilesTester<'p, P> {
 				output: execution_output,
 			})) => {
 				if execution_output != output {
-					eprintln!(
-						"Output (bytes): {:?}",
-						sp_core::hexdisplay::HexDisplay::from(&execution_output)
-					);
-					eprintln!(
-						"Output (string): {:?}",
-						core::str::from_utf8(&execution_output).ok()
-					);
 					panic!("Output doesn't match");
 				}
 			}
@@ -191,8 +175,8 @@ impl<'p, P: PrecompileSet> PrecompilesTester<'p, P> {
 	}
 
 	/// Execute the precompile set and check it returns provided Solidity encoded output.
-	pub fn execute_returns_encoded(self, output: impl EvmData) {
-		self.execute_returns(EvmDataWriter::new().write(output).build())
+	pub fn execute_returns(self, output: impl Codec) {
+		self.execute_returns_raw(crate::solidity::encode_return_value(output))
 	}
 
 	/// Execute the precompile set and check if it reverts.
@@ -204,14 +188,6 @@ impl<'p, P: PrecompileSet> PrecompilesTester<'p, P> {
 			Some(Err(PrecompileFailure::Revert { output, .. })) => {
 				let decoded = decode_revert_message(&output);
 				if !check(decoded) {
-					eprintln!(
-						"Revert message (bytes): {:?}",
-						sp_core::hexdisplay::HexDisplay::from(&decoded)
-					);
-					eprintln!(
-						"Revert message (string): {:?}",
-						core::str::from_utf8(decoded).ok()
-					);
 					panic!("Revert reason doesn't match !");
 				}
 			}

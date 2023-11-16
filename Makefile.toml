@@ -6,5 +6,5 @@ default_to_workspace = false
 
 [tasks.alphanet-dev]
 script = [
-    "cargo run --release -- --dev --unsafe-rpc-external --rpc-cors all --unsafe-ws-external"
+    "cargo run --release -- --dev --unsafe-rpc-external --rpc-cors all"
 ]

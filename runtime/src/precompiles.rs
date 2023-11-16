@@ -34,6 +34,8 @@ parameter_types! {
 	pub DefaultToken:H160 = H160::from_str(DEFAULT_FEE_TOKEN).expect("invalid address");
 }
 
+type EthereumPrecompilesChecks = (AcceptDelegateCall, CallableByContract, CallableByPrecompile);
+
 // Set of Stability precompiles
 pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 	R,
@@ -44,15 +46,15 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 			(
 				// Ethereum precompiles:
 				// We allow DELEGATECALL to stay compliant with Ethereum behavior.
-				PrecompileAt<AddressU64<1>, ECRecover, ForbidRecursion, AllowDelegateCall>,
-				PrecompileAt<AddressU64<2>, Sha256, ForbidRecursion, AllowDelegateCall>,
-				PrecompileAt<AddressU64<3>, Ripemd160, ForbidRecursion, AllowDelegateCall>,
-				PrecompileAt<AddressU64<4>, Identity, ForbidRecursion, AllowDelegateCall>,
-				PrecompileAt<AddressU64<5>, Modexp, ForbidRecursion, AllowDelegateCall>,
-				PrecompileAt<AddressU64<6>, Bn128Add, ForbidRecursion, AllowDelegateCall>,
-				PrecompileAt<AddressU64<7>, Bn128Mul, ForbidRecursion, AllowDelegateCall>,
-				PrecompileAt<AddressU64<8>, Bn128Pairing, ForbidRecursion, AllowDelegateCall>,
-				PrecompileAt<AddressU64<9>, Blake2F, ForbidRecursion, AllowDelegateCall>,
+				PrecompileAt<AddressU64<1>, ECRecover, EthereumPrecompilesChecks>,
+				PrecompileAt<AddressU64<2>, Sha256, EthereumPrecompilesChecks>,
+				PrecompileAt<AddressU64<3>, Ripemd160, EthereumPrecompilesChecks>,
+				PrecompileAt<AddressU64<4>, Identity, EthereumPrecompilesChecks>,
+				PrecompileAt<AddressU64<5>, Modexp, EthereumPrecompilesChecks>,
+				PrecompileAt<AddressU64<6>, Bn128Add, EthereumPrecompilesChecks>,
+				PrecompileAt<AddressU64<7>, Bn128Mul, EthereumPrecompilesChecks>,
+				PrecompileAt<AddressU64<8>, Bn128Pairing, EthereumPrecompilesChecks>,
+				PrecompileAt<AddressU64<9>, Blake2F, EthereumPrecompilesChecks>,
 				// Non-Stability specific nor Ethereum precompiles :
 				PrecompileAt<AddressU64<1024>, Sha3FIPS256>,
 				PrecompileAt<AddressU64<1026>, ECRecoverPublicKey>,

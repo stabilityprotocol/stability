@@ -94,7 +94,7 @@ impl frame_system::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 0;
+	pub const ExistentialDeposit: u128 = 1;
 }
 
 impl pallet_balances::Config for Runtime {
@@ -107,6 +107,10 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
+	type MaxHolds = ();
+	type HoldIdentifier = ();
+	type FreezeIdentifier = ();
+	type MaxFreezes = ();
 }
 
 parameter_types! {
@@ -175,6 +179,7 @@ parameter_types! {
 	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
 	pub ERC20SlotZero: H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
 	pub ZeroSlot : H256 = H256::from_low_u64_be(0);
+	pub const GasLimitPovSizeRatio: u64 = 15;
 }
 
 impl pallet_evm::Config for Runtime {
@@ -194,6 +199,10 @@ impl pallet_evm::Config for Runtime {
 	type BlockGasLimit = BlockGasLimit;
 	type BlockHashMapping = pallet_evm::SubstrateBlockHashMapping<Self>;
 	type FindAuthor = ();
+	type OnCreate = ();
+	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
+	type Timestamp = Timestamp;
+	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
 }
 
 // Configure a mock runtime to test the pallet.

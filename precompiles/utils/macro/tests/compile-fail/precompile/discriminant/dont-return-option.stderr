@@ -1,0 +1,5 @@
+error: The discriminant function must only take code address (H160) and remaining gas (u64) as parameters.
+  --> tests/compile-fail/precompile/discriminant/dont-return-option.rs:25:2
+   |
+25 |     fn discriminant(address: H160) -> u32 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

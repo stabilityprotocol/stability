@@ -1,4 +1,4 @@
-// Copyright 2023 Stability Solutions.
+// Copyright 2019-2022 PureStake Inc.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -13,13 +13,8 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
-use sha3::{Digest, Keccak256};
 
-#[precompile_utils_macro::generate_function_selector]
-pub enum Action {
-	Toto = "toto()",
-	Tata = "tata()",
-}
+use sha3::{Digest, Keccak256};
 
 #[test]
 fn test_keccak256() {
@@ -38,14 +33,21 @@ fn test_keccak256() {
 }
 
 #[test]
-fn test_generate_function_selector() {
-	assert_eq!(
-		&(Action::Toto as u32).to_be_bytes()[..],
-		&Keccak256::digest(b"toto()")[0..4],
-	);
-	assert_eq!(
-		&(Action::Tata as u32).to_be_bytes()[..],
-		&Keccak256::digest(b"tata()")[0..4],
-	);
-	assert_ne!(Action::Toto as u32, Action::Tata as u32);
+#[ignore]
+fn ui() {
+	let t = trybuild::TestCases::new();
+	t.compile_fail("tests/compile-fail/**/*.rs");
+	t.pass("tests/pass/**/*.rs");
+}
+
+// Cargo expand is not supported on stable rust
+#[test]
+#[ignore]
+fn expand() {
+	// Use `expand` to update the expansions
+	// Replace it with `expand_without_refresh` afterward so that
+	// CI checks the expension don't change
+
+	// macrotest::expand("tests/expand/**/*.rs");
+	macrotest::expand("tests/expand/**/*.rs");
 }

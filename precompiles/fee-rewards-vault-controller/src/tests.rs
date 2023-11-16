@@ -1,11 +1,14 @@
 use crate::{mock::*, *};
 
+use precompile_utils::prelude::*;
+
 use precompile_utils::testing::*;
 use sha3::{Digest, Keccak256};
 
 fn precompiles() -> Precompiles<Test> {
 	PrecompilesValue::get()
 }
+
 
 #[test]
 fn selectors() {
@@ -58,7 +61,7 @@ fn owner_correctly_init() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::owner {})
-			.execute_returns_encoded(Into::<H256>::into(DefaultOwner::get()));
+			.execute_returns(Into::<H256>::into(DefaultOwner::get()));
 	})
 }
 
@@ -79,28 +82,28 @@ fn transfer_ownership_set_target_if_owner_twice() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_some();
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
-			.execute_returns_encoded(Into::<H256>::into(new_owner));
+			.execute_returns(Into::<H256>::into(new_owner));
 
 		precompiles()
 			.prepare_test(
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(other_owner),
+					new_owner: solidity::codec::Address(other_owner),
 				},
 			)
 			.execute_some();
 
 		precompiles()
 			.prepare_test(DefaultOwner::get(), Precompile1, PCall::pending_owner {})
-			.execute_returns_encoded(Into::<H256>::into(other_owner));
+			.execute_returns(Into::<H256>::into(other_owner));
 	})
 }
 
@@ -114,7 +117,7 @@ fn fail_transfer_ownership_if_not_owner() {
 				new_owner,
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
@@ -141,7 +144,7 @@ fn claim_ownership_if_claimable() {
 				owner,
 				Precompile1,
 				PCall::transfer_ownership {
-					new_owner: precompile_utils::data::Address(new_owner),
+					new_owner: solidity::codec::Address(new_owner),
 				},
 			)
 			.execute_some();
@@ -151,15 +154,13 @@ fn claim_ownership_if_claimable() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_LOG_NEW_OWNER,
-				EvmDataWriter::new()
-					.write(Into::<H256>::into(new_owner))
-					.build(),
+				solidity::encode_event_data(Into::<H256>::into(new_owner))
 			))
 			.execute_some();
 
 		precompiles()
 			.prepare_test(new_owner, Precompile1, PCall::owner {})
-			.execute_returns_encoded(Into::<H256>::into(new_owner));
+			.execute_returns(Into::<H256>::into(new_owner));
 	});
 }
 
@@ -174,7 +175,7 @@ fn test_set_whitelisted() {
 					holder: SmartContratWithoutOwner::get().into(),
 				},
 			)
-			.execute_returns_encoded(false);
+			.execute_returns(false);
 
 		precompiles()
 			.prepare_test(
@@ -185,7 +186,7 @@ fn test_set_whitelisted() {
 					is_whitelisted: true,
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 
 		precompiles()
 			.prepare_test(
@@ -195,7 +196,7 @@ fn test_set_whitelisted() {
 					holder: SmartContratWithoutOwner::get().into(),
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 	});
 }
 
@@ -210,7 +211,7 @@ fn test_set_whitelisted_should_fail_if_address_is_not_smartcontract() {
 					holder: NotOwner::get().into(),
 				},
 			)
-			.execute_returns_encoded(false);
+			.execute_returns(false);
 
 		precompiles()
 			.prepare_test(
@@ -258,7 +259,7 @@ fn test_can_claim_reward_returns_true_if_holder_and_claimant_are_equal() {
 					is_whitelisted: true,
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 		precompiles()
 			.prepare_test(
 				SmartContratWithoutOwner::get(),
@@ -268,7 +269,7 @@ fn test_can_claim_reward_returns_true_if_holder_and_claimant_are_equal() {
 					holder: SmartContratWithoutOwner::get().into(),
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 	});
 }
 
@@ -284,7 +285,7 @@ fn test_can_claim_reward_should_return_false_if_not_whitelisted() {
 					holder: Dapp1::get().into(),
 				},
 			)
-			.execute_returns_encoded(false);
+			.execute_returns(false);
 	});
 }
 
@@ -301,7 +302,7 @@ fn test_can_claim_reward_should_return_true_if_claimant_is_validator() {
 					holder: claimant,
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 	})
 }
 
@@ -317,7 +318,7 @@ fn test_can_claim_reward_should_return_true_if_claimant_are_the_owner_of_the_dap
 					is_whitelisted: true,
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 		precompiles()
 			.prepare_test(
 				OwnerOfDapp::get(),
@@ -349,13 +350,12 @@ fn test_can_claim_reward_should_return_true_if_claimant_are_the_owner_of_the_dap
 				output.extend_from_slice(&OwnerOfDapp::get().as_bytes());
 
 				SubcallOutput {
-					reason: ExitReason::Succeed(ExitSucceed::Returned),
 					output: output,
 					cost: 1,
-					logs: vec![],
+					..SubcallOutput::succeed()
 				}
 			})
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 	});
 }
 
@@ -371,7 +371,7 @@ fn test_can_claim_reward_should_return_false_if_claimant_are_not_the_owner_of_th
 					is_whitelisted: true,
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 		precompiles()
 			.prepare_test(
 				OwnerOfDapp::get(),
@@ -403,13 +403,12 @@ fn test_can_claim_reward_should_return_false_if_claimant_are_not_the_owner_of_th
 				output.extend_from_slice(&OwnerOfDapp::get().as_bytes());
 
 				SubcallOutput {
-					reason: ExitReason::Succeed(ExitSucceed::Returned),
 					output: output,
 					cost: 1,
-					logs: vec![],
+					..SubcallOutput::succeed()
 				}
 			})
-			.execute_returns_encoded(false);
+			.execute_returns(false);
 	});
 }
 
@@ -425,7 +424,7 @@ fn test_can_claim_reward_should_return_false_if_dapp_not_implement_owner_functio
 					is_whitelisted: true,
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 		precompiles()
 			.prepare_test(
 				OwnerOfDapp::get(),
@@ -438,7 +437,7 @@ fn test_can_claim_reward_should_return_false_if_dapp_not_implement_owner_functio
 			.with_subcall_handle(move |_| {
 				panic!("should not be called");
 			})
-			.execute_returns_encoded(false);
+			.execute_returns(false);
 	});
 }
 
@@ -466,7 +465,7 @@ fn test_get_claimable_reward() {
 					token: Token1::get().into(),
 				},
 			)
-			.execute_returns_encoded(sp_core::U256::from(100));
+			.execute_returns(sp_core::U256::from(100));
 	});
 }
 
@@ -484,7 +483,7 @@ fn test_claim_reward() {
 					is_whitelisted: true,
 				},
 			)
-			.execute_returns_encoded(true);
+			.execute_returns(true);
 
 		assert_eq!(
 			FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()),
@@ -542,10 +541,9 @@ fn test_claim_reward() {
 				let output = vec![];
 
 				SubcallOutput {
-					reason: ExitReason::Succeed(ExitSucceed::Returned),
 					output: output,
 					cost: 1,
-					logs: vec![],
+					..SubcallOutput::succeed()
 				}
 			})
 			.expect_log(log3(
@@ -577,7 +575,7 @@ fn test_set_validator_percentage() {
 				Precompile1,
 				PCall::get_validator_percentage {},
 			)
-			.execute_returns_encoded(sp_core::U256::from(0));
+			.execute_returns(sp_core::U256::from(0));
 		precompiles()
 			.prepare_test(
 				DefaultOwner::get(),
@@ -593,7 +591,7 @@ fn test_set_validator_percentage() {
 				Precompile1,
 				PCall::get_validator_percentage {},
 			)
-			.execute_returns_encoded(sp_core::U256::from(10));
+			.execute_returns(sp_core::U256::from(10));
 	});
 }
 

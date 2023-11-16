@@ -29,7 +29,7 @@ use frame_support::{
 };
 use frame_system::{EnsureSigned, RawOrigin};
 use pallet_evm::{EvmConfig, IdentityAddressMapping};
-use sp_core::{H160, H256};
+use sp_core::{H160, H256, ConstU32};
 use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 use sp_std::vec;
 use std::collections::BTreeMap;
@@ -84,7 +84,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 0;
+	pub const ExistentialDeposit: u128 = 1;
 }
 
 impl pallet_balances::Config for Runtime {
@@ -97,10 +97,14 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
+	type MaxHolds = ();
+	type HoldIdentifier = ();
+	type FreezeIdentifier = ();
+	type MaxFreezes = ();
 }
 
 parameter_types! {
-	pub MockDefaultFeeToken: H160 = H160::from_str("0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43").expect("invalid address");
+	pub MockDefaultFeeToken: H160 = H160::from_str("0x261FB2d971eFBBFd027A9C9Cebb8548Cf7d0d2d5").expect("invalid address");
 	pub MeaninglessTokenAddress:H160 = H160::from_str("0xdAC17F958D2ee523a2206206994597C13D831ec7").expect("invalid address");
 	pub NotSupportedToken:H160 = H160::from_str("0xdAC17F958D2ee523a2206206994597C13D831123").expect("invalid address");
 }
@@ -184,7 +188,9 @@ parameter_types! {
 	pub WeightPerGas : Weight = Weight::from_ref_time(1);
 	pub EVMChainId: u64 = 1;
 	pub BlockGasLimit: U256 = U256::MAX;
+	pub const GasLimitPovSizeRatio: u64 = 15;
 }
+
 impl pallet_evm::Config for Runtime {
 	type FeeCalculator = ();
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
@@ -201,7 +207,11 @@ impl pallet_evm::Config for Runtime {
 	type BlockGasLimit = BlockGasLimit;
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
 	type OnChargeTransaction = ();
+	type OnCreate = ();
+	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
+	type Timestamp = Timestamp;
 	type FindAuthor = ();
+	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
 
 	fn config() -> &'static pallet_evm::EvmConfig {
 		&LONDON_CONFIG
@@ -214,9 +224,16 @@ impl pallet_root_controller::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
+parameter_types! {
+	pub const PostBlockAndTxnHashes: pallet_ethereum::PostLogContent = pallet_ethereum::PostLogContent::BlockAndTxnHashes;
+}
+
+
 impl pallet_ethereum::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
+	type PostLogContent = PostBlockAndTxnHashes;
+	type ExtraDataLength = ConstU32<30>;
 }
 
 // Configure a mock runtime to test the pallet.

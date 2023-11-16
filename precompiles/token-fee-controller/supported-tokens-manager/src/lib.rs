@@ -172,7 +172,7 @@ where
 					handle.context().address,
 					SELECTOR_LOG_TOKEN_SUPPORT_CHANGE,
 					Into::<H160>::into(token),
-					EvmDataWriter::new().write(true).build(),
+					solidity::encode_event_data(true),
 				)
 				.record(handle)?;
 				Ok(())
@@ -211,7 +211,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TOKEN_SUPPORT_CHANGE,
 			Into::<H160>::into(token),
-			EvmDataWriter::new().write(false).build(),
+			solidity::encode_event_data(false)
 		)
 		.record(handle)?;
 
@@ -299,9 +299,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(target_new_owner))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
 		)
 		.record(handle)?;
 
@@ -333,9 +331,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			EvmDataWriter::new()
-				.write(Into::<H256>::into(target_new_owner))
-				.build(),
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
 		)
 		.record(handle)?;
 

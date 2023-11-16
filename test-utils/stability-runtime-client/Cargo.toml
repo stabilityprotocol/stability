@@ -1,6 +1,6 @@
 [package]
 name = "stability-test-runtime-client"
-version = "1.0.0"
+version = "2.0.0"
 authors = ["Stability Solutions"]
 edition = "2021"
 license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
@@ -10,9 +10,10 @@ publish = false
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-codec = { package = "parity-scale-codec", workspace = true }
+codec = { default-features = false, features = ["derive"], workspace = true }
 futures = { workspace = true }
 sc-block-builder = { workspace = true }
+sc-chain-spec = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
 sp-api = { workspace = true }
@@ -21,4 +22,4 @@ sp-consensus = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 stability-test-client = { workspace = true }
-stability-test-runtime = { workspace = true, features = ["std"] }
+stability-test-runtime = { workspace = true }

@@ -64,12 +64,13 @@ impl pallet_timestamp::Config for Test {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 0;
+	pub const ExistentialDeposit: u128 = 1;
 }
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
-	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
+	pub const GasLimitPovSizeRatio: u64 = 15;
 }
 
 impl pallet_evm_chain_id::Config for Test {}
@@ -98,6 +99,10 @@ impl pallet_evm::Config for Test {
 	type BlockGasLimit = BlockGasLimit;
 	type BlockHashMapping = pallet_evm::SubstrateBlockHashMapping<Self>;
 	type FindAuthor = ();
+	type OnCreate = ();
+	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
+	type Timestamp = Timestamp;
+	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
 }
 
 pub struct AccountIdToH160Mapping;
