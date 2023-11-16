@@ -36,7 +36,7 @@ if [ -n "$SEED" ]; then
   --key-type gran
 fi
 
-START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --rpc-port 9933 --prometheus-external --chain=$CHAIN_TARGET"
+START_COMMAND="./target/release/stability --base-path /tmp/node --validator --unsafe-rpc-external --rpc-cors all --rpc-port 9933 --prometheus-external --chain=$CHAIN_TARGET --rpc-max-response-size 100"
 
 if [ "$MODE" = "archive" ]; then
   START_COMMAND="$START_COMMAND --pruning archive"
