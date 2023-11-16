@@ -12,7 +12,6 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use account::AccountId20;
 use account::EthereumSigner;
-use parity_scale_codec::{Decode, Encode};
 use core::str::FromStr;
 use frame_support::pallet_prelude::EnsureOrigin;
 use frame_support::pallet_prelude::InvalidTransaction;
@@ -26,6 +25,7 @@ use pallet_supported_tokens_manager::SupportedTokensManager as OtherSupportedTok
 use pallet_transaction_payment::OnChargeTransaction;
 use pallet_user_fee_selector::UserFeeTokenController;
 use pallet_validator_fee_selector::ValidatorFeeTokenController;
+use parity_scale_codec::{Decode, Encode};
 use runner::OnChargeDecentralizedNativeTokenFee;
 use sp_api::impl_runtime_apis;
 use sp_core::{
@@ -1298,7 +1298,23 @@ impl_runtime_apis! {
 						} else {
 							Executive::apply_extrinsic(ext)
 						}
-					}
+					},
+					RuntimeCall::MetaTransactions(pallet_sponsored_transactions::Call::send_sponsored_transaction { transaction, .. }) => {
+						if transaction == traced_transaction {
+							EvmTracer::new().trace(|| Executive::apply_extrinsic(ext));
+							return Ok(());
+						} else {
+							Executive::apply_extrinsic(ext)
+						}
+					},
+					RuntimeCall::ZeroGasTransactions(pallet_zero_gas_transactions::Call::send_zero_gas_transaction { transaction, .. }) => {
+						if transaction == traced_transaction {
+							EvmTracer::new().trace(|| Executive::apply_extrinsic(ext));
+							return Ok(());
+						} else {
+							Executive::apply_extrinsic(ext)
+						}
+					},
 					_ => Executive::apply_extrinsic(ext),
 				};
 			}
@@ -1331,6 +1347,24 @@ impl_runtime_apis! {
 							let _ = Executive::apply_extrinsic(ext);
 						}
 					}
+					RuntimeCall::MetaTransactions(pallet_sponsored_transactions::Call::send_sponsored_transaction { transaction, .. }) => {
+						if known_transactions.contains(&transaction.hash()) {
+							// Each known extrinsic is a new call stack.
+							EvmTracer::emit_new();
+							EvmTracer::new().trace(|| Executive::apply_extrinsic(ext));
+						} else {
+							let _ = Executive::apply_extrinsic(ext);
+						}
+					},
+					RuntimeCall::ZeroGasTransactions(pallet_zero_gas_transactions::Call::send_zero_gas_transaction { transaction, .. }) => {
+						if known_transactions.contains(&transaction.hash()) {
+							// Each known extrinsic is a new call stack.
+							EvmTracer::emit_new();
+							EvmTracer::new().trace(|| Executive::apply_extrinsic(ext));
+						} else {
+							let _ = Executive::apply_extrinsic(ext);
+						}
+					},
 					_ => {
 						let _ = Executive::apply_extrinsic(ext);
 					}
