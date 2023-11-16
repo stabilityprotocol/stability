@@ -104,11 +104,14 @@ pub mod pallet {
 			token: H160,
 			conversion_rate: (U256, U256),
 			amount: U256,
-		) -> Result<(), Self::Error> {
+		) -> Result<(), Self::Error> {    
+			if amount.is_zero() {
+				return Ok(());
+			}
 			if conversion_rate.1 == U256::zero() {
 				return Err(Error::<T>::InvalidConversionRate);
 			}
-
+      
 			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get().unwrap();
 			let mapped_amount = amount
 				.checked_mul(conversion_rate.0)
@@ -134,9 +137,15 @@ pub mod pallet {
 			paid_amount: U256,
 			actual_amount: U256,
 		) -> Result<(), Self::Error> {
+      let over_fee = paid_amount.saturating_sub(actual_amount);
+
+			if over_fee.is_zero() {
+				return Ok(());
+      }
+      
 			if conversion_rate.1 == U256::zero() {
 				return Err(Error::<T>::InvalidConversionRate);
-			}
+      }
 
 			let over_fee = paid_amount.saturating_sub(actual_amount);
 			let mapped_amount = over_fee
@@ -164,6 +173,10 @@ pub mod pallet {
 			validator: H160,
 			to: Option<H160>,
 		) -> Result<(U256, U256), Self::Error> {
+			if actual_amount.is_zero() {
+				return Ok((0.into(), 0.into()));
+      }
+      
 			if conversion_rate.1 == U256::zero() {
 				return Err(Error::<T>::InvalidConversionRate);
 			}
