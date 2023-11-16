@@ -24,7 +24,7 @@ use frame_support::{
 };
 use log;
 pub use pallet::*;
-use sp_runtime::traits::{Convert, Zero};
+use sp_runtime::traits::{Convert, Saturating, Zero};
 use sp_std::{collections::btree_set::BTreeSet, prelude::*};
 
 pub const LOG_TARGET: &'static str = "runtime::validator-set";
@@ -574,7 +574,10 @@ impl<T: Config> Pallet<T> {
 
 // Provides the new set of validators to the session module when session is
 // being rotated.
-impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
+impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T>
+where
+	T::BlockNumber: Saturating,
+{
 	// Plan a new session and provide new validator set.
 
 	fn new_session(_new_index: u32) -> Option<Vec<T::AccountId>> {
@@ -596,7 +599,8 @@ impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
 
 		// Get current block number
 		let session_start_block = T::SessionBlockManager::session_start_block(end_index);
-		let session_end_block = T::SessionBlockManager::session_start_block(end_index + 1);
+		let session_end_block =
+			T::SessionBlockManager::session_start_block(end_index.saturating_add(1));
 
 		let mut epoch_block_authors = BTreeSet::<T::AccountId>::new();
 
@@ -607,7 +611,7 @@ impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
 			if let Some(author) = block_author {
 				epoch_block_authors.insert(author);
 			}
-			i += 1u32.into();
+			i.saturating_inc();
 		}
 
 		for validator in validators {

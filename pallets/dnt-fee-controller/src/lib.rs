@@ -196,15 +196,14 @@ pub mod pallet {
 			};
 
 			let validator_fee = fee_in_user_token
-				.checked_mul(validator_share.into())
-				.map(|v| v.div_mod(U256::from(100)).0);
+				.saturating_mul(validator_share.into())
+				.div_mod(U256::from(100))
+				.0;
 
-			let validator_fee = match validator_fee {
-				Some(a) => a,
-				None => return Err(Error::ArithmeticError),
+			let dapp_fee = match fee_in_user_token.checked_sub(validator_fee) {
+				Some(v) => v,
+				None => return Err(Error::<T>::FeeVaultOverflow),
 			};
-
-			let dapp_fee = fee_in_user_token - validator_fee;
 
 			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
 				validator,

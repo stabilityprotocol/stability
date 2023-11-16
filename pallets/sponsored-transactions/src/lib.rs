@@ -77,10 +77,19 @@ pub mod pallet {
 
 					let (transaction_fee_token, _) = Self::get_fee_token_info(&from);
 
+					let max_gas_used = match gas_price.checked_mul(transaction_data.gas_limit) {
+						Some(v) => v,
+						None => {
+							return Err(TransactionValidityError::Invalid(
+								InvalidTransaction::Custom(1),
+							))
+						}
+					};
+
 					Self::ensure_sponsor_balance(
 						meta_trx_sponsor.clone(),
 						transaction_fee_token,
-						gas_price * transaction_data.gas_limit,
+						max_gas_used,
 					)
 					.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Payment))?;
 
@@ -117,7 +126,9 @@ pub mod pallet {
 			meta_trx_sponsor: H160,
 			meta_trx_sponsor_signature: Vec<u8>,
 		) -> DispatchResult {
-			SponsorNonce::<T>::mutate(meta_trx_sponsor.clone(), |nonce| *nonce += 1);
+			SponsorNonce::<T>::mutate(meta_trx_sponsor.clone(), |nonce| {
+				*nonce = nonce.saturating_add(1)
+			});
 
 			let from = Self::ensure_transaction_signature(transaction.clone())
 				.map_err(|_| DispatchError::Other("Invalid transaction signature"))?;
