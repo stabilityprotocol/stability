@@ -344,10 +344,13 @@ pub mod pallet {
 			payer: &H160,
 			payee: &H160,
 			amount: U256,
-		) -> Result<(), ()> {
+		) -> Result<(), ()> {  
 			if amount.is_zero() {
 				return Ok(());
-			}
+      }
+			if conversion_rate.1 == U256::zero() {
+				return Err(());
+      }
 
 			let actual_amount = amount
 				.saturating_mul(conversion_rate.0)
