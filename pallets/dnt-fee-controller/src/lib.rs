@@ -33,6 +33,7 @@ pub mod pallet {
 		FeeVaultOverflow,
 		InvalidConversionRate,
 		InvalidPercentage,
+		ArithmeticError,
 	}
 
 	#[pallet::storage]
