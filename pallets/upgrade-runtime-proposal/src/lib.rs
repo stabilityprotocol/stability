@@ -119,6 +119,14 @@ pub mod pallet {
 		}
 	}
 
+	impl<T: Config> Pallet<T> {
+		fn weight_for_read_writes(reads: u64, writes: u64) -> Weight {
+			Weight::from_parts(21_330_000, 1602)
+				.saturating_add(T::DbWeight::get().reads(reads))
+				.saturating_add(T::DbWeight::get().writes(writes))
+		}
+	}
+
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(n: T::BlockNumber) -> Weight {
@@ -126,17 +134,17 @@ pub mod pallet {
 			let application_block_number_option = <ApplicationBlockNumber<T>>::get();
 
 			if code_saved_option.is_none() {
-				return Weight::zero();
+				return Pallet::<T>::weight_for_read_writes(2, 0);
 			}
 			let code = code_saved_option.unwrap().to_vec();
 
 			if application_block_number_option.is_none() {
-				return Weight::zero();
+				return Pallet::<T>::weight_for_read_writes(2, 0);
 			}
 			let application_block_number = application_block_number_option.unwrap();
 
 			if n != application_block_number {
-				return Weight::zero();
+				return Pallet::<T>::weight_for_read_writes(2, 0);
 			}
 
 			let call = frame_system::Call::<T>::set_code { code: code.into() };
@@ -152,7 +160,7 @@ pub mod pallet {
 			Pallet::<T>::clear_proposed_code();
 			Pallet::<T>::clear_application_block_number();
 
-			Weight::zero()
+			return Pallet::<T>::weight_for_read_writes(2, 2);
 		}
 	}
 
