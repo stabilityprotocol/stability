@@ -364,6 +364,30 @@ pub mod pallet {
 		pub authority_index: u32,
 	}
 
+	impl<T: Config> Pallet<T> {
+		fn add_validator_weight() -> Weight {
+			Weight::from_parts(21_330_000, 1602)
+				.saturating_add(T::DbWeight::get().reads(1_u64))
+				.saturating_add(T::DbWeight::get().writes(1_u64))
+		}
+
+		fn remove_validator_weight() -> Weight {
+			Weight::from_parts(19_840_000, 1602)
+				.saturating_add(T::DbWeight::get().reads(2_u64))
+				.saturating_add(T::DbWeight::get().writes(2_u64))
+		}
+
+		fn add_validator_again_weight() -> Weight {
+			Weight::from_parts(21_330_000, 1602)
+				.saturating_add(T::DbWeight::get().reads(2_u64))
+				.saturating_add(T::DbWeight::get().writes(1_u64))
+		}
+
+		fn update_max_missed_epochs_weight() -> Weight {
+			Weight::from_parts(21_330_000, 1602).saturating_add(T::DbWeight::get().writes(1_u64))
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Add a new validator.
@@ -374,7 +398,7 @@ pub mod pallet {
 		/// The origin can be configured using the `AddRemoveOrigin` type in the
 		/// host runtime. Can also be set to sudo/root.
 		#[pallet::call_index(0)]
-		#[pallet::weight({0})]
+		#[pallet::weight(Pallet::<T>::add_validator_weight())]
 		pub fn add_validator(origin: OriginFor<T>, validator_id: T::AccountId) -> DispatchResult {
 			T::AddRemoveOrigin::ensure_origin(origin)?;
 
@@ -388,7 +412,7 @@ pub mod pallet {
 		/// The origin can be configured using the `AddRemoveOrigin` type in the
 		/// host runtime. Can also be set to sudo/root.
 		#[pallet::call_index(1)]
-		#[pallet::weight({0})]
+		#[pallet::weight(Pallet::<T>::remove_validator_weight())]
 		pub fn remove_validator(
 			origin: OriginFor<T>,
 			validator_id: T::AccountId,
@@ -406,7 +430,7 @@ pub mod pallet {
 		/// The origin can be configured using the `AddRemoveOrigin` type in the
 		/// host runtime. Can also be set to sudo/root.
 		#[pallet::call_index(2)]
-		#[pallet::weight({0})]
+		#[pallet::weight(Pallet::<T>::update_max_missed_epochs_weight())]
 		pub fn update_max_missed_epochs(
 			origin: OriginFor<T>,
 			max_missed_epochs: U256,
@@ -422,7 +446,7 @@ pub mod pallet {
 		///
 		/// For this call, the dispatch origin must be the validator itself.
 		#[pallet::call_index(3)]
-		#[pallet::weight({0})]
+		#[pallet::weight(Pallet::<T>::add_validator_again_weight())]
 		pub fn add_validator_again(
 			origin: OriginFor<T>,
 			heartbeat: Heartbeat<T::BlockNumber, T::AuthorityId>,
