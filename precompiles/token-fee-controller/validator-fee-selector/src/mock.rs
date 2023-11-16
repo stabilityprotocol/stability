@@ -168,6 +168,9 @@ impl pallet_validator_fee_selector::Config for Runtime {
 
 parameter_types! {
 	pub DefaultOwner : H160 = H160::from_str("0x2dEA828C816cC4D7CF195E0D220CB75354f47F2F").unwrap();
+	pub InitialDefaultConversionRateController: H160 = H160::from_str(
+		"0x444212d6E4827893A70d19921E383130281Cda4a",
+	).unwrap();
 }
 
 pub type Precompiles<R> = PrecompileSetBuilder<
@@ -347,10 +350,8 @@ impl ExtBuilder {
 		.expect("Pallet balances storage can be assimilated");
 
 		let config = pallet_validator_fee_selector::GenesisConfig {
-			initial_default_conversion_rate_controller: H160::from_str(
-				"0x444212d6E4827893A70d19921E383130281Cda4a",
-			)
-			.expect("invalid address"),
+			initial_default_conversion_rate_controller: InitialDefaultConversionRateController::get(
+			),
 		};
 
 		let custom_controller = MeaninglessTokenAddress::get();
