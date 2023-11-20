@@ -40,7 +40,11 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	CheckNonce, CheckWeight,
 };
+use sp_core::H160;
+use sp_core::U256;
+use pallet_ethereum::TransactionStatus;
 use scale_info::TypeInfo;
+use sp_runtime::Permill;
 use sp_std::prelude::*;
 use pallet_ethereum::Transaction as EthereumTransaction;
 use sp_application_crypto::{ecdsa, ed25519, sr25519, RuntimeAppPublic};
@@ -723,6 +727,101 @@ impl_runtime_apis! {
 	impl stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block> for Runtime {
 		fn convert_zero_gas_transaction(_transaction: EthereumTransaction, _validator_signature: Vec<u8>) -> <Block as BlockT>::Extrinsic {
 			return Extrinsic::new_unsigned((substrate_test_pallet::pallet::Call::call_do_not_propagate {}).into())
+		}
+	}
+
+	impl fp_rpc::EthereumRuntimeRPCApi<Block> for Runtime {
+		fn chain_id() -> u64 {
+			panic!("Function not implemented")
+		}
+
+		fn account_basic(_address: H160) -> pallet_evm::Account {
+			panic!("Function not implemented")
+		}
+
+		fn gas_price() -> U256 {
+			panic!("Function not implemented")
+		}
+
+		fn account_code_at(_address: H160) -> Vec<u8> {
+			panic!("Function not implemented")
+		}
+
+		fn author() -> H160 {
+			panic!("Function not implemented")
+		}
+
+		fn storage_at(_address: H160, _index: U256) -> H256 {
+			panic!("Function not implemented")
+		}
+
+		fn call(
+			_from: H160,
+			_to: H160,
+			_data: Vec<u8>,
+			_value: U256,
+			_gas_limit: U256,
+			_max_fee_per_gas: Option<U256>,
+			_max_priority_fee_per_gas: Option<U256>,
+			_nonce: Option<U256>,
+			_estimate: bool,
+			_access_list: Option<Vec<(H160, Vec<H256>)>>,
+		) -> Result<pallet_evm::CallInfo, sp_runtime::DispatchError> {
+			panic!("Function not implemented")
+		}
+
+		fn create(
+			_from: H160,
+			_data: Vec<u8>,
+			_value: U256,
+			_gas_limit: U256,
+			_max_fee_per_gas: Option<U256>,
+			_max_priority_fee_per_gas: Option<U256>,
+			_nonce: Option<U256>,
+			_estimate: bool,
+			_access_list: Option<Vec<(H160, Vec<H256>)>>,
+		) -> Result<pallet_evm::CreateInfo, sp_runtime::DispatchError> {
+			panic!("Function not implemented")
+		}
+
+		fn current_transaction_statuses() -> Option<Vec<TransactionStatus>> {
+			panic!("Function not implemented")
+		}
+
+		fn current_block() -> Option<pallet_ethereum::Block> {
+			panic!("Function not implemented")
+		}
+
+		fn current_receipts() -> Option<Vec<pallet_ethereum::Receipt>> {
+			panic!("Function not implemented")
+		}
+
+		fn current_all() -> (
+			Option<pallet_ethereum::Block>,
+			Option<Vec<pallet_ethereum::Receipt>>,
+			Option<Vec<TransactionStatus>>
+		) {
+			panic!("Function not implemented")
+		}
+
+		fn extrinsic_filter(
+			_xts: Vec<<Block as BlockT>::Extrinsic>,
+		) -> Vec<EthereumTransaction> {
+			panic!("Function not implemented")
+		}
+
+		fn elasticity() -> Option<Permill> {
+			panic!("Function not implemented")
+		}
+
+		fn gas_limit_multiplier_support() {
+			panic!("Function not implemented")
+		}
+
+		fn pending_block(
+			_xts: Vec<<Block as BlockT>::Extrinsic>,
+		) -> (Option<pallet_ethereum::Block>, Option<Vec<TransactionStatus>>) {
+			panic!("Function not implemented")
 		}
 	}
 }
