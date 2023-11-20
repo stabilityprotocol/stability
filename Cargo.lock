@@ -10503,6 +10503,7 @@ dependencies = [
  "account",
  "bytes",
  "ethereum",
+ "fp-rpc",
  "futures 0.3.28",
  "futures-timer",
  "hex",

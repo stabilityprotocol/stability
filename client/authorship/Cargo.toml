@@ -20,6 +20,7 @@ prometheus-endpoint = { workspace = true }
 sc-block-builder = { workspace = true }
 sc-client-api = { workspace = true }
 sc-proposer-metrics = { workspace = true }
+fp-rpc = { workspace = true }
 sc-telemetry = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
 sp-api = { workspace = true }
