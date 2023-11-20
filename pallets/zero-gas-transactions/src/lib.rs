@@ -220,15 +220,13 @@ pub mod pallet {
 			block_number: u32,
 			chain_id: u64,
 		) -> Vec<u8> {
-			let mut message: Vec<u8> = b"I consent to validate to execute zero gas transactions in block "
+			b"I consent to validate zero gas transactions in block "
 										.iter()
 										.chain(block_number.to_string().as_bytes().iter())
 										.chain(b" on chain ")
 										.chain(chain_id.to_string().as_bytes().iter())
 										.cloned()
-										.collect();
-
-			return message;
+										.collect()
 		}
 
 		fn get_zero_gas_trx_signer(signature: Vec<u8>, message: H256) -> Option<H160> {

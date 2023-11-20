@@ -483,9 +483,7 @@ where
 		};
 
 		// If we pull successfully from the zero gas transaction pool, we will try to push them to the block
-
-
-		let reason = if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option {
+		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option {
 				let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.into_iter();
 				
 				let chain_id = self
@@ -495,7 +493,7 @@ where
 
 				let current_block = self.parent_number.saturated_into::<u32>().saturating_add(1);
 			
-				let message: Vec<u8> = b"I consent to validate to execute zero gas transactions in block "
+				let message: Vec<u8> = b"I consent to validate zero gas transactions in block "
 										.iter()
 										.chain(current_block.to_string().as_bytes().iter())
 										.chain(b" on chain ")
@@ -522,7 +520,6 @@ where
 				let pending_hex_string_tx = if let Some(tx) = pending_raw_zero_gas_transactions.next() {
 					tx
 				} else {
-					debug!("No more transactions in the zero gas transaction pool");
 					break EndProposingReason::NoMoreTransactions;
 				};
 	
