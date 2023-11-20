@@ -10385,6 +10385,7 @@ name = "stability-test-runtime"
 version = "1.0.0"
 dependencies = [
  "array-bytes 6.2.0",
+ "fp-rpc",
  "frame-executive",
  "frame-support",
  "frame-system",
@@ -10396,6 +10397,7 @@ dependencies = [
  "pallet-balances",
  "pallet-beefy-mmr",
  "pallet-ethereum",
+ "pallet-evm",
  "pallet-sudo",
  "pallet-timestamp",
  "parity-scale-codec",
@@ -10503,6 +10505,7 @@ dependencies = [
  "account",
  "bytes",
  "ethereum",
+ "fp-rpc",
  "futures 0.3.28",
  "futures-timer",
  "hex",

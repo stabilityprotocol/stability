@@ -23,6 +23,7 @@ pub mod pallet {
 	use sp_core::U256;
 	use sp_std::vec;
 	use sp_std::vec::Vec;
+	use parity_scale_codec::alloc::string::ToString;
 
 	pub use fp_rpc::TransactionStatus;
 
@@ -36,7 +37,7 @@ pub mod pallet {
 	pub type SponsorNonce<T: Config> = StorageMap<_, Blake2_128Concat, H160, u64, ValueQuery>;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_evm::Config + pallet_ethereum::Config {
+	pub trait Config: frame_system::Config<BlockNumber = u32> + pallet_evm::Config + pallet_ethereum::Config {
 		type RuntimeCall: Parameter + GetDispatchInfo;
 		type UserFeeTokenController: UserFeeTokenController;
 	}
@@ -64,7 +65,6 @@ pub mod pallet {
 					let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
 
 					Self::ensure_zero_gas_transaction(
-						transaction.clone(),
 						current_block_validator,
 						validator_signature.clone(),
 					)
@@ -118,7 +118,6 @@ pub mod pallet {
 			let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
 
 			Self::ensure_zero_gas_transaction(
-				transaction.clone(),
 				current_block_validator,
 				validator_signature,
 			)
@@ -196,12 +195,14 @@ pub mod pallet {
 		}
 
 		fn ensure_zero_gas_transaction(
-			transaction: pallet_ethereum::Transaction,
 			expected_validator: H160,
 			validator_signature: Vec<u8>,
 		) -> Result<(), ()> {
+			let chain_id = T::ChainId::get();
+			let block_number = <frame_system::Pallet<T>>::block_number();
+		
 			let zero_gas_trx_internal_message: Vec<u8> =
-				Self::get_zero_gas_transaction_signing_message(transaction.clone());
+				Self::get_zero_gas_transaction_signing_message(block_number, chain_id);
 
 			let eip191_message =
 				stbl_tools::eth::build_eip191_message_hash(zero_gas_trx_internal_message);
@@ -216,18 +217,16 @@ pub mod pallet {
 		}
 
 		pub fn get_zero_gas_transaction_signing_message(
-			trx: pallet_ethereum::Transaction,
+			block_number: u32,
+			chain_id: u64,
 		) -> Vec<u8> {
-			let mut message: Vec<u8> = Vec::new();
-
-			let trx_hash = trx.hash();
-			let trx_bytes_hash = trx_hash.as_bytes();
-			let trx_hash_string = hex::encode(trx_bytes_hash);
-
-			message.extend_from_slice(b"I consent to validate the transaction for free: 0x");
-			message.extend_from_slice(trx_hash_string.as_bytes());
-
-			return message;
+			b"I consent to validate zero gas transactions in block "
+										.iter()
+										.chain(block_number.to_string().as_bytes().iter())
+										.chain(b" on chain ")
+										.chain(chain_id.to_string().as_bytes().iter())
+										.cloned()
+										.collect()
 		}
 
 		fn get_zero_gas_trx_signer(signature: Vec<u8>, message: H256) -> Option<H160> {
@@ -245,5 +244,6 @@ pub mod pallet {
 
 			return Some(H160::from_slice(&result[12..32]));
 		}
+
 	}
 }

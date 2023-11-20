@@ -52,6 +52,8 @@ stbl-primitives-fee-compatible-api = { workspace = true }
 stbl-primitives-zero-gas-transactions-api = { workspace = true }
 stbl-core-primitives = { workspace = true }
 pallet-ethereum = { workspace = true }
+fp-rpc = { workspace = true }
+pallet-evm = { workspace = true }
 # 3rd party
 array-bytes = { workspace = true, optional = true}
 log = { workspace = true }

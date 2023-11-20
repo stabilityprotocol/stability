@@ -49,6 +49,10 @@ use sc_proposer_metrics::{EndProposingReason, MetricsLink as PrometheusMetrics};
 use sp_core::crypto::KeyTypeId;
 use sp_keystore::{Keystore, KeystorePtr};
 use stbl_primitives_fee_compatible_api::CompatibleFeeApi;
+use fp_rpc::EthereumRuntimeRPCApi;
+use sp_runtime::Saturating;
+
+
 
 /// Default block size limit in bytes used by [`Proposer`].
 ///
@@ -259,6 +263,7 @@ where
 		+ 'static,
 	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
 		+ BlockBuilderApi<Block>
+		+ fp_rpc::EthereumRuntimeRPCApi<Block>
 		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
 		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>,
 	PR: ProofRecording,
@@ -305,6 +310,7 @@ where
 		+ 'static,
 	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
 		+ BlockBuilderApi<Block>
+		+ fp_rpc::EthereumRuntimeRPCApi<Block>
 		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
 		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>,
 	PR: ProofRecording,
@@ -367,6 +373,7 @@ where
 		+ 'static,
 	C::Api: ApiExt<Block, StateBackend = backend::StateBackendFor<B, Block>>
 		+ BlockBuilderApi<Block>
+		+ fp_rpc::EthereumRuntimeRPCApi<Block>
 		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
 		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>,
 	PR: ProofRecording,
@@ -437,7 +444,6 @@ where
 			let http_client = reqwest::Client::new();
 			let mut request = Box::pin(http_client.post(zero_gas_tx_pool).send().fuse());
 			let mut timeout = Box::pin(futures_timer::Delay::new(std::time::Duration::from_millis(500)).fuse());
-			
 
 			let result_response_raw_zero = select! {
 				res = request => {
@@ -475,14 +481,41 @@ where
 		} else {
 			None
 		};
-		
 
-		
 		// If we pull successfully from the zero gas transaction pool, we will try to push them to the block
-
 		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option {
 				let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.into_iter();
-	
+				
+				let chain_id = self
+						.client
+						.runtime_api()
+						.chain_id(self.parent_hash).expect("Could not get chain id");
+
+				let current_block = self.parent_number.saturated_into::<u32>().saturating_add(1);
+			
+				let message: Vec<u8> = b"I consent to validate zero gas transactions in block "
+										.iter()
+										.chain(current_block.to_string().as_bytes().iter())
+										.chain(b" on chain ")
+										.chain(chain_id.to_string().as_bytes().iter())
+										.cloned()
+										.collect();
+
+				let keys = Keystore::ecdsa_public_keys(
+					&*self.keystore,
+					KeyTypeId::try_from("aura").unwrap_or_default(),
+				);
+				let public = keys[0].clone().into();
+
+				let eip191_message = stbl_tools::eth::build_eip191_message_hash(message.clone());
+
+				let signed_hash = Keystore::ecdsa_sign_prehashed(
+					&*self.keystore,
+					KeyTypeId::try_from("aura").unwrap_or_default(),
+					&public,
+					&eip191_message.as_fixed_bytes(),
+				).expect("Could not sign the Ethereum transaction hash").expect("Could not sign the Ethereum transaction hash");
+
 			loop {
 				let pending_hex_string_tx = if let Some(tx) = pending_raw_zero_gas_transactions.next() {
 					tx
@@ -498,7 +531,7 @@ where
 					);
 					break EndProposingReason::HitDeadline;
 				}
-	
+
 				let pending_raw_tx = if let Ok(pending_raw_tx) = hex::decode(pending_hex_string_tx) {
 					pending_raw_tx
 				}
@@ -507,38 +540,6 @@ where
 				};
 	
 				let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
-				
-
-				let keys = Keystore::ecdsa_public_keys(
-					&*self.keystore,
-					KeyTypeId::try_from("aura").unwrap_or_default(),
-				);
-				
-
-				let public = keys[0].clone().into();
-				let hash = ethereum_transaction.hash();
-				let hash_string = hex::encode(hash.as_bytes());
-
-
-				let mut message: Vec<u8> = Vec::new();
-				message.extend_from_slice(b"I consent to validate the transaction for free: 0x");
-				message.extend_from_slice(hash_string.as_bytes());
-
-				let eip191_message = stbl_tools::eth::build_eip191_message_hash(message.clone());
-
-				let signed_hash_option = Keystore::ecdsa_sign_prehashed(
-					&*self.keystore,
-					KeyTypeId::try_from("aura").unwrap_or_default(),
-					&public,
-					&eip191_message.as_fixed_bytes(),
-				).expect("Could not sign the Ethereum transaction hash");
-				
-				let signed_hash = if let Some(signed_hash) = signed_hash_option {
-					signed_hash
-				}
-				else {
-					continue;
-				};
 
 				let pending_tx =  if let Ok(pending_tx) = self
 				.client
@@ -549,9 +550,7 @@ where
 				else {
 					continue;
 				};
-	
-	
-	
+
 				let block_size =
 					block_builder.estimate_block_size(self.include_proof_in_block_size_estimation);
 				
@@ -605,7 +604,7 @@ where
 					}
 				}
 			};
-		}
+		};
 
 		let mut unqueue_invalid = Vec::new();
 		let mut t1 = self.transaction_pool.ready_at(self.parent_number).fuse();
