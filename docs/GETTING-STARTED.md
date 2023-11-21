@@ -28,6 +28,8 @@ To generate a SEED, you can either use a reliable SEED generation service (ensur
 
 This command will produce the SEED.
 
+To quickly get started, you can use our dedicated tool at: [Stability Protocol Validator Key Generator](https://stabilityprotocol.github.io/validator-key-generator/). This web-based application simplifies the process of generating SEED mnemonics for validator setup.
+
 ## Insert Keys in the Node
 
 To insert the keys using the seed previously generated, use the following script
@@ -36,19 +38,20 @@ To insert the keys using the seed previously generated, use the following script
    ## TO RUN THIS COMMAND YOU SHOULD DEFINE
    ## $SEED - Seed phrase from which Stability keys are derived
    ## $PATH - Path where you save your node data
+   ## $CHAIN_TARGET - Target chain to connect to: dev, testnet, alphanet, betanet
   ./target/release/stability key insert  \
-  --keystore-path  $PATH/chains/alphanet/keystore \
   --base-path $PATH \
   --scheme ecdsa \
   --suri "$SEED" \
   --key-type aura
+  --chain-target $CHAIN_TARGET
 
   ./target/release/stability key insert \
-  --keystore-path  $PATH/chains/alphanet/keystore \
   --base-path $PATH \
   --scheme Ed25519 \
   --suri "$SEED" \
   --key-type gran
+  --chain-target $CHAIN_TARGET
 ```
 
 With this, you will have inserted the keys into the node, ready to run a Stability validator.
@@ -58,7 +61,7 @@ With this, you will have inserted the keys into the node, ready to run a Stabili
 To run a Stability node, execute the following command:
 
 ```sh
-./target/release/stability --chain alphanet
+./target/release/stability --chain testnet
 ```
 
 Additionally, you can configure the following flags:
@@ -76,7 +79,7 @@ This file contains the initial genesis state that all nodes in the network agree
 To generate the genesis file, execute the following command:
 
 ```sh
-./target/release/stability build-spec --chain alphanet --disable-default-bootnode --raw > specs/alphanet.json
+./target/release/stability build-spec --chain testnet --disable-default-bootnode --raw > specs/testnet.json
 ```
 
 More info: https://docs.substrate.io/build/chain-spec/
