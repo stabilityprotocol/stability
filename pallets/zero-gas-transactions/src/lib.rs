@@ -2,10 +2,10 @@
 
 use sp_core::H160;
 
-// #[cfg(test)]
-// mod mock;
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
 
 pub use pallet::*;
 #[frame_support::pallet]
@@ -18,7 +18,6 @@ pub mod pallet {
 	use frame_support::sp_runtime::traits::UniqueSaturatedInto;
 	use frame_system::pallet_prelude::*;
 	use pallet_evm::GasWeightMapping;
-	use pallet_user_fee_selector::UserFeeTokenController;
 	use sp_core::H256;
 	use sp_core::U256;
 	use sp_std::vec;
@@ -39,7 +38,6 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config<BlockNumber = u32> + pallet_evm::Config + pallet_ethereum::Config {
 		type RuntimeCall: Parameter + GetDispatchInfo;
-		type UserFeeTokenController: UserFeeTokenController;
 	}
 
 	#[pallet::validate_unsigned]
@@ -115,6 +113,9 @@ pub mod pallet {
 			let from = Self::ensure_transaction_signature(transaction.clone())
 				.map_err(|_| DispatchError::Other("Invalid transaction signature"))?;
 
+			Self::block_ensure_transaction_unicity(&from, &transaction)
+				.map_err(|_| DispatchError::Other("Invalid transaction data"))?;
+
 			let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
 
 			Self::ensure_zero_gas_transaction(
@@ -185,9 +186,37 @@ pub mod pallet {
 				},
 				transaction_data.into(),
 				None,
-				None
+				None,
 			)
 			.validate_in_pool_for(&who)
+			.and_then(|v| v.with_chain_id())
+			.map_err(|_| ())?;
+
+			Ok(())
+		}
+
+		fn block_ensure_transaction_unicity(
+			origin: &H160,
+			transaction: &pallet_ethereum::Transaction,
+		) -> Result<(), ()> {
+			let transaction_data: TransactionData = transaction.into();
+
+			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
+			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
+
+			fp_evm::CheckEvmTransaction::<pallet_ethereum::InvalidTransactionWrapper>::new(
+				fp_evm::CheckEvmTransactionConfig {
+					evm_config: T::config(),
+					block_gas_limit: T::BlockGasLimit::get(),
+					base_fee,
+					chain_id: T::ChainId::get(),
+					is_transactional: true,
+				},
+				transaction_data.into(),
+				None,
+				None,
+			)
+			.validate_in_block_for(&who)
 			.and_then(|v| v.with_chain_id())
 			.map_err(|_| ())?;
 

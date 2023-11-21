@@ -4,6 +4,7 @@ use core::str::FromStr;
 
 use runner::Runner as StabilityRunner;
 
+use ethereum::{TransactionAction, TransactionSignature};
 use frame_support::{
 	construct_runtime,
 	pallet_prelude::{StorageValue, ValueQuery},
@@ -12,9 +13,10 @@ use frame_support::{
 	weights::Weight,
 };
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
-use sp_core::{H160, H256, U256};
+use rlp::RlpStream;
+use sp_core::{keccak_256, H160, H256, U256};
 use sp_runtime::{
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	traits::{BlakeTwo256, ConstU32, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
 };
 use std::collections::BTreeMap;
@@ -159,7 +161,7 @@ impl runner::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
-	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 	pub ERC20SlotZero: H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
 	pub ZeroSlot : H256 = H256::from_low_u64_be(0);
 }
@@ -190,7 +192,6 @@ impl pallet_evm::Config for Runtime {
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
-	
 }
 
 parameter_types! {
@@ -241,10 +242,87 @@ impl pallet_erc20_manager::ERC20Manager for MockERC20Manager {
 	}
 }
 
+pub struct LegacyUnsignedTransaction {
+	pub nonce: U256,
+	pub gas_price: U256,
+	pub gas_limit: U256,
+	pub action: TransactionAction,
+	pub value: U256,
+	pub input: Vec<u8>,
+}
+
+impl LegacyUnsignedTransaction {
+	fn signing_rlp_append(&self, s: &mut RlpStream) {
+		s.begin_list(9);
+		s.append(&self.nonce);
+		s.append(&self.gas_price);
+		s.append(&self.gas_limit);
+		s.append(&self.action);
+		s.append(&self.value);
+		s.append(&self.input);
+		s.append(&ChainId::get());
+		s.append(&0u8);
+		s.append(&0u8);
+	}
+
+	fn signing_hash(&self) -> H256 {
+		let mut stream = RlpStream::new();
+		self.signing_rlp_append(&mut stream);
+		H256::from(keccak_256(&stream.out()))
+	}
+
+	pub fn sign(&self, key: &H256) -> ethereum::LegacyTransaction {
+		self.sign_with_chain_id(key, ChainId::get())
+	}
+
+	pub fn sign_with_chain_id(&self, key: &H256, chain_id: u64) -> ethereum::LegacyTransaction {
+		let hash = self.signing_hash();
+		let msg = libsecp256k1::Message::parse(hash.as_fixed_bytes());
+		let s = libsecp256k1::sign(
+			&msg,
+			&libsecp256k1::SecretKey::parse_slice(&key[..]).unwrap(),
+		);
+		let sig = s.0.serialize();
+
+		let sig = TransactionSignature::new(
+			s.1.serialize() as u64 % 2 + chain_id * 2 + 35,
+			H256::from_slice(&sig[0..32]),
+			H256::from_slice(&sig[32..64]),
+		)
+		.unwrap();
+
+		ethereum::LegacyTransaction {
+			nonce: self.nonce,
+			gas_price: self.gas_price,
+			gas_limit: self.gas_limit,
+			action: self.action,
+			value: self.value,
+			input: self.input.clone(),
+			signature: sig,
+		}
+	}
+}
+
+fn legacy_erc20_creation_unsigned_transaction(nonce: U256) -> LegacyUnsignedTransaction {
+	LegacyUnsignedTransaction {
+		nonce,
+		gas_price: U256::from(0),
+		gas_limit: U256::from(0x100000),
+		action: ethereum::TransactionAction::Call(Sponsor::get()),
+		value: U256::zero(),
+		input: vec![],
+	}
+}
+
+pub fn legacy_erc20_creation_transaction(
+	nonce: U256,
+	private_key: &H256,
+) -> ethereum::LegacyTransaction {
+	legacy_erc20_creation_unsigned_transaction(nonce).sign(private_key)
+}
+
 impl crate::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
-	type ERC20Manager = MockERC20Manager;
-	type DNTFeeController = MockDNTFeeController;
 }
 
 // Configure a mock runtime to test the pallet.
