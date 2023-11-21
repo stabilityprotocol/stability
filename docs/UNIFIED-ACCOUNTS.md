@@ -21,6 +21,8 @@ Public key (SS58): KWAmpfYSykMXQe2gavYeydBJ5ZBbjvT1vNjyjSfWf3MTS9MMf # Nevermind
 SS58 Address:      5GKyBtzbxKU1qjhZrKpMiwtJj7o6jJcXbKQVtYq74DCPerXN # Nevermind for evm
 ```
 
+**For avoiding to compile the client or for faster development, you can use the following [online tool](https://stabilityprotocol.github.io/validator-key-generator/) for generating keys.**
+
 For calculating the actual AccountId (EVM address) you have to derive it from the Ethereum public key. Ethers library can easily get this job done:
 
 ```ts

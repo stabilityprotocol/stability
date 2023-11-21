@@ -26,7 +26,7 @@ $ docker build -f ./docker/client/Dockerfile -t stability .
 ### Run
 
 ```
-docker run -d -p 30333:30333 -p 9933:9933 -p 9615:9615 -e CHAIN="/stability/chain-specs/betanet.json" stability
+docker run -d -p 30333:30333 -p 9933:9933 -p 9615:9615 -e CHAIN="/stability/chain-specs/testnet.json" stability
 ```
 
 Optional environment variables:
@@ -36,13 +36,14 @@ Optional environment variables:
 - NODE_KEY: This environment variable allows specifying the node key to use. If not specified, the node will generate a random node key. This applies to the P2P key, not the account key.
 - BOOTNODES: This environment variable allows specifying the bootnodes to use, separated by commas. If not specified, the node will use the default bootnodes for the chain spec.
 - MODE: This environment variable allows the node to run in different pruning modes. Possible values are "full_node" or "archive". The default value is "full_node".
+- ZERO_GAS_TX_POOL: This environment variable allows the node to run with a zero gas price transaction pool. By default the feature is disabled. The expected value is a string containing an URL. Check the [Zero Gas Transaction Pool](../docs/ZERO-GAS-TRANSACTIONS.md) document for more information.
 
 To set an environment variable in the docker run, use the flag -e NAME=VALUE
 
 ### Example
 
 ```
-docker run -d -p 30333:30333 -p 9933:9933  -p 9615:9615 -e SEED=account -e CHAIN="/stability/chain-specs/betanet.json" -e MODE=archive -e BOOTNODES=/ip4/... stability
+docker run -d -p 30333:30333 -p 9933:9933  -p 9615:9615 -e SEED=account -e CHAIN="/stability/chain-specs/testnet.json" -e MODE=archive -e BOOTNODES=/ip4/... stability
 ```
 
 ## Test
