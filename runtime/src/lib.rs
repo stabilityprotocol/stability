@@ -935,7 +935,6 @@ impl pallet_sponsored_transactions::Config for Runtime {
 
 impl pallet_zero_gas_transactions::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
-	type UserFeeTokenController = pallet_user_fee_selector::Pallet<Self>;
 }
 
 parameter_types! {

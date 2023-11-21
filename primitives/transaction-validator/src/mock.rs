@@ -27,7 +27,7 @@ use frame_support::{
 };
 use hex::FromHex;
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
-use sp_core::{H160, H256, U256, ConstU32};
+use sp_core::{ConstU32, H160, H256, U256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
@@ -108,7 +108,7 @@ impl pallet_timestamp::Config for Runtime {
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
-	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 	pub ERC20SlotZero: H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
 	pub ZeroSlot : H256 = H256::from_low_u64_be(0);
 	pub const GasLimitPovSizeRatio: u64 = 15;
@@ -118,7 +118,7 @@ impl FeeCalculator for FixedBaseFee {
 	fn min_gas_price() -> (U256, Weight) {
 		(
 			U256::from(1_000_000_000),
-			Weight::from_ref_time(1_000_000_000),
+			Weight::from_parts(1_000_000_000, 0),
 		)
 	}
 }
