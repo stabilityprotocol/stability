@@ -436,7 +436,11 @@ where
 		let mut skipped = 0;
 		let block_size_limit = block_size_limit.unwrap_or(self.default_block_size_limit);
 
-
+		let keys = Keystore::ecdsa_public_keys(
+			&*self.keystore,
+			KeyTypeId::try_from("aura").unwrap_or_default(),
+		);
+	
 		// First we try to push transactions from the zero gas transaction pool
 
 		let raw_zero_gas_transactions_option = if let Some(zero_gas_tx_pool) = self.zero_gas_tx_pool {
@@ -483,7 +487,8 @@ where
 		};
 
 		// If we pull successfully from the zero gas transaction pool, we will try to push them to the block
-		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option {
+		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option  { 
+			if raw_zero_gas_transactions.transactions.len() > 0 {
 				let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.into_iter();
 				
 				let chain_id = self
@@ -501,10 +506,6 @@ where
 										.cloned()
 										.collect();
 
-				let keys = Keystore::ecdsa_public_keys(
-					&*self.keystore,
-					KeyTypeId::try_from("aura").unwrap_or_default(),
-				);
 				let public = keys[0].clone().into();
 
 				let eip191_message = stbl_tools::eth::build_eip191_message_hash(message.clone());
@@ -515,95 +516,97 @@ where
 					&public,
 					&eip191_message.as_fixed_bytes(),
 				).expect("Could not sign the Ethereum transaction hash").expect("Could not sign the Ethereum transaction hash");
+			
 
-			loop {
-				let pending_hex_string_tx = if let Some(tx) = pending_raw_zero_gas_transactions.next() {
-					tx
-				} else {
-					break EndProposingReason::NoMoreTransactions;
-				};
-	
-				let now = (self.now)();
-				if now > deadline {
-					debug!(
-						"Consensus deadline reached when pushing block transactions, \
-						proceeding with proposing."
-					);
-					break EndProposingReason::HitDeadline;
-				}
-
-				let pending_raw_tx = if let Ok(pending_raw_tx) = hex::decode(pending_hex_string_tx) {
-					pending_raw_tx
-				}
-				else {
-					continue;
-				};
-	
-				let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
-
-				let pending_tx =  if let Ok(pending_tx) = self
-				.client
-				.runtime_api()
-				.convert_zero_gas_transaction(self.parent_hash, ethereum_transaction.clone(), signed_hash.0.to_vec()) {
-					pending_tx
-				}
-				else {
-					continue;
-				};
-
-				let block_size =
-					block_builder.estimate_block_size(self.include_proof_in_block_size_estimation);
-				
-				if block_size + pending_tx.encoded_size() > block_size_limit {
-					if skipped < MAX_SKIPPED_TRANSACTIONS {
-						skipped += 1;
-						debug!(
-							"Transaction would overflow the block size limit, \
-							 but will try {} more transactions before quitting.",
-							MAX_SKIPPED_TRANSACTIONS - skipped,
-						);
-						continue;
-					} else if now < soft_deadline {
-						debug!(
-							"Transaction would overflow the block size limit, \
-							 but we still have time before the soft deadline, so \
-							 we will try a bit more."
-						);
-						continue;
+				loop {
+					let pending_hex_string_tx = if let Some(tx) = pending_raw_zero_gas_transactions.next() {
+						tx
 					} else {
-						debug!("Reached block size limit, proceeding with proposing.");
-						break EndProposingReason::HitBlockSizeLimit;
+						break EndProposingReason::NoMoreTransactions;
+					};
+		
+					let now = (self.now)();
+					if now > deadline {
+						debug!(
+							"Consensus deadline reached when pushing block transactions, \
+							proceeding with proposing."
+						);
+						break EndProposingReason::HitDeadline;
 					}
-				}
-	
-				trace!("[{:?}] Pushing to the block.", ethereum_transaction.hash());
-				match sc_block_builder::BlockBuilder::push(&mut block_builder, pending_tx) {
-					Ok(()) => {
-						transaction_pushed = true;
-						debug!("[{:?}] Pushed to the block.", ethereum_transaction.hash());
+
+					let pending_raw_tx = if let Ok(pending_raw_tx) = hex::decode(pending_hex_string_tx) {
+						pending_raw_tx
 					}
-					Err(ApplyExtrinsicFailed(Validity(e))) if e.exhausted_resources() => {
+					else {
+						continue;
+					};
+		
+					let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
+
+					let pending_tx =  if let Ok(pending_tx) = self
+					.client
+					.runtime_api()
+					.convert_zero_gas_transaction(self.parent_hash, ethereum_transaction.clone(), signed_hash.0.to_vec()) {
+						pending_tx
+					}
+					else {
+						continue;
+					};
+
+					let block_size =
+						block_builder.estimate_block_size(self.include_proof_in_block_size_estimation);
+					
+					if block_size + pending_tx.encoded_size() > block_size_limit {
 						if skipped < MAX_SKIPPED_TRANSACTIONS {
 							skipped += 1;
 							debug!(
-								"Block seems full, but will try {} more transactions before quitting.",
+								"Transaction would overflow the block size limit, \
+								but will try {} more transactions before quitting.",
 								MAX_SKIPPED_TRANSACTIONS - skipped,
 							);
-						} else if (self.now)() < soft_deadline {
+							continue;
+						} else if now < soft_deadline {
 							debug!(
-								"Block seems full, but we still have time before the soft deadline, \
-								 so we will try a bit more before quitting."
+								"Transaction would overflow the block size limit, \
+								but we still have time before the soft deadline, so \
+								we will try a bit more."
 							);
+							continue;
 						} else {
-							debug!("Reached block weight limit, proceeding with proposing.");
-							break EndProposingReason::HitBlockWeightLimit;
+							debug!("Reached block size limit, proceeding with proposing.");
+							break EndProposingReason::HitBlockSizeLimit;
 						}
 					}
-					Err(e) => {
-						debug!("[{:?}] Invalid transaction: {}", ethereum_transaction.hash(), e);
+		
+					trace!("[{:?}] Pushing to the block.", ethereum_transaction.hash());
+					match sc_block_builder::BlockBuilder::push(&mut block_builder, pending_tx) {
+						Ok(()) => {
+							transaction_pushed = true;
+							debug!("[{:?}] Pushed to the block.", ethereum_transaction.hash());
+						}
+						Err(ApplyExtrinsicFailed(Validity(e))) if e.exhausted_resources() => {
+							if skipped < MAX_SKIPPED_TRANSACTIONS {
+								skipped += 1;
+								debug!(
+									"Block seems full, but will try {} more transactions before quitting.",
+									MAX_SKIPPED_TRANSACTIONS - skipped,
+								);
+							} else if (self.now)() < soft_deadline {
+								debug!(
+									"Block seems full, but we still have time before the soft deadline, \
+									so we will try a bit more before quitting."
+								);
+							} else {
+								debug!("Reached block weight limit, proceeding with proposing.");
+								break EndProposingReason::HitBlockWeightLimit;
+							}
+						}
+						Err(e) => {
+							debug!("[{:?}] Invalid transaction: {}", ethereum_transaction.hash(), e);
+						}
 					}
-				}
 			};
+			}
 		};
 
 		let mut unqueue_invalid = Vec::new();
@@ -622,12 +625,6 @@ where
 				self.transaction_pool.ready()
 			},
 		};
-
-
-		let keys = Keystore::ecdsa_public_keys(
-			&*self.keystore,
-			KeyTypeId::try_from("aura").unwrap_or_default(),
-		);
 
 		let validator = EthereumSigner::from(keys[0]).into_account();
 
