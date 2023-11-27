@@ -470,7 +470,7 @@ where
 			match result_response_raw_zero {
 				Ok(response) => {
 					match response.json::<RawZeroGasTransactionResponse>().await {
-						Ok(json) => Some(json),
+						Ok(json) => Some(json as RawZeroGasTransactionResponse),
 						Err(e) => {
 							error!("Error parsing JSON response from zero gas transaction pool: {}", e);
 							None
@@ -489,7 +489,7 @@ where
 		// If we pull successfully from the zero gas transaction pool, we will try to push them to the block
 		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option  { 
 			if raw_zero_gas_transactions.transactions.len() > 0 {
-				let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.into_iter();
+				let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.iter();
 				
 				let chain_id = self
 						.client
