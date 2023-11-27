@@ -27,9 +27,9 @@ pub fn custom_info_from_fee_params(
 	CustomFeeInfo {
 		max_conversion_rate: max_priority_fee_per_gas
 			.map(|_| (max_fee_per_gas.unwrap(), 1_000_000_000.into())),
-		max_fee_per_gas: max_priority_fee_per_gas
-			.map(|max_priority_fee_per_gas| max_priority_fee_per_gas.saturating_add(base_fee))
-			.unwrap_or(max_fee_per_gas.unwrap_or_default()),
+		max_fee_per_gas: max_fee_per_gas
+			.or(max_priority_fee_per_gas.map(|e| e.saturating_add(base_fee)))
+			.unwrap_or_default(),
 		max_priority_fee_per_gas,
 	}
 }
@@ -75,7 +75,7 @@ mod test {
 		);
 
 		assert_eq!(info.max_priority_fee_per_gas, Some(U256::from(500_000_000)));
-		assert_eq!(info.max_fee_per_gas, U256::from(1_500_000_000));
+		assert_eq!(info.max_fee_per_gas, U256::from(2_000_000_000));
 		assert_eq!(
 			info.max_conversion_rate,
 			Some((U256::from(2_000_000_000), U256::from(1_000_000_000)))
