@@ -50,9 +50,6 @@ use sp_core::crypto::KeyTypeId;
 use sp_keystore::{Keystore, KeystorePtr};
 use stbl_primitives_fee_compatible_api::CompatibleFeeApi;
 use fp_rpc::EthereumRuntimeRPCApi;
-use sp_runtime::Saturating;
-
-
 
 /// Default block size limit in bytes used by [`Proposer`].
 ///
@@ -487,7 +484,12 @@ where
 		};
 
 		// If we pull successfully from the zero gas transaction pool, we will try to push them to the block
-		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option  { 
+		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option  {
+			info!(
+				"📥 Fetched {:?} txns from zero-gas-transactions pool",
+				raw_zero_gas_transactions.transactions.len()
+			);
+
 			if raw_zero_gas_transactions.transactions.len() > 0 {
 				let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.iter();
 				
