@@ -75,7 +75,7 @@ mod test {
 		);
 
 		assert_eq!(info.max_priority_fee_per_gas, Some(U256::from(500_000_000)));
-		assert_eq!(info.max_fee_per_gas, U256::from(1_500_000_000));
+		assert_eq!(info.max_fee_per_gas, U256::from(2_000_000_000));
 		assert_eq!(
 			info.max_conversion_rate,
 			Some((U256::from(2_000_000_000), U256::from(1_000_000_000)))
