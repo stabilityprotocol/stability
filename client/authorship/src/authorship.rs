@@ -884,7 +884,7 @@ mod tests {
 		.expect("Creates authority key");
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(),keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
@@ -939,7 +939,7 @@ mod tests {
 		.expect("Creates authority key");
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
@@ -999,7 +999,7 @@ mod tests {
 		.expect("Creates authority key");
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let proposer = proposer_factory.init_with_now(
 			&client.header(genesis_hash).unwrap().unwrap(),
@@ -1069,7 +1069,7 @@ mod tests {
 		.expect("Creates authority key");
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(),keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(),keystore_container.keystore(), None, 1000, None, None);
 		let mut propose_block = |client: &TestClient,
 		                         parent_number,
 		                         expected_block_extrinsics,
@@ -1200,7 +1200,7 @@ mod tests {
 		.expect("Creates authority key");
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
 
@@ -1244,6 +1244,7 @@ mod tests {
 			txpool.clone(),
 			keystore_container.keystore(),
 			None,
+			1000,
 			None,
 			None,
 		);
@@ -1330,7 +1331,7 @@ mod tests {
 
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let cell = Mutex::new(time::Instant::now());
 		let proposer = proposer_factory.init_with_now(
@@ -1414,7 +1415,7 @@ mod tests {
 		.expect("Creates authority key");
 	
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let deadline = time::Duration::from_secs(600);
 		let cell = Arc::new(Mutex::new((0, time::Instant::now())));
