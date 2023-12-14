@@ -54,7 +54,7 @@ if [ -n "$ZERO_GAS_TX_POOL" ]; then
   START_COMMAND="$START_COMMAND --zero-gas-tx-pool $ZERO_GAS_TX_POOL"
 fi
 
-if [ -n "$ZERO_GAS_TX_POOL_TIMEOUT"]; then
+if [ -n "$ZERO_GAS_TX_POOL_TIMEOUT" ]; then
   START_COMMAND="$START_COMMAND --zero-gas-tx-pool-timeout $ZERO_GAS_TX_POOL_TIMEOUT"
 fi
 
