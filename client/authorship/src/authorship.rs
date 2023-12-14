@@ -82,6 +82,10 @@ pub struct ProposerFactory<A, B, C, PR> {
 	/// HTTP URL of the private pool from which the node will retrieve zero-gas transactions
 	zero_gas_tx_pool: Option<String>,
 
+	/// Timeout in milliseconds for the zero-gas transaction pool
+	/// (default: 1000)
+	zero_gas_tx_pool_timeout: u64,
+
 	/// Prometheus Link,
 	metrics: PrometheusMetrics,
 	/// The default block size limit.
@@ -115,6 +119,7 @@ impl<A, B, C> ProposerFactory<A, B, C, DisableProofRecording> {
 		transaction_pool: Arc<A>,
 		keystore: KeystorePtr,
 		zero_gas_tx_pool: Option<String>,
+		zero_gas_tx_pool_timeout: u64,
 		prometheus: Option<&PrometheusRegistry>,
 		telemetry: Option<TelemetryHandle>,
 	) -> Self {
@@ -123,6 +128,7 @@ impl<A, B, C> ProposerFactory<A, B, C, DisableProofRecording> {
 			transaction_pool,
 			keystore,
 			zero_gas_tx_pool,
+			zero_gas_tx_pool_timeout,
 			metrics: PrometheusMetrics::new(prometheus),
 			default_block_size_limit: DEFAULT_BLOCK_SIZE_LIMIT,
 			soft_deadline_percent: DEFAULT_SOFT_DEADLINE_PERCENT,
@@ -147,6 +153,7 @@ impl<A, B, C> ProposerFactory<A, B, C, EnableProofRecording> {
 		transaction_pool: Arc<A>,
 		keystore: KeystorePtr,
 		zero_gas_tx_pool: Option<String>,
+		zero_gas_tx_pool_timeout: u64,
 		prometheus: Option<&PrometheusRegistry>,
 		telemetry: Option<TelemetryHandle>,
 	) -> Self {
@@ -156,6 +163,7 @@ impl<A, B, C> ProposerFactory<A, B, C, EnableProofRecording> {
 			transaction_pool,
 			keystore,
 			zero_gas_tx_pool,
+			zero_gas_tx_pool_timeout,
 			metrics: PrometheusMetrics::new(prometheus),
 			default_block_size_limit: DEFAULT_BLOCK_SIZE_LIMIT,
 			soft_deadline_percent: DEFAULT_SOFT_DEADLINE_PERCENT,
@@ -234,6 +242,7 @@ where
 			transaction_pool: self.transaction_pool.clone(),
 			keystore: self.keystore.clone(),
 			zero_gas_tx_pool: self.zero_gas_tx_pool.clone(),
+			zero_gas_tx_pool_timeout: self.zero_gas_tx_pool_timeout,
 			now,
 			metrics: self.metrics.clone(),
 			default_block_size_limit: self.default_block_size_limit,
@@ -285,6 +294,7 @@ pub struct Proposer<B, Block: BlockT, C, A: TransactionPool, PR> {
 	transaction_pool: Arc<A>,
 	keystore: KeystorePtr,
 	zero_gas_tx_pool: Option<String>,
+	zero_gas_tx_pool_timeout: u64,
 	now: Box<dyn Fn() -> time::Instant + Send + Sync>,
 	metrics: PrometheusMetrics,
 	default_block_size_limit: usize,
@@ -444,7 +454,7 @@ where
 
 			let http_client = reqwest::Client::new();
 			let mut request = Box::pin(http_client.post(zero_gas_tx_pool).send().fuse());
-			let mut timeout = Box::pin(futures_timer::Delay::new(std::time::Duration::from_millis(500)).fuse());
+			let mut timeout = Box::pin(futures_timer::Delay::new(std::time::Duration::from_millis(self.zero_gas_tx_pool_timeout)).fuse());
 
 			let result_response_raw_zero = select! {
 				res = request => {
@@ -874,7 +884,7 @@ mod tests {
 		.expect("Creates authority key");
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(),keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
@@ -929,7 +939,7 @@ mod tests {
 		.expect("Creates authority key");
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
@@ -989,7 +999,7 @@ mod tests {
 		.expect("Creates authority key");
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let proposer = proposer_factory.init_with_now(
 			&client.header(genesis_hash).unwrap().unwrap(),
@@ -1059,7 +1069,7 @@ mod tests {
 		.expect("Creates authority key");
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(),keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(),keystore_container.keystore(), None, 1000, None, None);
 		let mut propose_block = |client: &TestClient,
 		                         parent_number,
 		                         expected_block_extrinsics,
@@ -1190,7 +1200,7 @@ mod tests {
 		.expect("Creates authority key");
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
 
@@ -1234,6 +1244,7 @@ mod tests {
 			txpool.clone(),
 			keystore_container.keystore(),
 			None,
+			1000,
 			None,
 			None,
 		);
@@ -1320,7 +1331,7 @@ mod tests {
 
 
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let cell = Mutex::new(time::Instant::now());
 		let proposer = proposer_factory.init_with_now(
@@ -1404,7 +1415,7 @@ mod tests {
 		.expect("Creates authority key");
 	
 		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, None, None);
+			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
 
 		let deadline = time::Duration::from_secs(600);
 		let cell = Arc::new(Mutex::new((0, time::Instant::now())));

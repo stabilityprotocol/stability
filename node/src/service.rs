@@ -510,6 +510,7 @@ where
 			transaction_pool,
 			keystore_container.keystore(),
 			stability_config.zero_gas_tx_pool.clone(),
+			stability_config.zero_gas_tx_pool_timeout.clone(),
 			prometheus_registry.as_ref(),
 			telemetry.as_ref().map(|x| x.handle()),
 		);
@@ -636,6 +637,7 @@ where
 		transaction_pool.clone(),
 		keystore.keystore(),
 		stability_config.zero_gas_tx_pool.clone(),
+		stability_config.zero_gas_tx_pool_timeout.clone(),
 		prometheus_registry,
 		telemetry.as_ref().map(|x| x.handle()),
 	);

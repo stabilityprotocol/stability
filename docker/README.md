@@ -37,6 +37,7 @@ Optional environment variables:
 - BOOTNODES: This environment variable allows specifying the bootnodes to use, separated by commas. If not specified, the node will use the default bootnodes for the chain spec.
 - MODE: This environment variable allows the node to run in different pruning modes. Possible values are "full_node" or "archive". The default value is "full_node".
 - ZERO_GAS_TX_POOL: This environment variable allows the node to run with a zero gas price transaction pool. By default the feature is disabled. The expected value is a string containing an URL. Check the [Zero Gas Transaction Pool](../docs/ZERO-GAS-TRANSACTIONS.md) document for more information.
+- ZERO_GAS_TX_POOL_TIMEOUT: This environment variable allows specifying the timeout for the zero gas transaction in millisecond. If not specified, the node will use the default timeout (1000ms).
 
 To set an environment variable in the docker run, use the flag -e NAME=VALUE
 
