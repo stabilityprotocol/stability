@@ -533,7 +533,7 @@ where
 	let timer_prepare = Instant::now();
 
 	// Max request duration of 10 minutes.
-	let max_duration = time::Duration::from_secs(600);
+	let max_duration = time::Duration::from_secs(120);
 	let begin_request = time::Instant::now();
 
 	let topics_input = if filter.topics.is_some() {
@@ -576,7 +576,7 @@ where
 
 		let mut statuses_cache: BTreeMap<B::Hash, Option<Vec<TransactionStatus>>> = BTreeMap::new();
 
-		for log in logs.iter() {
+		for log in logs.iter().rev() {
 			let substrate_hash = log.substrate_block_hash;
 
 			let schema = log.ethereum_storage_schema;
@@ -630,10 +630,7 @@ where
 				)));
 			}
 			if begin_request.elapsed() > max_duration {
-				return Err(internal_err(format!(
-					"query timeout of {} seconds exceeded",
-					max_duration.as_secs()
-				)));
+				return Ok(());
 			}
 		}
 
@@ -674,7 +671,7 @@ where
 	BE: Backend<B> + 'static,
 {
 	// Max request duration of 10 minutes.
-	let max_duration = time::Duration::from_secs(600);
+	let max_duration = time::Duration::from_secs(120);
 	let begin_request = time::Instant::now();
 
 	let mut current_number = from;
