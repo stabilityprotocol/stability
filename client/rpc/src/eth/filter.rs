@@ -718,7 +718,7 @@ where
 		if begin_request.elapsed() > max_duration {
 			break;
 		}
-		if current_number == to {
+		if current_number == from {
 			break;
 		} else {
 			current_number = current_number.saturating_sub(One::one());
