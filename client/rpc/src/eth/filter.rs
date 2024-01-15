@@ -532,7 +532,7 @@ where
 	let timer_start = Instant::now();
 	let timer_prepare = Instant::now();
 
-	// Max request duration of 10 seconds.
+	// Max request duration of 10 minutes.
 	let max_duration = time::Duration::from_secs(600);
 	let begin_request = time::Instant::now();
 
@@ -673,7 +673,7 @@ where
 	C: HeaderBackend<B> + StorageProvider<B, BE> + 'static,
 	BE: Backend<B> + 'static,
 {
-	// Max request duration of 10 seconds.
+	// Max request duration of 10 minutes.
 	let max_duration = time::Duration::from_secs(600);
 	let begin_request = time::Instant::now();
 
