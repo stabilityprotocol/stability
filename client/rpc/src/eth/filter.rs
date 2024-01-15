@@ -630,7 +630,7 @@ where
 				)));
 			}
 			if begin_request.elapsed() > max_duration {
-				return Ok(());
+				break;
 			}
 		}
 
