@@ -532,7 +532,7 @@ where
 	let timer_start = Instant::now();
 	let timer_prepare = Instant::now();
 
-	// Max request duration of 10 minutes.
+	// Max request duration of 2 minutes.
 	let max_duration = time::Duration::from_secs(120);
 	let begin_request = time::Instant::now();
 
@@ -670,11 +670,11 @@ where
 	C: HeaderBackend<B> + StorageProvider<B, BE> + 'static,
 	BE: Backend<B> + 'static,
 {
-	// Max request duration of 10 minutes.
+	// Max request duration of 2 minutes.
 	let max_duration = time::Duration::from_secs(120);
 	let begin_request = time::Instant::now();
 
-	let mut current_number = from;
+	let mut current_number = to;
 
 	// Pre-calculate BloomInput for reuse.
 	let topics_input = if filter.topics.is_some() {
@@ -686,7 +686,7 @@ where
 	let address_bloom_filter = FilteredParams::adresses_bloom_filter(&filter.address);
 	let topics_bloom_filter = FilteredParams::topics_bloom_filter(&topics_input);
 
-	while current_number <= to {
+	while current_number >= from {
 		let id = BlockId::Number(current_number);
 		let substrate_hash = client
 			.expect_block_hash_from_id(&id)
@@ -716,15 +716,12 @@ where
 			)));
 		}
 		if begin_request.elapsed() > max_duration {
-			return Err(internal_err(format!(
-				"query timeout of {} seconds exceeded",
-				max_duration.as_secs()
-			)));
+			break;
 		}
 		if current_number == to {
 			break;
 		} else {
-			current_number = current_number.saturating_add(One::one());
+			current_number = current_number.saturating_sub(One::one());
 		}
 	}
 	Ok(())
