@@ -561,7 +561,8 @@ where
 
 	let time_prepare = timer_prepare.elapsed().as_millis();
 	let timer_fetch = Instant::now();
-	if let Ok(logs) = backend
+
+	match backend
 		.filter_logs(
 			UniqueSaturatedInto::<u64>::unique_saturated_into(from),
 			UniqueSaturatedInto::<u64>::unique_saturated_into(to),
@@ -570,78 +571,85 @@ where
 		)
 		.await
 	{
-		let time_fetch = timer_fetch.elapsed().as_millis();
-		let timer_post = Instant::now();
-		use std::collections::BTreeMap;
+	 	Ok(logs) => {
+			let time_fetch = timer_fetch.elapsed().as_millis();
+			let timer_post = Instant::now();
+			use std::collections::BTreeMap;
 
-		let mut statuses_cache: BTreeMap<B::Hash, Option<Vec<TransactionStatus>>> = BTreeMap::new();
+			let mut statuses_cache: BTreeMap<B::Hash, Option<Vec<TransactionStatus>>> = BTreeMap::new();
 
-		for log in logs.iter().rev() {
-			let substrate_hash = log.substrate_block_hash;
+			for log in logs.iter().rev() {
+				let substrate_hash = log.substrate_block_hash;
 
-			let schema = log.ethereum_storage_schema;
-			let ethereum_block_hash = log.ethereum_block_hash;
-			let block_number = log.block_number;
-			let db_transaction_index = log.transaction_index;
-			let db_log_index = log.log_index;
+				let schema = log.ethereum_storage_schema;
+				let ethereum_block_hash = log.ethereum_block_hash;
+				let block_number = log.block_number;
+				let db_transaction_index = log.transaction_index;
+				let db_log_index = log.log_index;
 
-			let statuses = if let Some(statuses) = statuses_cache.get(&log.substrate_block_hash) {
-				statuses.clone()
-			} else {
-				let statuses = block_data_cache
-					.current_transaction_statuses(schema, substrate_hash)
-					.await;
-				statuses_cache.insert(log.substrate_block_hash, statuses.clone());
-				statuses
-			};
-			if let Some(statuses) = statuses {
-				let mut block_log_index: u32 = 0;
-				for status in statuses.iter() {
-					let mut transaction_log_index: u32 = 0;
-					let transaction_hash = status.transaction_hash;
-					let transaction_index = status.transaction_index;
-					for ethereum_log in &status.logs {
-						if transaction_index == db_transaction_index
-							&& transaction_log_index == db_log_index
-						{
-							ret.push(Log {
-								address: ethereum_log.address,
-								topics: ethereum_log.topics.clone(),
-								data: Bytes(ethereum_log.data.clone()),
-								block_hash: Some(ethereum_block_hash),
-								block_number: Some(U256::from(block_number)),
-								transaction_hash: Some(transaction_hash),
-								transaction_index: Some(U256::from(transaction_index)),
-								log_index: Some(U256::from(block_log_index)),
-								transaction_log_index: Some(U256::from(transaction_log_index)),
-								removed: false,
-							});
+				let statuses = if let Some(statuses) = statuses_cache.get(&log.substrate_block_hash) {
+					statuses.clone()
+				} else {
+					let statuses = block_data_cache
+						.current_transaction_statuses(schema, substrate_hash)
+						.await;
+					statuses_cache.insert(log.substrate_block_hash, statuses.clone());
+					statuses
+				};
+				if let Some(statuses) = statuses {
+					let mut block_log_index: u32 = 0;
+					for status in statuses.iter() {
+						let mut transaction_log_index: u32 = 0;
+						let transaction_hash = status.transaction_hash;
+						let transaction_index = status.transaction_index;
+						for ethereum_log in &status.logs {
+							if transaction_index == db_transaction_index
+								&& transaction_log_index == db_log_index
+							{
+								ret.push(Log {
+									address: ethereum_log.address,
+									topics: ethereum_log.topics.clone(),
+									data: Bytes(ethereum_log.data.clone()),
+									block_hash: Some(ethereum_block_hash),
+									block_number: Some(U256::from(block_number)),
+									transaction_hash: Some(transaction_hash),
+									transaction_index: Some(U256::from(transaction_index)),
+									log_index: Some(U256::from(block_log_index)),
+									transaction_log_index: Some(U256::from(transaction_log_index)),
+									removed: false,
+								});
+							}
+							transaction_log_index += 1;
+							block_log_index += 1;
 						}
-						transaction_log_index += 1;
-						block_log_index += 1;
 					}
 				}
+				// Check for restrictions
+				if ret.len() as u32 > max_past_logs {
+					return Err(internal_err(format!(
+						"query returned more than {} results",
+						max_past_logs
+					)));
+				}
+				if begin_request.elapsed() > max_duration {
+					break;
+				}
 			}
-			// Check for restrictions
-			if ret.len() as u32 > max_past_logs {
-				return Err(internal_err(format!(
-					"query returned more than {} results",
-					max_past_logs
-				)));
-			}
-			if begin_request.elapsed() > max_duration {
-				break;
-			}
+
+			let time_post = timer_post.elapsed().as_millis();
+
+			log::info!(
+				target: "frontier-sql",
+				"OUTER-TIMER fetch={}, post={}",
+				time_fetch,
+				time_post,
+			);
+		},
+		Err(_) => {
+			return Err(internal_err(
+				"Unexpected error while fetching logss"
+			));
 		}
-
-		let time_post = timer_post.elapsed().as_millis();
-
-		log::info!(
-			target: "frontier-sql",
-			"OUTER-TIMER fetch={}, post={}",
-			time_fetch,
-			time_post,
-		);
 	}
 
 	log::info!(
