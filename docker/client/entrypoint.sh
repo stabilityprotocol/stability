@@ -40,6 +40,10 @@ START_COMMAND="./target/release/stability --base-path /tmp/node --validator --un
 
 if [ "$MODE" = "archive" ]; then
   START_COMMAND="$START_COMMAND --pruning archive"
+  
+  if [ "$BACKEND_TYPE" = "sql" ]; then
+    START_COMMAND="$START_COMMAND --frontier-backend-type sql"
+  fi
 fi
 
 if [ -n "$NODE_KEY" ]; then
