@@ -9,4 +9,8 @@ interface ValidatorController {
     function getValidatorList() external view returns (address[] memory);
 
     function getActiveValidatorList() external view returns (address[] memory);
+
+    function getValidatorMissingBlocks(
+        address validator
+    ) external view returns (uint256);
 }

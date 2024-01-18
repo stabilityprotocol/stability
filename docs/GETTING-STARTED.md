@@ -71,6 +71,7 @@ Additionally, you can configure the following flags:
 - `--unsafe-rpc-external --rpc-cors all`: Use if your node will be accessed from a system external to your localhost.
 - `--bootnodes`: A list of p2p nodes for Stability to join the network. What is known as bootnodes
 - `--base-path`: Specifies a custom base path for the data folder
+- `--frontier-backend-type`: The standard database with the system can be modified to use an SQL backend. Since getting Ethereum logs is an everyday use case with a high CPU usage, SQL backend mode is optimized for this. Available options are `sql` or `key-value` (default).
 
 ## Generating the a build spec file or Genesis file
 

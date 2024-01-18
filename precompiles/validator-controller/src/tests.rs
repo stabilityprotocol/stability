@@ -20,6 +20,7 @@ fn selectors() {
 	assert!(PCall::add_validator_selectors().contains(&0x4d238c8e));
 	assert!(PCall::remove_validator_selectors().contains(&0x40a141ff));
 	assert!(PCall::get_validator_list_selectors().contains(&0xe35c0f7d));
+	assert!(PCall::get_validator_missing_blocks_selectors().contains(&0x41ee9a53));
 	assert_eq!(
 		crate::SELECTOR_LOG_NEW_OWNER,
 		&Keccak256::digest(b"NewOwner(address)")[..]
@@ -33,6 +34,7 @@ fn modifiers() {
 
 		tester.test_view_modifier(PCall::owner_selectors());
 		tester.test_view_modifier(PCall::pending_owner_selectors());
+		tester.test_view_modifier(PCall::get_validator_missing_blocks_selectors());
 		tester.test_default_modifier(PCall::transfer_ownership_selectors());
 		tester.test_default_modifier(PCall::claim_ownership_selectors());
 		tester.test_default_modifier(PCall::add_validator_selectors());
@@ -138,7 +140,7 @@ fn claim_ownership_if_claimable() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_LOG_NEW_OWNER,
-				solidity::encode_event_data(Into::<H256>::into(new_owner))
+				solidity::encode_event_data(Into::<H256>::into(new_owner)),
 			))
 			.execute_some();
 
@@ -164,7 +166,7 @@ fn add_validator() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_VALIDATOR_ADDED,
-				solidity::encode_event_data(account_id_to_evm_address(validator.clone()))
+				solidity::encode_event_data(account_id_to_evm_address(validator.clone())),
 			))
 			.execute_some();
 
@@ -217,7 +219,7 @@ fn add_validator_if_already_init() {
 				.expect_log(log1(
 					Precompile1,
 					SELECTOR_VALIDATOR_ADDED,
-					solidity::encode_event_data(account_id_to_evm_address(validator.clone()))
+					solidity::encode_event_data(account_id_to_evm_address(validator.clone())),
 				))
 				.execute_some();
 
@@ -302,7 +304,7 @@ fn remove_validator() {
 				.expect_log(log1(
 					Precompile1,
 					SELECTOR_VALIDATOR_REMOVED,
-					solidity::encode_event_data(account_id_to_evm_address(validator.clone()))
+					solidity::encode_event_data(account_id_to_evm_address(validator.clone())),
 				))
 				.execute_some();
 
@@ -367,5 +369,48 @@ fn get_default_active_validator_list() {
 						.map(|v| account_id_to_evm_address(*v))
 						.collect::<Vec<Address>>(),
 				);
+		});
+}
+
+#[test]
+fn checks_if_validator_is_missing_blocks() {
+	let sender = UnpermissionedAccount::get();
+	let validator = ValidatorInitial::get();
+	let validators = vec![validator.clone()];
+	ExtBuilder::default()
+		.with_validators(validators.clone())
+		.build()
+		.execute_with(|| {
+			precompiles()
+				.prepare_test(
+					sender,
+					Precompile1,
+					PCall::get_validator_missing_blocks {
+						validator: account_id_to_evm_address(validator.clone()),
+					},
+				)
+				.execute_returns(U256::zero());
+		});
+}
+
+#[test]
+fn checks_a_validator_missing_blocks() {
+	let sender = UnpermissionedAccount::get();
+	let validator = ValidatorInitial::get();
+	let validators = vec![validator.clone()];
+	ExtBuilder::default()
+		.with_validators(validators.clone())
+		.build()
+		.execute_with(|| {
+			pallet_validator_set::EpochsMissed::<Runtime>::set(validator.clone(), U256::from(2));
+			precompiles()
+				.prepare_test(
+					sender,
+					Precompile1,
+					PCall::get_validator_missing_blocks {
+						validator: account_id_to_evm_address(validator.clone()),
+					},
+				)
+				.execute_returns(U256::from(2));
 		});
 }

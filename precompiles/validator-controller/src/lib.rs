@@ -32,6 +32,7 @@ use frame_support::storage::types::{StorageValue, ValueQuery};
 
 use frame_support::traits::StorageInstance;
 use pallet_custom_balances::AccountIdMapping;
+use pallet_evm::AddressMapping;
 use precompile_utils::prelude::*;
 
 use sp_core::Get;
@@ -87,7 +88,8 @@ where
 	Runtime: pallet_validator_set::Config
 		+ pallet_timestamp::Config
 		+ pallet_evm::Config
-		+ pallet_custom_balances::Config,
+		+ pallet_custom_balances::Config
+		+ pallet_evm::Config,
 	Runtime::RuntimeCall: From<pallet_validator_set::Call<Runtime>>,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
@@ -133,7 +135,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 
@@ -163,8 +165,9 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
-		).record(handle)?;
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
+		)
+		.record(handle)?;
 
 		Ok(())
 	}
@@ -203,6 +206,19 @@ where
 			.collect())
 	}
 
+	#[precompile::public("getValidatorMissingBlocks(address)")]
+	#[precompile::view]
+	fn get_validator_missing_blocks(
+		handle: &mut impl PrecompileHandle,
+		validator: Address,
+	) -> EvmResult<U256> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+		let account_id =
+			<Runtime as pallet_evm::Config>::AddressMapping::into_account_id(validator.into());
+		let epochs_missed = pallet_validator_set::EpochsMissed::<Runtime>::get(account_id);
+		Ok(epochs_missed)
+	}
+
 	#[precompile::public("addValidator(address)")]
 	fn add_validator(handle: &mut impl PrecompileHandle, new_validator: Address) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
@@ -229,7 +245,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_VALIDATOR_ADDED,
-			solidity::encode_event_data(Into::<H256>::into(origin_id))
+			solidity::encode_event_data(Into::<H256>::into(origin_id)),
 		)
 		.record(handle)?;
 
@@ -265,7 +281,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_VALIDATOR_REMOVED,
-			solidity::encode_event_data(Into::<H256>::into(origin_id))
+			solidity::encode_event_data(Into::<H256>::into(origin_id)),
 		)
 		.record(handle)?;
 

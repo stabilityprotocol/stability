@@ -36,6 +36,7 @@ Optional environment variables:
 - NODE_KEY: This environment variable allows specifying the node key to use. If not specified, the node will generate a random node key. This applies to the P2P key, not the account key.
 - BOOTNODES: This environment variable allows specifying the bootnodes to use, separated by commas. If not specified, the node will use the default bootnodes for the chain spec.
 - MODE: This environment variable allows the node to run in different pruning modes. Possible values are "full_node" or "archive". The default value is "full_node".
+- BACKEND_TYPE: The only available option is `sql` for now. This option allows the node to use a SQL backend instead of the default `key-value` backend for faster Ethereum log queries.
 - ZERO_GAS_TX_POOL: This environment variable allows the node to run with a zero gas price transaction pool. By default the feature is disabled. The expected value is a string containing an URL. Check the [Zero Gas Transaction Pool](../docs/ZERO-GAS-TRANSACTIONS.md) document for more information.
 - ZERO_GAS_TX_POOL_TIMEOUT: This environment variable allows specifying the timeout for the zero gas transaction in millisecond. If not specified, the node will use the default timeout (1000ms).
 
