@@ -138,7 +138,7 @@ fn claim_ownership_if_claimable() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_LOG_NEW_OWNER,
-				solidity::encode_event_data(Into::<H256>::into(new_owner))
+				solidity::encode_event_data(Into::<H256>::into(new_owner)),
 			))
 			.execute_some();
 
@@ -164,7 +164,7 @@ fn add_validator() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_VALIDATOR_ADDED,
-				solidity::encode_event_data(account_id_to_evm_address(validator.clone()))
+				solidity::encode_event_data(account_id_to_evm_address(validator.clone())),
 			))
 			.execute_some();
 
@@ -217,7 +217,7 @@ fn add_validator_if_already_init() {
 				.expect_log(log1(
 					Precompile1,
 					SELECTOR_VALIDATOR_ADDED,
-					solidity::encode_event_data(account_id_to_evm_address(validator.clone()))
+					solidity::encode_event_data(account_id_to_evm_address(validator.clone())),
 				))
 				.execute_some();
 
@@ -302,7 +302,7 @@ fn remove_validator() {
 				.expect_log(log1(
 					Precompile1,
 					SELECTOR_VALIDATOR_REMOVED,
-					solidity::encode_event_data(account_id_to_evm_address(validator.clone()))
+					solidity::encode_event_data(account_id_to_evm_address(validator.clone())),
 				))
 				.execute_some();
 
@@ -367,5 +367,26 @@ fn get_default_active_validator_list() {
 						.map(|v| account_id_to_evm_address(*v))
 						.collect::<Vec<Address>>(),
 				);
+		});
+}
+
+#[test]
+fn checks_if_validator_is_missing_blocks() {
+	let sender = UnpermissionedAccount::get();
+	let validator = ValidatorInitial::get();
+	let validators = vec![validator.clone()];
+	ExtBuilder::default()
+		.with_validators(validators.clone())
+		.build()
+		.execute_with(|| {
+			precompiles()
+				.prepare_test(
+					sender,
+					Precompile1,
+					PCall::is_validator_missing_blocks {
+						validator: account_id_to_evm_address(validator.clone()),
+					},
+				)
+				.execute_returns(false);
 		});
 }
