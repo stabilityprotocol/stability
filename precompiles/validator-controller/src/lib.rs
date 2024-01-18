@@ -206,17 +206,17 @@ where
 			.collect())
 	}
 
-	#[precompile::public("isValidatorMissingBlocks(address)")]
+	#[precompile::public("getValidatorMissingBlocks(address)")]
 	#[precompile::view]
-	fn is_validator_missing_blocks(
+	fn get_validator_missing_blocks(
 		handle: &mut impl PrecompileHandle,
 		validator: Address,
-	) -> EvmResult<bool> {
+	) -> EvmResult<U256> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 		let account_id =
 			<Runtime as pallet_evm::Config>::AddressMapping::into_account_id(validator.into());
 		let epochs_missed = pallet_validator_set::EpochsMissed::<Runtime>::get(account_id);
-		Ok(epochs_missed > U256::zero())
+		Ok(epochs_missed)
 	}
 
 	#[precompile::public("addValidator(address)")]

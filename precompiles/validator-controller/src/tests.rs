@@ -20,6 +20,7 @@ fn selectors() {
 	assert!(PCall::add_validator_selectors().contains(&0x4d238c8e));
 	assert!(PCall::remove_validator_selectors().contains(&0x40a141ff));
 	assert!(PCall::get_validator_list_selectors().contains(&0xe35c0f7d));
+	assert!(PCall::get_validator_missing_blocks_selectors().contains(&0x41ee9a53));
 	assert_eq!(
 		crate::SELECTOR_LOG_NEW_OWNER,
 		&Keccak256::digest(b"NewOwner(address)")[..]
@@ -33,6 +34,7 @@ fn modifiers() {
 
 		tester.test_view_modifier(PCall::owner_selectors());
 		tester.test_view_modifier(PCall::pending_owner_selectors());
+		tester.test_view_modifier(PCall::get_validator_missing_blocks_selectors());
 		tester.test_default_modifier(PCall::transfer_ownership_selectors());
 		tester.test_default_modifier(PCall::claim_ownership_selectors());
 		tester.test_default_modifier(PCall::add_validator_selectors());
@@ -383,11 +385,11 @@ fn checks_if_validator_is_missing_blocks() {
 				.prepare_test(
 					sender,
 					Precompile1,
-					PCall::is_validator_missing_blocks {
+					PCall::get_validator_missing_blocks {
 						validator: account_id_to_evm_address(validator.clone()),
 					},
 				)
-				.execute_returns(false);
+				.execute_returns(U256::zero());
 		});
 }
 
@@ -405,10 +407,10 @@ fn checks_a_validator_missing_blocks() {
 				.prepare_test(
 					sender,
 					Precompile1,
-					PCall::is_validator_missing_blocks {
+					PCall::get_validator_missing_blocks {
 						validator: account_id_to_evm_address(validator.clone()),
 					},
 				)
-				.execute_returns(true);
+				.execute_returns(U256::from(2));
 		});
 }
