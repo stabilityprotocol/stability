@@ -390,3 +390,25 @@ fn checks_if_validator_is_missing_blocks() {
 				.execute_returns(false);
 		});
 }
+
+#[test]
+fn checks_a_validator_missing_blocks() {
+	let sender = UnpermissionedAccount::get();
+	let validator = ValidatorInitial::get();
+	let validators = vec![validator.clone()];
+	ExtBuilder::default()
+		.with_validators(validators.clone())
+		.build()
+		.execute_with(|| {
+			pallet_validator_set::EpochsMissed::<Runtime>::set(validator.clone(), U256::from(2));
+			precompiles()
+				.prepare_test(
+					sender,
+					Precompile1,
+					PCall::is_validator_missing_blocks {
+						validator: account_id_to_evm_address(validator.clone()),
+					},
+				)
+				.execute_returns(true);
+		});
+}
