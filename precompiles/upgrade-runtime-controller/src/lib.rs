@@ -31,6 +31,8 @@ use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};
 
 use frame_support::traits::StorageInstance;
+use frame_support::traits::ChangeMembers;
+use frame_support::inherent::Vec;
 use precompile_utils::prelude::*;
 
 use sp_core::Get;
@@ -83,13 +85,14 @@ pub struct UpgradeRuntimeControllerPrecompile<Runtime, DefaultOwner: Get<H160> +
 impl<Runtime, DefaultOwner> UpgradeRuntimeControllerPrecompile<Runtime, DefaultOwner>
 where
 	DefaultOwner: Get<H160> + 'static,
-	Runtime:
-		pallet_upgrade_runtime_proposal::Config + pallet_timestamp::Config + pallet_evm::Config,
+	Runtime: pallet_upgrade_runtime_proposal::Config + pallet_collective::Config<pallet_collective::Instance1> + pallet_timestamp::Config + pallet_evm::Config,
 	Runtime::RuntimeCall: From<pallet_upgrade_runtime_proposal::Call<Runtime>>,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
 	<Runtime as frame_system::Config>::BlockNumber: From<u32>,
+	<Runtime as frame_system::Config>::Hash: Into<H256>,
+	<Runtime as frame_system::Config>::AccountId: From<H160>,
 {
 	#[precompile::public("owner()")]
 	#[precompile::view]
@@ -220,5 +223,81 @@ where
 		log0(handle.context().address, SELECTOR_CODE_PROPOSED_REJECTED).record(handle)?;
 
 		Ok(())
+	}
+
+	#[precompile::public("addMemberToTechnicalCommittee(address)")]
+	fn add_member_to_technical_committee(
+		handle: &mut impl PrecompileHandle,
+		member: Address,
+	) -> EvmResult {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let member_id: H160 = member.into();
+
+		let old_members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+
+		if old_members.contains(&member_id.into()) {
+			return Err(revert("Already a member"));
+		}
+
+		let mut new_members = old_members
+			.iter()
+			.cloned()
+			.chain(Some(member_id.into()))
+			.collect::<Vec<_>>();
+			
+		new_members.sort();
+
+		pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::set_members_sorted(
+			&new_members,
+			&old_members
+		);
+
+		Ok(())
+	}
+
+	#[precompile::public("removeMemberFromTechnicalCommittee(address)")]
+	fn remove_member_to_technical_committee(
+		handle: &mut impl PrecompileHandle,
+		member: Address,
+	) -> EvmResult {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let member_id: H160 = member.into();
+		let member_account = <Runtime as frame_system::Config>::AccountId::from(member_id);
+
+		let old_members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+
+		if !old_members.contains(&member_account) {
+			return Err(revert("Not a member"));
+		}
+
+		let mut new_members = old_members
+			.iter()
+			.cloned()
+			.filter(|m| *m != member_account)
+			.collect::<Vec<_>>();
+			
+		new_members.sort();
+
+		pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::set_members_sorted(
+			&new_members,
+			&old_members
+		);
+
+		Ok(())
+	}
+
+	#[precompile::public("getHashOfProposedCode()")]
+	#[precompile::view]
+	fn get_hash_of_proposed_code(handle: &mut impl PrecompileHandle) -> EvmResult<H256> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let hash = pallet_upgrade_runtime_proposal::Pallet::<Runtime>::hash_of_proposed_code();
+
+		match hash {
+			Some(hash) => Ok(hash.into()),
+			None => Ok(H256::default()),
+		}
 	}
 }

@@ -22,6 +22,7 @@ pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
 # Stability
 pallet-upgrade-runtime-proposal = { workspace = true }
 precompile-utils = { workspace = true }
+pallet-collective = { workspace = true }
 
 [dev-dependencies]
 pallet-balances = { workspace = true }
