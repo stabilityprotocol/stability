@@ -8399,15 +8399,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sc-proposer-metrics"
-version = "0.10.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.43#5e49f6e44820affccaf517fd22af564f4b495d40"
-dependencies = [
- "log",
- "substrate-prometheus-endpoint",
-]
-
-[[package]]
 name = "sc-rpc"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.43#5e49f6e44820affccaf517fd22af564f4b495d40"
@@ -10517,7 +10508,6 @@ dependencies = [
  "reqwest",
  "sc-block-builder",
  "sc-client-api",
- "sc-proposer-metrics",
  "sc-service",
  "sc-telemetry",
  "sc-transaction-pool",
@@ -10535,6 +10525,7 @@ dependencies = [
  "stability-test-runtime-client",
  "stbl-primitives-fee-compatible-api",
  "stbl-primitives-zero-gas-transactions-api",
+ "stbl-proposer-metrics",
  "stbl-tools",
  "substrate-prometheus-endpoint",
 ]
@@ -10570,6 +10561,14 @@ dependencies = [
  "sp-api",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "stbl-proposer-metrics"
+version = "1.0.0"
+dependencies = [
+ "log",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]

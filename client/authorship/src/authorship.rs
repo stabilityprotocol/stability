@@ -45,7 +45,7 @@ use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 use std::{marker::PhantomData, pin::Pin, sync::Arc, time};
 
 use prometheus_endpoint::Registry as PrometheusRegistry;
-use sc_proposer_metrics::{EndProposingReason, MetricsLink as PrometheusMetrics};
+use stbl_proposer_metrics::{EndProposingReason, MetricsLink as PrometheusMetrics};
 use sp_core::crypto::KeyTypeId;
 use sp_keystore::{Keystore, KeystorePtr};
 use stbl_primitives_fee_compatible_api::CompatibleFeeApi;
@@ -456,6 +456,8 @@ where
 			let mut request = Box::pin(http_client.post(zero_gas_tx_pool).send().fuse());
 			let mut timeout = Box::pin(futures_timer::Delay::new(std::time::Duration::from_millis(self.zero_gas_tx_pool_timeout)).fuse());
 
+			let zgt_response_start =  time::Instant::now();
+
 			let result_response_raw_zero = select! {
 				res = request => {
 					match res {
@@ -473,6 +475,16 @@ where
 					Err("Timeout fired waiting for get transaction from zero gas transaction pool")
 				},
 			};
+
+		   let zgt_response_end =  time::Instant::now();
+			self.metrics.report(|metrics| {
+				metrics.zgt_response_time.observe(
+					zgt_response_end
+						.saturating_duration_since(zgt_response_start)
+						.as_secs_f64(),
+				);
+			});
+			
 			
 			match result_response_raw_zero {
 				Ok(response) => {
@@ -493,12 +505,16 @@ where
 			None
 		};
 
+		
+
 		// If we pull successfully from the zero gas transaction pool, we will try to push them to the block
 		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option  {
 			info!(
 				"📥 Fetched {:?} txns from zero-gas-transactions pool",
 				raw_zero_gas_transactions.transactions.len()
 			);
+
+			let zgt_inclusion_in_block_start =  time::Instant::now();
 
 			if raw_zero_gas_transactions.transactions.len() > 0 {
 				let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.iter();
@@ -619,6 +635,16 @@ where
 					}
 			};
 			}
+
+			let zgt_inclusion_in_block_end =  time::Instant::now();
+
+			self.metrics.report(|metrics| {
+				metrics.zgt_inclusion_in_block_time.observe(
+					zgt_inclusion_in_block_end
+						.saturating_duration_since(zgt_inclusion_in_block_start)
+						.as_secs_f64(),
+				);
+			});
 		};
 
 		let mut unqueue_invalid = Vec::new();
@@ -642,6 +668,8 @@ where
 
 		debug!("Attempting to push transactions from the pool.");
 		debug!("Pool status: {:?}", self.transaction_pool.status());
+
+		let normal_extrinsic_inclusion_in_block_time_start =  time::Instant::now();
 
 		let end_reason = loop {
 
@@ -741,7 +769,16 @@ where
 			}
 		};
 
-		
+		let normal_extrinsic_inclusion_in_block_time_end =  time::Instant::now();
+
+		self.metrics.report(|metrics| {
+			metrics.normal_extrinsic_inclusion_in_block_time.observe(
+				normal_extrinsic_inclusion_in_block_time_end
+					.saturating_duration_since(normal_extrinsic_inclusion_in_block_time_start)
+					.as_secs_f64(),
+			);
+		});
+
 		if matches!(end_reason, EndProposingReason::HitBlockSizeLimit) && !transaction_pushed {
 			warn!(
 				"Hit block size limit of `{}` without including any transaction!",
