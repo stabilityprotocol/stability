@@ -232,6 +232,15 @@ where
 	) -> EvmResult {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
+		let msg_sender = handle.context().caller;
+		let owner = OwnerStorage::<DefaultOwner>::get();
+
+		if msg_sender != owner {
+			return Err(revert("sender is not owner"));
+		}
+
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
 		let member_id: H160 = member.into();
 
 		let old_members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
@@ -261,6 +270,15 @@ where
 		handle: &mut impl PrecompileHandle,
 		member: Address,
 	) -> EvmResult {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let msg_sender = handle.context().caller;
+		let owner = OwnerStorage::<DefaultOwner>::get();
+
+		if msg_sender != owner {
+			return Err(revert("sender is not owner"));
+		}
+		
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
 		let member_id: H160 = member.into();

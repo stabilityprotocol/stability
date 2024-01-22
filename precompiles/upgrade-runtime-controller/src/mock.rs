@@ -156,6 +156,21 @@ impl pallet_balances::Config for Test {
 	type MaxFreezes = ();
 }
 
+type TechCommitteeInstance = pallet_collective::Instance1;
+
+impl pallet_collective::Config<TechCommitteeInstance> for Test {
+	type RuntimeOrigin = RuntimeOrigin;
+	type Proposal = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type MotionDuration = CouncilMotionDuration;
+	type MaxProposals = CouncilMaxProposals;
+	type MaxMembers = CouncilMaxMembers;
+	type DefaultVote = pallet_collective::PrimeDefaultVote;
+	type WeightInfo = pallet_collective::weights::SubstrateWeight<Self>;
+	type SetMembersOrigin = EnsureRootOrHalfTechCommittee;
+	type MaxProposalWeight = MaxProposalWeight;
+}
+
 frame_support::construct_runtime!(
 	pub enum Test
 	where
@@ -167,6 +182,7 @@ frame_support::construct_runtime!(
 			Timestamp: pallet_timestamp,
 			EVM: pallet_evm,
 			Balances: pallet_balances,
+			TechCommitteeCollective: pallet_collective::<Instance1>,
 		}
 );
 
@@ -192,6 +208,11 @@ impl ExtBuilder {
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet balances storage can be assimilated");
+
+		pallet_collective::GenesisConfig::<Test, TechCommitteeInstance> {
+			members: vec![],
+			phantom: Default::default(),
+		}
 
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));
