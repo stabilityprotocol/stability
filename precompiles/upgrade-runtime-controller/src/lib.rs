@@ -329,4 +329,17 @@ where
 			None => Ok(H256::default()),
 		}
 	}
+
+	#[precompile::public("getHashOfCurrentCode()")]
+	#[precompile::view]
+	fn get_hash_of_current_code(handle: &mut impl PrecompileHandle) -> EvmResult<H256> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let hash = pallet_upgrade_runtime_proposal::Pallet::<Runtime>::get_current_code_hash();
+
+		match hash {
+			Some(hash) => Ok(hash.into()),
+			None => Ok(H256::default()),
+		}
+	}
 }
