@@ -11,10 +11,10 @@ mod mock;
 mod tests;
 
 use frame_support::dispatch::UnfilteredDispatchable;
+use frame_support::sp_runtime::traits::Hash;
 use frame_support::traits::EnsureOrigin;
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::pallet_prelude::OriginFor;
-use frame_support::sp_runtime::traits::Hash;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -185,9 +185,7 @@ pub mod pallet {
 		}
 
 		pub fn hash_of_proposed_code() -> Option<T::Hash> {
-			<ProposedCode<T>>::get().map(|code| {
-				T::Hashing::hash(&code)
-			})
+			<ProposedCode<T>>::get().map(|code| T::Hashing::hash(&code))
 		}
 
 		pub fn set_current_code_hash(hash: T::Hash) -> () {
