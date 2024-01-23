@@ -11,6 +11,7 @@ use sp_runtime::{
 use sp_version::RuntimeVersion;
 use precompile_utils::precompile_set::*;
 use pallet_evm::{EnsureAddressRoot, EnsureAddressNever, AddressMapping};
+use crate::mock::sp_api_hidden_includes_construct_runtime::hidden_include::traits::GenesisBuild;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -45,6 +46,7 @@ parameter_types! {
 		state_version: 1,
 	};
 }
+pub type AccountId = stbl_core_primitives::AccountId;
 
 impl frame_system::Config for Test {
 	type BaseCallFilter = BlockEverything;
@@ -57,7 +59,7 @@ impl frame_system::Config for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = u64;
+	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type RuntimeEvent = RuntimeEvent;
@@ -78,7 +80,7 @@ parameter_types! {
 }
 
 impl pallet_upgrade_runtime_proposal::Config for Test {
-	type ControlOrigin = EnsureRoot<u64>;
+	type ControlOrigin = EnsureRoot<AccountId>;
 	type MaxSizeOfCode = MaxSizeOfCode;
 }
 
@@ -94,14 +96,15 @@ impl pallet_timestamp::Config for Test {
 }
 
 
-pub struct NumberAddressMapping;
 
-impl AddressMapping<u64> for NumberAddressMapping {
-	fn into_account_id(address: H160) -> u64 {
-		let address_bytes: [u8; 8]  = (*address.as_fixed_bytes())[12..].try_into().unwrap();
-		u64::from_be_bytes(address_bytes)
+pub struct IdentityAddressMapping;
+impl pallet_evm::AddressMapping<AccountId> for IdentityAddressMapping {
+	fn into_account_id(address: H160) -> AccountId {
+		address.into()
 	}
 }
+
+
 
 
 parameter_types! {
@@ -115,9 +118,9 @@ impl pallet_evm::Config for Test {
 	type FeeCalculator = ();
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
 	type WeightPerGas = WeightPerGas;
-	type CallOrigin = EnsureAddressRoot<u64>;
-	type WithdrawOrigin = EnsureAddressNever<u64>;
-	type AddressMapping = NumberAddressMapping;
+	type CallOrigin = EnsureAddressRoot<AccountId>;
+	type WithdrawOrigin = EnsureAddressNever<AccountId>;
+	type AddressMapping = IdentityAddressMapping;
 	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
@@ -158,6 +161,31 @@ impl pallet_balances::Config for Test {
 
 type TechCommitteeInstance = pallet_collective::Instance1;
 
+use frame_support::weights::{constants::WEIGHT_REF_TIME_PER_MILLIS};
+use sp_runtime::{Perbill, Permill};
+use stbl_core_primitives::BlockNumber;
+
+// Block time
+pub const MILLISECS_PER_BLOCK: u64 = 2000;
+
+pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
+
+/// How much of time of block time is consumed (at most) in computing normal extrinsics
+const COMPUTATION_BLOCK_TIME_RATIO: (u64, u64) = (2, 3); // 2 third parts of the block time
+
+const COMPUTATION_POWER_MULTIPLIER: u64 = 6; // 6 times more computation power than normal
+
+// how much weight for normal extrinsics could be processed in a block
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(WEIGHT_REF_TIME_PER_MILLIS * MILLISECS_PER_BLOCK * COMPUTATION_POWER_MULTIPLIER * COMPUTATION_BLOCK_TIME_RATIO.0 / COMPUTATION_BLOCK_TIME_RATIO.1, u64::MAX);
+
+
+parameter_types! {
+	pub const CouncilMotionDuration: BlockNumber = 120;
+	pub const CouncilMaxProposals: u32 = 2;
+	pub const CouncilMaxMembers: u32 = 2;
+	pub const MaxProposalWeight: Weight = MAXIMUM_BLOCK_WEIGHT;
+}
+
 impl pallet_collective::Config<TechCommitteeInstance> for Test {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Proposal = RuntimeCall;
@@ -167,7 +195,7 @@ impl pallet_collective::Config<TechCommitteeInstance> for Test {
 	type MaxMembers = CouncilMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
 	type WeightInfo = pallet_collective::weights::SubstrateWeight<Self>;
-	type SetMembersOrigin = EnsureRootOrHalfTechCommittee;
+	type SetMembersOrigin = EnsureRoot<AccountId>;
 	type MaxProposalWeight = MaxProposalWeight;
 }
 
@@ -188,7 +216,7 @@ frame_support::construct_runtime!(
 
 pub(crate) struct ExtBuilder {
 	// endowed accounts with balances
-	balances: Vec<(u64, Balance)>,
+	balances: Vec<(AccountId, Balance)>,
 }
 
 impl Default for ExtBuilder {
@@ -213,6 +241,8 @@ impl ExtBuilder {
 			members: vec![],
 			phantom: Default::default(),
 		}
+		.assimilate_storage(&mut t)
+		.expect("Pallet collective storage can be assimilated");
 
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));

@@ -6698,6 +6698,7 @@ dependencies = [
  "sp-std",
  "sp-version",
  "stability-test-runtime-client",
+ "stbl-core-primitives",
 ]
 
 [[package]]

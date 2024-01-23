@@ -93,6 +93,7 @@ where
 	<Runtime as frame_system::Config>::BlockNumber: From<u32>,
 	<Runtime as frame_system::Config>::Hash: Into<H256>,
 	<Runtime as frame_system::Config>::AccountId: From<H160>,
+	<Runtime as frame_system::Config>::AccountId: Into<H160>,
 {
 	#[precompile::public("owner()")]
 	#[precompile::view]
@@ -246,7 +247,7 @@ where
 		let old_members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
 
 		if old_members.contains(&member_id.into()) {
-			return Err(revert("Already a member"));
+			return Err(revert("already a member"));
 		}
 
 		let mut new_members = old_members
@@ -287,7 +288,7 @@ where
 		let old_members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
 
 		if !old_members.contains(&member_account) {
-			return Err(revert("Not a member"));
+			return Err(revert("not a member"));
 		}
 
 		let mut new_members = old_members
@@ -304,6 +305,16 @@ where
 		);
 
 		Ok(())
+	}
+
+	#[precompile::public("getTechnicalCommitteeMembers()")]
+	#[precompile::view]
+	fn get_technical_committee_members(handle: &mut impl PrecompileHandle) -> EvmResult<Vec<Address>> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+
+		Ok(members.iter().map(|m| Into::<H160>::into(m.clone())).map(|m| Into::<Address>::into(m)).collect())
 	}
 
 	#[precompile::public("getHashOfProposedCode()")]

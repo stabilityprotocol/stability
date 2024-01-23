@@ -206,6 +206,9 @@ fn test_scheduled_update_runtime() {
             frame_system::RawOrigin::Root.into(),
             stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
         ));
+
+		let proposed_code_hash = UpgradeRuntimeProposal::hash_of_proposed_code().unwrap();
+
         assert_ok!(UpgradeRuntimeProposal::set_block_application(
             frame_system::RawOrigin::Root.into(),
             1
@@ -215,6 +218,9 @@ fn test_scheduled_update_runtime() {
         UpgradeRuntimeProposal::on_initialize(1);
 
         assert_runtime_updated_digest(1);
+
+		assert!(UpgradeRuntimeProposal::hash_of_proposed_code().is_none());
+		assert_eq!(UpgradeRuntimeProposal::get_current_code_hash().unwrap(), proposed_code_hash);
         assert!(UpgradeRuntimeProposal::get_proposed_code().is_none());
         assert!(UpgradeRuntimeProposal::get_application_block_number().is_none());
     });

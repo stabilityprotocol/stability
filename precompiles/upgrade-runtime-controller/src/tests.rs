@@ -59,6 +59,8 @@ fn owner_correctly_init() {
 parameter_types! {
 	pub UnpermissionedAccount:H160 = H160::from_str("0x1000000000000000000000000000000000000000").expect("invalid address");
 	pub UnpermissionedAccount2:H160 = H160::from_str("0x2000000000000000000000000000000000000000").expect("invalid address");
+	pub NewMember:H160 = H160::from_str("0xaafB45fB0581FC07C0F07b04b730a303469548Dc").expect("invalid address");
+	pub NotOwner:H160 = H160::from_str("0x9A34381dd72d7F7ED4be83Bf31593243196f5464").expect("invalid address");
 }
 
 #[test]
@@ -264,5 +266,205 @@ fn test_fail_reject_proposed_code_if_not_owner() {
 				PCall::reject_proposed_code {},
 			)
 			.execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
+	});
+}
+
+#[test]
+fn test_add_member_to_council() {
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let mut ext = ExtBuilder::default().build();
+
+	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
+
+	ext.execute_with(|| {		
+
+		precompiles()
+		.prepare_test(
+			DefaultOwner::get(),
+			Precompile1,
+			PCall::add_member_to_technical_committee {
+				member: NewMember::get().into(),
+			},
+		)
+		.execute_some();
+
+		precompiles().prepare_test(
+			NotOwner::get(), 
+			Precompile1, 
+			PCall::get_technical_committee_members {}).execute_returns(vec![Into::<Address>::into(NewMember::get())]);	
+	});
+}
+
+#[test]
+fn test_remove_member_from_council() {
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let mut ext = ExtBuilder::default().build();
+
+	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
+
+	ext.execute_with(|| {		
+
+		precompiles()
+		.prepare_test(
+			DefaultOwner::get(),
+			Precompile1,
+			PCall::add_member_to_technical_committee {
+				member: NewMember::get().into(),
+			},
+		)
+		.execute_some();
+
+		precompiles().prepare_test(
+			NotOwner::get(), 
+			Precompile1, 
+			PCall::get_technical_committee_members {}).execute_returns(vec![Into::<Address>::into(NewMember::get())]);	
+
+		precompiles()	
+		.prepare_test(
+			DefaultOwner::get(),
+			Precompile1,
+			PCall::remove_member_to_technical_committee {
+				member: NewMember::get().into(),
+			},
+		).execute_some();
+
+		precompiles().prepare_test(
+			NotOwner::get(), 
+			Precompile1, 
+			PCall::get_technical_committee_members {}).execute_returns(Vec::<Address>::new());
+	});
+}
+
+
+#[test]
+fn test_add_member_to_council_fails_if_not_owner() {
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let mut ext = ExtBuilder::default().build();
+
+	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
+
+	ext.execute_with(|| {		
+
+		precompiles()
+		.prepare_test(
+			NotOwner::get(),
+			Precompile1,
+			PCall::add_member_to_technical_committee {
+				member: NewMember::get().into(),
+			},
+		).execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
+	});
+}
+
+
+#[test]
+fn test_remove_member_from_council_fails_if_not_owner() {
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let mut ext = ExtBuilder::default().build();
+
+	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
+
+	ext.execute_with(|| {		
+		precompiles()	
+		.prepare_test(
+			NotOwner::get(),
+			Precompile1,
+			PCall::remove_member_to_technical_committee {
+				member: NewMember::get().into(),
+			},
+		).execute_reverts(|x| x.eq_ignore_ascii_case(b"sender is not owner"));
+	});
+}
+
+#[test]
+fn test_add_member_to_council_fails_if_already_member() {
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let mut ext = ExtBuilder::default().build();
+
+	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
+
+	ext.execute_with(|| {		
+
+		precompiles()
+		.prepare_test(
+			DefaultOwner::get(),
+			Precompile1,
+			PCall::add_member_to_technical_committee {
+				member: NewMember::get().into(),
+			},
+		)
+		.execute_some();
+
+		precompiles().prepare_test(
+			NotOwner::get(), 
+			Precompile1, 
+			PCall::get_technical_committee_members {}).execute_returns(vec![Into::<Address>::into(NewMember::get())]);	
+
+		precompiles()
+		.prepare_test(
+			DefaultOwner::get(),
+			Precompile1,
+			PCall::add_member_to_technical_committee {
+				member: NewMember::get().into(),
+			},
+		).execute_reverts(|x| x.eq_ignore_ascii_case(b"already a member"));
+	});
+}
+
+#[test]
+fn test_remove_member_from_council_fails_if_not_member() {
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let mut ext = ExtBuilder::default().build();
+
+	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
+
+	ext.execute_with(|| {		
+
+		precompiles()
+		.prepare_test(
+			DefaultOwner::get(),
+			Precompile1,
+			PCall::add_member_to_technical_committee {
+				member: NewMember::get().into(),
+			},
+		)
+		.execute_some();
+
+		precompiles().prepare_test(
+			NotOwner::get(), 
+			Precompile1, 
+			PCall::get_technical_committee_members {}).execute_returns(vec![Into::<Address>::into(NewMember::get())]);	
+
+		precompiles()
+		.prepare_test(
+			DefaultOwner::get(),
+			Precompile1,
+			PCall::remove_member_to_technical_committee {
+				member: NotOwner::get().into(),
+			},
+		).execute_reverts(|x| x.eq_ignore_ascii_case(b"not a member"));
+	});
+}
+
+#[test]
+fn test_get_hash_of_proposed_code() {
+	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let mut ext = ExtBuilder::default().build();
+
+	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
+	ext.execute_with(|| {		
+
+		UpgradeRuntimeProposal::propose_code(
+			frame_system::RawOrigin::Root.into(),
+			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+		).unwrap();
+
+		precompiles()
+		.prepare_test(
+			DefaultOwner::get(),
+			Precompile1,
+			PCall::get_hash_of_proposed_code {},
+		)
+		.execute_some();
 	});
 }
