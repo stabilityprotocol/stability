@@ -52,6 +52,8 @@ pub const SELECTOR_LOG_TRANSFER_OWNER: [u8; 32] =
 pub const SELECTOR_SETTED__APPLICATION_BLOCK: [u8; 32] =
 	keccak256!("SettedApplicationBlock(uint256)");
 pub const SELECTOR_CODE_PROPOSED_REJECTED: [u8; 32] = keccak256!("CodeProposedRejected()");
+pub const SELECTOR_MEMBER_ADDED: [u8; 32] = keccak256!("MemberAdded(address)");
+pub const SELECTOR_MEMBER_REMOVED: [u8; 32] = keccak256!("MemberRemoved(address)");
 
 /// Storage prefix for owner.
 pub struct OwnerPrefix;
@@ -263,6 +265,14 @@ where
 			&old_members
 		);
 
+		handle.record_log_costs_manual(1, 32)?;
+		log1(
+			handle.context().address,
+			SELECTOR_MEMBER_ADDED,
+			solidity::encode_event_data(Into::<Address>::into(member_id)),
+		)
+		.record(handle)?;
+
 		Ok(())
 	}
 
@@ -303,6 +313,15 @@ where
 			&new_members,
 			&old_members
 		);
+
+		
+		handle.record_log_costs_manual(1, 32)?;
+		log1(
+			handle.context().address,
+			SELECTOR_MEMBER_REMOVED,
+			solidity::encode_event_data(Into::<Address>::into(member_id)),
+		)
+		.record(handle)?;
 
 		Ok(())
 	}

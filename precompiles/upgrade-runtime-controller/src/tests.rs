@@ -286,6 +286,11 @@ fn test_add_member_to_council() {
 				member: NewMember::get().into(),
 			},
 		)
+		.expect_log(log1(
+			Precompile1,
+			SELECTOR_MEMBER_ADDED,
+			solidity::encode_event_data(Into::<Address>::into( NewMember::get()))
+		))
 		.execute_some();
 
 		precompiles().prepare_test(
@@ -326,7 +331,13 @@ fn test_remove_member_from_council() {
 			PCall::remove_member_to_technical_committee {
 				member: NewMember::get().into(),
 			},
-		).execute_some();
+		)
+		.expect_log(log1(
+			Precompile1,
+			SELECTOR_MEMBER_REMOVED,
+			solidity::encode_event_data(Into::<Address>::into(NewMember::get()))
+		))
+		.execute_some();
 
 		precompiles().prepare_test(
 			NotOwner::get(), 

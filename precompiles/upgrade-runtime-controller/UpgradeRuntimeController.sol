@@ -2,6 +2,9 @@
 pragma solidity >=0.8.3;
 
 interface UpgradeRuntimeController {
+    event MemberAdded(address member);
+    event MemberRemoved(address member);
+
     function setApplicationBlock(uint32 block) external; // onlyOwner
     function rejectProposedCode() external; // onlyOwner
     function getTechnicalCommitteeMembers() external view returns (address[] memory);
