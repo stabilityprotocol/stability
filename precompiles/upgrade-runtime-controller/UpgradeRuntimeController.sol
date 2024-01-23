@@ -8,4 +8,5 @@ interface UpgradeRuntimeController {
     function addMemberToTechnicalCommittee(address member) external; // onlyOwner
     function removeMemberFromTechnicalCommittee(address member) external; // onlyOwner
     function getHashOfProposedCode() external view returns (bytes32);
+    function getHashOfCurrentCode() external view returns (bytes32);
 }
