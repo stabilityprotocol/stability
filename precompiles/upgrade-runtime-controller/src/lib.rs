@@ -30,9 +30,9 @@ use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
 use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};
 
-use frame_support::traits::StorageInstance;
-use frame_support::traits::ChangeMembers;
 use frame_support::inherent::Vec;
+use frame_support::traits::ChangeMembers;
+use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
 
 use sp_core::Get;
@@ -87,7 +87,10 @@ pub struct UpgradeRuntimeControllerPrecompile<Runtime, DefaultOwner: Get<H160> +
 impl<Runtime, DefaultOwner> UpgradeRuntimeControllerPrecompile<Runtime, DefaultOwner>
 where
 	DefaultOwner: Get<H160> + 'static,
-	Runtime: pallet_upgrade_runtime_proposal::Config + pallet_collective::Config<pallet_collective::Instance1> + pallet_timestamp::Config + pallet_evm::Config,
+	Runtime: pallet_upgrade_runtime_proposal::Config
+		+ pallet_collective::Config<pallet_collective::Instance1>
+		+ pallet_timestamp::Config
+		+ pallet_evm::Config,
 	Runtime::RuntimeCall: From<pallet_upgrade_runtime_proposal::Call<Runtime>>,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
@@ -136,7 +139,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 
@@ -166,7 +169,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 
@@ -246,7 +249,8 @@ where
 
 		let member_id: H160 = member.into();
 
-		let old_members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+		let old_members =
+			pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
 
 		if old_members.contains(&member_id.into()) {
 			return Err(revert("already a member"));
@@ -257,12 +261,12 @@ where
 			.cloned()
 			.chain(Some(member_id.into()))
 			.collect::<Vec<_>>();
-			
+
 		new_members.sort();
 
 		pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::set_members_sorted(
 			&new_members,
-			&old_members
+			&old_members,
 		);
 
 		handle.record_log_costs_manual(1, 32)?;
@@ -289,13 +293,14 @@ where
 		if msg_sender != owner {
 			return Err(revert("sender is not owner"));
 		}
-		
+
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
 		let member_id: H160 = member.into();
 		let member_account = <Runtime as frame_system::Config>::AccountId::from(member_id);
 
-		let old_members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+		let old_members =
+			pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
 
 		if !old_members.contains(&member_account) {
 			return Err(revert("not a member"));
@@ -306,15 +311,14 @@ where
 			.cloned()
 			.filter(|m| *m != member_account)
 			.collect::<Vec<_>>();
-			
+
 		new_members.sort();
 
 		pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::set_members_sorted(
 			&new_members,
-			&old_members
+			&old_members,
 		);
 
-		
 		handle.record_log_costs_manual(1, 32)?;
 		log1(
 			handle.context().address,
@@ -328,12 +332,18 @@ where
 
 	#[precompile::public("getTechnicalCommitteeMembers()")]
 	#[precompile::view]
-	fn get_technical_committee_members(handle: &mut impl PrecompileHandle) -> EvmResult<Vec<Address>> {
+	fn get_technical_committee_members(
+		handle: &mut impl PrecompileHandle,
+	) -> EvmResult<Vec<Address>> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
 		let members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
 
-		Ok(members.iter().map(|m| Into::<H160>::into(m.clone())).map(|m| Into::<Address>::into(m)).collect())
+		Ok(members
+			.iter()
+			.map(|m| Into::<H160>::into(m.clone()))
+			.map(|m| Into::<Address>::into(m))
+			.collect())
 	}
 
 	#[precompile::public("getHashOfProposedCode()")]

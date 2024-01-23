@@ -1,17 +1,17 @@
 use super::*;
 
-use frame_support::{parameter_types, weights::Weight};
+use crate::mock::sp_api_hidden_includes_construct_runtime::hidden_include::traits::GenesisBuild;
 use frame_support::traits::{ConstU32, ConstU64, Contains};
+use frame_support::{parameter_types, weights::Weight};
 use frame_system::EnsureRoot;
+use pallet_evm::{AddressMapping, EnsureAddressNever, EnsureAddressRoot};
+use precompile_utils::precompile_set::*;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 };
 use sp_version::RuntimeVersion;
-use precompile_utils::precompile_set::*;
-use pallet_evm::{EnsureAddressRoot, EnsureAddressNever, AddressMapping};
-use crate::mock::sp_api_hidden_includes_construct_runtime::hidden_include::traits::GenesisBuild;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -95,17 +95,12 @@ impl pallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
-
-
 pub struct IdentityAddressMapping;
 impl pallet_evm::AddressMapping<AccountId> for IdentityAddressMapping {
 	fn into_account_id(address: H160) -> AccountId {
 		address.into()
 	}
 }
-
-
-
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
@@ -161,7 +156,7 @@ impl pallet_balances::Config for Test {
 
 type TechCommitteeInstance = pallet_collective::Instance1;
 
-use frame_support::weights::{constants::WEIGHT_REF_TIME_PER_MILLIS};
+use frame_support::weights::constants::WEIGHT_REF_TIME_PER_MILLIS;
 use sp_runtime::{Perbill, Permill};
 use stbl_core_primitives::BlockNumber;
 
@@ -176,8 +171,14 @@ const COMPUTATION_BLOCK_TIME_RATIO: (u64, u64) = (2, 3); // 2 third parts of the
 const COMPUTATION_POWER_MULTIPLIER: u64 = 6; // 6 times more computation power than normal
 
 // how much weight for normal extrinsics could be processed in a block
-pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(WEIGHT_REF_TIME_PER_MILLIS * MILLISECS_PER_BLOCK * COMPUTATION_POWER_MULTIPLIER * COMPUTATION_BLOCK_TIME_RATIO.0 / COMPUTATION_BLOCK_TIME_RATIO.1, u64::MAX);
-
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
+	WEIGHT_REF_TIME_PER_MILLIS
+		* MILLISECS_PER_BLOCK
+		* COMPUTATION_POWER_MULTIPLIER
+		* COMPUTATION_BLOCK_TIME_RATIO.0
+		/ COMPUTATION_BLOCK_TIME_RATIO.1,
+	u64::MAX,
+);
 
 parameter_types! {
 	pub const CouncilMotionDuration: BlockNumber = 120;
