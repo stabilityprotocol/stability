@@ -30,6 +30,8 @@ use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
 use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};
 
+use frame_support::inherent::Vec;
+use frame_support::traits::ChangeMembers;
 use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
 
@@ -50,6 +52,8 @@ pub const SELECTOR_LOG_TRANSFER_OWNER: [u8; 32] =
 pub const SELECTOR_SETTED__APPLICATION_BLOCK: [u8; 32] =
 	keccak256!("SettedApplicationBlock(uint256)");
 pub const SELECTOR_CODE_PROPOSED_REJECTED: [u8; 32] = keccak256!("CodeProposedRejected()");
+pub const SELECTOR_MEMBER_ADDED: [u8; 32] = keccak256!("MemberAdded(address)");
+pub const SELECTOR_MEMBER_REMOVED: [u8; 32] = keccak256!("MemberRemoved(address)");
 
 /// Storage prefix for owner.
 pub struct OwnerPrefix;
@@ -83,13 +87,18 @@ pub struct UpgradeRuntimeControllerPrecompile<Runtime, DefaultOwner: Get<H160> +
 impl<Runtime, DefaultOwner> UpgradeRuntimeControllerPrecompile<Runtime, DefaultOwner>
 where
 	DefaultOwner: Get<H160> + 'static,
-	Runtime:
-		pallet_upgrade_runtime_proposal::Config + pallet_timestamp::Config + pallet_evm::Config,
+	Runtime: pallet_upgrade_runtime_proposal::Config
+		+ pallet_collective::Config<pallet_collective::Instance1>
+		+ pallet_timestamp::Config
+		+ pallet_evm::Config,
 	Runtime::RuntimeCall: From<pallet_upgrade_runtime_proposal::Call<Runtime>>,
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
 	<Runtime as frame_system::Config>::BlockNumber: From<u32>,
+	<Runtime as frame_system::Config>::Hash: Into<H256>,
+	<Runtime as frame_system::Config>::AccountId: From<H160>,
+	<Runtime as frame_system::Config>::AccountId: Into<H160>,
 {
 	#[precompile::public("owner()")]
 	#[precompile::view]
@@ -130,7 +139,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 
@@ -160,7 +169,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 
@@ -220,5 +229,146 @@ where
 		log0(handle.context().address, SELECTOR_CODE_PROPOSED_REJECTED).record(handle)?;
 
 		Ok(())
+	}
+
+	#[precompile::public("addMemberToTechnicalCommittee(address)")]
+	fn add_member_to_technical_committee(
+		handle: &mut impl PrecompileHandle,
+		member: Address,
+	) -> EvmResult {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let msg_sender = handle.context().caller;
+		let owner = OwnerStorage::<DefaultOwner>::get();
+
+		if msg_sender != owner {
+			return Err(revert("sender is not owner"));
+		}
+
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let member_id: H160 = member.into();
+
+		let old_members =
+			pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+
+		if old_members.contains(&member_id.into()) {
+			return Err(revert("already a member"));
+		}
+
+		let mut new_members = old_members
+			.iter()
+			.cloned()
+			.chain(Some(member_id.into()))
+			.collect::<Vec<_>>();
+
+		new_members.sort();
+
+		pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::set_members_sorted(
+			&new_members,
+			&old_members,
+		);
+
+		handle.record_log_costs_manual(1, 32)?;
+		log1(
+			handle.context().address,
+			SELECTOR_MEMBER_ADDED,
+			solidity::encode_event_data(Into::<Address>::into(member_id)),
+		)
+		.record(handle)?;
+
+		Ok(())
+	}
+
+	#[precompile::public("removeMemberFromTechnicalCommittee(address)")]
+	fn remove_member_to_technical_committee(
+		handle: &mut impl PrecompileHandle,
+		member: Address,
+	) -> EvmResult {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let msg_sender = handle.context().caller;
+		let owner = OwnerStorage::<DefaultOwner>::get();
+
+		if msg_sender != owner {
+			return Err(revert("sender is not owner"));
+		}
+
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let member_id: H160 = member.into();
+		let member_account = <Runtime as frame_system::Config>::AccountId::from(member_id);
+
+		let old_members =
+			pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+
+		if !old_members.contains(&member_account) {
+			return Err(revert("not a member"));
+		}
+
+		let mut new_members = old_members
+			.iter()
+			.cloned()
+			.filter(|m| *m != member_account)
+			.collect::<Vec<_>>();
+
+		new_members.sort();
+
+		pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::set_members_sorted(
+			&new_members,
+			&old_members,
+		);
+
+		handle.record_log_costs_manual(1, 32)?;
+		log1(
+			handle.context().address,
+			SELECTOR_MEMBER_REMOVED,
+			solidity::encode_event_data(Into::<Address>::into(member_id)),
+		)
+		.record(handle)?;
+
+		Ok(())
+	}
+
+	#[precompile::public("getTechnicalCommitteeMembers()")]
+	#[precompile::view]
+	fn get_technical_committee_members(
+		handle: &mut impl PrecompileHandle,
+	) -> EvmResult<Vec<Address>> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+
+		Ok(members
+			.iter()
+			.map(|m| Into::<H160>::into(m.clone()))
+			.map(|m| Into::<Address>::into(m))
+			.collect())
+	}
+
+	#[precompile::public("getHashOfProposedCode()")]
+	#[precompile::view]
+	fn get_hash_of_proposed_code(handle: &mut impl PrecompileHandle) -> EvmResult<H256> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let hash = pallet_upgrade_runtime_proposal::Pallet::<Runtime>::hash_of_proposed_code();
+
+		match hash {
+			Some(hash) => Ok(hash.into()),
+			None => Ok(H256::default()),
+		}
+	}
+
+	#[precompile::public("getHashOfCurrentCode()")]
+	#[precompile::view]
+	fn get_hash_of_current_code(handle: &mut impl PrecompileHandle) -> EvmResult<H256> {
+		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
+
+		let hash = pallet_upgrade_runtime_proposal::Pallet::<Runtime>::get_current_code_hash();
+
+		match hash {
+			Some(hash) => Ok(hash.into()),
+			None => Ok(H256::default()),
+		}
 	}
 }

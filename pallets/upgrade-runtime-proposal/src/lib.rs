@@ -11,6 +11,7 @@ mod mock;
 mod tests;
 
 use frame_support::dispatch::UnfilteredDispatchable;
+use frame_support::sp_runtime::traits::Hash;
 use frame_support::traits::EnsureOrigin;
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::pallet_prelude::OriginFor;
@@ -41,6 +42,10 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn application_block_number)]
 	pub type ApplicationBlockNumber<T: Config> = StorageValue<_, T::BlockNumber, OptionQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn current_code_hash)]
+	pub type CurrentCodeHash<T: Config> = StorageValue<_, T::Hash, OptionQuery>;
 
 	#[pallet::error]
 	pub enum Error<T> {
@@ -154,6 +159,8 @@ pub mod pallet {
 			if result.is_err() {
 				log::error!("Failed to upgrade runtime");
 			} else {
+				let hash = Pallet::<T>::hash_of_proposed_code().unwrap();
+				Pallet::<T>::set_current_code_hash(hash);
 				log::info!("Runtime upgraded");
 			}
 
@@ -171,6 +178,18 @@ pub mod pallet {
 
 		pub fn get_application_block_number() -> Option<T::BlockNumber> {
 			<ApplicationBlockNumber<T>>::get()
+		}
+
+		pub fn get_current_code_hash() -> Option<T::Hash> {
+			<CurrentCodeHash<T>>::get()
+		}
+
+		pub fn hash_of_proposed_code() -> Option<T::Hash> {
+			<ProposedCode<T>>::get().map(|code| T::Hashing::hash(&code))
+		}
+
+		pub fn set_current_code_hash(hash: T::Hash) -> () {
+			<CurrentCodeHash<T>>::put(hash)
 		}
 
 		pub fn set_application_block_number(block_number: T::BlockNumber) {

@@ -6683,6 +6683,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-collective",
  "pallet-evm",
  "pallet-session",
  "pallet-timestamp",
@@ -6697,6 +6698,7 @@ dependencies = [
  "sp-std",
  "sp-version",
  "stability-test-runtime-client",
+ "stbl-core-primitives",
 ]
 
 [[package]]

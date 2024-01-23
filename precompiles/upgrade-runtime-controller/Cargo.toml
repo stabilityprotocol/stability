@@ -22,6 +22,7 @@ pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
 # Stability
 pallet-upgrade-runtime-proposal = { workspace = true }
 precompile-utils = { workspace = true }
+pallet-collective = { workspace = true }
 
 [dev-dependencies]
 pallet-balances = { workspace = true }
@@ -32,6 +33,7 @@ scale-info = { version = "2.0", default-features = false, features = [ "derive" 
 sha3 = "0.10"
 sp-io = { workspace = true }
 stability-test-runtime-client = { workspace = true }
+stbl-core-primitives = { workspace = true, features = ["std"] }
 
 [features]
 default = [ "std" ]
