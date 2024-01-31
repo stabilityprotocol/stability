@@ -62,9 +62,9 @@ pub fn mainnet_config() -> Result<ChainSpec, String> {
 		},
 		// Bootnodes
 		vec![
-			MultiaddrWithPeerId::from_str("/dns4/s0.mainnet.stble.io/tcp/30333/p2p/12D3KooWNGnx5ZbeCkea9HVR5TTMjA5hyPqhLCBdM9KejPXD7GvQ").unwrap(),
-			MultiaddrWithPeerId::from_str("/dns4/s1.mainnet.stble.io/tcp/30333/p2p/12D3KooWAcZMqS6TjCNXFaZ6a3u6sob87cG3f4E3yUhAwNmzCAWF").unwrap(),
-			MultiaddrWithPeerId::from_str("/dns4/s2.mainnet.stble.io/tcp/30333/p2p/12D3KooWC9QrhPSewpysp3LPiXxo9Go25a8VgGsKCFwhBrccJ21n").unwrap()
+			MultiaddrWithPeerId::from_str("/dns4/s0.mainnet.stabilityprotocol.com/tcp/30333/p2p/12D3KooWNGnx5ZbeCkea9HVR5TTMjA5hyPqhLCBdM9KejPXD7GvQ").unwrap(),
+			MultiaddrWithPeerId::from_str("/dns4/s1.mainnet.stabilityprotocol.com/tcp/30333/p2p/12D3KooWAcZMqS6TjCNXFaZ6a3u6sob87cG3f4E3yUhAwNmzCAWF").unwrap(),
+			MultiaddrWithPeerId::from_str("/dns4/s2.mainnet.stabilityprotocol.com/tcp/30333/p2p/12D3KooWC9QrhPSewpysp3LPiXxo9Go25a8VgGsKCFwhBrccJ21n").unwrap()
 		],
 		// Telemetry
 		None,
