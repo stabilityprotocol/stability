@@ -14,6 +14,7 @@ pub mod alphanet;
 pub mod betanet;
 pub mod dev;
 pub mod testnet;
+pub mod mainnet;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
