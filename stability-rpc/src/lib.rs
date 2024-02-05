@@ -34,6 +34,12 @@ pub trait StabilityRpcEndpoints<BlockHash> {
 	#[method(name = "stability_getValidatorList")]
 	fn get_validator_list(&self, at: Option<BlockHash>) -> RpcResult<StabilityOutput<Vec<H160>>>;
 
+	#[method(name = "stability_getActiveValidatorList")]
+	fn get_active_validator_list(
+		&self,
+		at: Option<BlockHash>,
+	) -> RpcResult<StabilityOutput<Vec<H160>>>;
+
 	#[method(name = "stability_sendSponsoredTransaction")]
 	async fn send_sponsored_transaction(
 		&self,
@@ -99,6 +105,21 @@ where
 		})
 	}
 
+	fn get_active_validator_list(
+		&self,
+		at: Option<<Block as BlockT>::Hash>,
+	) -> RpcResult<StabilityOutput<Vec<H160>>> {
+		let api = self.client.runtime_api();
+		let at = at.unwrap_or_else(|| self.client.info().best_hash);
+		let value = api
+			.get_active_validator_list(at)
+			.map_err(runtime_error_into_rpc_err);
+		Ok(StabilityOutput {
+			code: 200,
+			value: value.unwrap(),
+		})
+	}
+
 	async fn send_sponsored_transaction(
 		&self,
 		transaction: Bytes,
@@ -132,7 +153,11 @@ where
 		let transaction_hash = transaction.hash();
 
 		self.pool
-			.submit_one(&BlockId::Hash(block_hash), TransactionSource::Local, extrinsic)
+			.submit_one(
+				&BlockId::Hash(block_hash),
+				TransactionSource::Local,
+				extrinsic,
+			)
 			.map_ok(move |_| transaction_hash)
 			.map_err(|e| {
 				error::Error::Custom(format!("Unable to submit transaction: {:?}", e).into())

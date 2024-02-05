@@ -1546,6 +1546,16 @@ impl_runtime_apis! {
 		}
 
 		fn get_validator_list() -> Vec<H160> {
+			let validators = <pallet_validator_set::Pallet<Runtime>>::approved_validators();
+			validators
+			.iter()
+			.map(|v| <Runtime as pallet_custom_balances::Config>::AccountIdMapping::into_evm_address(v))
+			.collect()
+
+		}
+
+
+		fn get_active_validator_list() -> Vec<H160> {
 			let validators = <pallet_validator_set::Pallet<Runtime>>::validators();
 			validators
 			.iter()
