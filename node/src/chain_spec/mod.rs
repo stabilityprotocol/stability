@@ -177,7 +177,7 @@ pub fn base_genesis(
 				map.insert(
 					main_account,
 					fp_evm::GenesisAccount {
-						nonce: U256::from(2),
+						nonce: U256::from(1),
 						balance: Default::default(),
 						storage: Default::default(),
 						code: Default::default(),
