@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{bytes::from_hex, ecdsa, H160, H256, U256};
+use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use stability_runtime::{AccountId, GenesisConfig, Precompiles, ValidatorFeeSelectorConfig};
 use std::{collections::BTreeMap, str::FromStr, vec};
 // Substrate
@@ -13,8 +13,8 @@ use stability_runtime::{opaque::SessionKeys, EnableManualSeal, Signature};
 pub mod alphanet;
 pub mod betanet;
 pub mod dev;
-pub mod mainnet;
 pub mod testnet;
+pub mod mainnet;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -147,17 +147,19 @@ pub fn base_genesis(
 			accounts: {
 				let mut map = BTreeMap::new();
 				let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
-				Precompiles::used_addresses().into_iter().for_each(|addr| {
-					map.insert(
-						H160(addr.0),
-						fp_evm::GenesisAccount {
-							nonce: Default::default(),
-							balance: Default::default(),
-							storage: Default::default(),
-							code: revert_bytecode.clone(),
-						},
-					);
-				});
+				Precompiles::used_addresses()
+					.into_iter()
+					.for_each(|addr| {
+						map.insert(
+							H160(addr.0),
+							fp_evm::GenesisAccount {
+								nonce: Default::default(),
+								balance: Default::default(),
+								storage: Default::default(),
+								code: revert_bytecode.clone(),
+							},
+						);
+					});
 				map.insert(initial_default_token, fp_evm::GenesisAccount {
 					nonce: Default::default(),
 					balance: Default::default(),
