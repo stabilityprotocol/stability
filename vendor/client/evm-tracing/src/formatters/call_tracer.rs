@@ -43,7 +43,7 @@ impl super::ResponseFormatter for Formatter {
 		for entry in listener.entries.iter() {
 			let mut result: Vec<Call> = entry
 				.into_iter()
-				.filter(|(_, it)| it.from.ne(&H160::zero()))
+				.filter(|(_, it)| it.from.ne(&H160::zero())) // Filters out calls to the ConversionRateController and other Precompiles
 				.map(|(_, it)| {
 					let from = it.from;
 					let trace_address = it.trace_address.clone();
