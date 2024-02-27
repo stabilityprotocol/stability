@@ -57,7 +57,7 @@ impl SubstrateCli for Cli {
 			"alphanet" => Box::new(chain_spec::alphanet::alphanet_config()?),
 			"betanet" => Box::new(chain_spec::betanet::betanet_config()?),
 			"testnet" => Box::new(chain_spec::testnet::testnet_config()?),
-			"mainnet" => Box::new(chain_spec::mainnet::mainnet_config()?),
+			"gtn" => Box::new(chain_spec::gtn::gtn_config()?),
 			"" | "local" | "dev" => {
 				let enable_manual_seal = self.sealing.map(|_| true);
 				Box::new(chain_spec::dev::development_config(enable_manual_seal))
@@ -237,10 +237,10 @@ pub fn run() -> sc_cli::Result<()> {
 			runner.sync_run(|mut config| {
 				let (client, _, _, _, frontier_backend) =
 					service::new_chain_ops(&mut config, &cli.eth)?;
-					let frontier_backend = match frontier_backend {
-						fc_db::Backend::KeyValue(kv) => std::sync::Arc::new(kv),
-						_ => panic!("Only fc_db::Backend::KeyValue supported"),
-					};
+				let frontier_backend = match frontier_backend {
+					fc_db::Backend::KeyValue(kv) => std::sync::Arc::new(kv),
+					_ => panic!("Only fc_db::Backend::KeyValue supported"),
+				};
 				cmd.run(client, frontier_backend)
 			})
 		}
@@ -248,8 +248,8 @@ pub fn run() -> sc_cli::Result<()> {
 			let runner = cli.create_runner(&cli.run)?;
 			runner.run_node_until_exit(|config| async move {
 				service::build_full(config, cli.eth, cli.sealing, cli.stability)
-				.map_err(Into::into)
-				.await
+					.map_err(Into::into)
+					.await
 			})
 		}
 	}

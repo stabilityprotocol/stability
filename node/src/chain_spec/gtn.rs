@@ -1,10 +1,10 @@
 use super::{base_genesis, get_authority_from_pubkeys, ChainSpec};
+use sc_network::config::MultiaddrWithPeerId;
 use sc_service::ChainType;
 use sp_application_crypto::Ss58Codec;
 use sp_core::ecdsa;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use stability_runtime::{AccountId, Signature, WASM_BINARY};
-use sc_network::config::MultiaddrWithPeerId;
 use std::{str::FromStr, vec};
 
 type AccountPublic = <Signature as Verify>::Signer;
@@ -13,13 +13,13 @@ fn get_account_id_from_public(pubkey: &str) -> AccountId {
 	AccountPublic::from(ecdsa::Public::from_string(pubkey).unwrap()).into_account()
 }
 
-pub fn mainnet_config() -> Result<ChainSpec, String> {
+pub fn gtn_config() -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or_else(|| "Wasm not available".to_string())?;
 	Ok(ChainSpec::from_genesis(
 		// Name
-		"Mainnet",
+		"GTN",
 		// ID
-		"mainnet",
+		"gtn",
 		ChainType::Live,
 		move || {
 			base_genesis(
@@ -55,16 +55,16 @@ pub fn mainnet_config() -> Result<ChainSpec, String> {
 					),
 				],
 				vec![get_account_id_from_public(
-					"KWECfQF69Vr61qop6NVpesYrnw5WRS4M816286K7NUuVAn2zd",
+					"KW4zHR72RftMPnegpVjwCS5EwxgxVKwGGLMQ1wPyZX4ecZkvZ",
 				)],
 				101010,
 			)
 		},
 		// Bootnodes
 		vec![
-			MultiaddrWithPeerId::from_str("/dns4/s0.mainnet.stabilityprotocol.com/tcp/30333/p2p/12D3KooWNGnx5ZbeCkea9HVR5TTMjA5hyPqhLCBdM9KejPXD7GvQ").unwrap(),
-			MultiaddrWithPeerId::from_str("/dns4/s1.mainnet.stabilityprotocol.com/tcp/30333/p2p/12D3KooWAcZMqS6TjCNXFaZ6a3u6sob87cG3f4E3yUhAwNmzCAWF").unwrap(),
-			MultiaddrWithPeerId::from_str("/dns4/s2.mainnet.stabilityprotocol.com/tcp/30333/p2p/12D3KooWC9QrhPSewpysp3LPiXxo9Go25a8VgGsKCFwhBrccJ21n").unwrap()
+			MultiaddrWithPeerId::from_str("/dns4/s0.gtn.stabilityprotocol.com/tcp/30333/p2p/12D3KooWNGnx5ZbeCkea9HVR5TTMjA5hyPqhLCBdM9KejPXD7GvQ").unwrap(),
+			MultiaddrWithPeerId::from_str("/dns4/s1.gtn.stabilityprotocol.com/tcp/30333/p2p/12D3KooWAcZMqS6TjCNXFaZ6a3u6sob87cG3f4E3yUhAwNmzCAWF").unwrap(),
+			MultiaddrWithPeerId::from_str("/dns4/s2.gtn.stabilityprotocol.com/tcp/30333/p2p/12D3KooWC9QrhPSewpysp3LPiXxo9Go25a8VgGsKCFwhBrccJ21n").unwrap()
 		],
 		// Telemetry
 		None,
