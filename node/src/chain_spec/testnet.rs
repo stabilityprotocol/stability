@@ -1,10 +1,11 @@
 use super::{base_genesis, get_authority_from_pubkeys, ChainSpec};
+use sc_network::config::MultiaddrWithPeerId;
 use sc_service::ChainType;
 use sp_application_crypto::Ss58Codec;
 use sp_core::ecdsa;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use stability_runtime::{AccountId, Signature, WASM_BINARY};
-use std::vec;
+use std::{str::FromStr, vec};
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -56,7 +57,9 @@ pub fn testnet_config() -> Result<ChainSpec, String> {
 			)
 		},
 		// Bootnodes
-		vec![],
+		vec![
+			MultiaddrWithPeerId::from_str("/dns4/s0.testnet.stble.io/tcp/30333/p2p/12D3KooWPaen1igo2WYUFCt3EAg4AWjWoMYgmr4tCa2Yb1WfgoDB").unwrap()
+		],
 		// Telemetry
 		None,
 		// Protocol ID
