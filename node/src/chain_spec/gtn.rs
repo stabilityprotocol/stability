@@ -55,7 +55,7 @@ pub fn gtn_config() -> Result<ChainSpec, String> {
 					),
 				],
 				vec![get_account_id_from_public(
-					"KW4zHR72RftMPnegpVjwCS5EwxgxVKwGGLMQ1wPyZX4ecZkvZ",
+					"KWAWnNYYgJzqvZQ2LLYmTVya95oeyAXX76PZN86DjbQKp7Czw",
 				)],
 				101010,
 			)
