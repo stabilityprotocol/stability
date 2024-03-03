@@ -13,7 +13,7 @@ use stability_runtime::{opaque::SessionKeys, EnableManualSeal, Signature};
 pub mod alphanet;
 pub mod betanet;
 pub mod dev;
-pub mod mainnet;
+pub mod gtn;
 pub mod testnet;
 
 // The URL for the telemetry server.
