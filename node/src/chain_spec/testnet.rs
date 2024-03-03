@@ -51,7 +51,7 @@ pub fn testnet_config() -> Result<ChainSpec, String> {
 					),
 				],
 				vec![get_account_id_from_public(
-					"KWECfQF69Vr61qop6NVpesYrnw5WRS4M816286K7NUuVAn2zd",
+					"KWAWnNYYgJzqvZQ2LLYmTVya95oeyAXX76PZN86DjbQKp7Czw",
 				)],
 				20180427,
 			)
