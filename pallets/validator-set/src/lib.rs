@@ -617,6 +617,8 @@ where
 		for validator in validators {
 			if !epoch_block_authors.contains(&validator) {
 				Self::increment_missed_block(validator);
+			} else {
+				EpochsMissed::<T>::remove(validator);
 			}
 		}
 
