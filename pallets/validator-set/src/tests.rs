@@ -138,9 +138,9 @@ fn validator_misses_one_and_reconnects() {
 
 		let new_validators = <pallet::Validators<Test>>::get();
 
-		println!("{:?}", new_validators);
-
 		assert!(new_validators.contains(&authorities()[1].0));
+		// Safety check for ensuring that the validator id and index are correct
+		assert!(&authorities()[1].0.eq(&2u64));
 		assert!(EpochsMissed::<Test>::get(2) == U256::zero());
 	});
 }
