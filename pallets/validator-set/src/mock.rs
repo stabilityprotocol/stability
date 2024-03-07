@@ -157,7 +157,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	});
 	validator_set::GenesisConfig::<Test> {
 		initial_validators: keys.iter().map(|x| x.1).collect::<Vec<_>>(),
-		max_epochs_missed: 1.into(),
+		max_epochs_missed: 2.into(),
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();

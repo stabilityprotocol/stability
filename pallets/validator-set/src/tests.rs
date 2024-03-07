@@ -10,6 +10,7 @@ use crate::mock::{
 use frame_support::{assert_noop, assert_ok, pallet_prelude::*};
 use frame_system::RawOrigin;
 use sp_application_crypto::RuntimeAppPublic;
+use sp_core::U256;
 use sp_runtime::testing::UintAuthorityId;
 
 #[test]
@@ -117,6 +118,30 @@ fn validator_goes_off_and_reconnects() {
 		let new_validators = <pallet::Validators<Test>>::get();
 
 		assert!(new_validators.contains(&authorities()[1].0));
+	});
+}
+
+#[test]
+fn validator_misses_one_and_reconnects() {
+	new_test_ext().execute_with(|| {
+		for i in 0..SESSION_BLOCK_LENGTH {
+			mock_mine_block(1, i);
+		}
+
+		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(0);
+
+		for i in 0..SESSION_BLOCK_LENGTH {
+			mock_mine_block(2, i + SESSION_BLOCK_LENGTH);
+		}
+
+		<pallet::Pallet<Test> as pallet_session::SessionManager<u64>>::end_session(1);
+
+		let new_validators = <pallet::Validators<Test>>::get();
+
+		assert!(new_validators.contains(&authorities()[1].0));
+		// Safety check for ensuring that the validator id and index are correct
+		assert!(&authorities()[1].0.eq(&2u64));
+		assert!(EpochsMissed::<Test>::get(2) == U256::zero());
 	});
 }
 
