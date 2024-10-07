@@ -38,7 +38,7 @@ sp-keystore = { workspace = true }
 stability-runtime = { path = "./../../runtime", features = ["std"] }
 sc-service = { workspace = true }
 account = { workspace = true, features = ["std"] }
-reqwest = { workspace = true, features = ["json"] }
+reqwest = { workspace = true, features = ["json", "gzip"] }
 serde = { workspace = true, features = ["derive"] }
 bytes = { workspace = true }
 hex = { workspace = true }
