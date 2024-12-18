@@ -25,7 +25,8 @@ mod tests;
 
 use core::str::FromStr;
 use fp_evm::PrecompileHandle;
-use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
+use frame_support::dispatch::{GetDispatchInfo, PostDispatchInfo};
+use sp_runtime::traits::Dispatchable;
 
 use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};
@@ -249,7 +250,7 @@ where
 		let member_id: H160 = member.into();
 
 		let old_members =
-			pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+			pallet_collective::Members::<Runtime, pallet_collective::Instance1>::get();
 
 		if old_members.contains(&member_id.into()) {
 			return Err(revert("already a member"));
@@ -299,7 +300,7 @@ where
 		let member_account = <Runtime as frame_system::Config>::AccountId::from(member_id);
 
 		let old_members =
-			pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+			pallet_collective::Members::<Runtime, pallet_collective::Instance1>::get();
 
 		if !old_members.contains(&member_account) {
 			return Err(revert("not a member"));
@@ -336,7 +337,7 @@ where
 	) -> EvmResult<Vec<Address>> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		let members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+		let members = pallet_collective::Members::<Runtime, pallet_collective::Instance1>::get();
 
 		Ok(members
 			.iter()
