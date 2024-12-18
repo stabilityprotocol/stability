@@ -10,9 +10,9 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-use frame_support::dispatch::UnfilteredDispatchable;
 use frame_support::sp_runtime::traits::Hash;
 use frame_support::traits::EnsureOrigin;
+use frame_support::traits::UnfilteredDispatchable;
 use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::pallet_prelude::OriginFor;
 
@@ -41,7 +41,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn application_block_number)]
-	pub type ApplicationBlockNumber<T: Config> = StorageValue<_, T::BlockNumber, OptionQuery>;
+	pub type ApplicationBlockNumber<T: Config> = StorageValue<_, BlockNumberFor<T>, OptionQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn current_code_hash)]
@@ -89,7 +89,7 @@ pub mod pallet {
 		#[pallet::weight({0})]
 		pub fn set_block_application(
 			origin: OriginFor<T>,
-			block_number: T::BlockNumber,
+			block_number: BlockNumberFor<T>,
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
@@ -134,7 +134,7 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_initialize(n: T::BlockNumber) -> Weight {
+		fn on_initialize(n: BlockNumberFor<T>) -> Weight {
 			let code_saved_option = <ProposedCode<T>>::get();
 			let application_block_number_option = <ApplicationBlockNumber<T>>::get();
 
@@ -176,7 +176,7 @@ pub mod pallet {
 			<ProposedCode<T>>::get().map(|code| code.to_vec())
 		}
 
-		pub fn get_application_block_number() -> Option<T::BlockNumber> {
+		pub fn get_application_block_number() -> Option<BlockNumberFor<T>> {
 			<ApplicationBlockNumber<T>>::get()
 		}
 
@@ -192,7 +192,7 @@ pub mod pallet {
 			<CurrentCodeHash<T>>::put(hash)
 		}
 
-		pub fn set_application_block_number(block_number: T::BlockNumber) {
+		pub fn set_application_block_number(block_number: BlockNumberFor<T>) {
 			<ApplicationBlockNumber<T>>::put(block_number);
 		}
 
