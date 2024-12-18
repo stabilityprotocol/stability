@@ -62,7 +62,7 @@ pub mod pallet {
 		/// auto removal.
 		type MinAuthorities: Get<u32>;
 
-		type SessionBlockManager: SessionBlockManager<Self::BlockNumber>;
+		type SessionBlockManager: SessionBlockManager<BlockNumberFor<Self>>;
 
 		type FindAuthor: FindAuthor<Self::AccountId>;
 
@@ -266,25 +266,25 @@ pub mod pallet {
 		}
 	}
 
-	#[cfg(feature = "std")]
-	impl<T: Config> GenesisConfig<T> {
-		/// Direct implementation of `GenesisBuild::build_storage`.
-		///
-		/// Kept in order not to break dependency.
-		pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
-			<Self as GenesisBuild<T>>::build_storage(self)
-		}
+	// #[cfg(feature = "std")]
+	// impl<T: Config> GenesisConfig<T> {
+	// 	/// Direct implementation of `GenesisBuild::build_storage`.
+	// 	///
+	// 	/// Kept in order not to break dependency.
+	// 	pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
+	// 		<Self as GenesisBuild<T>>::build_storage(self)
+	// 	}
 
-		/// Direct implementation of `GenesisBuild::assimilate_storage`.
-		///
-		/// Kept in order not to break dependency.
-		pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
-			<Self as GenesisBuild<T>>::assimilate_storage(self, storage)
-		}
-	}
+	// 	/// Direct implementation of `GenesisBuild::assimilate_storage`.
+	// 	///
+	// 	/// Kept in order not to break dependency.
+	// 	pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
+	// 		<Self as GenesisBuild<T>>::assimilate_storage(self, storage)
+	// 	}
+	// }
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
 			Pallet::<T>::initialize_validators(self.initial_validators.clone());
 			MaxMissedEpochs::<T>::put(self.max_epochs_missed.clone());
@@ -323,7 +323,7 @@ pub mod pallet {
 		}
 
 		fn ensure_unsigned_origin(
-			heartbeat: Heartbeat<T::BlockNumber, T::AuthorityId>,
+			heartbeat: Heartbeat<BlockNumberFor<T>, T::AuthorityId>,
 			signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
 		) -> Result<(), ()> {
 			let is_valid = heartbeat
