@@ -30,10 +30,10 @@ use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
 use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};
 
-use frame_support::inherent::Vec;
 use frame_support::traits::ChangeMembers;
 use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
+use sp_std::vec::Vec;
 
 use sp_core::Get;
 use sp_core::{H160, H256, U256};
@@ -95,7 +95,6 @@ where
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
-	<Runtime as frame_system::Config>::BlockNumber: From<u32>,
 	<Runtime as frame_system::Config>::Hash: Into<H256>,
 	<Runtime as frame_system::Config>::AccountId: From<H160>,
 	<Runtime as frame_system::Config>::AccountId: Into<H160>,

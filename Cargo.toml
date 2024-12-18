@@ -6,7 +6,6 @@ members = [
     'node',
     'runtime',
     'precompiles/validator-controller',
-    'precompiles/utils',
     'pallets/root-controller',
     'pallets/validator-set',
     'pallets/validator-keys-controller',
@@ -203,13 +202,13 @@ pallet-evm-precompile-sha3fips = { git = "https://github.com/stabilityprotocol/f
 pallet-evm-precompile-simple = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 pallet-evm-test-vector-support = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 pallet-hotfix-sufficients = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
+precompile-utils = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 # Stability Client
 stbl-cli-authorship = { path = './client/authorship' }
 stbl-proposer-metrics = { path = './client/proposer-metrics' }
 # Stability
 pallet-evm-precompile-blake2 = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 pallet-evm-precompile-bn128 = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
-precompile-utils = { path = "./precompiles/utils", default-features = false }
 precompile-fee-token-selector = { path = "./precompiles/token-fee-controller/fee-token-selector", default-features = false }
 precompile-validator-fee-selector = { path = "./precompiles/token-fee-controller/validator-fee-selector", default-features = false }
 precompile-validator-controller = { path = "./precompiles/validator-controller", default-features = false }

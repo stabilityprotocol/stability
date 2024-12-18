@@ -1058,7 +1058,7 @@ where
 				evm::ExternalOperation::IsEmpty => {
 					weight_info.try_record_proof_size_or_fail(IS_EMPTY_CHECK_PROOF_SIZE)?
 				}
-				evm::ExternalOperation::Write => {
+				evm::ExternalOperation::Write(_) => {
 					weight_info.try_record_proof_size_or_fail(WRITE_PROOF_SIZE)?
 				}
 			};
@@ -1226,7 +1226,7 @@ where
 		}
 
 		// Record cost
-		self.record_external_cost(None, Some(opcode_proof_size.low_u64()))?;
+		self.record_external_cost(None, Some(opcode_proof_size.low_u64()), None)?;
 		Ok(())
 	}
 
@@ -1234,6 +1234,7 @@ where
 		&mut self,
 		ref_time: Option<u64>,
 		proof_size: Option<u64>,
+		_storage_growth: Option<u64>,
 	) -> Result<(), ExitError> {
 		let weight_info = if let (Some(weight_info), _) = self.info_mut() {
 			weight_info

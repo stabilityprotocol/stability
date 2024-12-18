@@ -36,7 +36,7 @@ hex = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-session = { workspace = true }
 sp-runtime = { workspace = true }
-precompile-utils = { path = "../utils", features = [ "testing" ] }
+precompile-utils = { workspace = true, features = [ "testing" ] }
 scale-info = { version = "2.0", default-features = false, features = [ "derive" ] }
 sha3 = "0.10"
 sp-io = { workspace = true }
