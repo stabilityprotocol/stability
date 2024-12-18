@@ -260,14 +260,16 @@ ark-ec = { default-features = false }
 ark-ff = { default-features = false }
 ark-std = { default-features = false }
 
+# EVM & Ethereum
+evm = { version = "0.41.1", default-features = false }
+evm-gasometer = { version = "0.41.0", default-features = false }
+evm-runtime = { version = "0.41.0", default-features = false }
+
 moonbeam-primitives-ext = { path = "vendor/primitives/ext", default-features = false }
 moonbeam-evm-tracer = { path = "vendor/runtime/evm_tracer", default-features = false }
 moonbeam-rpc-primitives-debug = { path = "vendor/primitives/rpc/debug", default-features = false }
 evm-tracing-events = { path = "vendor/primitives/rpc/evm-tracing-events", default-features = false }
 moonbeam-rpc-primitives-txpool = { path = "vendor/primitives/rpc/txpool", default-features = false }
-evm = { git = "https://github.com/rust-blockchain/evm", rev = "b7b82c7e1fc57b7449d6dfa6826600de37cc1e65", default-features = false }
-evm-gasometer = { git = "https://github.com/rust-blockchain/evm", rev = "b7b82c7e1fc57b7449d6dfa6826600de37cc1e65", default-features = false }
-evm-runtime = { git = "https://github.com/rust-blockchain/evm", rev = "b7b82c7e1fc57b7449d6dfa6826600de37cc1e65", default-features = false }
 moonbeam-rpc-debug = { path = "vendor/client/rpc/debug" }
 moonbeam-rpc-trace = { path = "vendor/client/rpc/trace" }
 moonbeam-rpc-txpool = { path = "vendor/client/rpc/txpool" }

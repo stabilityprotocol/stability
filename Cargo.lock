@@ -2231,26 +2231,6 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
 name = "evm"
-version = "0.39.1"
-source = "git+https://github.com/rust-blockchain/evm?rev=b7b82c7e1fc57b7449d6dfa6826600de37cc1e65#b7b82c7e1fc57b7449d6dfa6826600de37cc1e65"
-dependencies = [
- "auto_impl",
- "environmental",
- "ethereum 0.14.0",
- "evm-core 0.39.0",
- "evm-gasometer 0.39.0",
- "evm-runtime 0.39.0",
- "log",
- "parity-scale-codec",
- "primitive-types",
- "rlp",
- "scale-info",
- "serde",
- "sha3 0.10.8",
-]
-
-[[package]]
-name = "evm"
 version = "0.41.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "767f43e9630cc36cf8ff2777cbb0121b055f0d1fd6eaaa13b46a1808f0d0e7e9"
@@ -2258,9 +2238,9 @@ dependencies = [
  "auto_impl",
  "environmental",
  "ethereum 0.15.0",
- "evm-core 0.41.0",
- "evm-gasometer 0.41.0",
- "evm-runtime 0.41.0",
+ "evm-core",
+ "evm-gasometer",
+ "evm-runtime",
  "log",
  "parity-scale-codec",
  "primitive-types",
@@ -2268,17 +2248,6 @@ dependencies = [
  "scale-info",
  "serde",
  "sha3 0.10.8",
-]
-
-[[package]]
-name = "evm-core"
-version = "0.39.0"
-source = "git+https://github.com/rust-blockchain/evm?rev=b7b82c7e1fc57b7449d6dfa6826600de37cc1e65#b7b82c7e1fc57b7449d6dfa6826600de37cc1e65"
-dependencies = [
- "parity-scale-codec",
- "primitive-types",
- "scale-info",
- "serde",
 ]
 
 [[package]]
@@ -2295,37 +2264,14 @@ dependencies = [
 
 [[package]]
 name = "evm-gasometer"
-version = "0.39.0"
-source = "git+https://github.com/rust-blockchain/evm?rev=b7b82c7e1fc57b7449d6dfa6826600de37cc1e65#b7b82c7e1fc57b7449d6dfa6826600de37cc1e65"
-dependencies = [
- "environmental",
- "evm-core 0.39.0",
- "evm-runtime 0.39.0",
- "primitive-types",
-]
-
-[[package]]
-name = "evm-gasometer"
 version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1dc0eb591abc5cd7b05bef6a036c2bb6c66ab6c5e0c5ce94bfe377ab670b1fd7"
 dependencies = [
  "environmental",
- "evm-core 0.41.0",
- "evm-runtime 0.41.0",
+ "evm-core",
+ "evm-runtime",
  "primitive-types",
-]
-
-[[package]]
-name = "evm-runtime"
-version = "0.39.0"
-source = "git+https://github.com/rust-blockchain/evm?rev=b7b82c7e1fc57b7449d6dfa6826600de37cc1e65#b7b82c7e1fc57b7449d6dfa6826600de37cc1e65"
-dependencies = [
- "auto_impl",
- "environmental",
- "evm-core 0.39.0",
- "primitive-types",
- "sha3 0.10.8",
 ]
 
 [[package]]
@@ -2336,7 +2282,7 @@ checksum = "84bbe09b64ae13a29514048c1bb6fda6374ac0b4f6a1f15a443348ab88ef42cd"
 dependencies = [
  "auto_impl",
  "environmental",
- "evm-core 0.41.0",
+ "evm-core",
  "primitive-types",
  "sha3 0.10.8",
 ]
@@ -2348,9 +2294,9 @@ dependencies = [
  "environmental",
  "ethereum 0.14.0",
  "ethereum-types",
- "evm 0.39.1",
- "evm-gasometer 0.39.0",
- "evm-runtime 0.39.0",
+ "evm",
+ "evm-gasometer",
+ "evm-runtime",
  "parity-scale-codec",
  "sp-runtime-interface 28.0.0",
 ]
@@ -2524,7 +2470,7 @@ source = "git+https://github.com/stabilityprotocol/frontier?branch=stable2407#2e
 dependencies = [
  "ethereum 0.15.0",
  "ethereum-types",
- "evm 0.41.1",
+ "evm",
  "fc-api",
  "fc-mapping-sync",
  "fc-rpc-core",
@@ -2826,7 +2772,7 @@ name = "fp-evm"
 version = "3.0.0-dev"
 source = "git+https://github.com/stabilityprotocol/frontier?branch=stable2407#2e219e17a526125da003e64ef22ec037917083fa"
 dependencies = [
- "evm 0.41.1",
+ "evm",
  "frame-support",
  "num_enum 0.7.3",
  "parity-scale-codec",
@@ -5577,9 +5523,9 @@ name = "moonbeam-evm-tracer"
 version = "0.1.0"
 dependencies = [
  "ethereum-types",
- "evm 0.39.1",
- "evm-gasometer 0.39.0",
- "evm-runtime 0.39.0",
+ "evm",
+ "evm-gasometer",
+ "evm-runtime",
  "evm-tracing-events",
  "fp-evm",
  "moonbeam-primitives-ext",
@@ -6563,7 +6509,7 @@ source = "git+https://github.com/stabilityprotocol/frontier?branch=stable2407#2e
 dependencies = [
  "ethereum 0.15.0",
  "ethereum-types",
- "evm 0.41.1",
+ "evm",
  "fp-consensus",
  "fp-ethereum",
  "fp-evm",
@@ -6584,7 +6530,7 @@ version = "6.0.0-dev"
 source = "git+https://github.com/stabilityprotocol/frontier?branch=stable2407#2e219e17a526125da003e64ef22ec037917083fa"
 dependencies = [
  "environmental",
- "evm 0.41.1",
+ "evm",
  "fp-account",
  "fp-evm",
  "frame-benchmarking",
@@ -7448,7 +7394,7 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 name = "precompile-fee-rewards-vault-controller"
 version = "0.1.0"
 dependencies = [
- "evm 0.39.1",
+ "evm",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -7572,7 +7518,7 @@ dependencies = [
  "affix",
  "derive_more 0.99.17",
  "environmental",
- "evm 0.39.1",
+ "evm",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -8528,7 +8474,7 @@ name = "runner"
 version = "0.1.0"
 dependencies = [
  "environmental",
- "evm 0.39.1",
+ "evm",
  "fp-evm",
  "frame-benchmarking",
  "frame-support",
@@ -11853,7 +11799,7 @@ version = "0.1.0"
 dependencies = [
  "environmental",
  "ethereum 0.14.0",
- "evm 0.39.1",
+ "evm",
  "fp-ethereum",
  "fp-evm",
  "frame-benchmarking",

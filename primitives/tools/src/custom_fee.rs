@@ -1,5 +1,4 @@
-use ethereum::TransactionV2;
-use fp_ethereum::TransactionData;
+use fp_ethereum::{Transaction, TransactionData};
 use sp_core::U256;
 
 pub struct CustomFeeInfo {
@@ -9,8 +8,8 @@ pub struct CustomFeeInfo {
 }
 
 impl CustomFeeInfo {
-	pub fn new(base_fee: U256, transaction: &TransactionV2) -> Self {
-		let data: TransactionData = transaction.into();
+	pub fn new(base_fee: U256, transaction: &Transaction) -> Self {
+		let data: TransactionData = TransactionData::from(transaction);
 		custom_info_from_fee_params(
 			base_fee,
 			data.max_fee_per_gas.or(data.gas_price),
