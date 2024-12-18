@@ -12,10 +12,10 @@ pub mod pallet {
 
 	use core::marker::PhantomData;
 
-	use parity_scale_codec::MaxEncodedLen;
-	use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence, Preservation, Provenance, Fortitude};
+	use frame_support::traits::tokens::{
+		DepositConsequence, Fortitude, Preservation, Provenance, WithdrawConsequence,
+	};
 	use frame_support::traits::{Imbalance, SameOrOther, TryDrop};
-	use frame_support::RuntimeDebug;
 	use frame_support::{
 		pallet_prelude::MaybeSerializeDeserialize,
 		traits::{
@@ -24,7 +24,8 @@ pub mod pallet {
 		},
 	};
 	use pallet_user_fee_selector::UserFeeTokenController;
-	use sp_runtime::{DispatchError, DispatchResult, FixedPointOperand};
+	use parity_scale_codec::MaxEncodedLen;
+	use sp_runtime::{DispatchError, DispatchResult, FixedPointOperand, RuntimeDebug};
 	use sp_std::fmt::Debug;
 
 	#[pallet::pallet]
@@ -276,7 +277,11 @@ pub mod pallet {
 		}
 
 		/// Get the maximum amount that `who` can withdraw/transfer successfully.
-		fn reducible_balance(who: &T::AccountId, _preservation: Preservation, _force: Fortitude) -> Self::Balance {
+		fn reducible_balance(
+			who: &T::AccountId,
+			_preservation: Preservation,
+			_force: Fortitude,
+		) -> Self::Balance {
 			<Self as Currency<T::AccountId>>::total_balance(who)
 		}
 
