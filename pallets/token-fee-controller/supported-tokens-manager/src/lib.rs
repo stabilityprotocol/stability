@@ -103,24 +103,25 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_config]
-	#[cfg(feature = "std")]
-	pub struct GenesisConfig {
+	pub struct GenesisConfig<T> {
 		pub initial_default_token: H160,
 		pub initial_default_token_slot: H256,
+		#[serde(skip)]
+		pub _config: PhantomData<T>,
 	}
 
-	#[cfg(feature = "std")]
-	impl Default for GenesisConfig {
+	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
 				initial_default_token: H160::zero(),
 				initial_default_token_slot: H256::zero(),
+				_config: Default::default(),
 			}
 		}
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig {
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
 			DefaultTokenStorage::<T>::put(self.initial_default_token);
 			SupportedTokens::<T>::put(vec![self.initial_default_token]);
