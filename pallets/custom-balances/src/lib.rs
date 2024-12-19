@@ -106,6 +106,10 @@ pub mod pallet {
 		fn peek(&self) -> T {
 			self.0.clone()
 		}
+
+		fn extract(&mut self, _balance: T) -> Self {
+			NeutralImbalance(self.0)
+		}
 	}
 
 	impl<T: Config> Currency<T::AccountId> for Pallet<T> {

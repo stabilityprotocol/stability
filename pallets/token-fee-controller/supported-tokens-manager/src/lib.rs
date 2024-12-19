@@ -2,6 +2,7 @@
 
 pub use pallet::*;
 use sp_core::{H160, H256};
+use sp_std::vec;
 use sp_std::vec::Vec;
 
 #[cfg(test)]

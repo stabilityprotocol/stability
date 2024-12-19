@@ -15,7 +15,9 @@ slices = "0.2.0"
 precompile-utils = { workspace = true }
 
 # Substrate
-parity-scale-codec = { workspace = true, default-features = false, features = [ "max-encoded-len" ] }
+parity-scale-codec = { workspace = true, default-features = false, features = [
+	"max-encoded-len",
+] }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 pallet-balances = { workspace = true }
@@ -23,10 +25,11 @@ pallet-timestamp = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
 sp-std = { workspace = true }
+sp-runtime = { workspace = true }
 
 # Frontier
 fp-evm = { workspace = true }
-pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
+pallet-evm = { workspace = true, features = ["forbid-evm-reentrancy"] }
 
 pallet-user-fee-selector = { workspace = true }
 pallet-validator-fee-selector = { workspace = true }
@@ -40,14 +43,16 @@ libsecp256k1 = "0.7"
 serde = { version = "1.0.100" }
 sha3 = "0.10"
 
-precompile-utils = { workspace = true, features = [ "testing" ] }
+precompile-utils = { workspace = true, features = ["testing"] }
 
-pallet-timestamp ={ workspace = true }
-scale-info = { version = "2.0", default-features = false, features = [ "derive" ] }
+pallet-timestamp = { workspace = true }
+scale-info = { version = "2.0", default-features = false, features = [
+	"derive",
+] }
 sp-runtime = { workspace = true }
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
 	"parity-scale-codec/std",
 	"fp-evm/std",
@@ -59,5 +64,5 @@ std = [
 	"sp-core/std",
 	"sp-io/std",
 	"sp-std/std",
+	"sp-runtime/std",
 ]
-

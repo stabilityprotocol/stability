@@ -54,13 +54,15 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_config]
-	pub struct GenesisConfig {
+	pub struct GenesisConfig<T> {
 		pub fee_vault_precompile_address: H160,
 		pub validator_percentage: U256,
+		#[serde(skip)]
+		pub _config: PhantomData<T>,
 	}
 
 	#[cfg(feature = "std")]
-	impl Default for GenesisConfig {
+	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
 				fee_vault_precompile_address: <H160 as core::str::FromStr>::from_str(
@@ -68,12 +70,13 @@ pub mod pallet {
 				)
 				.unwrap(),
 				validator_percentage: 50.into(),
+				_config: Default::default(),
 			}
 		}
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig {
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
 			FeeVaultPrecompileAddressStorage::<T>::put(self.fee_vault_precompile_address);
 			ValidatorPercentageStorage::<T>::put(self.validator_percentage);
@@ -104,14 +107,14 @@ pub mod pallet {
 			token: H160,
 			conversion_rate: (U256, U256),
 			amount: U256,
-		) -> Result<(), Self::Error> {    
+		) -> Result<(), Self::Error> {
 			if amount.is_zero() {
 				return Ok(());
 			}
 			if conversion_rate.1 == U256::zero() {
 				return Err(Error::<T>::InvalidConversionRate);
 			}
-      
+
 			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get().unwrap();
 			let mapped_amount = amount
 				.checked_mul(conversion_rate.0)
@@ -137,15 +140,15 @@ pub mod pallet {
 			paid_amount: U256,
 			actual_amount: U256,
 		) -> Result<(), Self::Error> {
-      let over_fee = paid_amount.saturating_sub(actual_amount);
+			let over_fee = paid_amount.saturating_sub(actual_amount);
 
 			if over_fee.is_zero() {
 				return Ok(());
-      }
-      
+			}
+
 			if conversion_rate.1 == U256::zero() {
 				return Err(Error::<T>::InvalidConversionRate);
-      }
+			}
 
 			let over_fee = paid_amount.saturating_sub(actual_amount);
 			let mapped_amount = over_fee
@@ -175,8 +178,8 @@ pub mod pallet {
 		) -> Result<(U256, U256), Self::Error> {
 			if actual_amount.is_zero() {
 				return Ok((0.into(), 0.into()));
-      }
-      
+			}
+
 			if conversion_rate.1 == U256::zero() {
 				return Err(Error::<T>::InvalidConversionRate);
 			}

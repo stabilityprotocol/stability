@@ -25,7 +25,6 @@ pub mod extrinsic;
 pub mod genesismap;
 pub mod substrate_test_pallet;
 
-use parity_scale_codec::{Decode, Encode};
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
@@ -40,15 +39,16 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	CheckNonce, CheckWeight,
 };
+use pallet_ethereum::Transaction as EthereumTransaction;
+use pallet_ethereum::TransactionStatus;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
+use sp_application_crypto::{ecdsa, ed25519, sr25519, RuntimeAppPublic};
 use sp_core::H160;
 use sp_core::U256;
-use pallet_ethereum::TransactionStatus;
-use scale_info::TypeInfo;
+use sp_core::{OpaqueMetadata, RuntimeDebug};
 use sp_runtime::Permill;
 use sp_std::prelude::*;
-use pallet_ethereum::Transaction as EthereumTransaction;
-use sp_application_crypto::{ecdsa, ed25519, sr25519, RuntimeAppPublic};
-use sp_core::{OpaqueMetadata, RuntimeDebug};
 use sp_trie::{
 	trie_types::{TrieDBBuilder, TrieDBMutBuilderV1},
 	PrefixedMemoryDB, StorageProof,
@@ -125,7 +125,10 @@ fn version() -> RuntimeVersion {
 /// Native version.
 #[cfg(any(feature = "std", test))]
 pub fn native_version() -> NativeVersion {
-	NativeVersion { runtime_version: VERSION, can_author_with: Default::default() }
+	NativeVersion {
+		runtime_version: VERSION,
+		can_author_with: Default::default(),
+	}
 }
 
 /// Transfer data extracted from Extrinsic containing `Balances::transfer_allow_death`.
@@ -144,7 +147,11 @@ pub type Signature = sr25519::Signature;
 pub type Pair = sp_core::sr25519::Pair;
 
 /// The SignedExtension to the basic transaction logic.
-pub type SignedExtra = (CheckNonce<Runtime>, CheckWeight<Runtime>, CheckSubstrateCall);
+pub type SignedExtra = (
+	CheckNonce<Runtime>,
+	CheckWeight<Runtime>,
+	CheckSubstrateCall,
+);
 /// The payload being signed in transactions.
 pub type SignedPayload = sp_runtime::generic::SignedPayload<RuntimeCall, SignedExtra>;
 /// Unchecked extrinsic type as expected by this runtime.
@@ -171,7 +178,6 @@ pub type Block = sp_runtime::generic::Block<Header, Extrinsic>;
 pub type Header = sp_runtime::generic::Header<BlockNumber, Hashing>;
 /// Balance of an account.
 pub type Balance = u64;
-
 
 pub type RealAccountiD = stbl_core_primitives::AccountId;
 
@@ -280,8 +286,9 @@ impl sp_runtime::traits::SignedExtension for CheckSubstrateCall {
 	) -> TransactionValidity {
 		log::trace!(target: LOG_TARGET, "validate");
 		match call {
-			RuntimeCall::SubstrateTest(ref substrate_test_call) =>
-				substrate_test_pallet::validate_runtime_call(substrate_test_call),
+			RuntimeCall::SubstrateTest(ref substrate_test_call) => {
+				substrate_test_pallet::validate_runtime_call(substrate_test_call)
+			}
 			_ => Ok(Default::default()),
 		}
 	}
@@ -449,13 +456,17 @@ fn code_using_trie() -> u64 {
 		let mut t = TrieDBMutBuilderV1::<Hashing>::new(&mut mdb, &mut root).build();
 		for (key, value) in &pairs {
 			if t.insert(key, value).is_err() {
-				return 101
+				return 101;
 			}
 		}
 	}
 
 	let trie = TrieDBBuilder::<Hashing>::new(&mdb, &root).build();
-	let res = if let Ok(iter) = trie.iter() { iter.flatten().count() as u64 } else { 102 };
+	let res = if let Ok(iter) = trie.iter() {
+		iter.flatten().count() as u64
+	} else {
+		102
+	};
 
 	res
 }
@@ -836,7 +847,9 @@ fn test_ed25519_crypto() -> (ed25519::AppSignature, ed25519::AppPublic) {
 	assert!(all.contains(&public1));
 	assert!(all.contains(&public2));
 
-	let signature = public0.sign(&"ed25519").expect("Generates a valid `ed25519` signature.");
+	let signature = public0
+		.sign(&"ed25519")
+		.expect("Generates a valid `ed25519` signature.");
 	assert!(public0.verify(&"ed25519", &signature));
 	(signature, public0)
 }
@@ -851,7 +864,9 @@ fn test_sr25519_crypto() -> (sr25519::AppSignature, sr25519::AppPublic) {
 	assert!(all.contains(&public1));
 	assert!(all.contains(&public2));
 
-	let signature = public0.sign(&"sr25519").expect("Generates a valid `sr25519` signature.");
+	let signature = public0
+		.sign(&"sr25519")
+		.expect("Generates a valid `sr25519` signature.");
 	assert!(public0.verify(&"sr25519", &signature));
 	(signature, public0)
 }
@@ -866,7 +881,9 @@ fn test_ecdsa_crypto() -> (ecdsa::AppSignature, ecdsa::AppPublic) {
 	assert!(all.contains(&public1));
 	assert!(all.contains(&public2));
 
-	let signature = public0.sign(&"ecdsa").expect("Generates a valid `ecdsa` signature.");
+	let signature = public0
+		.sign(&"ecdsa")
+		.expect("Generates a valid `ecdsa` signature.");
 
 	assert!(public0.verify(&"ecdsa", &signature));
 	(signature, public0)
@@ -940,11 +957,19 @@ pub mod storage_key_generator {
 	}
 
 	fn concat_hashes(input: &Vec<&[u8]>) -> String {
-		input.iter().map(|s| sp_core::hashing::twox_128(s)).map(hex).collect()
+		input
+			.iter()
+			.map(|s| sp_core::hashing::twox_128(s))
+			.map(hex)
+			.collect()
 	}
 
 	fn twox_64_concat(x: &[u8]) -> Vec<u8> {
-		sp_core::hashing::twox_64(x).iter().chain(x.iter()).cloned().collect::<Vec<_>>()
+		sp_core::hashing::twox_64(x)
+			.iter()
+			.chain(x.iter())
+			.cloned()
+			.collect::<Vec<_>>()
 	}
 
 	/// Generate the hashed storage keys from the raw literals. These keys are expected to be be in
@@ -989,7 +1014,11 @@ pub mod storage_key_generator {
 					.collect::<Vec<u8>>()
 			})
 			.map(|hash_pubkey| {
-				[concat_hashes(&vec![b"System", b"Account"]), hex(hash_pubkey)].concat()
+				[
+					concat_hashes(&vec![b"System", b"Account"]),
+					hex(hash_pubkey),
+				]
+				.concat()
 			});
 
 		expected_keys.extend(balances_map_keys);
@@ -1102,8 +1131,8 @@ pub mod storage_key_generator {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use parity_scale_codec::Encode;
 	use frame_support::dispatch::DispatchInfo;
+	use parity_scale_codec::Encode;
 	use sc_block_builder::BlockBuilderProvider;
 	use sp_api::ProvideRuntimeApi;
 	use sp_consensus::BlockOrigin;
@@ -1143,7 +1172,9 @@ mod tests {
 		// ~2048k of heap memory.
 		let (new_at_hash, block) = {
 			let mut builder = client.new_block(Default::default()).unwrap();
-			builder.push_storage_change(HEAP_PAGES.to_vec(), Some(32u64.encode())).unwrap();
+			builder
+				.push_storage_change(HEAP_PAGES.to_vec(), Some(32u64.encode()))
+				.unwrap();
 			let block = builder.build().unwrap().block;
 			let hash = block.header.hash();
 			(hash, block)
@@ -1158,8 +1189,9 @@ mod tests {
 
 	#[test]
 	fn test_storage() {
-		let client =
-			TestClientBuilder::new().set_execution_strategy(ExecutionStrategy::Both).build();
+		let client = TestClientBuilder::new()
+			.set_execution_strategy(ExecutionStrategy::Both)
+			.build();
 		let runtime_api = client.runtime_api();
 		let best_hash = client.chain_info().best_hash;
 
@@ -1184,8 +1216,9 @@ mod tests {
 		let backend =
 			sp_state_machine::TrieBackendBuilder::<_, crate::Hashing>::new(db, root).build();
 		let proof = sp_state_machine::prove_read(backend, vec![b"value3"]).unwrap();
-		let client =
-			TestClientBuilder::new().set_execution_strategy(ExecutionStrategy::Both).build();
+		let client = TestClientBuilder::new()
+			.set_execution_strategy(ExecutionStrategy::Both)
+			.build();
 		let runtime_api = client.runtime_api();
 		let best_hash = client.chain_info().best_hash;
 
@@ -1194,7 +1227,10 @@ mod tests {
 
 	pub fn new_test_ext() -> sp_io::TestExternalities {
 		genesismap::GenesisStorageBuilder::new(
-			vec![AccountKeyring::One.public().into(), AccountKeyring::Two.public().into()],
+			vec![
+				AccountKeyring::One.public().into(),
+				AccountKeyring::Two.public().into(),
+			],
 			vec![AccountKeyring::One.into(), AccountKeyring::Two.into()],
 			1000 * currency::DOLLARS,
 		)
@@ -1221,15 +1257,22 @@ mod tests {
 		stability_sp_tracing::try_init_simple();
 		new_test_ext().execute_with(|| {
 			let failing_calls = vec![
-				substrate_test_pallet::Call::bench_call { transfer: Default::default() },
+				substrate_test_pallet::Call::bench_call {
+					transfer: Default::default(),
+				},
 				substrate_test_pallet::Call::include_data { data: vec![] },
-				substrate_test_pallet::Call::fill_block { ratio: Perbill::from_percent(50) },
+				substrate_test_pallet::Call::fill_block {
+					ratio: Perbill::from_percent(50),
+				},
 			];
 			let succeeding_calls = vec![
 				substrate_test_pallet::Call::deposit_log_digest_item {
 					log: DigestItem::Other(vec![]),
 				},
-				substrate_test_pallet::Call::storage_change { key: vec![], value: None },
+				substrate_test_pallet::Call::storage_change {
+					key: vec![],
+					value: None,
+				},
 				substrate_test_pallet::Call::read { count: 0 },
 				substrate_test_pallet::Call::read_and_panic { count: 0 },
 			];
@@ -1270,7 +1313,9 @@ mod tests {
 				CheckSubstrateCall {}
 					.validate(
 						&x,
-						&ExtrinsicBuilder::new_call_with_priority(16).build().function,
+						&ExtrinsicBuilder::new_call_with_priority(16)
+							.build()
+							.function,
 						&info,
 						len
 					)
@@ -1283,7 +1328,9 @@ mod tests {
 				CheckSubstrateCall {}
 					.validate(
 						&x,
-						&ExtrinsicBuilder::new_call_do_not_propagate().build().function,
+						&ExtrinsicBuilder::new_call_do_not_propagate()
+							.build()
+							.function,
 						&info,
 						len
 					)

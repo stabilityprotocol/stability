@@ -23,9 +23,10 @@ use core::str::FromStr;
 use sp_std::vec::Vec;
 
 use fp_evm::PrecompileHandle;
-use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
+use frame_support::dispatch::{GetDispatchInfo, PostDispatchInfo};
 use frame_support::pallet_prelude::{StorageValue, ValueQuery};
 use frame_support::parameter_types;
+use sp_runtime::traits::Dispatchable;
 
 use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
@@ -211,7 +212,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TOKEN_SUPPORT_CHANGE,
 			Into::<H160>::into(token),
-			solidity::encode_event_data(false)
+			solidity::encode_event_data(false),
 		)
 		.record(handle)?;
 
@@ -299,7 +300,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 
@@ -331,7 +332,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 

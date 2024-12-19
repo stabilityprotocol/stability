@@ -29,7 +29,7 @@ members = [
     'pallets/custom-balances',
     'pallets/sponsored-transactions',
     'primitives/tools',
-	'pallets/root-controller',
+    'pallets/root-controller',
     'stability-rpc',
     'client/authorship',
     'primitives/core',
@@ -40,15 +40,13 @@ members = [
     'test-utils/stability-client',
     'test-utils/stability-root-testing',
     'test-utils/stability-debug-derive',
-    'test-utils/stability-tracing'
+    'test-utils/stability-tracing',
 ]
 
 [workspace.package]
 authors = ["Stability Solutions"]
 edition = "2021"
 repository = "https://github.com/stabilityprotocol/stability/"
-
-
 
 
 [workspace.dependencies]
@@ -66,18 +64,23 @@ paste = "1.0.6"
 similar-asserts = "1.1.0"
 bn = { package = "substrate-bn", version = "0.6", default-features = false }
 environmental = { default-features = false }
-ethereum = { default-features = false }
-ethereum-types = { default-features = false }
 jsonrpsee = "0.16.2"
 kvdb-rocksdb = "0.19.0"
 libsecp256k1 = { default-features = false }
 hex = { default-features = false, features = ["alloc"] }
 parity-db = "0.4.8"
 rlp = { version = "0.5", default-features = false }
-scale-codec = { package = "parity-scale-codec", default-features = false, features = ["derive"] }
-codec = { package = "parity-scale-codec", default-features = false, features = ["derive"] }
+scale-codec = { package = "parity-scale-codec", default-features = false, features = [
+    "derive",
+] }
+codec = { package = "parity-scale-codec", default-features = false, features = [
+    "derive",
+] }
 scale-info = { default-features = false, features = ["derive"] }
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde = { version = "1.0", default-features = false, features = [
+    "derive",
+    "alloc",
+] }
 serde_json = "1.0"
 futures = "0.3.28"
 futures-timer = "3.0.1"
@@ -92,7 +95,9 @@ trie-db = { default-features = false }
 once_cell = "1.17.1"
 hex-literal = "0.4.1"
 syn = "1.0.98"
-sqlx = { version = "0.7.0-alpha.3", default-features = false, features = ["macros"] }
+sqlx = { version = "0.7.0-alpha.3", default-features = false, features = [
+    "macros",
+] }
 thiserror = "1.0"
 tokio = "1.28.2"
 # Polkadot
@@ -147,7 +152,7 @@ sp-keystore = { git = "https://github.com/paritytech/polkadot-sdk", branch = "st
 beefy-primitives = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk", package = "sp-beefy", branch = "stable2407" }
 sp-application-crypto = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407" }
 sp-consensus-babe = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407" }
-sp-externalities =  { default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407" }
+sp-externalities = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407" }
 sp-runtime-interface = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
 # Substrate FRAME
 frame-benchmarking = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
@@ -168,7 +173,7 @@ pallet-utility = { git = "https://github.com/paritytech/polkadot-sdk", branch = 
 pallet-collective = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
 pallet-babe = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
 pallet-beefy-mmr = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
-pallet-session =  { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
+pallet-session = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
 # Substrate Utility
 frame-benchmarking-cli = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407" }
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407" }
@@ -183,9 +188,9 @@ fc-db = { git = "https://github.com/stabilityprotocol/frontier", branch = "stabl
 fc-mapping-sync = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407" }
 fc-rpc = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407" }
 fc-rpc-core = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407" }
-fc-storage = {  git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407" }
+fc-storage = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407" }
 # Frontier Primitive
-fp-account = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407",  default-features = false }
+fp-account = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 fp-consensus = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 fp-ethereum = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 fp-evm = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
@@ -239,13 +244,13 @@ stability-test-runtime = { path = "./test-utils/stability-runtime", default-feat
 stability-test-client = { path = "./test-utils/stability-client", default-features = false }
 stability-pallet-root-testing = { path = "./test-utils/stability-root-testing", default-features = false }
 stability-sp-debug-derive = { path = "./test-utils/stability-debug-derive", default-features = false }
-stability-sp-tracing = { path = "./test-utils/stability-tracing", default-features = false}
+stability-sp-tracing = { path = "./test-utils/stability-tracing", default-features = false }
 
 stbl-core-primitives = { path = "primitives/core", default-features = false }
 account = { path = "primitives/account", default-features = false }
 blake2-rfc = { default-features = false }
 impl-serde = { default-features = false }
-parity-scale-codec = { default-features = false, features = [ "derive" ] }
+parity-scale-codec = { default-features = false, features = ["derive"] }
 sha3 = { version = "0.9", default-features = false }
 stability-rpc = { path = "./stability-rpc", default-features = false }
 stability-rpc-api = { path = "./primitives/stability-rpc-api", default-features = false }
@@ -263,6 +268,10 @@ ark-std = { default-features = false }
 evm = { version = "0.41.1", default-features = false }
 evm-gasometer = { version = "0.41.0", default-features = false }
 evm-runtime = { version = "0.41.0", default-features = false }
+ethereum = { version = "0.15.0", default-features = false, features = [
+    "with-codec",
+] }
+ethereum-types = { version = "0.14", default-features = false }
 
 moonbeam-primitives-ext = { path = "vendor/primitives/ext", default-features = false }
 moonbeam-evm-tracer = { path = "vendor/runtime/evm_tracer", default-features = false }

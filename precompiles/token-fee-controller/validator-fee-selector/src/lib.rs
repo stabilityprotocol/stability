@@ -22,8 +22,9 @@
 use core::str::FromStr;
 
 use fp_evm::PrecompileHandle;
-use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
+use frame_support::dispatch::{GetDispatchInfo, PostDispatchInfo};
 use frame_support::parameter_types;
+use sp_runtime::traits::Dispatchable;
 
 use frame_support::pallet_prelude::{StorageValue, ValueQuery};
 use frame_support::traits::StorageInstance;
@@ -312,7 +313,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 
@@ -344,7 +345,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 

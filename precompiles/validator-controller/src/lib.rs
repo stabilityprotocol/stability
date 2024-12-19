@@ -25,7 +25,8 @@ mod tests;
 
 use core::str::FromStr;
 use fp_evm::PrecompileHandle;
-use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
+use frame_support::dispatch::{GetDispatchInfo, PostDispatchInfo};
+use sp_runtime::traits::Dispatchable;
 
 use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};

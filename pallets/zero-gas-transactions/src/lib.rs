@@ -18,11 +18,11 @@ pub mod pallet {
 	use frame_support::sp_runtime::traits::UniqueSaturatedInto;
 	use frame_system::pallet_prelude::*;
 	use pallet_evm::GasWeightMapping;
+	use parity_scale_codec::alloc::string::ToString;
 	use sp_core::H256;
 	use sp_core::U256;
 	use sp_std::vec;
 	use sp_std::vec::Vec;
-	use parity_scale_codec::alloc::string::ToString;
 
 	pub use fp_rpc::TransactionStatus;
 
@@ -36,7 +36,7 @@ pub mod pallet {
 	pub type SponsorNonce<T: Config> = StorageMap<_, Blake2_128Concat, H160, u64, ValueQuery>;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config<BlockNumber = u32> + pallet_evm::Config + pallet_ethereum::Config {
+	pub trait Config: frame_system::Config + pallet_evm::Config + pallet_ethereum::Config {
 		type RuntimeCall: Parameter + GetDispatchInfo;
 	}
 
@@ -118,11 +118,8 @@ pub mod pallet {
 
 			let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
 
-			Self::ensure_zero_gas_transaction(
-				current_block_validator,
-				validator_signature,
-			)
-			.map_err(|_| DispatchError::Other("Invalid zero gas transaction signature"))?;
+			Self::ensure_zero_gas_transaction(current_block_validator, validator_signature)
+				.map_err(|_| DispatchError::Other("Invalid zero gas transaction signature"))?;
 
 			let origin: T::RuntimeOrigin =
 				pallet_ethereum::Origin::EthereumTransaction(from).into();
@@ -228,10 +225,12 @@ pub mod pallet {
 			validator_signature: Vec<u8>,
 		) -> Result<(), ()> {
 			let chain_id = T::ChainId::get();
-			let block_number = <frame_system::Pallet<T>>::block_number();
-		
+			let block_number = UniqueSaturatedInto::<u64>::unique_saturated_into(
+				frame_system::Pallet::<T>::block_number(),
+			);
+
 			let zero_gas_trx_internal_message: Vec<u8> =
-				Self::get_zero_gas_transaction_signing_message(block_number, chain_id);
+				Self::get_zero_gas_transaction_signing_message(block_number.into(), chain_id);
 
 			let eip191_message =
 				stbl_tools::eth::build_eip191_message_hash(zero_gas_trx_internal_message);
@@ -250,12 +249,12 @@ pub mod pallet {
 			chain_id: u64,
 		) -> Vec<u8> {
 			b"I consent to validate zero gas transactions in block "
-										.iter()
-										.chain(block_number.to_string().as_bytes().iter())
-										.chain(b" on chain ")
-										.chain(chain_id.to_string().as_bytes().iter())
-										.cloned()
-										.collect()
+				.iter()
+				.chain(block_number.to_string().as_bytes().iter())
+				.chain(b" on chain ")
+				.chain(chain_id.to_string().as_bytes().iter())
+				.cloned()
+				.collect()
 		}
 
 		fn get_zero_gas_trx_signer(signature: Vec<u8>, message: H256) -> Option<H160> {
@@ -273,6 +272,5 @@ pub mod pallet {
 
 			return Some(H160::from_slice(&result[12..32]));
 		}
-
 	}
 }

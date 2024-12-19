@@ -1,8 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use core::{marker::PhantomData, ops::Mul};
-
-use ethereum::TransactionV2;
 use fp_ethereum::TransactionData;
 use fp_evm::{CheckEvmTransaction, CheckEvmTransactionConfig, FeeCalculator};
 use pallet_ethereum::InvalidTransactionWrapper;
@@ -62,7 +60,7 @@ where
 
 	fn build_validity_success_transaction(
 		origin: &H160,
-		transaction: &TransactionV2,
+		transaction: &ethereum::TransactionV2,
 		gas_price: U256,
 	) -> TransactionValidity {
 		let transaction_data: TransactionData = transaction.into();

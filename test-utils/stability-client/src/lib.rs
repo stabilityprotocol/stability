@@ -102,8 +102,10 @@ impl<Block: BlockT, ExecutorDispatch, G: GenesisInit>
 
 	/// Create new `TestClientBuilder` with default backend and storage chain mode
 	pub fn with_tx_storage(blocks_pruning: u32) -> Self {
-		let backend =
-			Arc::new(Backend::new_test_with_tx_storage(BlocksPruning::Some(blocks_pruning), 0));
+		let backend = Arc::new(Backend::new_test_with_tx_storage(
+			BlocksPruning::Some(blocks_pruning),
+			0,
+		));
 		Self::with_backend(backend)
 	}
 }
@@ -151,10 +153,16 @@ impl<Block: BlockT, ExecutorDispatch, Backend, G: GenesisInit>
 		value: impl AsRef<[u8]>,
 	) -> Self {
 		let storage_key = child_info.storage_key();
-		let entry = self.child_storage_extension.entry(storage_key.to_vec()).or_insert_with(|| {
-			StorageChild { data: Default::default(), child_info: child_info.clone() }
-		});
-		entry.data.insert(key.as_ref().to_vec(), value.as_ref().to_vec());
+		let entry = self
+			.child_storage_extension
+			.entry(storage_key.to_vec())
+			.or_insert_with(|| StorageChild {
+				data: Default::default(),
+				child_info: child_info.clone(),
+			});
+		entry
+			.data
+			.insert(key.as_ref().to_vec(), value.as_ref().to_vec());
 		self
 	}
 
@@ -315,7 +323,11 @@ pub struct RpcTransactionOutput {
 
 impl std::fmt::Debug for RpcTransactionOutput {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		write!(f, "RpcTransactionOutput {{ result: {:?}, receiver }}", self.result)
+		write!(
+			f,
+			"RpcTransactionOutput {{ result: {:?}, receiver }}",
+			self.result
+		)
 	}
 }
 
@@ -374,11 +386,14 @@ pub(crate) fn parse_rpc_result(
 ) -> Result<RpcTransactionOutput, RpcTransactionError> {
 	let json: serde_json::Value =
 		serde_json::from_str(&result).expect("the result can only be a JSONRPC string; qed");
-	let error = json.as_object().expect("JSON result is always an object; qed").get("error");
+	let error = json
+		.as_object()
+		.expect("JSON result is always an object; qed")
+		.get("error");
 
 	if let Some(error) = error {
 		return Err(serde_json::from_value(error.clone())
-			.expect("the JSONRPC result's error is always valid; qed"))
+			.expect("the JSONRPC result's error is always valid; qed"));
 	}
 
 	Ok(RpcTransactionOutput { result, receiver })
@@ -412,7 +427,7 @@ where
 				if notification.is_new_best {
 					blocks.insert(notification.hash);
 					if blocks.len() == count {
-						break
+						break;
 					}
 				}
 			}
