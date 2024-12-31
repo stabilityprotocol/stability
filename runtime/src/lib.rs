@@ -406,7 +406,8 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{
 		if let Some(author_index) = F::find_author(digests) {
-			let authority_id = Aura::authorities()[author_index as usize].clone();
+			let authority_id =
+				pallet_aura::Authorities::<Runtime>::get()[author_index as usize].clone();
 
 			let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
 			let signer: EthereumSigner = sp_core::ecdsa::Public::from(bytes).into();
@@ -423,7 +424,8 @@ impl<F: FindAuthor<u32>> FindAuthor<AccountId> for FindBlockAuthorityId<F> {
 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{
 		if let Some(author_index) = F::find_author(digests) {
-			let authority_id = Aura::authorities()[author_index as usize].clone();
+			let authority_id =
+				pallet_aura::Authorities::<Runtime>::get()[author_index as usize].clone();
 
 			let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
 			let signer: EthereumSigner = sp_core::ecdsa::Public::from(bytes).into();
@@ -1037,7 +1039,7 @@ impl_runtime_apis! {
 		}
 
 		fn authorities() -> Vec<AuraId> {
-			Aura::authorities().to_vec()
+			pallet_aura::Authorities::<Runtime>::get().to_vec()
 		}
 	}
 
