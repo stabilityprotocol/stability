@@ -245,7 +245,7 @@ pub mod pallet {
 		}
 
 		pub fn get_zero_gas_transaction_signing_message(
-			block_number: u32,
+			block_number: u64,
 			chain_id: u64,
 		) -> Vec<u8> {
 			b"I consent to validate zero gas transactions in block "

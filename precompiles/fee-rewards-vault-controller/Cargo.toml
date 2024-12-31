@@ -43,26 +43,25 @@ scale-info = { version = "2.0", default-features = false, features = [
 ] }
 sha3 = "0.10"
 sp-io = { workspace = true }
-stability-test-runtime-client = { workspace = true }
+substrate-test-runtime-client = { workspace = true }
 sp-staking = { workspace = true }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
-    "precompile-utils/std",
-    "sp-core/std",
-    "fp-evm/std",
-    "precompile-utils/std",
-    "pallet-fee-rewards-vault/std",
-    "frame-system/std",
-    "frame-support/std",
-    "sp-std/std",
-    "sp-runtime/std",
-    "pallet-balances/std",
-    "pallet-session/std",
-    "evm/std",
-    "pallet-dnt-fee-controller/std",
-    "pallet-supported-tokens-manager/std",
-    "pallet-user-fee-selector/std",
-    "pallet-validator-set/std",
+	"evm/std",
+	"fp-evm/std",
+	"frame-support/std",
+	"frame-system/std",
+	"pallet-balances/std",
+	"pallet-dnt-fee-controller/std",
+	"pallet-fee-rewards-vault/std",
+	"pallet-session/std",
+	"pallet-supported-tokens-manager/std",
+	"pallet-user-fee-selector/std",
+	"pallet-validator-set/std",
+	"precompile-utils/std",
+	"sp-core/std",
+	"sp-runtime/std",
+	"sp-std/std",
 ]

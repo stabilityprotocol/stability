@@ -27,14 +27,14 @@ pallet-timestamp = { workspace = true, features = ["std"] }
 stbl-core-primitives ={ workspace = true, features = ["std"] }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
-    "parity-scale-codec/std",
-	"scale-info/std",
 	"frame-support/std",
 	"frame-system/std",
-    "sp-runtime/std",
-    "sp-std/std",
-    "sp-io/std",
-    "pallet-evm/std",
+	"pallet-evm/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-std/std",
 ]

@@ -28,12 +28,12 @@ pallet-evm-chain-id = { workspace = true, features = ["std"] }
 pallet-evm = { workspace = true, features = ["std"]}
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
-    "parity-scale-codec/std",
-	"scale-info/std",
 	"frame-support/std",
 	"frame-system/std",
-    "sp-runtime/std",
-    "sp-std/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"sp-runtime/std",
+	"sp-std/std",
 ]

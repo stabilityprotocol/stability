@@ -39,17 +39,16 @@ pallet-user-fee-selector = { workspace = true }
 sp-staking = { workspace = true }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
-    "precompile-utils/std",
-    "sp-core/std",
-    "fp-evm/std",
-    "precompile-utils/std",
-    "pallet-validator-set/std",
-    "frame-system/std",
-    "frame-support/std",
-    "sp-std/std",
-    "sp-runtime/std",
-    "pallet-balances/std",
-    "pallet-session/std",
+	"fp-evm/std",
+	"frame-support/std",
+	"frame-system/std",
+	"pallet-balances/std",
+	"pallet-session/std",
+	"pallet-validator-set/std",
+	"precompile-utils/std",
+	"sp-core/std",
+	"sp-runtime/std",
+	"sp-std/std",
 ]

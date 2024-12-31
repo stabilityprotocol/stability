@@ -101,29 +101,22 @@ tokio = { workspace = true }
 substrate-build-script-utils = { workspace = true }
 
 [features]
-default = [
-	"with-rocksdb-weights",
-	"rocksdb",
-	"sql",
-]
+default = [ "rocksdb", "sql", "with-rocksdb-weights" ]
 rocksdb = [
-	"sc-cli/rocksdb",
-	"sc-service/rocksdb",
 	"fc-cli/rocksdb",
 	"fc-db/rocksdb",
 	"fc-mapping-sync/rocksdb",
 	"fc-rpc/rocksdb",
+	"sc-cli/rocksdb",
+	"sc-service/rocksdb",
 ]
-sql = [
-	"fc-db/sql",
-	"fc-mapping-sync/sql",
-]
-with-rocksdb-weights = ["stability-runtime/with-rocksdb-weights"]
-with-paritydb-weights = ["stability-runtime/with-paritydb-weights"]
-rpc-binary-search-estimate = ["fc-rpc/rpc-binary-search-estimate"]
+sql = [ "fc-db/sql", "fc-mapping-sync/sql" ]
+with-rocksdb-weights = [ "stability-runtime/with-rocksdb-weights" ]
+with-paritydb-weights = [ "stability-runtime/with-paritydb-weights" ]
+rpc-binary-search-estimate = [ "fc-rpc/rpc-binary-search-estimate" ]
 runtime-benchmarks = [
-	"frame-benchmarking/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
+	"frame-benchmarking/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"stability-runtime/runtime-benchmarks",
 ]

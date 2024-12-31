@@ -1,75 +1,75 @@
 [features]
 aura = []
-default = ['std', 'aura', 'with-rocksdb-weights']
+default = ['aura', 'std', 'with-rocksdb-weights']
 manual-seal = ['with-rocksdb-weights']
 runtime-benchmarks = [
-    'frame-benchmarking',
-    'frame-system-benchmarking',
-    'frame-system/runtime-benchmarks',
-    'pallet-grandpa/runtime-benchmarks',
-    'pallet-timestamp/runtime-benchmarks',
-    'pallet-ethereum/runtime-benchmarks',
-    'pallet-evm/runtime-benchmarks',
-    'pallet-hotfix-sufficients/runtime-benchmarks',
+	'frame-benchmarking',
+	'frame-system-benchmarking',
+	'frame-system/runtime-benchmarks',
+	'pallet-ethereum/runtime-benchmarks',
+	'pallet-evm/runtime-benchmarks',
+	'pallet-grandpa/runtime-benchmarks',
+	'pallet-hotfix-sufficients/runtime-benchmarks',
+	'pallet-timestamp/runtime-benchmarks',
 ]
 std = [
-    'serde',
-    'parity-scale-codec/std',
-    'scale-info/std',
-    'sp-api/std',
-    'sp-block-builder/std',
-    'sp-consensus-aura/std',
-    'sp-core/std',
-    'sp-inherents/std',
-    'sp-io/std',
-    'sp-offchain/std',
-    'sp-runtime/std',
-    'sp-session/std',
-    'sp-std/std',
-    'sp-transaction-pool/std',
-    'sp-version/std',
-    'substrate-wasm-builder',
-    'frame-executive/std',
-    'frame-support/std',
-    'frame-system/std',
-    'pallet-aura/std',
-    'pallet-custom-balances/std',
-    'pallet-grandpa/std',
-    'pallet-timestamp/std',
-    'pallet-transaction-payment/std',
-    'frame-system-rpc-runtime-api/std',
-    'pallet-transaction-payment-rpc-runtime-api/std',
-    "fp-account/std",
-    "fp-evm/std",
-    'fp-rpc/std',
-    'fp-self-contained/std',
-    'pallet-base-fee/std',
-    'pallet-ethereum/std',
-    'pallet-evm/std',
-    'pallet-evm-chain-id/std',
-    'pallet-evm-precompile-modexp/std',
-    'pallet-evm-precompile-sha3fips/std',
-    'pallet-evm-precompile-simple/std',
-    'pallet-hotfix-sufficients/std',
-    'pallet-collective/std',
-    'pallet-root-controller/std',
-    'pallet-supported-tokens-manager/std',
-    'pallet-validator-set/std',
-    'pallet-validator-keys-controller/std',
-    'pallet-validator-fee-selector/std',
-    'pallet-session/std',
-    'pallet-upgrade-runtime-proposal/std',
-    'pallet-dnt-fee-controller/std',
-    'stbl-primitives-fee-compatible-api/std',
-    'precompile-upgrade-runtime-controller/std',
-    'runner/std',
-    'account/std',
-    'stbl-core-primitives/std',
-    'stbl-primitives-zero-gas-transactions-api/std',
-    'stability-rpc-api/std',
+	'account/std',
+	"fp-account/std",
+	"fp-evm/std",
+	'fp-rpc/std',
+	'fp-self-contained/std',
+	'frame-executive/std',
+	'frame-metadata-hash-extension/std',
+	'frame-support/std',
+	'frame-system-rpc-runtime-api/std',
+	'frame-system/std',
 	"moonbeam-evm-tracer/std",
 	"moonbeam-rpc-primitives-debug/std",
 	"moonbeam-rpc-primitives-txpool/std",
+	'pallet-aura/std',
+	'pallet-base-fee/std',
+	'pallet-collective/std',
+	'pallet-custom-balances/std',
+	'pallet-dnt-fee-controller/std',
+	'pallet-ethereum/std',
+	'pallet-evm-chain-id/std',
+	'pallet-evm-precompile-modexp/std',
+	'pallet-evm-precompile-sha3fips/std',
+	'pallet-evm-precompile-simple/std',
+	'pallet-evm/std',
+	'pallet-grandpa/std',
+	'pallet-hotfix-sufficients/std',
+	'pallet-root-controller/std',
+	'pallet-session/std',
+	'pallet-supported-tokens-manager/std',
+	'pallet-timestamp/std',
+	'pallet-transaction-payment-rpc-runtime-api/std',
+	'pallet-transaction-payment/std',
+	'pallet-upgrade-runtime-proposal/std',
+	'pallet-validator-fee-selector/std',
+	'pallet-validator-keys-controller/std',
+	'pallet-validator-set/std',
+	'parity-scale-codec/std',
+	'precompile-upgrade-runtime-controller/std',
+	'runner/std',
+	'scale-info/std',
+	'sp-api/std',
+	'sp-block-builder/std',
+	'sp-consensus-aura/std',
+	'sp-core/std',
+	'sp-inherents/std',
+	'sp-io/std',
+	'sp-offchain/std',
+	'sp-runtime/std',
+	'sp-session/std',
+	'sp-std/std',
+	'sp-transaction-pool/std',
+	'sp-version/std',
+	'stability-rpc-api/std',
+	'stbl-core-primitives/std',
+	'stbl-primitives-fee-compatible-api/std',
+	'stbl-primitives-zero-gas-transactions-api/std',
+	'substrate-wasm-builder',
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
@@ -96,7 +96,7 @@ targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies]
 parity-scale-codec = { workspace = true, default-features = false, features = [
-    "derive",
+	"derive",
 ] }
 scale-info = { workspace = true, features = ["derive"] }
 serde = { workspace = true, optional = true }
@@ -117,6 +117,7 @@ sp-version = { workspace = true }
 # Substrate FRAME
 frame-benchmarking = { workspace = true, optional = true }
 frame-executive = { workspace = true }
+frame-metadata-hash-extension = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-benchmarking = { workspace = true, optional = true }
@@ -137,7 +138,7 @@ sp-staking = { workspace = true }
 fp-account = { workspace = true }
 fp-evm = { workspace = true }
 fp-rpc = { workspace = true }
-fp-self-contained = { workspace = true }
+fp-self-contained = { workspace = true, features = ["serde"] }
 # Frontier FRAME
 pallet-base-fee = { workspace = true }
 pallet-ethereum = { workspace = true }

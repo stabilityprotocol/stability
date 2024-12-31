@@ -1,11 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet::*;
-
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod tests;
+
+pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {

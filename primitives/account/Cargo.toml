@@ -36,13 +36,13 @@ std = [
 	"impl-serde/std",
 	"libsecp256k1/std",
 	"parity-scale-codec/std",
+	"scale-info/std",
 	"serde/std",
 	"sha3/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
-	"scale-info/std"
 ]
 
 full_crypto = [

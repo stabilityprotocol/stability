@@ -2,7 +2,7 @@ use crate::{mock::*, *};
 
 use precompile_utils::testing::*;
 use sha3::{Digest, Keccak256};
-use stability_test_runtime_client::runtime::BlockNumber;
+use substrate_test_runtime_client::runtime::BlockNumber;
 
 fn precompiles() -> Precompiles<Test> {
 	PrecompilesValue::get()
@@ -159,7 +159,7 @@ fn claim_ownership_if_claimable() {
 
 #[test]
 fn test_set_block_application() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -167,7 +167,7 @@ fn test_set_block_application() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
 		)
 		.unwrap();
 
@@ -196,7 +196,7 @@ fn test_set_block_application() {
 
 #[test]
 fn test_fail_set_block_application_if_not_owner() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -204,7 +204,7 @@ fn test_fail_set_block_application_if_not_owner() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
 		)
 		.unwrap();
 
@@ -223,7 +223,7 @@ fn test_fail_set_block_application_if_not_owner() {
 
 #[test]
 fn test_reject_proposed_code() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -231,7 +231,7 @@ fn test_reject_proposed_code() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
 		)
 		.unwrap();
 
@@ -251,7 +251,7 @@ fn test_reject_proposed_code() {
 
 #[test]
 fn test_fail_reject_proposed_code_if_not_owner() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -259,7 +259,7 @@ fn test_fail_reject_proposed_code_if_not_owner() {
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
 		)
 		.unwrap();
 
@@ -275,7 +275,7 @@ fn test_fail_reject_proposed_code_if_not_owner() {
 
 #[test]
 fn test_add_member_to_council() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -308,7 +308,7 @@ fn test_add_member_to_council() {
 
 #[test]
 fn test_remove_member_from_council() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -359,7 +359,7 @@ fn test_remove_member_from_council() {
 
 #[test]
 fn test_add_member_to_council_fails_if_not_owner() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -379,7 +379,7 @@ fn test_add_member_to_council_fails_if_not_owner() {
 
 #[test]
 fn test_remove_member_from_council_fails_if_not_owner() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -399,7 +399,7 @@ fn test_remove_member_from_council_fails_if_not_owner() {
 
 #[test]
 fn test_add_member_to_council_fails_if_already_member() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -437,7 +437,7 @@ fn test_add_member_to_council_fails_if_already_member() {
 
 #[test]
 fn test_remove_member_from_council_fails_if_not_member() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
@@ -475,14 +475,14 @@ fn test_remove_member_from_council_fails_if_not_member() {
 
 #[test]
 fn test_get_hash_of_proposed_code() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = ExtBuilder::default().build();
 
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 	ext.execute_with(|| {
 		UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec(),
 		)
 		.unwrap();
 

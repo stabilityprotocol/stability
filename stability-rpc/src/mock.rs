@@ -5,7 +5,7 @@ use sp_runtime::{
 	generic::BlockId,
 	traits::{Block as BlockT, NumberFor, Zero},
 };
-use stability_test_runtime_client::runtime::{Block, Extrinsic, Hash};
+use substrate_test_runtime_client::runtime::{Block, Extrinsic, Hash};
 
 pub struct TestApi {}
 
@@ -175,6 +175,10 @@ impl sc_service::TransactionPool for MockedMempool {
 		_hash: &sc_transaction_pool_api::TxHash<Self>,
 	) -> Option<sc_service::Arc<Self::InPoolTransaction>> {
 		None
+	}
+
+	fn futures(&self) -> Vec<Self::InPoolTransaction> {
+		vec![]
 	}
 }
 

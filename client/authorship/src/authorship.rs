@@ -19,7 +19,6 @@
 // FIXME #1021 move this into sp-consensus
 
 use account::EthereumSigner;
-use parity_scale_codec::Encode;
 use futures::{
 	channel::oneshot,
 	future,
@@ -27,6 +26,7 @@ use futures::{
 	select,
 };
 use log::{debug, error, info, trace, warn};
+use parity_scale_codec::Encode;
 use sc_block_builder::{BlockBuilderApi, BlockBuilderProvider};
 use sc_client_api::backend;
 use sc_telemetry::{telemetry, TelemetryHandle, CONSENSUS_INFO};
@@ -44,12 +44,12 @@ use stability_runtime::AccountId;
 use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 use std::{marker::PhantomData, pin::Pin, sync::Arc, time};
 
+use fp_rpc::EthereumRuntimeRPCApi;
 use prometheus_endpoint::Registry as PrometheusRegistry;
-use stbl_proposer_metrics::{EndProposingReason, MetricsLink as PrometheusMetrics};
 use sp_core::crypto::KeyTypeId;
 use sp_keystore::{Keystore, KeystorePtr};
 use stbl_primitives_fee_compatible_api::CompatibleFeeApi;
-use fp_rpc::EthereumRuntimeRPCApi;
+use stbl_proposer_metrics::{EndProposingReason, MetricsLink as PrometheusMetrics};
 
 /// Default block size limit in bytes used by [`Proposer`].
 ///
@@ -61,7 +61,6 @@ use fp_rpc::EthereumRuntimeRPCApi;
 pub const DEFAULT_BLOCK_SIZE_LIMIT: usize = 4 * 1024 * 1024 + 512;
 
 const DEFAULT_SOFT_DEADLINE_PERCENT: Percent = Percent::from_percent(50);
-
 
 #[derive(serde::Deserialize)]
 pub struct RawZeroGasTransactionResponse {
@@ -322,7 +321,6 @@ where
 		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>,
 	PR: ProofRecording,
 {
-	type Transaction = backend::TransactionFor<B, Block>;
 	type Proposal = Pin<
 		Box<
 			dyn Future<Output = Result<Proposal<Block, Self::Transaction, PR::Proof>, Self::Error>>
@@ -437,7 +435,7 @@ where
 		let left = deadline.saturating_duration_since(now);
 		let left_micros: u64 = left.as_micros().saturated_into();
 		let soft_deadline =
-		now + time::Duration::from_micros(self.soft_deadline_percent.mul_floor(left_micros));
+			now + time::Duration::from_micros(self.soft_deadline_percent.mul_floor(left_micros));
 		let block_timer = time::Instant::now();
 		let mut transaction_pushed = false;
 		let mut skipped = 0;
@@ -447,92 +445,99 @@ where
 			&*self.keystore,
 			KeyTypeId::try_from("aura").unwrap_or_default(),
 		);
-	
+
 		// First we try to push transactions from the zero gas transaction pool
 
-		let raw_zero_gas_transactions_option = if let Some(zero_gas_tx_pool) = self.zero_gas_tx_pool {
+		let raw_zero_gas_transactions_option =
+			if let Some(zero_gas_tx_pool) = self.zero_gas_tx_pool {
+				let http_client = reqwest::Client::new();
+				let mut request = Box::pin(http_client.post(zero_gas_tx_pool).send().fuse());
+				let mut timeout = Box::pin(
+					futures_timer::Delay::new(std::time::Duration::from_millis(
+						self.zero_gas_tx_pool_timeout,
+					))
+					.fuse(),
+				);
 
-			let http_client = reqwest::Client::new();
-			let mut request = Box::pin(http_client.post(zero_gas_tx_pool).send().fuse());
-			let mut timeout = Box::pin(futures_timer::Delay::new(std::time::Duration::from_millis(self.zero_gas_tx_pool_timeout)).fuse());
+				let zgt_response_start = time::Instant::now();
 
-			let zgt_response_start =  time::Instant::now();
+				let result_response_raw_zero = select! {
+					res = request => {
+						match res {
+							Ok(response) => Ok(response),
+							Err(e) => {
+								error!("Error getting response from zero gas transaction pool: {}", e);
+								Err("Error getting response from zero gas transaction pool")
+							}
+						}
+					},
+					_ = timeout => {
+						error!(
+							"Timeout fired waiting for get transaction from zero gas transaction pool"
+						);
+						Err("Timeout fired waiting for get transaction from zero gas transaction pool")
+					},
+				};
 
-			let result_response_raw_zero = select! {
-				res = request => {
-					match res {
-						Ok(response) => Ok(response),
-						Err(e) => {
-							error!("Error getting response from zero gas transaction pool: {}", e);
-							Err("Error getting response from zero gas transaction pool")
+				let zgt_response_end = time::Instant::now();
+				self.metrics.report(|metrics| {
+					metrics.zgt_response_time.observe(
+						zgt_response_end
+							.saturating_duration_since(zgt_response_start)
+							.as_secs_f64(),
+					);
+				});
+
+				match result_response_raw_zero {
+					Ok(response) => {
+						match response.json::<RawZeroGasTransactionResponse>().await {
+							Ok(json) => Some(json as RawZeroGasTransactionResponse),
+							Err(e) => {
+								error!("Error parsing JSON response from zero gas transaction pool: {}", e);
+								None
+							}
 						}
 					}
-				},
-				_ = timeout => {
-					error!(
-						"Timeout fired waiting for get transaction from zero gas transaction pool"
-					);
-					Err("Timeout fired waiting for get transaction from zero gas transaction pool")
-				},
+					Err(e) => {
+						error!(
+							"Error getting response from zero gas transaction pool: {}",
+							e
+						);
+						None
+					}
+				}
+			} else {
+				None
 			};
 
-		   let zgt_response_end =  time::Instant::now();
-			self.metrics.report(|metrics| {
-				metrics.zgt_response_time.observe(
-					zgt_response_end
-						.saturating_duration_since(zgt_response_start)
-						.as_secs_f64(),
-				);
-			});
-			
-			
-			match result_response_raw_zero {
-				Ok(response) => {
-					match response.json::<RawZeroGasTransactionResponse>().await {
-						Ok(json) => Some(json as RawZeroGasTransactionResponse),
-						Err(e) => {
-							error!("Error parsing JSON response from zero gas transaction pool: {}", e);
-							None
-						}
-					}
-				},
-				Err(e) => {
-					error!("Error getting response from zero gas transaction pool: {}", e);
-					None
-				}
-			}
-		} else {
-			None
-		};
-
-		
-
 		// If we pull successfully from the zero gas transaction pool, we will try to push them to the block
-		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option  {
+		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option {
 			info!(
 				"📥 Fetched {:?} txns from zero-gas-transactions pool",
 				raw_zero_gas_transactions.transactions.len()
 			);
 
-			let zgt_inclusion_in_block_start =  time::Instant::now();
+			let zgt_inclusion_in_block_start = time::Instant::now();
 
 			if raw_zero_gas_transactions.transactions.len() > 0 {
-				let mut pending_raw_zero_gas_transactions = raw_zero_gas_transactions.transactions.iter();
-				
+				let mut pending_raw_zero_gas_transactions =
+					raw_zero_gas_transactions.transactions.iter();
+
 				let chain_id = self
-						.client
-						.runtime_api()
-						.chain_id(self.parent_hash).expect("Could not get chain id");
+					.client
+					.runtime_api()
+					.chain_id(self.parent_hash)
+					.expect("Could not get chain id");
 
 				let current_block = self.parent_number.saturated_into::<u32>().saturating_add(1);
-			
+
 				let message: Vec<u8> = b"I consent to validate zero gas transactions in block "
-										.iter()
-										.chain(current_block.to_string().as_bytes().iter())
-										.chain(b" on chain ")
-										.chain(chain_id.to_string().as_bytes().iter())
-										.cloned()
-										.collect();
+					.iter()
+					.chain(current_block.to_string().as_bytes().iter())
+					.chain(b" on chain ")
+					.chain(chain_id.to_string().as_bytes().iter())
+					.cloned()
+					.collect();
 
 				let public = keys[0].clone().into();
 
@@ -543,16 +548,18 @@ where
 					KeyTypeId::try_from("aura").unwrap_or_default(),
 					&public,
 					&eip191_message.as_fixed_bytes(),
-				).expect("Could not sign the Ethereum transaction hash").expect("Could not sign the Ethereum transaction hash");
-			
+				)
+				.expect("Could not sign the Ethereum transaction hash")
+				.expect("Could not sign the Ethereum transaction hash");
 
 				loop {
-					let pending_hex_string_tx = if let Some(tx) = pending_raw_zero_gas_transactions.next() {
-						tx
-					} else {
-						break EndProposingReason::NoMoreTransactions;
-					};
-		
+					let pending_hex_string_tx =
+						if let Some(tx) = pending_raw_zero_gas_transactions.next() {
+							tx
+						} else {
+							break EndProposingReason::NoMoreTransactions;
+						};
+
 					let now = (self.now)();
 					if now > deadline {
 						debug!(
@@ -562,28 +569,30 @@ where
 						break EndProposingReason::HitDeadline;
 					}
 
-					let pending_raw_tx = if let Ok(pending_raw_tx) = hex::decode(pending_hex_string_tx) {
-						pending_raw_tx
-					}
-					else {
-						continue;
-					};
-		
-					let ethereum_transaction: ethereum::TransactionV2 = ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
+					let pending_raw_tx =
+						if let Ok(pending_raw_tx) = hex::decode(pending_hex_string_tx) {
+							pending_raw_tx
+						} else {
+							continue;
+						};
 
-					let pending_tx =  if let Ok(pending_tx) = self
-					.client
-					.runtime_api()
-					.convert_zero_gas_transaction(self.parent_hash, ethereum_transaction.clone(), signed_hash.0.to_vec()) {
+					let ethereum_transaction: ethereum::TransactionV2 =
+						ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
+
+					let pending_tx = if let Ok(pending_tx) =
+						self.client.runtime_api().convert_zero_gas_transaction(
+							self.parent_hash,
+							ethereum_transaction.clone(),
+							signed_hash.0.to_vec(),
+						) {
 						pending_tx
-					}
-					else {
+					} else {
 						continue;
 					};
 
-					let block_size =
-						block_builder.estimate_block_size(self.include_proof_in_block_size_estimation);
-					
+					let block_size = block_builder
+						.estimate_block_size(self.include_proof_in_block_size_estimation);
+
 					if block_size + pending_tx.encoded_size() > block_size_limit {
 						if skipped < MAX_SKIPPED_TRANSACTIONS {
 							skipped += 1;
@@ -605,7 +614,7 @@ where
 							break EndProposingReason::HitBlockSizeLimit;
 						}
 					}
-		
+
 					trace!("[{:?}] Pushing to the block.", ethereum_transaction.hash());
 					match sc_block_builder::BlockBuilder::push(&mut block_builder, pending_tx) {
 						Ok(()) => {
@@ -630,13 +639,17 @@ where
 							}
 						}
 						Err(e) => {
-							debug!("[{:?}] Invalid transaction: {}", ethereum_transaction.hash(), e);
+							debug!(
+								"[{:?}] Invalid transaction: {}",
+								ethereum_transaction.hash(),
+								e
+							);
 						}
 					}
-			};
+				}
 			}
 
-			let zgt_inclusion_in_block_end =  time::Instant::now();
+			let zgt_inclusion_in_block_end = time::Instant::now();
 
 			self.metrics.report(|metrics| {
 				metrics.zgt_inclusion_in_block_time.observe(
@@ -669,11 +682,10 @@ where
 		debug!("Attempting to push transactions from the pool.");
 		debug!("Pool status: {:?}", self.transaction_pool.status());
 
-		let normal_extrinsic_inclusion_in_block_time_start =  time::Instant::now();
+		let normal_extrinsic_inclusion_in_block_time_start = time::Instant::now();
 
 		let end_reason = loop {
-
-			let pending_tx = if let Some(pending_tx) = pending_iterator.next()  {
+			let pending_tx = if let Some(pending_tx) = pending_iterator.next() {
 				pending_tx
 			} else {
 				break EndProposingReason::NoMoreTransactions;
@@ -769,7 +781,7 @@ where
 			}
 		};
 
-		let normal_extrinsic_inclusion_in_block_time_end =  time::Instant::now();
+		let normal_extrinsic_inclusion_in_block_time_end = time::Instant::now();
 
 		self.metrics.report(|metrics| {
 			metrics.normal_extrinsic_inclusion_in_block_time.observe(
@@ -855,7 +867,7 @@ mod tests {
 	use sp_blockchain::HeaderBackend;
 	use sp_consensus::{BlockOrigin, Environment, Proposer};
 	use sp_runtime::{generic::BlockId, traits::NumberFor, Perbill};
-	use stability_test_runtime_client::{
+	use substrate_test_runtime_client::{
 		prelude::*,
 		runtime::{Block as TestBlock, Extrinsic, ExtrinsicBuilder, Transfer},
 		TestClientBuilder, TestClientBuilderExt,
@@ -876,20 +888,25 @@ mod tests {
 	const TINY: u32 = 1000;
 
 	fn extrinsic(nonce: u64) -> Extrinsic {
-		ExtrinsicBuilder::new_fill_block(Perbill::from_parts(TINY)).nonce(nonce).build()
+		ExtrinsicBuilder::new_fill_block(Perbill::from_parts(TINY))
+			.nonce(nonce)
+			.build()
 	}
 
 	fn chain_event<B: BlockT>(header: B::Header) -> ChainEvent<B>
 	where
 		NumberFor<B>: From<u64>,
 	{
-		ChainEvent::NewBestBlock { hash: header.hash(), tree_route: None }
+		ChainEvent::NewBestBlock {
+			hash: header.hash(),
+			tree_route: None,
+		}
 	}
 
 	#[test]
 	fn should_cease_building_block_when_deadline_is_reached() {
 		// given
-		let client = Arc::new(stability_test_runtime_client::new());
+		let client = Arc::new(substrate_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -899,8 +916,12 @@ mod tests {
 			client.clone(),
 		);
 
-		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, vec![extrinsic(0), extrinsic(1)]))
-			.unwrap();
+		block_on(txpool.submit_at(
+			&BlockId::number(0),
+			SOURCE,
+			vec![extrinsic(0), extrinsic(1)],
+		))
+		.unwrap();
 
 		block_on(
 			txpool.maintain(chain_event(
@@ -920,8 +941,16 @@ mod tests {
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.keystore(),
+			None,
+			1000,
+			None,
+			None,
+		);
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
@@ -930,7 +959,7 @@ mod tests {
 				let mut value = cell.lock();
 				if !value.0 {
 					value.0 = true;
-					return value.1
+					return value.1;
 				}
 				let old = value.1;
 				let new = old + time::Duration::from_secs(1);
@@ -954,7 +983,7 @@ mod tests {
 
 	#[test]
 	fn should_not_panic_when_deadline_is_reached() {
-		let client = Arc::new(stability_test_runtime_client::new());
+		let client = Arc::new(substrate_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -965,18 +994,25 @@ mod tests {
 		);
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
- 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-
-		 Keystore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.keystore(),
+			None,
+			1000,
+			None,
+			None,
+		);
 
 		let cell = Mutex::new((false, time::Instant::now()));
 		let proposer = proposer_factory.init_with_now(
@@ -985,7 +1021,7 @@ mod tests {
 				let mut value = cell.lock();
 				if !value.0 {
 					value.0 = true;
-					return value.1
+					return value.1;
 				}
 				let new = value.1 + time::Duration::from_secs(160);
 				*value = (true, new);
@@ -1024,19 +1060,26 @@ mod tests {
 			)),
 		);
 
-
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
- 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-		 Keystore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.keystore(),
+			None,
+			1000,
+			None,
+			None,
+		);
 
 		let proposer = proposer_factory.init_with_now(
 			&client.header(genesis_hash).unwrap().unwrap(),
@@ -1069,7 +1112,7 @@ mod tests {
 	#[test]
 	fn should_not_remove_invalid_transactions_from_the_same_sender_after_one_was_invalid() {
 		// given
-		let client = Arc::new(stability_test_runtime_client::new());
+		let client = Arc::new(substrate_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -1085,13 +1128,23 @@ mod tests {
 				.build()
 		};
 		let huge = |nonce| {
-			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(HUGE)).nonce(nonce).build()
+			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(HUGE))
+				.nonce(nonce)
+				.build()
 		};
 
 		block_on(txpool.submit_at(
 			&BlockId::number(0),
 			SOURCE,
-			vec![medium(0), medium(1), huge(2), medium(3), huge(4), medium(5), medium(6)],
+			vec![
+				medium(0),
+				medium(1),
+				huge(2),
+				medium(3),
+				huge(4),
+				medium(5),
+				medium(6),
+			],
 		))
 		.unwrap();
 
@@ -1105,13 +1158,23 @@ mod tests {
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(),keystore_container.keystore(), None, 1000, None, None);
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.keystore(),
+			None,
+			1000,
+			None,
+			None,
+		);
 		let mut propose_block = |client: &TestClient,
 		                         parent_number,
 		                         expected_block_extrinsics,
 		                         expected_pool_transactions| {
-			let hash = client.expect_block_hash_from_id(&BlockId::Number(parent_number)).unwrap();
+			let hash = client
+				.expect_block_hash_from_id(&BlockId::Number(parent_number))
+				.unwrap();
 			let proposer = proposer_factory.init_with_now(
 				&client.expect_header(hash).unwrap(),
 				Box::new(move || time::Instant::now()),
@@ -1187,7 +1250,7 @@ mod tests {
 
 	#[test]
 	fn should_cease_building_block_when_block_limit_is_reached() {
-		let client = Arc::new(stability_test_runtime_client::new());
+		let client = Arc::new(substrate_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -1213,31 +1276,38 @@ mod tests {
 		.chain((1..extrinsics_num as u64).map(extrinsic))
 		.collect::<Vec<_>>();
 
-		let block_limit = genesis_header.encoded_size() +
-			extrinsics
+		let block_limit = genesis_header.encoded_size()
+			+ extrinsics
 				.iter()
 				.take(extrinsics_num - 1)
 				.map(Encode::encoded_size)
-				.sum::<usize>() +
-			Vec::<Extrinsic>::new().encoded_size();
+				.sum::<usize>()
+			+ Vec::<Extrinsic>::new().encoded_size();
 
 		block_on(txpool.submit_at(&BlockId::number(0), SOURCE, extrinsics.clone())).unwrap();
 
 		block_on(txpool.maintain(chain_event(genesis_header.clone())));
 
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
- 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
+		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
-
-		 Keystore::ecdsa_generate_new(
+		Keystore::ecdsa_generate_new(
 			&*keystore_container.keystore().clone(),
 			KeyTypeId::try_from("aura").unwrap(),
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
 
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.keystore(),
+			None,
+			1000,
+			None,
+			None,
+		);
 
 		let proposer = block_on(proposer_factory.init(&genesis_header)).unwrap();
 
@@ -1291,8 +1361,9 @@ mod tests {
 		// Exact block_limit, which includes:
 		// 99 (header_size) + 718 (proof@initialize_block) + 246 (one Transfer extrinsic)
 		let block_limit = {
-			let builder =
-				client.new_block_at(genesis_header.hash(), Default::default(), true).unwrap();
+			let builder = client
+				.new_block_at(genesis_header.hash(), Default::default(), true)
+				.unwrap();
 			builder.estimate_block_size(true) + extrinsics[0].encoded_size()
 		};
 		let block = block_on(proposer.propose(
@@ -1313,7 +1384,7 @@ mod tests {
 	#[test]
 	fn should_keep_adding_transactions_after_exhausts_resources_before_soft_deadline() {
 		// given
-		let client = Arc::new(stability_test_runtime_client::new());
+		let client = Arc::new(substrate_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -1324,7 +1395,9 @@ mod tests {
 		);
 
 		let tiny = |nonce| {
-			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(TINY)).nonce(nonce).build()
+			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(TINY))
+				.nonce(nonce)
+				.build()
 		};
 		let huge = |who| {
 			ExtrinsicBuilder::new_fill_block(Perbill::from_parts(HUGE))
@@ -1355,7 +1428,7 @@ mod tests {
 			)),
 		);
 		assert_eq!(txpool.ready().count(), MAX_SKIPPED_TRANSACTIONS * 3);
-		
+
 		let keystore_config = sc_service::config::KeystoreConfig::InMemory;
 		let keystore_container = sc_service::KeystoreContainer::new(&keystore_config).unwrap();
 
@@ -1366,9 +1439,16 @@ mod tests {
 		)
 		.expect("Creates authority key");
 
-
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.keystore(),
+			None,
+			1000,
+			None,
+			None,
+		);
 
 		let cell = Mutex::new(time::Instant::now());
 		let proposer = proposer_factory.init_with_now(
@@ -1396,7 +1476,7 @@ mod tests {
 	#[test]
 	fn should_only_skip_up_to_some_limit_after_soft_deadline() {
 		// given
-		let client = Arc::new(stability_test_runtime_client::new());
+		let client = Arc::new(substrate_test_runtime_client::new());
 		let spawner = sp_core::testing::TaskExecutor::new();
 		let txpool = BasicPool::new_full(
 			Default::default(),
@@ -1450,9 +1530,17 @@ mod tests {
 			Some("//Alice"),
 		)
 		.expect("Creates authority key");
-	
-		let mut proposer_factory =
-			ProposerFactory::new(spawner.clone(), client.clone(), txpool.clone(), keystore_container.keystore(), None, 1000, None, None);
+
+		let mut proposer_factory = ProposerFactory::new(
+			spawner.clone(),
+			client.clone(),
+			txpool.clone(),
+			keystore_container.keystore(),
+			None,
+			1000,
+			None,
+			None,
+		);
 
 		let deadline = time::Duration::from_secs(600);
 		let cell = Arc::new(Mutex::new((0, time::Instant::now())));

@@ -26,19 +26,19 @@ serde = { version = '1.0.126',features = ['derive'] }
 
 
 [features]
-default = ['std']
-runtime-benchmarks = ['frame-benchmarking']
+default = [ 'std' ]
+runtime-benchmarks = [ 'frame-benchmarking' ]
 std = [
-    'parity-scale-codec/std',
-    'frame-benchmarking/std',
-    'frame-support/std',
-    'frame-system/std',
-    'scale-info/std',
-    'sp-core/std',
-    'sp-io/std',
-    'sp-std/std',
-    'sp-runtime/std',
-    'pallet-session/std',
-    'pallet-validator-set/std'
+	'frame-benchmarking/std',
+	'frame-support/std',
+	'frame-system/std',
+	'pallet-session/std',
+	'pallet-validator-set/std',
+	'parity-scale-codec/std',
+	'scale-info/std',
+	'sp-core/std',
+	'sp-io/std',
+	'sp-runtime/std',
+	'sp-std/std',
 ]
-try-runtime = ['frame-support/try-runtime']
+try-runtime = [ 'frame-support/try-runtime' ]

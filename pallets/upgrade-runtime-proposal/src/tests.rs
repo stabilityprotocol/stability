@@ -15,12 +15,12 @@ fn test_setup_works() {
 
 #[test]
 fn test_propose_code_works() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
 	ext.execute_with(|| {
-		let proposed_code = stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec();
+		let proposed_code = substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec();
 		assert!(UpgradeRuntimeProposal::get_proposed_code().is_none());
 		assert_ok!(UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
@@ -50,19 +50,19 @@ fn test_propose_code_fails_if_bad_origin() {
 
 #[test]
 fn test_propose_code_fails_if_there_are_already_a_proposed_code() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
 	ext.execute_with(|| {
 		assert_ok!(UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
 		));
 		assert_noop!(
 			UpgradeRuntimeProposal::propose_code(
 				frame_system::RawOrigin::Root.into(),
-				stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+				substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
 			),
 			Error::<Test>::ProposalInProgress
 		);
@@ -71,7 +71,7 @@ fn test_propose_code_fails_if_there_are_already_a_proposed_code() {
 
 #[test]
 fn test_propose_code_fails_invalid_proposed_code() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
@@ -88,14 +88,14 @@ fn test_propose_code_fails_invalid_proposed_code() {
 
 #[test]
 fn test_set_block_application() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
 	ext.execute_with(|| {
 		assert_ok!(UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
 		));
 		assert_ok!(UpgradeRuntimeProposal::set_block_application(
 			frame_system::RawOrigin::Root.into(),
@@ -123,14 +123,14 @@ fn test_set_block_application_fails_if_bad_origin() {
 
 #[test]
 fn test_set_block_application_fails_block_is_older() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
 	ext.execute_with(|| {
 		assert_ok!(UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
 		));
 		assert_noop!(
 			UpgradeRuntimeProposal::set_block_application(frame_system::RawOrigin::Root.into(), 0),
@@ -141,7 +141,7 @@ fn test_set_block_application_fails_block_is_older() {
 
 #[test]
 fn test_set_block_application_fails_if_not_proposed_code() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
@@ -155,14 +155,14 @@ fn test_set_block_application_fails_if_not_proposed_code() {
 
 #[test]
 fn test_reject_proposed_code() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
 	ext.execute_with(|| {
 		assert_ok!(UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
 		));
 		assert_ok!(UpgradeRuntimeProposal::set_block_application(
 			frame_system::RawOrigin::Root.into(),
@@ -198,14 +198,14 @@ fn test_fails_reject_proposed_code_if_no_proposed_code() {
 
 #[test]
 fn test_scheduled_update_runtime() {
-	let executor = stability_test_runtime_client::new_native_or_wasm_executor();
+	let executor = substrate_test_runtime_client::new_native_or_wasm_executor();
 	let mut ext = new_test_ext();
 	ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(executor));
 
 	ext.execute_with(|| {
 		assert_ok!(UpgradeRuntimeProposal::propose_code(
 			frame_system::RawOrigin::Root.into(),
-			stability_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
+			substrate_test_runtime_client::runtime::wasm_binary_unwrap().to_vec()
 		));
 
 		let proposed_code_hash = UpgradeRuntimeProposal::hash_of_proposed_code().unwrap();

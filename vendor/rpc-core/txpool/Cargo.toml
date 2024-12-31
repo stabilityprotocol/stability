@@ -1,17 +1,17 @@
 [package]
 name = "moonbeam-rpc-core-txpool"
-authors = { workspace = true }
+authors = ["PureStake"]
 edition = "2021"
 homepage = "https://moonbeam.network"
 license = "GPL-3.0-only"
-repository = { workspace = true }
+repository = "https://github.com/PureStake/moonbeam/"
 version = "0.6.0"
 
 [dependencies]
-ethereum = { workspace = true, features = [ "std", "with-codec" ] }
-ethereum-types = { workspace = true, features = [ "std" ] }
-jsonrpsee = { workspace = true, features = [ "macros", "server" ] }
-serde = { workspace = true, features = [ "derive" ] }
+ethereum = { workspace = true, features = ["std", "with-codec"] }
+ethereum-types = { workspace = true, features = ["std"] }
+jsonrpsee = { workspace = true, features = ["macros", "server"] }
+serde = { workspace = true }
 serde_json = { workspace = true }
 
 fc-rpc-core = { workspace = true }

@@ -13,9 +13,10 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use account::AccountId20;
 use account::EthereumSigner;
 use core::str::FromStr;
+#[cfg(feature = "std")]
+pub use fp_evm::GenesisAccount;
 use frame_support::pallet_prelude::EnsureOrigin;
 use frame_support::pallet_prelude::InvalidTransaction;
-use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
 use opaque::SessionKeys;
@@ -73,7 +74,8 @@ pub use frame_support::{
 	dispatch::DispatchClass,
 	parameter_types,
 	traits::{
-		ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, OnFinalize, OnTimestampSet, Randomness,
+		ConstBool, ConstU32, ConstU8, EitherOfDiverse, FindAuthor, KeyOwnerProofSystem, OnFinalize,
+		OnTimestampSet, Randomness,
 	},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight},
@@ -202,6 +204,10 @@ parameter_types! {
 // Configure FRAME pallets to include in runtime.
 
 impl frame_system::Config for Runtime {
+	/// The index type for storing how many extrinsics an account has signed.
+	type Nonce = Index;
+	/// The index type for blocks.
+	type Block = Block;
 	/// The basic call filter to use in dispatchable.
 	type BaseCallFilter = frame_support::traits::Everything;
 	/// Block & extrinsics weights: base values and limits.
@@ -212,10 +218,8 @@ impl frame_system::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	/// The aggregated dispatch type that is available for extrinsics.
 	type RuntimeCall = RuntimeCall;
-	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
+	/// The aggregated RuntimeTask type.
+	type RuntimeTask = RuntimeTask;
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
@@ -224,8 +228,6 @@ impl frame_system::Config for Runtime {
 	type AccountId = AccountId;
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
 	type Lookup = IdentityLookup<AccountId>;
-	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
@@ -251,6 +253,11 @@ impl frame_system::Config for Runtime {
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
 	type MaxConsumers = ConstU32<16>;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -261,6 +268,8 @@ impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type MaxAuthorities = MaxAuthorities;
 	type DisabledValidators = ();
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+	type SlotDuration = frame_support::traits::ConstU64<SLOT_DURATION>;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -270,6 +279,7 @@ impl pallet_grandpa::Config for Runtime {
 	type MaxSetIdSessionEntries = ();
 	type KeyOwnerProof = sp_core::Void;
 	type EquivocationReportSystem = ();
+	type MaxNominators = ();
 }
 
 parameter_types! {
@@ -399,7 +409,7 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 			let authority_id = Aura::authorities()[author_index as usize].clone();
 
 			let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
-			let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
+			let signer: EthereumSigner = sp_core::ecdsa::Public::from(bytes).into();
 			return Some(signer.into_account().into());
 		}
 		None
@@ -416,7 +426,7 @@ impl<F: FindAuthor<u32>> FindAuthor<AccountId> for FindBlockAuthorityId<F> {
 			let authority_id = Aura::authorities()[author_index as usize].clone();
 
 			let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
-			let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
+			let signer: EthereumSigner = sp_core::ecdsa::Public::from(bytes).into();
 			return Some(signer.into_account().into());
 		}
 		None
@@ -487,6 +497,7 @@ impl pallet_evm::Config for Runtime {
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
+	type SuicideQuickClearLimit = ConstU32<0>;
 }
 
 parameter_types! {
@@ -603,7 +614,7 @@ pub struct AccountIdOfValidator;
 impl Convert<AuraId, AccountId> for AccountIdOfValidator {
 	fn convert(authority_id: AuraId) -> AccountId {
 		let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
-		let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
+		let signer: EthereumSigner = sp_core::ecdsa::Public::from(bytes).into();
 		return signer.into_account().into();
 	}
 }
@@ -761,10 +772,7 @@ impl pallet_fee_rewards_vault::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = opaque::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic
+	pub enum Runtime
 	{
 		System: frame_system,
 		Timestamp: pallet_timestamp,
@@ -839,6 +847,7 @@ pub type SignedExtra = (
 	frame_system::CheckNonce<Runtime>,
 	frame_system::CheckWeight<Runtime>,
 	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+	frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -966,7 +975,7 @@ impl_runtime_apis! {
 			Executive::execute_block(block)
 		}
 
-		fn initialize_block(header: &<Block as BlockT>::Header) {
+		fn initialize_block(header: &<Block as BlockT>::Header) -> sp_runtime::ExtrinsicInclusionMode {
 			Executive::initialize_block(header)
 		}
 	}
@@ -980,7 +989,7 @@ impl_runtime_apis! {
 			Runtime::metadata_at_version(version)
 		}
 
-		fn metadata_versions() -> Vec<u32> {
+		fn metadata_versions() -> sp_std::vec::Vec<u32> {
 			Runtime::metadata_versions()
 		}
 	}
@@ -1274,12 +1283,17 @@ impl_runtime_apis! {
 				pallet_ethereum::CurrentTransactionStatuses::<Runtime>::get()
 			)
 		}
+
+		fn initialize_pending_block(header: &<Block as BlockT>::Header) {
+			Executive::initialize_block(header);
+		}
 	}
 
 	impl moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block> for Runtime {
 		fn trace_transaction(
 			extrinsics: Vec<<Block as BlockT>::Extrinsic>,
 			traced_transaction: &pallet_ethereum::Transaction,
+			header: &<Block as BlockT>::Header,
 		) -> Result<
 			(),
 			sp_runtime::DispatchError,
@@ -1325,6 +1339,7 @@ impl_runtime_apis! {
 		fn trace_block(
 			extrinsics: Vec<<Block as BlockT>::Extrinsic>,
 			known_transactions: Vec<H256>,
+			header: &<Block as BlockT>::Header,
 		) -> Result<
 			(),
 			sp_runtime::DispatchError,
@@ -1370,6 +1385,84 @@ impl_runtime_apis! {
 				};
 			}
 
+			Ok(())
+		}
+
+		fn trace_call(
+			header: &<Block as BlockT>::Header,
+			from: H160,
+			to: H160,
+			data: Vec<u8>,
+			value: U256,
+			gas_limit: U256,
+			max_fee_per_gas: Option<U256>,
+			max_priority_fee_per_gas: Option<U256>,
+			nonce: Option<U256>,
+			access_list: Option<Vec<(H160, Vec<H256>)>>,
+		) -> Result<(), sp_runtime::DispatchError> {
+			use moonbeam_evm_tracer::tracer::EvmTracer;
+
+			// Initialize block: calls the "on_initialize" hook on every pallet
+			// in AllPalletsWithSystem.
+			Executive::initialize_block(header);
+
+			EvmTracer::new().trace(|| {
+				let is_transactional = false;
+				let validate = true;
+				let without_base_extrinsic_weight = true;
+
+
+				// Estimated encoded transaction size must be based on the heaviest transaction
+				// type (EIP1559Transaction) to be compatible with all transaction types.
+				let mut estimated_transaction_len = data.len() +
+				// pallet ethereum index: 1
+				// transact call index: 1
+				// Transaction enum variant: 1
+				// chain_id 8 bytes
+				// nonce: 32
+				// max_priority_fee_per_gas: 32
+				// max_fee_per_gas: 32
+				// gas_limit: 32
+				// action: 21 (enum varianrt + call address)
+				// value: 32
+				// access_list: 1 (empty vec size)
+				// 65 bytes signature
+				258;
+
+				if access_list.is_some() {
+					estimated_transaction_len += access_list.encoded_size();
+				}
+
+				let gas_limit = gas_limit.min(u64::MAX.into()).low_u64();
+
+				let (weight_limit, proof_size_base_cost) =
+					match <Runtime as pallet_evm::Config>::GasWeightMapping::gas_to_weight(
+						gas_limit,
+						without_base_extrinsic_weight
+					) {
+						weight_limit if weight_limit.proof_size() > 0 => {
+							(Some(weight_limit), Some(estimated_transaction_len as u64))
+						}
+						_ => (None, None),
+					};
+
+				let _ = <Runtime as pallet_evm::Config>::Runner::call(
+					from,
+					to,
+					data,
+					value,
+					gas_limit,
+					max_fee_per_gas,
+					max_priority_fee_per_gas,
+					nonce,
+					access_list.unwrap_or_default(),
+					is_transactional,
+					validate,
+					weight_limit,
+					proof_size_base_cost,
+					<Runtime as pallet_evm::Config>::config(),
+				);
+			});
 			Ok(())
 		}
 	}
