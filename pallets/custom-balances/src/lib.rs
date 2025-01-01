@@ -19,7 +19,7 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::MaybeSerializeDeserialize,
 		traits::{
-			tokens::{currency::Currency, fungible::Inspect, Balance},
+			tokens::{currency::Currency, fungible, Balance},
 			ExistenceRequirement, SignedImbalance, WithdrawReasons,
 		},
 	};
@@ -251,7 +251,7 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> Inspect<T::AccountId> for Pallet<T> {
+	impl<T: Config> fungible::Inspect<T::AccountId> for Pallet<T> {
 		/// Scalar type for representing balance of an account.
 		type Balance = <Self as Currency<T::AccountId>>::Balance;
 
@@ -311,6 +311,30 @@ pub mod pallet {
 			Self::ensure_can_withdraw(_who, _amount, WithdrawReasons::all(), 0u128)
 				.map(|_| WithdrawConsequence::Success)
 				.unwrap_or(WithdrawConsequence::BalanceLow)
+		}
+	}
+
+	impl<T: Config> fungible::Unbalanced<T::AccountId> for Pallet<T> {
+		fn handle_dust(_dust: fungible::Dust<T::AccountId, Self>) {
+			()
+		}
+		fn write_balance(
+			_who: &T::AccountId,
+			_amount: Self::Balance,
+		) -> Result<Option<Self::Balance>, DispatchError> {
+			Ok(Some(0u128))
+		}
+
+		fn set_total_issuance(_amount: Self::Balance) {
+			()
+		}
+
+		fn deactivate(_amount: Self::Balance) {
+			()
+		}
+
+		fn reactivate(_amount: Self::Balance) {
+			()
 		}
 	}
 }
