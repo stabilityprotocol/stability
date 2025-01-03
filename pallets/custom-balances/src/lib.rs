@@ -15,11 +15,11 @@ pub mod pallet {
 	use frame_support::traits::tokens::{
 		DepositConsequence, Fortitude, Preservation, Provenance, WithdrawConsequence,
 	};
-	use frame_support::traits::{Imbalance, SameOrOther, TryDrop};
+	use frame_support::traits::{fungible, Imbalance, SameOrOther, TryDrop};
 	use frame_support::{
 		pallet_prelude::MaybeSerializeDeserialize,
 		traits::{
-			tokens::{currency::Currency, fungible, Balance},
+			tokens::{currency::Currency, Balance},
 			ExistenceRequirement, SignedImbalance, WithdrawReasons,
 		},
 	};
@@ -336,5 +336,10 @@ pub mod pallet {
 		fn reactivate(_amount: Self::Balance) {
 			()
 		}
+	}
+
+	impl<T: Config> fungible::Balanced<T::AccountId> for Pallet<T> {
+		type OnDropCredit = fungible::DecreaseIssuance<T::AccountId, Self>;
+		type OnDropDebt = fungible::IncreaseIssuance<T::AccountId, Self>;
 	}
 }

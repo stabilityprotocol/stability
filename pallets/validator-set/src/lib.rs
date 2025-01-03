@@ -256,7 +256,6 @@ pub mod pallet {
 		pub max_epochs_missed: U256,
 	}
 
-	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
