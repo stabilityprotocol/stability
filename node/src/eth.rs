@@ -7,13 +7,13 @@ use std::{
 
 use futures::{future, prelude::*};
 // Substrate
+use core::str::FromStr;
 use sc_client_api::{BlockchainEvents, StateBackendFor};
 use sc_executor::NativeExecutionDispatch;
 use sc_network_sync::SyncingService;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sp_api::ConstructRuntimeApi;
 use sp_runtime::traits::BlakeTwo256;
-use core::str::FromStr;
 // Frontier
 pub use fc_consensus::FrontierBlockImport;
 
@@ -40,7 +40,6 @@ pub enum BackendType {
 	/// Sql database with custom log indexing.
 	Sql,
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum EthApi {
@@ -82,7 +81,6 @@ pub struct EthConfiguration {
 
 	#[arg(long)]
 	pub enable_dev_signer: bool,
-
 
 	/// Maximum allowed gas limit will be `block.gas_limit * execute_gas_limit_multiplier`
 	/// when using eth_call/eth_estimateGas.
@@ -138,7 +136,6 @@ pub struct EthConfiguration {
 
 	#[arg(long, value_delimiter = ',', default_value = "none")]
 	pub ethapi: Vec<EthApi>,
-
 }
 
 pub struct FrontierPartialComponents {
@@ -158,21 +155,19 @@ pub fn new_frontier_partial(
 }
 
 /// A set of APIs that ethereum-compatible runtimes must implement.
-pub trait EthCompatRuntimeApiCollection:
+pub trait EthCompatRuntimeApiCollection<Block: BlockT>:
 	sp_api::ApiExt<Block>
 	+ fp_rpc::ConvertTransactionRuntimeApi<Block>
 	+ fp_rpc::EthereumRuntimeRPCApi<Block>
-where
-	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
-impl<Api> EthCompatRuntimeApiCollection for Api
+impl<Block, Api> EthCompatRuntimeApiCollection<Block> for Api
 where
+	Block: BlockT,
 	Api: sp_api::ApiExt<Block>
 		+ fp_rpc::ConvertTransactionRuntimeApi<Block>
 		+ fp_rpc::EthereumRuntimeRPCApi<Block>,
-	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
@@ -198,49 +193,49 @@ pub async fn spawn_frontier_tasks<RuntimeApi, Executor>(
 		EthCompatRuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
 	Executor: NativeExecutionDispatch + 'static,
 {
-		// Spawn main mapping sync worker background task.
-		match frontier_backend {
-			fc_db::Backend::KeyValue(b) => {
-				task_manager.spawn_essential_handle().spawn(
-					"frontier-mapping-sync-worker",
-					Some("frontier"),
-					fc_mapping_sync::kv::MappingSyncWorker::new(
-						client.import_notification_stream(),
-						Duration::new(6, 0),
-						client.clone(),
-						backend,
-						overrides.clone(),
-						Arc::new(b),
-						3,
-						0,
-						fc_mapping_sync::SyncStrategy::Normal,
-						sync,
-						pubsub_notification_sinks,
-					)
-					.for_each(|()| future::ready(())),
-				);
-			}
-			fc_db::Backend::Sql(b) => {
-				task_manager.spawn_essential_handle().spawn_blocking(
-					"frontier-mapping-sync-worker",
-					Some("frontier"),
-					fc_mapping_sync::sql::SyncWorker::run(
-						client.clone(),
-						backend,
-						Arc::new(b),
-						client.import_notification_stream(),
-						fc_mapping_sync::sql::SyncWorkerConfig {
-							read_notification_timeout: Duration::from_secs(10),
-							check_indexed_blocks_interval: Duration::from_secs(60),
-						},
-						fc_mapping_sync::SyncStrategy::Parachain,
-						sync,
-						pubsub_notification_sinks,
-					),
-				);
-			}
+	// Spawn main mapping sync worker background task.
+	match frontier_backend {
+		fc_db::Backend::KeyValue(b) => {
+			task_manager.spawn_essential_handle().spawn(
+				"frontier-mapping-sync-worker",
+				Some("frontier"),
+				fc_mapping_sync::kv::MappingSyncWorker::new(
+					client.import_notification_stream(),
+					Duration::new(6, 0),
+					client.clone(),
+					backend,
+					overrides.clone(),
+					Arc::new(b),
+					3,
+					0,
+					fc_mapping_sync::SyncStrategy::Normal,
+					sync,
+					pubsub_notification_sinks,
+				)
+				.for_each(|()| future::ready(())),
+			);
 		}
-	
+		fc_db::Backend::Sql(b) => {
+			task_manager.spawn_essential_handle().spawn_blocking(
+				"frontier-mapping-sync-worker",
+				Some("frontier"),
+				fc_mapping_sync::sql::SyncWorker::run(
+					client.clone(),
+					backend,
+					Arc::new(b),
+					client.import_notification_stream(),
+					fc_mapping_sync::sql::SyncWorkerConfig {
+						read_notification_timeout: Duration::from_secs(10),
+						check_indexed_blocks_interval: Duration::from_secs(60),
+					},
+					fc_mapping_sync::SyncStrategy::Parachain,
+					sync,
+					pubsub_notification_sinks,
+				),
+			);
+		}
+	}
+
 	// Spawn Frontier EthFilterApi maintenance task.
 	if let Some(filter_pool) = filter_pool {
 		// Each filter is allowed to stay in the pool for 100 blocks.
