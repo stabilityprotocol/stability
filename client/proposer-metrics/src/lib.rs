@@ -1,4 +1,4 @@
-// Copyright 2023 Stability Solutions.
+// Copyright 2024 Stability Solutions.
 // This file is part of Stability.
 
 // Stability is free software: you can redistribute it and/or modify
@@ -43,11 +43,14 @@ impl MetricsLink {
 }
 
 /// The reason why proposing a block ended.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum EndProposingReason {
 	NoMoreTransactions,
 	HitDeadline,
 	HitBlockSizeLimit,
 	HitBlockWeightLimit,
+	/// No transactions are allowed in the block.
+	TransactionForbidden,
 }
 
 /// Authorship metrics.
@@ -61,7 +64,6 @@ pub struct Metrics {
 	pub zgt_response_time: Histogram,
 	pub zgt_inclusion_in_block_time: Histogram,
 	pub normal_extrinsic_inclusion_in_block_time: Histogram,
-
 }
 
 impl Metrics {
@@ -136,6 +138,7 @@ impl Metrics {
 			EndProposingReason::NoMoreTransactions => "no_more_transactions",
 			EndProposingReason::HitBlockSizeLimit => "hit_block_size_limit",
 			EndProposingReason::HitBlockWeightLimit => "hit_block_weight_limit",
+			EndProposingReason::TransactionForbidden => "transactions_forbidden",
 		};
 
 		self.end_proposing_reason.with_label_values(&[reason]).inc();
