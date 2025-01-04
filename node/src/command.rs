@@ -29,7 +29,7 @@ use crate::{
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Frontier Node".into()
+		"Stability Node".into()
 	}
 
 	fn impl_version() -> String {
@@ -66,10 +66,6 @@ impl SubstrateCli for Cli {
 				std::path::PathBuf::from(path),
 			)?),
 		})
-	}
-
-	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		&stability_runtime::VERSION
 	}
 }
 
