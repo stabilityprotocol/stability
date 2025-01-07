@@ -1,14 +1,18 @@
+use sc_telemetry::serde_json;
 use serde::{Deserialize, Serialize};
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{bytes::from_hex, ecdsa, H160, H256, U256};
-use stability_runtime::{AccountId, GenesisConfig, Precompiles, ValidatorFeeSelectorConfig};
+use stability_runtime::{AccountId, Precompiles, RuntimeGenesisConfig, ValidatorFeeSelectorConfig};
 use std::{collections::BTreeMap, str::FromStr, vec};
 // Substrate
-use sp_core::{crypto::Ss58Codec, storage::Storage, Pair, Public};
+use sp_core::{crypto::Ss58Codec, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use sp_state_machine::BasicExternalities;
-// Frontier
-use stability_runtime::{opaque::SessionKeys, EnableManualSeal, Signature};
+use sp_state_machine::{BasicExternalities, Storage};
+use stability_runtime::{
+	opaque::SessionKeys, AuraConfig, EVMChainIdConfig, EVMConfig, EnableManualSeal, GrandpaConfig,
+	SessionConfig, Signature, SupportedTokensManagerConfig, TechCommitteeCollectiveConfig,
+	ValidatorSetConfig,
+};
 
 pub mod alphanet;
 pub mod betanet;
@@ -16,13 +20,8 @@ pub mod dev;
 pub mod gtn;
 pub mod testnet;
 
-// The URL for the telemetry server.
-// const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
-
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
-pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
-
-/// Specialized `ChainSpec` for development.
+pub type ChainSpec = sc_service::GenericChainSpec;
 pub type DevChainSpec = sc_service::GenericChainSpec<DevGenesisExt>;
 
 pub type AuraId = stbl_core_primitives::aura::Public;
@@ -31,7 +30,7 @@ pub type AuraId = stbl_core_primitives::aura::Public;
 #[derive(Serialize, Deserialize)]
 pub struct DevGenesisExt {
 	/// Genesis config.
-	pub genesis_config: GenesisConfig,
+	pub genesis_config: RuntimeGenesisConfig,
 	/// The flag that if enable manual-seal mode.
 	pub enable_manual_seal: Option<bool>,
 }
@@ -95,26 +94,17 @@ pub fn base_genesis(
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	members: Vec<AccountId>,
 	chain_id: u64,
-) -> GenesisConfig {
-	use stability_runtime::{
-		AuraConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SessionConfig,
-		SupportedTokensManagerConfig, SystemConfig, TechCommitteeCollectiveConfig,
-		ValidatorSetConfig,
-	};
+) -> serde_json::Value {
 	let initial_default_token =
 		H160::from_str("0x261FB2d971eFBBFd027A9C9Cebb8548Cf7d0d2d5").expect("invalid address");
 	let initial_default_conversion_rate_controller =
 		H160::from_str("0x444212d6E4827893A70d19921E383130281Cda4a").expect("invalid address");
 	let main_account =
 		H160::from_str("0xaf537bd156c7E548D0BF2CD43168dABF7aF2feb5").expect("invalid address");
-	GenesisConfig {
+	let config = RuntimeGenesisConfig {
 		// System
-		system: SystemConfig {
-			// Add Wasm runtime to storage.
-			code: wasm_binary.to_vec(),
-		},
+		system: Default::default(),
 		transaction_payment: Default::default(),
-
 		session: SessionConfig {
 			keys: initial_authorities
 				.iter()
@@ -137,12 +127,17 @@ pub fn base_genesis(
 		},
 		grandpa: GrandpaConfig {
 			authorities: vec![],
+			..Default::default()
 		},
 		tech_committee_collective: TechCommitteeCollectiveConfig {
 			phantom: Default::default(),
 			members: members.clone(),
 		},
-		evm_chain_id: EVMChainIdConfig { chain_id },
+
+		evm_chain_id: EVMChainIdConfig {
+			chain_id,
+			..Default::default()
+		},
 		evm: EVMConfig {
 			accounts: {
 				let mut map = BTreeMap::new();
@@ -198,16 +193,21 @@ pub fn base_genesis(
 				);
 				map
 			},
+			..Default::default()
 		},
 		ethereum: Default::default(),
 		base_fee: Default::default(),
 		supported_tokens_manager: SupportedTokensManagerConfig {
 			initial_default_token,
 			initial_default_token_slot: H256::zero(),
+			_config: Default::default(),
 		},
 		validator_fee_selector: ValidatorFeeSelectorConfig {
 			initial_default_conversion_rate_controller,
+			_config: Default::default(),
 		},
 		dnt_fee_controller: Default::default(),
-	}
+	};
+
+	serde_json::to_value(&config).expect("Could not build genesis config.")
 }
