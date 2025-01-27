@@ -28,6 +28,8 @@ pub fn custom_info_from_fee_params(
 		max_conversion_rate: max_priority_fee_per_gas
 			.map(|_| (max_fee_per_gas.unwrap(), 1_000_000_000.into())),
 		max_fee_per_gas: match (max_fee_per_gas, max_priority_fee_per_gas) {
+			// With tip, we include as much of the tip on top of base_fee that we can, never
+			// exceeding max_fee_per_gas
 			(Some(max_fee_per_gas), Some(max_priority_fee_per_gas)) => {
 				let actual_priority_fee_per_gas = max_fee_per_gas
 					.saturating_sub(base_fee)
@@ -35,6 +37,7 @@ pub fn custom_info_from_fee_params(
 
 				base_fee.saturating_add(actual_priority_fee_per_gas)
 			}
+			// Without tip, we include as much of the base_fee as we can, never exceeding
 			(Some(max_fee_per_gas), None) => {
 				if max_fee_per_gas == U256::zero() {
 					max_fee_per_gas // It's a ZGT transaction
@@ -44,9 +47,11 @@ pub fn custom_info_from_fee_params(
 					max_fee_per_gas
 				}
 			}
+			// If there is no max_fee_per_gas, we just use the base_fee added to the max_priority_fee_per_gas
 			(None, Some(max_priority_fee_per_gas)) => {
 				max_priority_fee_per_gas.saturating_add(base_fee)
 			}
+			// If there is no max_fee_per_gas and no max_priority_fee_per_gas, we just use the base_fee
 			_ => base_fee,
 		},
 		max_priority_fee_per_gas,
