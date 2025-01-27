@@ -28,7 +28,6 @@ pub fn custom_info_from_fee_params(
 		max_conversion_rate: max_priority_fee_per_gas
 			.map(|_| (max_fee_per_gas.unwrap(), 1_000_000_000.into())),
 		max_fee_per_gas: match (max_fee_per_gas, max_priority_fee_per_gas) {
-			(Some(_), None) => base_fee,
 			(Some(max_fee_per_gas), Some(max_priority_fee_per_gas)) => {
 				let actual_priority_fee_per_gas = max_fee_per_gas
 					.saturating_sub(base_fee)
@@ -36,7 +35,19 @@ pub fn custom_info_from_fee_params(
 
 				base_fee.saturating_add(actual_priority_fee_per_gas)
 			}
-			_ => Default::default(),
+			(Some(max_fee_per_gas), None) => {
+				if max_fee_per_gas == U256::zero() {
+					max_fee_per_gas // It's a ZGT transaction
+				} else if max_fee_per_gas < base_fee {
+					base_fee
+				} else {
+					max_fee_per_gas
+				}
+			}
+			(None, Some(max_priority_fee_per_gas)) => {
+				max_priority_fee_per_gas.saturating_add(base_fee)
+			}
+			_ => base_fee,
 		},
 		max_priority_fee_per_gas,
 	}
@@ -76,26 +87,34 @@ mod test {
 
 	#[test]
 	fn custom_info_from_fee_params_for_trx_v2() {
+		let base_fee = U256::from(1_000_000_000);
+		let max_fee_x_gas = U256::from(2_000_000_000);
+		let max_priority_fee_x_gas = U256::from(500_000_000);
+
 		let info = custom_info_from_fee_params(
-			U256::from(1_000_000_000),
-			Some(U256::from(2_000_000_000)),
-			Some(U256::from(500_000_000)),
+			base_fee,
+			Some(max_fee_x_gas),
+			Some(max_priority_fee_x_gas),
 		);
 
-		assert_eq!(info.max_priority_fee_per_gas, Some(U256::from(500_000_000)));
-		assert_eq!(info.max_fee_per_gas, U256::from(2_000_000_000));
+		assert_eq!(info.max_priority_fee_per_gas, Some(max_priority_fee_x_gas));
+		assert_eq!(
+			info.max_fee_per_gas,
+			base_fee.saturating_add(max_priority_fee_x_gas)
+		);
 		assert_eq!(
 			info.max_conversion_rate,
-			Some((U256::from(2_000_000_000), U256::from(1_000_000_000)))
+			Some((max_fee_x_gas, U256::from(1_000_000_000)))
 		);
 	}
 
 	#[test]
 	fn custom_info_from_fee_params_for_read_trx() {
-		let info = custom_info_from_fee_params(U256::from(1_000_000_000), None, None);
+		let base_fee = U256::from(1_000_000_000);
+		let info = custom_info_from_fee_params(base_fee, None, None);
 
 		assert_eq!(info.max_priority_fee_per_gas, None);
-		assert_eq!(info.max_fee_per_gas, U256::from(0));
+		assert_eq!(info.max_fee_per_gas, base_fee);
 		assert_eq!(info.max_conversion_rate, None);
 	}
 }
