@@ -190,6 +190,7 @@ fp-evm = { git = "https://github.com/stabilityprotocol/frontier", branch = "stab
 fp-rpc = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 fp-self-contained = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 fp-storage = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
+fp-dynamic-fee = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 # Frontier FRAME
 pallet-base-fee = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 pallet-ethereum = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }

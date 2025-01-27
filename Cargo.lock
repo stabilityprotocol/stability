@@ -2632,6 +2632,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fp-dynamic-fee"
+version = "1.0.0"
+source = "git+https://github.com/stabilityprotocol/frontier?branch=stable2407#2e219e17a526125da003e64ef22ec037917083fa"
+dependencies = [
+ "async-trait",
+ "sp-core",
+ "sp-inherents",
+]
+
+[[package]]
 name = "fp-ethereum"
 version = "1.0.0-dev"
 source = "git+https://github.com/stabilityprotocol/frontier?branch=stable2407#2e219e17a526125da003e64ef22ec037917083fa"
@@ -10757,6 +10767,7 @@ dependencies = [
  "account",
  "async-trait",
  "clap",
+ "fc-api",
  "fc-cli",
  "fc-consensus",
  "fc-db",
@@ -10765,6 +10776,7 @@ dependencies = [
  "fc-rpc-core",
  "fc-storage",
  "fp-account",
+ "fp-dynamic-fee",
  "fp-evm",
  "fp-rpc",
  "frame-benchmarking",
@@ -10795,6 +10807,7 @@ dependencies = [
  "sc-network",
  "sc-network-common",
  "sc-network-sync",
+ "sc-offchain",
  "sc-rpc",
  "sc-rpc-api",
  "sc-service",
@@ -10810,6 +10823,7 @@ dependencies = [
  "sp-consensus-grandpa",
  "sp-core",
  "sp-inherents",
+ "sp-io",
  "sp-keyring",
  "sp-keystore",
  "sp-offchain",

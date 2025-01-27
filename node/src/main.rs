@@ -15,9 +15,9 @@ mod cli;
 mod client;
 mod command;
 mod eth;
-mod stability;
 mod rpc;
 mod service;
+mod stability;
 
 fn main() -> sc_cli::Result<()> {
 	command::run()

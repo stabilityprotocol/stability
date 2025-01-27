@@ -136,6 +136,8 @@ pub type Balance = stbl_core_primitives::Balance;
 /// Index of a transaction in the chain.
 pub type Index = stbl_core_primitives::Index;
 
+pub type Nonce = Index;
+
 /// A hash of some data used by the chain.
 pub type Hash = stbl_core_primitives::Hash;
 
@@ -206,7 +208,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The index type for storing how many extrinsics an account has signed.
-	type Nonce = Index;
+	type Nonce = Nonce;
 	/// The index type for blocks.
 	type Block = Block;
 	/// The basic call filter to use in dispatchable.
