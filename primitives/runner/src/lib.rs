@@ -235,7 +235,7 @@ where
 
 		// Execute the EVM call.
 		let vicinity = Vicinity {
-			gas_price: base_fee,
+			gas_price: total_fee_per_gas,
 			origin: source,
 		};
 

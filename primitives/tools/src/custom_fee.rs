@@ -27,9 +27,17 @@ pub fn custom_info_from_fee_params(
 	CustomFeeInfo {
 		max_conversion_rate: max_priority_fee_per_gas
 			.map(|_| (max_fee_per_gas.unwrap(), 1_000_000_000.into())),
-		max_fee_per_gas: max_fee_per_gas
-			.or(max_priority_fee_per_gas.map(|e| e.saturating_add(base_fee)))
-			.unwrap_or_default(),
+		max_fee_per_gas: match (max_fee_per_gas, max_priority_fee_per_gas) {
+			(Some(_), None) => base_fee,
+			(Some(max_fee_per_gas), Some(max_priority_fee_per_gas)) => {
+				let actual_priority_fee_per_gas = max_fee_per_gas
+					.saturating_sub(base_fee)
+					.min(max_priority_fee_per_gas);
+
+				base_fee.saturating_add(actual_priority_fee_per_gas)
+			}
+			_ => Default::default(),
+		},
 		max_priority_fee_per_gas,
 	}
 }
