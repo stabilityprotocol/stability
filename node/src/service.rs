@@ -15,9 +15,9 @@ use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sc_transaction_pool::FullPool;
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_api::ConstructRuntimeApi;
+use sp_consensus_aura::sr25519::{AuthorityId as AuraId, AuthorityPair as AuraPair};
 use sp_core::{H256, U256};
 use sp_runtime::traits::{Block as BlockT, NumberFor};
-use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 // Runtime
 use stability_runtime::{
 	opaque::Block, AccountId, Balance, Nonce, RuntimeApi, TransactionConverter,
@@ -44,12 +44,13 @@ pub type HostFunctions = (
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type HostFunctions = sp_io::SubstrateHostFunctions;
 
-pub type Backend = FullBackend;
-pub type Client = FullClient;
+pub type Backend = FullBackend<Block>;
+pub type Client = FullClient<Block, RuntimeApi, HostFunctions>;
 
-type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
-type GrandpaBlockImport =
-	sc_consensus_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>;
+type FullSelectChain<B> = sc_consensus::LongestChain<FullBackend<B>, B>;
+type GrandpaBlockImport<B, C> =
+	sc_consensus_grandpa::GrandpaBlockImport<FullBackend<B>, B, C, FullSelectChain<B>>;
+type GrandpaLinkHalf<B, C> = sc_consensus_grandpa::LinkHalf<B, C, FullSelectChain<B>>;
 
 /// The minimum period of blocks on which justifications will be
 /// imported and generated.
@@ -61,20 +62,36 @@ pub fn new_partial<B, RA, HF, BIQ>(
 	build_import_queue: BIQ,
 ) -> Result<
 	PartialComponents<
-		FullClient,
-		FullBackend,
-		FullSelectChain,
-		sc_consensus::DefaultImportQueue<Block>,
-		sc_transaction_pool::FullPool<Block, FullClient>,
+		FullClient<B, RA, HF>,
+		FullBackend<B>,
+		FullSelectChain<B>,
+		BasicQueue<B>,
+		FullPool<B, FullClient<B, RA, HF>>,
 		(
-			FrontierBlockImport<Block, GrandpaBlockImport, FullClient>,
-			sc_consensus_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
 			Option<Telemetry>,
-			Arc<fc_db::kv::Backend<Block, FullClient>>,
+			BoxBlockImport<B>,
+			GrandpaLinkHalf<B, FullClient<B, RA, HF>>,
+			FrontierBackend<B, FullClient<B, RA, HF>>,
+			Arc<dyn StorageOverride<B>>,
 		),
 	>,
 	ServiceError,
-> {
+>
+where
+	B: BlockT<Hash = H256>,
+	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
+	RA: Send + Sync + 'static,
+	RA::RuntimeApi: BaseRuntimeApiCollection<B> + EthCompatRuntimeApiCollection<B>,
+	HF: HostFunctionsT + 'static,
+	BIQ: FnOnce(
+		Arc<FullClient<B, RA, HF>>,
+		&Configuration,
+		&EthConfiguration,
+		&TaskManager,
+		Option<TelemetryHandle>,
+		GrandpaBlockImport<B, FullClient<B, RA, HF>>,
+	) -> Result<(BasicQueue<B>, BoxBlockImport<B>), ServiceError>,
+{
 	let telemetry = config
 		.telemetry_endpoints
 		.clone()
@@ -178,20 +195,19 @@ pub fn new_partial<B, RA, HF, BIQ>(
 
 /// Build the import queue for the template runtime (aura + grandpa).
 pub fn build_aura_grandpa_import_queue<B, RA, HF>(
-	client: Arc<FullClient>,
+	client: Arc<FullClient<B, RA, HF>>,
 	config: &Configuration,
 	eth_config: &EthConfiguration,
 	task_manager: &TaskManager,
 	telemetry: Option<TelemetryHandle>,
-	grandpa_block_import: GrandpaBlockImport,
+	grandpa_block_import: GrandpaBlockImport<B, FullClient<B, RA, HF>>,
 ) -> Result<(BasicQueue<B>, BoxBlockImport<B>), ServiceError>
 where
 	B: BlockT,
 	NumberFor<B>: BlockNumberOps,
-	RA: ConstructRuntimeApi<B, FullClient>,
+	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
 	RA: Send + Sync + 'static,
-	RA::RuntimeApi:
-		RuntimeApiCollection<B, stbl_core_primitives::aura::Public, AccountId, Nonce, Balance>,
+	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>,
 	HF: HostFunctionsT + 'static,
 {
 	let frontier_block_import =
@@ -231,19 +247,18 @@ where
 
 /// Build the import queue for the template runtime (manual seal).
 pub fn build_manual_seal_import_queue<B, RA, HF>(
-	client: Arc<FullClient>,
+	client: Arc<FullClient<B, RA, HF>>,
 	config: &Configuration,
 	_eth_config: &EthConfiguration,
 	task_manager: &TaskManager,
 	_telemetry: Option<TelemetryHandle>,
-	_grandpa_block_import: GrandpaBlockImport,
+	_grandpa_block_import: GrandpaBlockImport<B, FullClient<B, RA, HF>>,
 ) -> Result<(BasicQueue<B>, BoxBlockImport<B>), ServiceError>
 where
 	B: BlockT,
-	RA: ConstructRuntimeApi<B, FullClient>,
+	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
 	RA: Send + Sync + 'static,
-	RA::RuntimeApi:
-		RuntimeApiCollection<B, stbl_core_primitives::aura::Public, AccountId, Nonce, Balance>,
+	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>,
 	HF: HostFunctionsT + 'static,
 {
 	let frontier_block_import = FrontierBlockImport::new(client.clone(), client);
@@ -267,11 +282,9 @@ where
 	B: BlockT<Hash = H256>,
 	NumberFor<B>: BlockNumberOps,
 	<B as BlockT>::Header: Unpin,
-	RA: ConstructRuntimeApi<B, FullClient>,
+	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
 	RA: Send + Sync + 'static,
-	RA::RuntimeApi: RuntimeApiCollection<B, stbl_core_primitives::aura::Public, AccountId, Nonce, Balance>
-		+ stability_rpc::StabilityRpcRuntimeApi<Block>
-		+ ZeroGasTransactionApi<Block>,
+	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>,
 	HF: HostFunctionsT + 'static,
 	NB: sc_network::NetworkBackend<B, <B as BlockT>::Hash>,
 {
@@ -426,28 +439,12 @@ where
 			Ok((slot, timestamp, dynamic_fee))
 		};
 
-		let tracing_requesters = crate::rpc::spawn_tracing_tasks(
-			&eth_config.clone(),
-			prometheus_registry.clone(),
-			crate::rpc::SpawnTasksParams {
-				task_manager: &task_manager,
-				client: client.clone(),
-				substrate_backend: backend.clone(),
-				frontier_backend: match &*frontier_backend {
-					fc_db::Backend::KeyValue(b) => b.clone(),
-					fc_db::Backend::Sql(b) => b.clone(),
-				},
-				filter_pool: Some(filter_pool.clone()).expect("filter pool is always Some"),
-				storage_override: storage_override.clone(),
-			},
-		);
-
 		Box::new(move |deny_unsafe, subscription_task_executor| {
 			let eth_deps = crate::rpc::EthDeps {
 				client: client.clone(),
 				pool: pool.clone(),
 				graph: pool.pool().clone(),
-				converter: Some(TransactionConverter),
+				converter: Some(TransactionConverter::<B>::default()),
 				is_authority,
 				enable_dev_signer,
 				network: network.clone(),
@@ -481,10 +478,6 @@ where
 				deps,
 				subscription_task_executor,
 				pubsub_notification_sinks.clone(),
-				Some(crate::rpc::TracingConfig {
-					tracing_requesters: tracing_requesters.clone(),
-					trace_filter_max_count: eth_config.trace_filter_max_count,
-				}),
 			)
 			.map_err(Into::into)
 		})
@@ -540,7 +533,7 @@ where
 			return Ok(task_manager);
 		}
 
-		let proposer_factory = stbl_cli_authorship::ProposerFactory::new(
+		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool.clone(),
@@ -651,9 +644,9 @@ where
 fn run_manual_seal_authorship<B, RA, HF>(
 	eth_config: &EthConfiguration,
 	sealing: Sealing,
-	client: Arc<FullClient>,
-	transaction_pool: Arc<FullPool<B, FullClient>>,
-	select_chain: FullSelectChain,
+	client: Arc<FullClient<B, RA, HF>>,
+	transaction_pool: Arc<FullPool<B, FullClient<B, RA, HF>>>,
+	select_chain: FullSelectChain<B>,
 	block_import: BoxBlockImport<B>,
 	task_manager: &TaskManager,
 	prometheus_registry: Option<&Registry>,
@@ -664,13 +657,12 @@ fn run_manual_seal_authorship<B, RA, HF>(
 ) -> Result<(), ServiceError>
 where
 	B: BlockT,
-	RA: ConstructRuntimeApi<B, FullClient>,
+	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
 	RA: Send + Sync + 'static,
-	RA::RuntimeApi:
-		RuntimeApiCollection<B, stbl_core_primitives::aura::Public, AccountId, Nonce, Balance>,
+	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>,
 	HF: HostFunctionsT + 'static,
 {
-	let proposer_factory = stbl_cli_authorship::ProposerFactory::new(
+	let proposer_factory = sc_basic_authorship::ProposerFactory::new(
 		task_manager.spawn_handle(),
 		client.clone(),
 		transaction_pool.clone(),

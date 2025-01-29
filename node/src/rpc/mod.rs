@@ -4,8 +4,6 @@ use std::sync::Arc;
 
 use futures::channel::mpsc;
 use jsonrpsee::RpcModule;
-use moonbeam_rpc_debug::{DebugHandler, DebugRequester};
-use moonbeam_rpc_trace::{CacheRequester as TraceFilterCacheRequester, CacheTask};
 // Substrate
 use sc_client_api::{
 	backend::{Backend, StorageProvider},
@@ -21,26 +19,11 @@ use sp_api::{CallApiAt, ProvideRuntimeApi};
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_inherents::CreateInherentDataProviders;
 use sp_runtime::traits::Block as BlockT;
-use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 // Runtime
 use stability_runtime::{AccountId, Balance, Hash, Nonce};
 
 mod eth;
-mod tracing;
-
 pub use self::eth::{create_eth, EthDeps};
-pub use self::tracing::{spawn_tracing_tasks, SpawnTasksParams};
-
-#[derive(Clone)]
-pub struct RpcRequesters {
-	pub debug: Option<DebugRequester>,
-	pub trace: Option<TraceFilterCacheRequester>,
-}
-
-pub struct TracingConfig {
-	pub tracing_requesters: RpcRequesters,
-	pub trace_filter_max_count: u32,
-}
 
 /// Full client dependencies.
 pub struct FullDeps<B: BlockT, C, P, A: ChainApi, CT, CIDP> {
@@ -78,7 +61,6 @@ pub fn create_full<B, C, P, BE, A, CT, CIDP>(
 			fc_mapping_sync::EthereumBlockNotification<B>,
 		>,
 	>,
-	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
 	B: BlockT,
@@ -89,13 +71,9 @@ where
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<B, Balance>,
 	C::Api: fp_rpc::ConvertTransactionRuntimeApi<B>,
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<B>,
-	C::Api: stability_rpc::StabilityRpcRuntimeApi<B>,
-	C::Api: ZeroGasTransactionApi<B>,
 	C: HeaderBackend<B> + HeaderMetadata<B, Error = BlockChainError> + 'static,
 	C: BlockchainEvents<B> + AuxStore + UsageProvider<B> + StorageProvider<B, BE>,
 	BE: Backend<B> + 'static,
-	C::Api: moonbeam_rpc_primitives_debug::DebugRuntimeApi<B>,
-
 	P: TransactionPool<Block = B> + 'static,
 	A: ChainApi<Block = B> + 'static,
 	CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
@@ -103,7 +81,6 @@ where
 {
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 	use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApiServer};
-	use stability_rpc::{StabilityRpc, StabilityRpcEndpointsServer};
 	use substrate_frame_rpc_system::{System, SystemApiServer};
 
 	let mut io = RpcModule::new(());
@@ -116,8 +93,7 @@ where
 	} = deps;
 
 	io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
-	io.merge(TransactionPayment::new(client.clone()).into_rpc())?;
-	io.merge(StabilityRpc::new(client.clone(), pool.clone()).into_rpc())?;
+	io.merge(TransactionPayment::new(client).into_rpc())?;
 
 	if let Some(command_sink) = command_sink {
 		io.merge(
@@ -133,7 +109,6 @@ where
 		eth,
 		subscription_task_executor,
 		pubsub_notification_sinks,
-		optional_tracing_config,
 	)?;
 
 	Ok(io)

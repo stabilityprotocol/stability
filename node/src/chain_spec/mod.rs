@@ -1,17 +1,16 @@
-use sc_telemetry::serde_json;
-use serde::{Deserialize, Serialize};
+use serde_json;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{bytes::from_hex, ecdsa, H160, H256, U256};
-use stability_runtime::{AccountId, Precompiles, RuntimeGenesisConfig, ValidatorFeeSelectorConfig};
+use stability_runtime::{
+	AccountId, ManualSealConfig, Precompiles, RuntimeGenesisConfig, ValidatorFeeSelectorConfig,
+};
 use std::{collections::BTreeMap, str::FromStr, vec};
 // Substrate
-use sp_core::{crypto::Ss58Codec, storage::Storage, Pair, Public};
+use sp_core::{crypto::Ss58Codec, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use sp_state_machine::BasicExternalities;
 use stability_runtime::{
-	opaque::SessionKeys, AuraConfig, EVMChainIdConfig, EVMConfig, EnableManualSeal, GrandpaConfig,
-	SessionConfig, Signature, SupportedTokensManagerConfig, TechCommitteeCollectiveConfig,
-	ValidatorSetConfig,
+	opaque::SessionKeys, AuraConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SessionConfig,
+	Signature, SupportedTokensManagerConfig, TechCommitteeCollectiveConfig, ValidatorSetConfig,
 };
 
 pub mod alphanet;
@@ -22,29 +21,8 @@ pub mod testnet;
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec;
-pub type DevChainSpec = sc_service::GenericChainSpec<DevGenesisExt>;
 
 pub type AuraId = stbl_core_primitives::aura::Public;
-
-/// Extension for the dev genesis config to support a custom changes to the genesis state.
-#[derive(Serialize, Deserialize)]
-pub struct DevGenesisExt {
-	/// Genesis config.
-	pub genesis_config: RuntimeGenesisConfig,
-	/// The flag that if enable manual-seal mode.
-	pub enable_manual_seal: Option<bool>,
-}
-
-impl sp_runtime::BuildStorage for DevGenesisExt {
-	fn assimilate_storage(&self, storage: &mut Storage) -> Result<(), String> {
-		BasicExternalities::execute_with_storage(storage, || {
-			if let Some(enable_manual_seal) = &self.enable_manual_seal {
-				EnableManualSeal::set(enable_manual_seal);
-			}
-		});
-		self.genesis_config.assimilate_storage(storage)
-	}
-}
 
 /// Generate a crypto pair from seed.
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -90,10 +68,10 @@ pub fn get_authority_from_pubkeys(
 
 /// Configure initial storage state for FRAME modules.
 pub fn base_genesis(
-	wasm_binary: &[u8],
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	members: Vec<AccountId>,
 	chain_id: u64,
+	enable_manual_seal: bool,
 ) -> serde_json::Value {
 	let initial_default_token =
 		H160::from_str("0x261FB2d971eFBBFd027A9C9Cebb8548Cf7d0d2d5").expect("invalid address");
@@ -207,6 +185,10 @@ pub fn base_genesis(
 			_config: Default::default(),
 		},
 		dnt_fee_controller: Default::default(),
+		manual_seal: ManualSealConfig {
+			enable: enable_manual_seal,
+			_config: Default::default(),
+		},
 	};
 
 	serde_json::to_value(&config).expect("Could not build genesis config.")

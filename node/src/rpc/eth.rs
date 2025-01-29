@@ -1,8 +1,6 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use jsonrpsee::RpcModule;
-use moonbeam_rpc_debug::{Debug, DebugServer};
-use moonbeam_rpc_trace::{Trace, TraceServer};
 // Substrate
 use sc_client_api::{
 	backend::{Backend, StorageProvider},
@@ -17,7 +15,7 @@ use sc_transaction_pool_api::TransactionPool;
 use sp_api::{CallApiAt, ProvideRuntimeApi};
 use sp_block_builder::BlockBuilder as BlockBuilderApi;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
-use sp_consensus_aura::{sr25519::AuthorityId as AuraId, AuraApi};
+use sp_consensus_aura::AuraApi;
 use sp_core::H256;
 use sp_inherents::CreateInherentDataProviders;
 use sp_runtime::traits::Block as BlockT;
@@ -26,8 +24,6 @@ pub use fc_rpc::{EthBlockDataCacheTask, EthConfig};
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 use fc_storage::StorageOverride;
 use fp_rpc::{ConvertTransaction, ConvertTransactionRuntimeApi, EthereumRuntimeRPCApi};
-
-use super::TracingConfig;
 
 /// Extra dependencies for Ethereum compatibility.
 pub struct EthDeps<B: BlockT, C, P, A: ChainApi, CT, CIDP> {
@@ -80,12 +76,11 @@ pub fn create_eth<B, C, BE, P, A, CT, CIDP, EC>(
 			fc_mapping_sync::EthereumBlockNotification<B>,
 		>,
 	>,
-	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
 	B: BlockT,
 	C: CallApiAt<B> + ProvideRuntimeApi<B>,
-	C::Api: AuraApi<B, AuraId>
+	C::Api: AuraApi<B, stbl_core_primitives::aura::Public>
 		+ BlockBuilderApi<B>
 		+ ConvertTransactionRuntimeApi<B>
 		+ EthereumRuntimeRPCApi<B>,
@@ -98,10 +93,10 @@ where
 	CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
 	EC: EthConfig<B, C>,
 {
+	use crate::stability::StbleAuraConsensusDataProvider;
 	use fc_rpc::{
-		pending::AuraConsensusDataProvider, Debug, DebugApiServer, Eth, EthApiServer, EthDevSigner,
-		EthFilter, EthFilterApiServer, EthPubSub, EthPubSubApiServer, EthSigner, Net, NetApiServer,
-		Web3, Web3ApiServer,
+		Debug, DebugApiServer, Eth, EthApiServer, EthDevSigner, EthFilter, EthFilterApiServer,
+		EthPubSub, EthPubSubApiServer, EthSigner, Net, NetApiServer, Web3, Web3ApiServer,
 	};
 	#[cfg(feature = "txpool")]
 	use fc_rpc::{TxPool, TxPoolApiServer};
@@ -149,7 +144,9 @@ where
 			execute_gas_limit_multiplier,
 			forced_parent_hashes,
 			pending_create_inherent_data_providers,
-			Some(Box::new(AuraConsensusDataProvider::new(client.clone()))),
+			Some(Box::new(StbleAuraConsensusDataProvider::new(
+				client.clone(),
+			))),
 		)
 		.replace_config::<EC>()
 		.into_rpc(),
@@ -203,16 +200,6 @@ where
 		)
 		.into_rpc(),
 	)?;
-
-	if let Some(tracing_config) = optional_tracing_config {
-		if let Some(debug_requester) = tracing_config.tracing_requesters.debug {
-			io.merge(Debug::new(debug_requester).into_rpc())?;
-		}
-
-		if let Some(trace_requester) = tracing_config.tracing_requesters.trace {
-			io.merge(Trace::new(client.clone(), trace_requester, 20).into_rpc())?;
-		}
-	}
 
 	#[cfg(feature = "txpool")]
 	io.merge(TxPool::new(client, graph).into_rpc())?;

@@ -1,21 +1,3 @@
-// This file is part of Stability.
-
-// Copyright (C) 2022 Parity Technologies (UK) Ltd.
-// SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
-
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
-
 //! Contains code to setup the command invocations in [`super::command`] which would
 //! otherwise bloat that module.
 
@@ -25,14 +7,14 @@ use scale_codec::Encode;
 // Substrate
 use sc_cli::Result;
 use sc_client_api::BlockBackend;
-use sp_core::{sr25519, Pair};
+use sp_core::{ecdsa, Pair};
 use sp_inherents::{InherentData, InherentDataProvider};
-use sp_keyring::Sr25519Keyring;
-use sp_runtime::{generic::Era, AccountId32, OpaqueExtrinsic, SaturatedConversion};
+use sp_runtime::{generic::Era, OpaqueExtrinsic, SaturatedConversion};
 // Frontier
+use fp_account::AccountId20;
 use stability_runtime::{self as runtime, AccountId, Balance, BalancesCall, SystemCall};
 
-use crate::client::Client;
+use crate::service::Client;
 
 /// Generates extrinsics for the `benchmark overhead` command.
 ///
@@ -58,7 +40,7 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for RemarkBuilder {
 	}
 
 	fn build(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
-		let acc = Sr25519Keyring::Bob.pair();
+		let acc = ecdsa::Pair::from_string("//Bob", None).expect("static values are valid; qed");
 		let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
 			self.client.as_ref(),
 			acc,
@@ -101,12 +83,12 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for TransferKeepAliveBuilder {
 	}
 
 	fn build(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
-		let acc = Sr25519Keyring::Bob.pair();
+		let acc = ecdsa::Pair::from_string("//Bob", None).expect("static values are valid; qed");
 		let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
 			self.client.as_ref(),
 			acc,
 			BalancesCall::transfer_keep_alive {
-				dest: self.dest.clone().into(),
+				dest: self.dest,
 				value: self.value,
 			}
 			.into(),
@@ -123,7 +105,7 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for TransferKeepAliveBuilder {
 /// Note: Should only be used for benchmarking.
 pub fn create_benchmark_extrinsic(
 	client: &Client,
-	sender: sr25519::Pair,
+	sender: ecdsa::Pair,
 	call: runtime::RuntimeCall,
 	nonce: u32,
 ) -> runtime::UncheckedExtrinsic {
@@ -171,8 +153,8 @@ pub fn create_benchmark_extrinsic(
 
 	runtime::UncheckedExtrinsic::new_signed(
 		call,
-		AccountId32::from(sender.public()).into(),
-		runtime::Signature::Sr25519(signature),
+		AccountId20::from(sender.public()),
+		runtime::Signature::new(signature),
 		extra,
 	)
 }

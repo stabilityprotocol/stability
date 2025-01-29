@@ -25,6 +25,7 @@ serde = { workspace = true }
 # Substrate
 prometheus-endpoint = { workspace = true }
 sc-chain-spec = { workspace = true }
+sc-basic-authorship = { workspace = true }
 sc-cli = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
@@ -104,6 +105,7 @@ moonbeam-rpc-primitives-txpool = { workspace = true }
 moonbeam-rpc-debug = { workspace = true }
 moonbeam-rpc-trace = { workspace = true }
 tokio = { workspace = true }
+serde_json = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }

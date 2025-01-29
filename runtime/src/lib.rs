@@ -33,6 +33,7 @@ use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
 	OpaqueMetadata, H160, H256, U256,
 };
+use sp_genesis_builder::PresetId;
 use sp_runtime::traits::Convert;
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::traits::IdentityLookup;
@@ -72,6 +73,7 @@ extern crate moonbeam_rpc_primitives_txpool;
 pub use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
+	genesis_builder_helper::{build_state, get_preset},
 	parameter_types,
 	traits::{
 		ConstBool, ConstU32, ConstU8, EitherOfDiverse, FindAuthor, KeyOwnerProofSystem, OnFinalize,
@@ -776,6 +778,35 @@ impl pallet_upgrade_runtime_proposal::Config for Runtime {
 
 impl pallet_fee_rewards_vault::Config for Runtime {}
 
+#[frame_support::pallet]
+pub mod pallet_manual_seal {
+	use super::*;
+	use frame_support::pallet_prelude::*;
+
+	#[pallet::pallet]
+	pub struct Pallet<T>(PhantomData<T>);
+
+	#[pallet::config]
+	pub trait Config: frame_system::Config {}
+
+	#[pallet::genesis_config]
+	#[derive(frame_support::DefaultNoBound)]
+	pub struct GenesisConfig<T> {
+		pub enable: bool,
+		#[serde(skip)]
+		pub _config: PhantomData<T>,
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+		fn build(&self) {
+			EnableManualSeal::set(&self.enable);
+		}
+	}
+}
+
+impl pallet_manual_seal::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime
@@ -804,31 +835,30 @@ construct_runtime!(
 		UpgradeRuntimeProposal: pallet_upgrade_runtime_proposal,
 		FeeRewardsVault: pallet_fee_rewards_vault,
 		MetaTransactions: pallet_sponsored_transactions,
-		ZeroGasTransactions: pallet_zero_gas_transactions
+		ZeroGasTransactions: pallet_zero_gas_transactions,
+		ManualSeal: pallet_manual_seal,
 	}
 );
 
 #[derive(Clone)]
-pub struct TransactionConverter;
+pub struct TransactionConverter<B>(PhantomData<B>);
 
-impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
-	fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> UncheckedExtrinsic {
-		UncheckedExtrinsic::new_unsigned(
-			pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
-		)
+impl<B> Default for TransactionConverter<B> {
+	fn default() -> Self {
+		Self(PhantomData)
 	}
 }
 
-impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConverter {
+impl<B: BlockT> fp_rpc::ConvertTransaction<<B as BlockT>::Extrinsic> for TransactionConverter<B> {
 	fn convert_transaction(
 		&self,
 		transaction: pallet_ethereum::Transaction,
-	) -> opaque::UncheckedExtrinsic {
+	) -> <B as BlockT>::Extrinsic {
 		let extrinsic = UncheckedExtrinsic::new_unsigned(
 			pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
 		);
 		let encoded = extrinsic.encode();
-		opaque::UncheckedExtrinsic::decode(&mut &encoded[..])
+		<B as BlockT>::Extrinsic::decode(&mut &encoded[..])
 			.expect("Encoded extrinsic is always valid")
 	}
 }
@@ -1034,6 +1064,20 @@ impl_runtime_apis! {
 	impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
 		fn offchain_worker(header: &<Block as BlockT>::Header) {
 			Executive::offchain_worker(header)
+		}
+	}
+
+	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+		fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_state::<RuntimeGenesisConfig>(config)
+		}
+
+		fn get_preset(id: &Option<PresetId>) -> Option<Vec<u8>> {
+			get_preset::<RuntimeGenesisConfig>(id, |_| None)
+		}
+
+		fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
+			vec![]
 		}
 	}
 

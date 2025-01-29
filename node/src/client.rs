@@ -1,41 +1,16 @@
 use scale_codec::Codec;
 // Substrate
-use sc_executor::{NativeExecutionDispatch, NativeVersion, WasmExecutor};
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT};
-// Local
+use sc_executor::WasmExecutor;
+use sp_runtime::traits::{Block as BlockT, MaybeDisplay};
+
 use crate::eth::EthCompatRuntimeApiCollection;
-use sp_runtime::traits::MaybeDisplay;
-use stability_runtime::{opaque::Block, AccountId, Balance, Index, RuntimeApi};
 
 /// Full backend.
-pub type FullBackend = sc_service::TFullBackend<Block>;
+pub type FullBackend<B> = sc_service::TFullBackend<B>;
 /// Full client.
-pub type FullClient = sc_service::TFullClient<Block, RuntimeApi, WasmExecutor<HostFunctions>>;
+pub type FullClient<B, RA, HF> = sc_service::TFullClient<B, RA, WasmExecutor<HF>>;
 
-/// Only enable the benchmarking host functions when we actually want to benchmark.
-#[cfg(feature = "runtime-benchmarks")]
-pub type HostFunctions = (
-	frame_benchmarking::benchmarking::HostFunctions,
-	moonbeam_primitives_ext::moonbeam_ext::HostFunctions,
-);
-/// Otherwise we use empty host functions for ext host functions.
-#[cfg(not(feature = "runtime-benchmarks"))]
-pub type HostFunctions = moonbeam_primitives_ext::moonbeam_ext::HostFunctions;
-
-pub struct TemplateRuntimeExecutor;
-impl NativeExecutionDispatch for TemplateRuntimeExecutor {
-	type ExtendHostFunctions = HostFunctions;
-
-	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-		stability_runtime::api::dispatch(method, data)
-	}
-
-	fn native_version() -> NativeVersion {
-		stability_runtime::native_version()
-	}
-}
-
-/// A set of APIs that every runtimes must implement.
+/// A set of APIs that every runtime must implement.
 pub trait BaseRuntimeApiCollection<Block: BlockT>:
 	sp_api::ApiExt<Block>
 	+ sp_api::Metadata<Block>
@@ -43,8 +18,6 @@ pub trait BaseRuntimeApiCollection<Block: BlockT>:
 	+ sp_offchain::OffchainWorkerApi<Block>
 	+ sp_session::SessionKeys<Block>
 	+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
-	+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>
-	+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block>
 {
 }
 
@@ -56,9 +29,7 @@ where
 		+ sp_block_builder::BlockBuilder<Block>
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_session::SessionKeys<Block>
-		+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
-		+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>
-		+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block>,
+		+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>,
 {
 }
 
@@ -74,12 +45,10 @@ pub trait RuntimeApiCollection<
 	+ EthCompatRuntimeApiCollection<Block>
 	+ sp_consensus_aura::AuraApi<Block, stbl_core_primitives::aura::Public>
 	+ sp_consensus_grandpa::GrandpaApi<Block>
-	+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
+	+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce>
 	+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
 	+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
 	+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>
-	+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>
-	+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block>
 {
 }
 
@@ -95,11 +64,10 @@ where
 		+ EthCompatRuntimeApiCollection<Block>
 		+ sp_consensus_aura::AuraApi<Block, stbl_core_primitives::aura::Public>
 		+ sp_consensus_grandpa::GrandpaApi<Block>
-		+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
+		+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce>
+		+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
 		+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
 		+ stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId>
-		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>
-		+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block>
-		+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>,
+		+ stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi<Block>,
 {
 }

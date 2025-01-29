@@ -1,16 +1,14 @@
 use crate::service::EthConfiguration;
-use crate::stability::StabilityConfiguration;
 
 /// Available Sealing methods.
 #[derive(Copy, Clone, Debug, Default, clap::ValueEnum)]
 pub enum Sealing {
-	// Seal using rpc method.
+	/// Seal using rpc method.
 	#[default]
 	Manual,
-	// Seal when transaction is executed.
+	/// Seal when transaction is executed.
 	Instant,
 }
-
 
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
@@ -27,9 +25,6 @@ pub struct Cli {
 
 	#[command(flatten)]
 	pub eth: EthConfiguration,
-
-	#[command(flatten)]
-	pub stability: StabilityConfiguration,
 }
 
 #[derive(Debug, clap::Subcommand)]

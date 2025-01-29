@@ -20,13 +20,10 @@ use fc_rpc::EthTask;
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 pub use fc_storage::{StorageOverride, StorageOverrideHandler};
 
-use crate::{
-	client::{FullBackend, FullClient},
-	service::Client,
-};
+use crate::client::{FullBackend, FullClient};
 
 /// Frontier DB backend type.
-pub type FrontierBackend<C> = fc_db::Backend<BlockT, C>;
+pub type FrontierBackend<B, C> = fc_db::Backend<B, C>;
 
 pub fn db_config_dir(config: &Configuration) -> PathBuf {
 	config.base_path.config_dir(config.chain_spec.id())
@@ -128,22 +125,28 @@ where
 {
 }
 
-pub async fn spawn_frontier_tasks(
+pub async fn spawn_frontier_tasks<B, RA, HF>(
 	task_manager: &TaskManager,
-	client: Arc<FullClient>,
-	backend: Arc<FullBackend>,
-	frontier_backend: Arc<FrontierBackend<FullClient>>,
+	client: Arc<FullClient<B, RA, HF>>,
+	backend: Arc<FullBackend<B>>,
+	frontier_backend: Arc<FrontierBackend<B, FullClient<B, RA, HF>>>,
 	filter_pool: Option<FilterPool>,
-	storage_override: Arc<dyn StorageOverride<BlockT>>,
+	storage_override: Arc<dyn StorageOverride<B>>,
 	fee_history_cache: FeeHistoryCache,
 	fee_history_cache_limit: FeeHistoryCacheLimit,
-	sync: Arc<SyncingService<BlockT>>,
+	sync: Arc<SyncingService<B>>,
 	pubsub_notification_sinks: Arc<
 		fc_mapping_sync::EthereumBlockNotificationSinks<
-			fc_mapping_sync::EthereumBlockNotification<BlockT>,
+			fc_mapping_sync::EthereumBlockNotification<B>,
 		>,
 	>,
-) {
+) where
+	B: BlockT<Hash = H256>,
+	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
+	RA: Send + Sync + 'static,
+	RA::RuntimeApi: EthCompatRuntimeApiCollection<B>,
+	HF: HostFunctions + 'static,
+{
 	// Spawn main mapping sync worker background task.
 	match &*frontier_backend {
 		fc_db::Backend::KeyValue(b) => {
