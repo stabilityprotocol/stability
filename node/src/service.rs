@@ -10,18 +10,21 @@ use sc_consensus::{BasicQueue, BoxBlockImport};
 use sc_consensus_grandpa::BlockNumberOps;
 use sc_executor::HostFunctions as HostFunctionsT;
 use sc_network_sync::strategy::warp::{WarpSyncParams, WarpSyncProvider};
-use sc_service::{error::Error as ServiceError, Configuration, PartialComponents, TaskManager};
+use sc_service::{
+	error::Error as ServiceError, Configuration, KeystoreContainer, PartialComponents, TaskManager,
+};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sc_transaction_pool::FullPool;
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_api::ConstructRuntimeApi;
-use sp_consensus_aura::sr25519::{AuthorityId as AuraId, AuthorityPair as AuraPair};
 use sp_core::{H256, U256};
 use sp_runtime::traits::{Block as BlockT, NumberFor};
+use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 // Runtime
 use stability_runtime::{
 	opaque::Block, AccountId, Balance, Nonce, RuntimeApi, TransactionConverter,
 };
+use stbl_core_primitives::aura::Public as AuraId;
 
 pub use crate::eth::{db_config_dir, EthConfiguration};
 use crate::{
@@ -32,6 +35,7 @@ use crate::{
 		FrontierBackend, FrontierBlockImport, FrontierPartialComponents, StorageOverride,
 		StorageOverrideHandler,
 	},
+	stability::StabilityConfiguration,
 };
 
 /// Only enable the benchmarking host functions when we actually want to benchmark.
@@ -277,6 +281,7 @@ pub async fn new_full<B, RA, HF, NB>(
 	mut config: Configuration,
 	eth_config: EthConfiguration,
 	sealing: Option<Sealing>,
+	stability_config: StabilityConfiguration,
 ) -> Result<TaskManager, ServiceError>
 where
 	B: BlockT<Hash = H256>,
@@ -284,7 +289,9 @@ where
 	<B as BlockT>::Header: Unpin,
 	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
 	RA: Send + Sync + 'static,
-	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>,
+	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>
+		+ stability_rpc::StabilityRpcRuntimeApi<Block>
+		+ ZeroGasTransactionApi<Block>,
 	HF: HostFunctionsT + 'static,
 	NB: sc_network::NetworkBackend<B, <B as BlockT>::Hash>,
 {
@@ -526,6 +533,8 @@ where
 				prometheus_registry.as_ref(),
 				telemetry.as_ref(),
 				commands_stream,
+				&stability_config,
+				keystore_container,
 			)?;
 
 			network_starter.start_network();
@@ -533,10 +542,13 @@ where
 			return Ok(task_manager);
 		}
 
-		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+		let proposer_factory = stbl_cli_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool.clone(),
+			keystore_container.keystore(),
+			stability_config.zero_gas_tx_pool.clone(),
+			stability_config.zero_gas_tx_pool_timeout.clone(),
 			prometheus_registry.as_ref(),
 			telemetry.as_ref().map(|x| x.handle()),
 		);
@@ -654,6 +666,8 @@ fn run_manual_seal_authorship<B, RA, HF>(
 	commands_stream: mpsc::Receiver<
 		sc_consensus_manual_seal::rpc::EngineCommand<<B as BlockT>::Hash>,
 	>,
+	stability_config: &StabilityConfiguration,
+	keystore: KeystoreContainer,
 ) -> Result<(), ServiceError>
 where
 	B: BlockT,
@@ -662,10 +676,13 @@ where
 	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>,
 	HF: HostFunctionsT + 'static,
 {
-	let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+	let proposer_factory = stbl_cli_authorship::ProposerFactory::new(
 		task_manager.spawn_handle(),
 		client.clone(),
 		transaction_pool.clone(),
+		keystore.keystore(),
+		stability_config.zero_gas_tx_pool.clone(),
+		stability_config.zero_gas_tx_pool_timeout.clone(),
 		prometheus_registry,
 		telemetry.as_ref().map(|x| x.handle()),
 	);
@@ -742,9 +759,13 @@ pub async fn build_full(
 	config: Configuration,
 	eth_config: EthConfiguration,
 	sealing: Option<Sealing>,
+	stability_config: StabilityConfiguration,
 ) -> Result<TaskManager, ServiceError> {
 	new_full::<Block, RuntimeApi, HostFunctions, sc_network::NetworkWorker<_, _>>(
-		config, eth_config, sealing,
+		config,
+		eth_config,
+		sealing,
+		stability_config,
 	)
 	.await
 }

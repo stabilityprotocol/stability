@@ -1,4 +1,5 @@
 use crate::service::EthConfiguration;
+use crate::stability::StabilityConfiguration;
 
 /// Available Sealing methods.
 #[derive(Copy, Clone, Debug, Default, clap::ValueEnum)]
@@ -25,6 +26,9 @@ pub struct Cli {
 
 	#[command(flatten)]
 	pub eth: EthConfiguration,
+
+	#[command(flatten)]
+	pub stability: StabilityConfiguration,
 }
 
 #[derive(Debug, clap::Subcommand)]
