@@ -20,7 +20,10 @@ use fc_rpc::EthTask;
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 pub use fc_storage::{StorageOverride, StorageOverrideHandler};
 
-use crate::client::{FullBackend, FullClient};
+use crate::{
+	client::{FullBackend, FullClient},
+	rpc::tracing::EthApi,
+};
 
 /// Frontier DB backend type.
 pub type FrontierBackend<B, C> = fc_db::Backend<B, C>;
@@ -90,6 +93,29 @@ pub struct EthConfiguration {
 	/// Default value is 200MB.
 	#[arg(long, default_value = "209715200")]
 	pub frontier_sql_backend_cache_size: u64,
+
+	/// TRACING CONFIG BELOW
+
+	/// Sets the maximum permits
+	#[arg(long, default_value = "10")]
+	pub ethapi_max_permits: u64,
+
+	/// Sets the maximum permits
+	#[arg(long, default_value = "500")]
+	pub trace_filter_max_count: u32,
+
+	/// Size in bytes of data a raw tracing request is allowed to use.
+	/// Bound the size of memory, stack and storage data.
+	#[arg(long, default_value = "20000000")]
+	pub tracing_raw_max_memory_usage: usize,
+
+	/// Duration (in seconds) after which the cache of `trace_filter` for a given block will be
+	/// discarded.
+	#[arg(long, default_value = "300")]
+	pub ethapi_trace_cache_duration: u64,
+
+	#[arg(long, value_delimiter = ',', default_value = "none")]
+	pub ethapi: Vec<EthApi>,
 }
 
 pub struct FrontierPartialComponents {

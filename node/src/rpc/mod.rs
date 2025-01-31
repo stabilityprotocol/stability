@@ -17,13 +17,20 @@ use sc_service::TransactionPool;
 use sc_transaction_pool::ChainApi;
 use sp_api::{CallApiAt, ProvideRuntimeApi};
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+use sp_core::H256;
 use sp_inherents::CreateInherentDataProviders;
 use sp_runtime::traits::Block as BlockT;
+use sp_runtime::traits::Header as HeaderT;
+use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 // Runtime
 use stability_runtime::{AccountId, Balance, Hash, Nonce};
+use tracing::RpcRequesters;
 
 mod eth;
 pub use self::eth::{create_eth, EthDeps};
+
+pub mod tracing;
+pub use self::tracing::*;
 
 /// Full client dependencies.
 pub struct FullDeps<B: BlockT, C, P, A: ChainApi, CT, CIDP> {
@@ -39,11 +46,16 @@ pub struct FullDeps<B: BlockT, C, P, A: ChainApi, CT, CIDP> {
 	pub eth: EthDeps<B, C, P, A, CT, CIDP>,
 }
 
+pub struct TracingConfig {
+	pub tracing_requesters: RpcRequesters,
+	pub trace_filter_max_count: u32,
+}
+
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
 
 impl<B, C, BE> fc_rpc::EthConfig<B, C> for DefaultEthConfig<C, BE>
 where
-	B: BlockT,
+	B: BlockT<Hash = H256>,
 	C: StorageProvider<B, BE> + Sync + Send + 'static,
 	BE: Backend<B> + 'static,
 {
@@ -61,9 +73,11 @@ pub fn create_full<B, C, P, BE, A, CT, CIDP>(
 			fc_mapping_sync::EthereumBlockNotification<B>,
 		>,
 	>,
+	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
-	B: BlockT,
+	B: BlockT<Hash = H256>,
+	B::Header: HeaderT<Number = u32>,
 	C: CallApiAt<B> + ProvideRuntimeApi<B>,
 	C::Api: sp_block_builder::BlockBuilder<B>,
 	C::Api: sp_consensus_aura::AuraApi<B, stbl_core_primitives::aura::Public>,
@@ -71,6 +85,9 @@ where
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<B, Balance>,
 	C::Api: fp_rpc::ConvertTransactionRuntimeApi<B>,
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<B>,
+	C::Api: ZeroGasTransactionApi<B>,
+	C::Api: stability_rpc::StabilityRpcRuntimeApi<B>,
+	C::Api: moonbeam_rpc_primitives_debug::DebugRuntimeApi<B>,
 	C: HeaderBackend<B> + HeaderMetadata<B, Error = BlockChainError> + 'static,
 	C: BlockchainEvents<B> + AuxStore + UsageProvider<B> + StorageProvider<B, BE>,
 	BE: Backend<B> + 'static,
@@ -81,6 +98,7 @@ where
 {
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 	use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApiServer};
+	use stability_rpc::{StabilityRpc, StabilityRpcEndpointsServer};
 	use substrate_frame_rpc_system::{System, SystemApiServer};
 
 	let mut io = RpcModule::new(());
@@ -92,8 +110,9 @@ where
 		eth,
 	} = deps;
 
-	io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
-	io.merge(TransactionPayment::new(client).into_rpc())?;
+	io.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
+	io.merge(TransactionPayment::new(client.clone()).into_rpc())?;
+	io.merge(StabilityRpc::new(client.clone(), pool.clone()).into_rpc())?;
 
 	if let Some(command_sink) = command_sink {
 		io.merge(
@@ -109,6 +128,7 @@ where
 		eth,
 		subscription_task_executor,
 		pubsub_notification_sinks,
+		optional_tracing_config,
 	)?;
 
 	Ok(io)

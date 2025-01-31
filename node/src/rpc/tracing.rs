@@ -30,7 +30,33 @@ use sc_service::TaskManager;
 use sp_block_builder::BlockBuilder;
 use sp_core::H256;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT};
+use std::str::FromStr;
 use tokio::sync::Semaphore;
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum EthApi {
+	Txpool,
+	Debug,
+	Trace,
+}
+
+impl FromStr for EthApi {
+	type Err = String;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		Ok(match s {
+			"txpool" => Self::Txpool,
+			"debug" => Self::Debug,
+			"trace" => Self::Trace,
+			_ => {
+				return Err(format!(
+					"`{}` is not recognized as a supported Ethereum Api",
+					s
+				))
+			}
+		})
+	}
+}
 
 #[derive(Clone)]
 pub struct RpcRequesters {
@@ -68,31 +94,28 @@ where
 {
 	let permit_pool = Arc::new(Semaphore::new(rpc_config.ethapi_max_permits as usize));
 
-	let (trace_filter_task, trace_filter_requester) =
-		if rpc_config.ethapi.contains(&EthApiCmd::Trace) {
-			let (trace_filter_task, trace_filter_requester) = CacheTask::create(
-				Arc::clone(&params.client),
-				Arc::clone(&params.substrate_backend),
-				core::time::Duration::from_secs(rpc_config.ethapi_trace_cache_duration),
-				Arc::clone(&permit_pool),
-				Arc::clone(&params.overrides),
-				prometheus,
-			);
-			(Some(trace_filter_task), Some(trace_filter_requester))
-		} else {
-			(None, None)
-		};
+	let (trace_filter_task, trace_filter_requester) = if rpc_config.ethapi.contains(&EthApi::Trace)
+	{
+		let (trace_filter_task, trace_filter_requester) = CacheTask::create(
+			Arc::clone(&params.client),
+			Arc::clone(&params.substrate_backend),
+			core::time::Duration::from_secs(rpc_config.ethapi_trace_cache_duration),
+			Arc::clone(&permit_pool),
+			Arc::clone(&params.storage_override),
+			prometheus,
+		);
+		(Some(trace_filter_task), Some(trace_filter_requester))
+	} else {
+		(None, None)
+	};
 
-	let (debug_task, debug_requester) = if rpc_config.ethapi.contains(&EthApiCmd::Debug) {
+	let (debug_task, debug_requester) = if rpc_config.ethapi.contains(&EthApi::Debug) {
 		let (debug_task, debug_requester) = DebugHandler::task(
 			Arc::clone(&params.client),
 			Arc::clone(&params.substrate_backend),
-			match *params.frontier_backend {
-				fc_db::Backend::KeyValue(ref b) => b.clone(),
-				fc_db::Backend::Sql(ref b) => b.clone(),
-			},
+			Arc::clone(&params.frontier_backend),
 			Arc::clone(&permit_pool),
-			Arc::clone(&params.overrides),
+			Arc::clone(&params.storage_override),
 			rpc_config.tracing_raw_max_memory_usage,
 		);
 		(Some(debug_task), Some(debug_requester))

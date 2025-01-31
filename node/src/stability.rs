@@ -4,7 +4,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_consensus_aura::Slot;
 use sp_consensus_aura::SlotDuration;
 use sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi};
-use sp_inherents::{CreateInherentDataProviders, InherentData};
+use sp_inherents::InherentData;
 use sp_runtime::{traits::Block as BlockT, Digest, DigestItem};
 use sp_timestamp::TimestampInherentData;
 use std::{marker::PhantomData, sync::Arc};

@@ -19,11 +19,17 @@ use sp_consensus_aura::AuraApi;
 use sp_core::H256;
 use sp_inherents::CreateInherentDataProviders;
 use sp_runtime::traits::Block as BlockT;
+use sp_runtime::traits::Header as HeaderT;
 // Frontier
 pub use fc_rpc::{EthBlockDataCacheTask, EthConfig};
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 use fc_storage::StorageOverride;
 use fp_rpc::{ConvertTransaction, ConvertTransactionRuntimeApi, EthereumRuntimeRPCApi};
+// Tracing
+use moonbeam_rpc_debug::{Debug as MoonbeamDebug, DebugServer};
+use moonbeam_rpc_trace::{Trace, TraceServer};
+
+use super::TracingConfig;
 
 /// Extra dependencies for Ethereum compatibility.
 pub struct EthDeps<B: BlockT, C, P, A: ChainApi, CT, CIDP> {
@@ -76,9 +82,11 @@ pub fn create_eth<B, C, BE, P, A, CT, CIDP, EC>(
 			fc_mapping_sync::EthereumBlockNotification<B>,
 		>,
 	>,
+	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
-	B: BlockT,
+	B: BlockT<Hash = H256>,
+	B::Header: HeaderT<Number = u32>,
 	C: CallApiAt<B> + ProvideRuntimeApi<B>,
 	C::Api: AuraApi<B, stbl_core_primitives::aura::Public>
 		+ BlockBuilderApi<B>
@@ -203,6 +211,17 @@ where
 
 	#[cfg(feature = "txpool")]
 	io.merge(TxPool::new(client, graph).into_rpc())?;
+
+	// Merge the tracing RPCs into the RPC module.
+	if let Some(tracing_config) = optional_tracing_config {
+		if let Some(debug_requester) = tracing_config.tracing_requesters.debug {
+			io.merge(MoonbeamDebug::new(debug_requester.clone()).into_rpc())?;
+		}
+
+		if let Some(trace_requester) = tracing_config.tracing_requesters.trace {
+			io.merge(Trace::new(client.clone(), trace_requester, 20).into_rpc())?;
+		}
+	}
 
 	Ok(io)
 }

@@ -18,6 +18,8 @@ use sc_transaction_pool::FullPool;
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_api::ConstructRuntimeApi;
 use sp_core::{H256, U256};
+use sp_runtime::traits::BlakeTwo256;
+use sp_runtime::traits::Header as HeaderT;
 use sp_runtime::traits::{Block as BlockT, NumberFor};
 use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 // Runtime
@@ -35,6 +37,7 @@ use crate::{
 		FrontierBackend, FrontierBlockImport, FrontierPartialComponents, StorageOverride,
 		StorageOverrideHandler,
 	},
+	rpc::{SpawnTasksParams, TracingConfig},
 	stability::StabilityConfiguration,
 };
 
@@ -83,6 +86,7 @@ pub fn new_partial<B, RA, HF, BIQ>(
 >
 where
 	B: BlockT<Hash = H256>,
+	B::Header: HeaderT<Number = u32>,
 	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
 	RA: Send + Sync + 'static,
 	RA::RuntimeApi: BaseRuntimeApiCollection<B> + EthCompatRuntimeApiCollection<B>,
@@ -285,15 +289,19 @@ pub async fn new_full<B, RA, HF, NB>(
 ) -> Result<TaskManager, ServiceError>
 where
 	B: BlockT<Hash = H256>,
+	B::Header: HeaderT<Number = u32>,
 	NumberFor<B>: BlockNumberOps,
 	<B as BlockT>::Header: Unpin,
 	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
 	RA: Send + Sync + 'static,
 	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>
-		+ stability_rpc::StabilityRpcRuntimeApi<Block>
-		+ ZeroGasTransactionApi<Block>,
+		+ stability_rpc::StabilityRpcRuntimeApi<B>
+		+ ZeroGasTransactionApi<B>
+		+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<B>,
 	HF: HostFunctionsT + 'static,
 	NB: sc_network::NetworkBackend<B, <B as BlockT>::Hash>,
+	sc_client_api::StateBackendFor<FullBackend<B>, B>:
+		sc_client_api::backend::StateBackend<BlakeTwo256>,
 {
 	let build_import_queue = if sealing.is_some() {
 		build_manual_seal_import_queue::<B, RA, HF>
@@ -409,6 +417,23 @@ where
 	// for ethereum-compatibility rpc.
 	config.rpc_id_provider = Some(Box::new(fc_rpc::EthereumSubIdProvider));
 
+	// spawn tracing tasks
+	let tracing_requesters = crate::rpc::spawn_tracing_tasks(
+		&eth_config.clone(),
+		prometheus_registry.clone(),
+		SpawnTasksParams {
+			task_manager: &task_manager,
+			client: client.clone(),
+			substrate_backend: backend.clone(),
+			frontier_backend: match &*frontier_backend {
+				FrontierBackend::KeyValue(backend) => backend.clone(),
+				FrontierBackend::Sql(backend) => backend.clone(),
+			},
+			filter_pool: filter_pool.clone(),
+			storage_override: storage_override.clone(),
+		},
+	);
+
 	let rpc_builder = {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
@@ -481,10 +506,15 @@ where
 				},
 				eth: eth_deps,
 			};
+
 			crate::rpc::create_full(
 				deps,
 				subscription_task_executor,
 				pubsub_notification_sinks.clone(),
+				Some(TracingConfig {
+					tracing_requesters: tracing_requesters.clone(),
+					trace_filter_max_count: eth_config.trace_filter_max_count,
+				}),
 			)
 			.map_err(Into::into)
 		})
