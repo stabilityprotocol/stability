@@ -88,6 +88,7 @@ where
 	C::Api: ZeroGasTransactionApi<B>,
 	C::Api: stability_rpc::StabilityRpcRuntimeApi<B>,
 	C::Api: moonbeam_rpc_primitives_debug::DebugRuntimeApi<B>,
+	C::Api: moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<B>,
 	C: HeaderBackend<B> + HeaderMetadata<B, Error = BlockChainError> + 'static,
 	C: BlockchainEvents<B> + AuxStore + UsageProvider<B> + StorageProvider<B, BE>,
 	BE: Backend<B> + 'static,

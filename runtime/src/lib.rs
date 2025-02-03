@@ -1350,6 +1350,10 @@ impl_runtime_apis! {
 		> {
 			use moonbeam_evm_tracer::tracer::EvmTracer;
 
+			// We need to follow the order when replaying the transactions.
+			// Block initialize happens first then apply_extrinsic.
+			Executive::initialize_block(header);
+
 			// Apply the a subset of extrinsics: all the substrate-specific or ethereum
 			// transactions that preceded the requested transaction.
 			for ext in extrinsics.into_iter() {
@@ -1395,6 +1399,11 @@ impl_runtime_apis! {
 			sp_runtime::DispatchError,
 		> {
 			use moonbeam_evm_tracer::tracer::EvmTracer;
+
+
+			// We need to follow the order when replaying the transactions.
+			// Block initialize happens first then apply_extrinsic.
+			Executive::initialize_block(header);
 
 			let mut config = <Runtime as pallet_evm::Config>::config().clone();
 			config.estimate = true;
@@ -1452,8 +1461,8 @@ impl_runtime_apis! {
 		) -> Result<(), sp_runtime::DispatchError> {
 			use moonbeam_evm_tracer::tracer::EvmTracer;
 
-			// Initialize block: calls the "on_initialize" hook on every pallet
-			// in AllPalletsWithSystem.
+			// We need to follow the order when replaying the transactions.
+			// Block initialize happens first then apply_extrinsic.
 			Executive::initialize_block(header);
 
 			EvmTracer::new().trace(|| {

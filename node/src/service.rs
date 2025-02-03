@@ -49,7 +49,10 @@ pub type HostFunctions = (
 );
 /// Otherwise we use empty host functions for ext host functions.
 #[cfg(not(feature = "runtime-benchmarks"))]
-pub type HostFunctions = sp_io::SubstrateHostFunctions;
+pub type HostFunctions = (
+	sp_io::SubstrateHostFunctions,
+	moonbeam_primitives_ext::moonbeam_ext::HostFunctions,
+);
 
 pub type Backend = FullBackend<Block>;
 pub type Client = FullClient<Block, RuntimeApi, HostFunctions>;
@@ -297,7 +300,8 @@ where
 	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>
 		+ stability_rpc::StabilityRpcRuntimeApi<B>
 		+ ZeroGasTransactionApi<B>
-		+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<B>,
+		+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<B>
+		+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<B>,
 	HF: HostFunctionsT + 'static,
 	NB: sc_network::NetworkBackend<B, <B as BlockT>::Hash>,
 	sc_client_api::StateBackendFor<FullBackend<B>, B>:
