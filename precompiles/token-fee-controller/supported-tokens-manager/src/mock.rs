@@ -27,7 +27,6 @@ use sp_runtime::BuildStorage;
 
 pub type AccountId = MockAccount;
 pub type Balance = u128;
-pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 pub type Block = frame_system::mocking::MockBlock<Runtime>;
 
 parameter_types! {

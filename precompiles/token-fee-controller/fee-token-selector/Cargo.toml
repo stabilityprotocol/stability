@@ -30,6 +30,7 @@ sp-runtime = { workspace = true }
 # Frontier
 fp-evm = { workspace = true }
 pallet-evm = { workspace = true, features = ["forbid-evm-reentrancy"] }
+fc-rpc = { workspace = true }
 
 pallet-user-fee-selector = { workspace = true }
 pallet-validator-fee-selector = { workspace = true }
@@ -52,7 +53,7 @@ scale-info = { version = "2.0", default-features = false, features = [
 sp-runtime = { workspace = true }
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
 	"fp-evm/std",
 	"frame-support/std",

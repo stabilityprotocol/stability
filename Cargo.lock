@@ -7115,6 +7115,7 @@ name = "precompile-fee-token-selector"
 version = "0.1.0"
 dependencies = [
  "derive_more 0.99.17",
+ "fc-rpc",
  "fp-evm",
  "frame-support",
  "frame-system",
