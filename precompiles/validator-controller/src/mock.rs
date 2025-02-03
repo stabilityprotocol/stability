@@ -28,6 +28,7 @@ use sp_core::{H160, H256, U256};
 use sp_runtime::impl_opaque_keys;
 use sp_runtime::testing::UintAuthorityId;
 use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup, OpaqueKeys};
+use sp_runtime::BuildStorage;
 use sp_runtime::KeyTypeId;
 use std::cell::RefCell;
 
@@ -84,14 +85,11 @@ impl frame_system::Config for Runtime {
 	type BaseCallFilter = Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = BlockNumber;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = sp_runtime::generic::Header<BlockNumber, BlakeTwo256>;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -105,6 +103,14 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -132,17 +138,18 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
-	type MaxHolds = ();
-	type HoldIdentifier = ();
+	type RuntimeHoldReason = ();
 	type FreezeIdentifier = ();
+	type RuntimeFreezeReason = ();
 	type MaxFreezes = ();
 }
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
 	pub PrecompilesValue: Precompiles<Runtime> = Precompiles::new();
-	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 	pub const GasLimitPovSizeRatio: u64 = 15;
+	pub const SuicideQuickClearLimit: u32 = 64;
 }
 
 pub struct IdentityAddressMapping;
@@ -196,6 +203,7 @@ impl pallet_evm::Config for Runtime {
 	type BlockHashMapping = pallet_evm::SubstrateBlockHashMapping<Self>;
 	type FindAuthor = ();
 	type OnCreate = ();
+	type SuicideQuickClearLimit = SuicideQuickClearLimit;
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
@@ -210,9 +218,9 @@ where
 }
 
 pub struct MockSessionBlockManager;
-impl pallet_validator_set::SessionBlockManager<BlockNumber> for MockSessionBlockManager {
-	fn session_start_block(session_index: sp_staking::SessionIndex) -> BlockNumber {
-		session_index as BlockNumber
+impl pallet_validator_set::SessionBlockManager<u64> for MockSessionBlockManager {
+	fn session_start_block(session_index: sp_staking::SessionIndex) -> u64 {
+		session_index as u64
 	}
 }
 pub struct MockFindAuthor;
@@ -292,9 +300,9 @@ impl SessionHandler<AccountId> for TestSessionHandler {
 }
 
 pub struct TestShouldEndSession;
-impl ShouldEndSession<BlockNumber> for TestShouldEndSession {
-	fn should_end_session(now: BlockNumber) -> bool {
-		let l = SESSION_LENGTH.with(|l| *l.borrow());
+impl ShouldEndSession<u64> for TestShouldEndSession {
+	fn should_end_session(now: u64) -> bool {
+		let l = SESSION_LENGTH.with(|l| *l.borrow()) as u64;
 		now % l == 0
 			|| FORCE_SESSION_END.with(|l| {
 				let r = *l.borrow();
@@ -334,16 +342,12 @@ pub type PCall = ValidatorControllerPrecompileCall<Runtime, DefaultOwner>;
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Evm: pallet_evm::{Pallet, Call, Storage, Event<T>},
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
-		ValidatorSet: pallet_validator_set::{Pallet, Call, Storage, Event<T>, Config<T>},
+	pub enum Runtime {
+		System: frame_system,
+		Balances: pallet_balances,
+		Evm: pallet_evm,
+		Timestamp: pallet_timestamp,
+		ValidatorSet: pallet_validator_set,
 		Session: pallet_session,
 	}
 );
@@ -365,8 +369,8 @@ impl ExtBuilder {
 	}
 
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
-		let mut t = frame_system::GenesisConfig::default()
-			.build_storage::<Runtime>()
+		let mut t = frame_system::GenesisConfig::<Runtime>::default()
+			.build_storage()
 			.expect("Frame system builds valid default genesis config");
 
 		pallet_validator_set::GenesisConfig::<Runtime> {
