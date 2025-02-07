@@ -126,12 +126,13 @@ pub type PCall = SupportedTokensManagerPrecompileCall<
 impl pallet_supported_tokens_manager::Config for Runtime {}
 
 parameter_types! {
-		pub BlockGasLimit: U256 = U256::max_value();
-		pub PrecompilesValue: Precompiles<Runtime> = Precompiles::new();
-		pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
-		pub const GasLimitPovSizeRatio: u64 = 15;
-		pub const SuicideQuickClearLimit: u32 = 64;
+	pub BlockGasLimit: U256 = U256::max_value();
+	pub PrecompilesValue: Precompiles<Runtime> = Precompiles::new();
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
+	pub const GasLimitPovSizeRatio: u64 = 15;
+	pub const SuicideQuickClearLimit: u32 = 64;
 }
+
 impl pallet_evm::Config for Runtime {
 	type FeeCalculator = ();
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;

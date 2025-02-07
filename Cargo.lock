@@ -6208,6 +6208,7 @@ dependencies = [
  "pallet-supported-tokens-manager",
  "pallet-timestamp",
  "parity-scale-codec",
+ "precompile-utils",
  "scale-info",
  "sp-core",
  "sp-io",
@@ -6627,6 +6628,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
+ "sp-state-machine",
  "sp-std",
  "syn 1.0.109",
 ]

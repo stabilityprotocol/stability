@@ -4,27 +4,24 @@ use super::*;
 use crate as map_svm_evm;
 
 use frame_support::pallet_prelude::Weight;
+use frame_support::parameter_types;
 use frame_support::traits::{Contains, Everything, GenesisBuild};
 use hex::FromHex;
 use sp_core::{H256, U256};
-use std::str::FromStr;
-
+use sp_runtime::BuildStorage;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
 };
 use std::collections::BTreeMap;
-
-use frame_support::parameter_types;
+use std::str::FromStr;
 
 pub type Signature = MultiSignature;
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 
 pub type Balance = u128;
-pub type BlockNumber = u32;
 
 type Block = frame_system::mocking::MockBlock<Test>;
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 
 pub struct BlockEverything;
 impl Contains<RuntimeCall> for BlockEverything {
@@ -42,14 +39,11 @@ impl frame_system::Config for Test {
 	type BaseCallFilter = Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = BlockNumber;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = sp_runtime::generic::Header<BlockNumber, BlakeTwo256>;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -63,6 +57,14 @@ impl frame_system::Config for Test {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -90,16 +92,17 @@ impl pallet_balances::Config for Test {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
-	type MaxHolds = ();
-	type HoldIdentifier = ();
+	type RuntimeHoldReason = ();
 	type FreezeIdentifier = ();
+	type RuntimeFreezeReason = ();
 	type MaxFreezes = ();
 }
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
-	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 	pub const GasLimitPovSizeRatio: u64 = 15;
+	pub const SuicideQuickClearLimit: u32 = 64;
 }
 
 impl pallet_evm_chain_id::Config for Test {}
@@ -116,12 +119,13 @@ impl pallet_evm::Config for Test {
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
 	type PrecompilesType = ();
 	type PrecompilesValue = ();
-	type ChainId = EVMChainId;
+	type ChainId = ();
 	type OnChargeTransaction = ();
 	type BlockGasLimit = BlockGasLimit;
 	type BlockHashMapping = pallet_evm::SubstrateBlockHashMapping<Self>;
 	type FindAuthor = ();
 	type OnCreate = ();
+	type SuicideQuickClearLimit = SuicideQuickClearLimit;
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
@@ -171,18 +175,14 @@ impl crate::Config for Test {
 }
 
 frame_support::construct_runtime!(
-	pub enum Test
-	where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic, {
-			System: frame_system,
-			Timestamp: pallet_timestamp,
-			Balances: pallet_balances,
-			EVM: pallet_evm,
-			MapSvmEvm: map_svm_evm,
-			EVMChainId: pallet_evm_chain_id
-		}
+	pub enum Test {
+		System: frame_system,
+		Balances: pallet_balances,
+		Evm: pallet_evm,
+		Timestamp: pallet_timestamp,
+		MapSvmEvm: map_svm_evm,
+		EVMChainId: pallet_evm_chain_id
+	}
 );
 
 parameter_types! {
@@ -192,11 +192,12 @@ parameter_types! {
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let mut t = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
+	let mut t = frame_system::GenesisConfig::<Test>::default()
+		.build_storage()
 		.unwrap();
 
-	let evm_config = pallet_evm::GenesisConfig {
+	pallet_evm::GenesisConfig::<Test> {
+		_marker: Default::default(),
 		accounts: {
 			let mut map = BTreeMap::new();
 			map.insert(
@@ -210,19 +211,15 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 			);
 			map
 		},
-	};
-	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t)
-		.unwrap();
+	}.assimilate_storage(&mut t)
+	.expect("Failed to build GenesisConfig for Evm pallet.");
 
-	let chain_id_config = pallet_evm_chain_id::GenesisConfig {
+	pallet_evm_chain_id::GenesisConfig::<Test> {
+		_marker: Default::default(),
 		chain_id: ChainId::get(),
-	};
-
-	<pallet_evm_chain_id::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(
-		&chain_id_config,
-		&mut t,
-	)
-	.unwrap();
+	}
+	.assimilate_storage(&mut t)
+	.expect("Failed to build GenesisConfig for EVMChainId pallet.");
 
 	t.into()
 }

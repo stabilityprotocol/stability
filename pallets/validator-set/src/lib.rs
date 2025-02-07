@@ -265,23 +265,6 @@ pub mod pallet {
 		}
 	}
 
-	// #[cfg(feature = "std")]
-	// impl<T: Config> GenesisConfig<T> {
-	// 	/// Direct implementation of `GenesisBuild::build_storage`.
-	// 	///
-	// 	/// Kept in order not to break dependency.
-	// 	pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
-	// 		<Self as GenesisBuild<T>>::build_storage(self)
-	// 	}
-
-	// 	/// Direct implementation of `GenesisBuild::assimilate_storage`.
-	// 	///
-	// 	/// Kept in order not to break dependency.
-	// 	pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
-	// 		<Self as GenesisBuild<T>>::assimilate_storage(self, storage)
-	// 	}
-	// }
-
 	#[pallet::genesis_build]
 	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
@@ -472,7 +455,8 @@ impl<T: Config> Pallet<T> {
 	fn initialize_validators(account_ids: Vec<T::AccountId>) {
 		assert!(
 			account_ids.len() as u32 >= T::MinAuthorities::get(),
-			"Initial set of validators must be at least T::MinAuthorities"
+			"Initial set of validators must be at least {}",
+			T::MinAuthorities::get()
 		);
 		assert!(
 			<Validators<T>>::get().is_empty(),
