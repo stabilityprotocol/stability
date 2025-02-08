@@ -17,17 +17,17 @@ sp-io = { workspace = true, default-features = false }
 ethereum = { workspace = true, default-features = false }
 sha3 = { version = "0.10.6", default-features = false }
 frame-system = { workspace = true, default-features = false }
-pallet-user-fee-selector ={ workspace = true, default-features = false }
+pallet-user-fee-selector = { workspace = true, default-features = false }
 stbl-tools = { workspace = true }
 environmental = { workspace = true, optional = true }
 frame-support = { workspace = true }
 evm = { workspace = true, features = ["with-codec"] }
 parity-scale-codec = { workspace = true }
-scale-info = { workspace = true}
+scale-info = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 log = { workspace = true }
 pallet-timestamp = { workspace = true }
-precompile-utils ={ workspace = true }
+precompile-utils = { workspace = true }
 
 [dev-dependencies]
 frame-support = { workspace = true }
@@ -36,13 +36,13 @@ hex = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-balances = { workspace = true, features = ["std"] }
 pallet-evm = { workspace = true, features = ["std"] }
-pallet-ethereum = { workspace = true, features = ["std"]  }
+pallet-ethereum = { workspace = true, features = ["std"] }
 pallet-supported-tokens-manager = { workspace = true }
 pallet-erc20-manager = { workspace = true }
 
 [features]
-default = [ "std" ]
-runtime-benchmarks = [ 'frame-benchmarking' ]
+default = ["std"]
+runtime-benchmarks = ['frame-benchmarking']
 std = [
 	"environmental?/std",
 	"evm/std",
@@ -60,6 +60,7 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"precompile-utils/std",
 ]
-forbid-evm-reentrancy = [ "dep:environmental" ]
-try-runtime = [ 'frame-support/try-runtime' ]
+forbid-evm-reentrancy = ["dep:environmental"]
+try-runtime = ['frame-support/try-runtime']
