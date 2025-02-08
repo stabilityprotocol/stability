@@ -21,6 +21,7 @@ fp-rpc = { workspace = true }
 fc-rpc-core = { workspace = true }
 ethereum = { workspace = true }
 async-trait = { workspace = true }
+precompile-utils = { workspace = true }
 
 # local packages
 stability-rpc-api = { workspace = true, default-features = false }
@@ -41,12 +42,15 @@ pallet-sponsored-transactions = { workspace = true }
 
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
 	"pallet-sponsored-transactions/std",
 	"sp-api/std",
 	"sp-core/std",
 	"sp-runtime/std",
 	"stability-rpc-api/std",
+	"fp-rpc/std",
+	"stbl-primitives-zero-gas-transactions-api/std",
+	"precompile-utils/std",
 ]
-test-helpers = [ "lazy_static", "tokio" ]
+test-helpers = ["lazy_static", "tokio"]

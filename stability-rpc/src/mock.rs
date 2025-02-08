@@ -1,10 +1,7 @@
 use sc_transaction_pool_api::InPoolTransaction;
 use sp_api::{ApiRef, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
-use sp_runtime::{
-	generic::BlockId,
-	traits::{Block as BlockT, NumberFor, Zero},
-};
+use sp_runtime::traits::{Block as BlockT, NumberFor, Zero};
 use substrate_test_runtime_client::runtime::{Block, Extrinsic, Hash};
 
 pub struct TestApi {}
@@ -72,7 +69,7 @@ impl sc_service::TransactionPool for MockedMempool {
 
 	fn submit_at(
 		&self,
-		_at: &BlockId<Self::Block>,
+		_at: <Block as BlockT>::Hash,
 		_source: sc_transaction_pool_api::TransactionSource,
 		_xts: Vec<sc_transaction_pool_api::TransactionFor<Self>>,
 	) -> sc_transaction_pool_api::PoolFuture<
@@ -84,7 +81,7 @@ impl sc_service::TransactionPool for MockedMempool {
 
 	fn submit_one(
 		&self,
-		_at: &BlockId<Self::Block>,
+		_at: <Block as BlockT>::Hash,
 		_source: sc_transaction_pool_api::TransactionSource,
 		_xt: sc_transaction_pool_api::TransactionFor<Self>,
 	) -> sc_transaction_pool_api::PoolFuture<sc_transaction_pool_api::TxHash<Self>, Self::Error> {
@@ -93,7 +90,7 @@ impl sc_service::TransactionPool for MockedMempool {
 
 	fn submit_and_watch(
 		&self,
-		_at: &BlockId<Self::Block>,
+		_at: <Block as BlockT>::Hash,
 		_source: sc_transaction_pool_api::TransactionSource,
 		_xt: sc_transaction_pool_api::TransactionFor<Self>,
 	) -> sc_transaction_pool_api::PoolFuture<

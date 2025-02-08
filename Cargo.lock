@@ -10897,6 +10897,7 @@ dependencies = [
  "lazy_static",
  "pallet-sponsored-transactions",
  "parity-scale-codec",
+ "precompile-utils",
  "sc-client-api",
  "sc-service",
  "sc-transaction-pool-api",
