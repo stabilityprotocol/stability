@@ -8152,6 +8152,7 @@ dependencies = [
  "environmental",
  "evm",
  "fp-evm",
+ "fp-rpc",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

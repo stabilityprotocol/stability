@@ -10,9 +10,9 @@ frame-system = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 evm = { workspace = true, features = ["with-codec"] }
-sp-core = { workspace = true, default-features = false  }
+sp-core = { workspace = true, default-features = false }
 parity-scale-codec = { workspace = true }
-scale-info = { workspace = true}
+scale-info = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 sp-io = { workspace = true }
 log = { workspace = true }
@@ -21,7 +21,8 @@ pallet-timestamp = { workspace = true }
 fp-evm = { workspace = true }
 stbl-tools = { workspace = true }
 pallet-user-fee-selector = { workspace = true }
-precompile-utils ={ workspace = true }
+precompile-utils = { workspace = true }
+fp-rpc = { workspace = true }
 
 [dev-dependencies]
 hex = "0.4"
@@ -29,11 +30,11 @@ pallet-balances = { workspace = true, features = ["default"] }
 pallet-dnt-fee-controller = { workspace = true }
 pallet-erc20-manager = { workspace = true }
 pallet-user-fee-selector = { workspace = true }
-pallet-validator-fee-selector ={ workspace = true }
+pallet-validator-fee-selector = { workspace = true }
 
 [features]
-default = [ "std" ]
-runtime-benchmarks = [ 'frame-benchmarking' ]
+default = ["std"]
+runtime-benchmarks = ['frame-benchmarking']
 std = [
 	"environmental?/std",
 	"evm/std",
@@ -52,6 +53,8 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"precompile-utils/std",
+	"fp-rpc/std",
 ]
-forbid-evm-reentrancy = [ "dep:environmental" ]
-try-runtime = [ 'frame-support/try-runtime' ]
+forbid-evm-reentrancy = ["dep:environmental"]
+try-runtime = ['frame-support/try-runtime']

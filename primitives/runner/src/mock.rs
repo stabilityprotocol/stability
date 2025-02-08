@@ -22,14 +22,11 @@ use core::str::FromStr;
 use super::*;
 use crate as StabilityRunner;
 
-use frame_support::{
-	construct_runtime, parameter_types,
-	traits::{Everything, GenesisBuild},
-	weights::Weight,
-};
+use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::Weight};
 use hex::FromHex;
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
 use sp_core::{H160, H256, U256};
+use sp_runtime::BuildStorage;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
@@ -40,8 +37,6 @@ pub type Signature = MultiSignature;
 
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 pub type Balance = u128;
-pub type BlockNumber = u32;
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
 
 pub struct MockUserFeeTokenController;
@@ -70,14 +65,11 @@ impl frame_system::Config for Runtime {
 	type BaseCallFilter = Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = BlockNumber;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<AccountId>;
-	type Header = sp_runtime::generic::Header<BlockNumber, BlakeTwo256>;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -91,6 +83,14 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -107,10 +107,10 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
-	type MaxHolds = ();
-	type HoldIdentifier = ();
 	type FreezeIdentifier = ();
 	type MaxFreezes = ();
+	type RuntimeHoldReason = ();
+	type RuntimeFreezeReason = ();
 }
 
 parameter_types! {
@@ -176,10 +176,11 @@ impl crate::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
-	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 	pub ERC20SlotZero: H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
 	pub ZeroSlot : H256 = H256::from_low_u64_be(0);
 	pub const GasLimitPovSizeRatio: u64 = 15;
+	pub const SuicideQuickClearLimit: u32 = 64;
 }
 
 impl pallet_evm::Config for Runtime {
@@ -203,29 +204,28 @@ impl pallet_evm::Config for Runtime {
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
+	type SuicideQuickClearLimit = SuicideQuickClearLimit;
 }
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Evm: pallet_evm::{Pallet, Call, Storage, Event<T>},
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+	pub enum Runtime {
+		System: frame_system,
+		Balances: pallet_balances,
+		Evm: pallet_evm,
+		Timestamp: pallet_timestamp,
 	}
 );
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	let acc = H160::from_str("A38395b264f232ffF4bb294b5947092E359dDE88")
 		.expect("internal H160 is valid; qed");
-	let mut t = frame_system::GenesisConfig::default()
-		.build_storage::<Runtime>()
+	let mut t = frame_system::GenesisConfig::<Runtime>::default()
+		.build_storage()
 		.unwrap();
-	let config = pallet_evm::GenesisConfig {
+
+	pallet_evm::GenesisConfig::<Runtime> {
+		_marker: Default::default(),
 		accounts: {
 			let mut map = BTreeMap::new();
 			map.insert(
@@ -253,9 +253,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 			);
 			map
 		},
-	};
-	<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(&config, &mut t)
-		.unwrap();
+	}.assimilate_storage(&mut t).expect("Cannot assimilate evm storage");
 
 	t.into()
 }
