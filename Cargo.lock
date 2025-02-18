@@ -6173,6 +6173,8 @@ dependencies = [
 name = "pallet-dnt-fee-controller"
 version = "0.1.0"
 dependencies = [
+ "evm",
+ "fp-rpc",
  "frame-support",
  "frame-system",
  "pallet-balances",
@@ -6185,6 +6187,7 @@ dependencies = [
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
  "parity-scale-codec",
+ "precompile-utils",
  "runner",
  "scale-info",
  "sp-core",

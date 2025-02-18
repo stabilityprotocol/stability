@@ -20,15 +20,18 @@ pallet-validator-fee-selector = { workspace = true }
 pallet-supported-tokens-manager = { workspace = true }
 runner = { workspace = true }
 pallet-fee-rewards-vault = { workspace = true }
+fp-rpc = { workspace = true }
+evm = { workspace = true }
 
 [dev-dependencies]
 pallet-timestamp = { workspace = true, features = ["std"] }
 pallet-balances = { workspace = true, features = ["std"] }
 pallet-evm-chain-id = { workspace = true, features = ["std"] }
-pallet-evm = { workspace = true, features = ["std"]}
+pallet-evm = { workspace = true, features = ["std"] }
+precompile-utils = { workspace = true, features = ["testing"] }
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
 	"frame-support/std",
 	"frame-system/std",
@@ -36,4 +39,6 @@ std = [
 	"scale-info/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"fp-rpc/std",
+	"precompile-utils/std",
 ]

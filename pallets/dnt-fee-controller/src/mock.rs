@@ -1,25 +1,20 @@
 #![cfg(test)]
 
 use frame_support::pallet_prelude::{ValueQuery, Weight};
-use frame_support::traits::{Contains, Everything, GenesisBuild, StorageInstance};
+use frame_support::traits::{Contains, Everything, StorageInstance};
+use frame_support::{parameter_types, Blake2_128};
 use sp_core::{H160, H256, U256};
-use std::str::FromStr;
-
+use sp_runtime::BuildStorage;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
 };
-
-use frame_support::{parameter_types, Blake2_128};
-
+use std::str::FromStr;
 pub type Signature = MultiSignature;
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 
 pub type Balance = u128;
-pub type BlockNumber = u32;
-
 type Block = frame_system::mocking::MockBlock<Test>;
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 
 pub struct BlockEverything;
 impl Contains<RuntimeCall> for BlockEverything {
@@ -42,14 +37,11 @@ impl frame_system::Config for Test {
 	type BaseCallFilter = Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = BlockNumber;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = sp_runtime::generic::Header<BlockNumber, BlakeTwo256>;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -63,6 +55,14 @@ impl frame_system::Config for Test {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -90,16 +90,17 @@ impl pallet_balances::Config for Test {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
-	type MaxHolds = ();
-	type HoldIdentifier = ();
 	type FreezeIdentifier = ();
 	type MaxFreezes = ();
+	type RuntimeHoldReason = ();
+	type RuntimeFreezeReason = ();
 }
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
-	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 	pub const GasLimitPovSizeRatio: u64 = 15;
+	pub const SuicideQuickClearLimit: u32 = 64;
 }
 
 impl pallet_evm_chain_id::Config for Test {}
@@ -125,24 +126,21 @@ impl pallet_evm::Config for Test {
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
+	type SuicideQuickClearLimit = SuicideQuickClearLimit;
 }
 
 impl pallet_fee_rewards_vault::Config for Test {}
 
 frame_support::construct_runtime!(
-	pub enum Test
-	where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic, {
-			System: frame_system,
-			Timestamp: pallet_timestamp,
-			Balances: pallet_balances,
-			EVM: pallet_evm,
-			EVMChainId: pallet_evm_chain_id,
-			FeeRewardsVault: pallet_fee_rewards_vault,
-			DNTFeeController: crate,
-		}
+	pub enum Test {
+		System: frame_system,
+		Timestamp: pallet_timestamp,
+		Balances: pallet_balances,
+		EVM: pallet_evm,
+		EVMChainId: pallet_evm_chain_id,
+		FeeRewardsVault: pallet_fee_rewards_vault,
+		DNTFeeController: crate,
+	}
 );
 
 pub struct MockUserFeeTokenController;
@@ -257,25 +255,24 @@ impl crate::Config for Test {
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let mut t = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
+	let mut t = frame_system::GenesisConfig::<Test>::default()
+		.build_storage()
 		.unwrap();
 
-	let evm_config = pallet_evm::GenesisConfig {
+	pallet_evm::GenesisConfig::<Test> {
 		accounts: Default::default(),
-	};
+		..Default::default()
+	}
+	.assimilate_storage(&mut t)
+	.expect("failed to build pallet_evm genesis");
 
-	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t)
-		.unwrap();
-
-	<crate::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(
-		&crate::GenesisConfig {
-			fee_vault_precompile_address: FeeVaultAddress::get(),
-			validator_percentage: 50.into(),
-		},
-		&mut t,
-	)
-	.unwrap();
+	crate::GenesisConfig::<Test> {
+		fee_vault_precompile_address: FeeVaultAddress::get(),
+		validator_percentage: 50.into(),
+		_config: Default::default(),
+	}
+	.assimilate_storage(&mut t)
+	.expect("Failed to build pallet_dnt_fee_controller genesis");
 
 	t.into()
 }
