@@ -1,21 +1,17 @@
 #![cfg(test)]
 
 use frame_support::pallet_prelude::Weight;
-use frame_support::traits::{Everything, GenesisBuild, StorageInstance};
-use sp_core::{H160, H256, U256};
-use std::str::FromStr;
-
-use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
-
 use frame_support::parameter_types;
+use frame_support::traits::{Everything, StorageInstance};
+use sp_core::{H160, H256, U256};
+use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
+use sp_runtime::BuildStorage;
+use std::str::FromStr;
 
 pub type AccountId = stbl_core_primitives::AccountId;
 
 pub type Balance = u128;
-pub type BlockNumber = u32;
-
 type Block = frame_system::mocking::MockBlock<Test>;
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 
 parameter_types! {
 	pub const BlockHashCount: u32 = 250;
@@ -29,14 +25,11 @@ impl frame_system::Config for Test {
 	type BaseCallFilter = Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = BlockNumber;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = sp_runtime::generic::Header<BlockNumber, BlakeTwo256>;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -50,6 +43,14 @@ impl frame_system::Config for Test {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -71,6 +72,7 @@ parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
 	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 	pub const GasLimitPovSizeRatio: u64 = 15;
+	pub const SuicideQuickClearLimit: u32 = 64;
 }
 
 impl pallet_evm_chain_id::Config for Test {}
@@ -103,6 +105,7 @@ impl pallet_evm::Config for Test {
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
+	type SuicideQuickClearLimit = SuicideQuickClearLimit;
 }
 
 pub struct AccountIdToH160Mapping;
@@ -118,11 +121,7 @@ impl crate::Config for Test {
 }
 
 frame_support::construct_runtime!(
-	pub enum Test
-	where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic, {
+	pub enum Test {
 			System: frame_system,
 			Timestamp: pallet_timestamp,
 			EVM: pallet_evm,
@@ -166,16 +165,16 @@ parameter_types! {
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let mut t = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap();
+	let mut t = frame_system::GenesisConfig::<Test>::default()
+		.build_storage()
+		.expect("frame_system::GenesisConfig::build_storage should success");
 
-	let evm_config = pallet_evm::GenesisConfig {
+	pallet_evm::GenesisConfig::<Test> {
 		accounts: Default::default(),
-	};
-
-	<pallet_evm::GenesisConfig as GenesisBuild<Test>>::assimilate_storage(&evm_config, &mut t)
-		.unwrap();
+		..Default::default()
+	}
+	.assimilate_storage(&mut t)
+	.expect("pallet_evm::GenesisConfig::assimilate_storage should success");
 
 	t.into()
 }

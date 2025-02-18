@@ -369,7 +369,7 @@ impl ExtBuilder {
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
 		let mut t = frame_system::GenesisConfig::<Test>::default()
 			.build_storage()
-			.expect("Frame system`1 builds valid default genesis config");
+			.expect("Frame system`s builds valid default genesis config");
 
 		pallet_balances::GenesisConfig::<Test> {
 			balances: self.balances,
