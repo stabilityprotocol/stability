@@ -25,10 +25,9 @@ mod tests;
 use core::str::FromStr;
 use fp_evm::PrecompileHandle;
 use frame_support::dispatch::{GetDispatchInfo, PostDispatchInfo};
-use sp_runtime::traits::Dispatchable;
-
 use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};
+use sp_runtime::traits::Dispatchable;
 
 use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
@@ -288,13 +287,13 @@ where
 			},
 		);
 
-		if reason != ExitReason::Succeed(ExitSucceed::Returned) {
-			return Err(revert("call to owner() failed"));
+		match reason {
+			ExitReason::Succeed(ExitSucceed::Returned) => {
+				let owner = H160::from_slice(&output[12..32]);
+				Ok(owner == claimant.into())
+			}
+			_ => Err(revert("call to owner() failed")),
 		}
-
-		let owner = H160::from_slice(&output[12..32]);
-
-		Ok(owner == claimant.into())
 	}
 
 	#[precompile::public("getClaimableReward(address,address)")]

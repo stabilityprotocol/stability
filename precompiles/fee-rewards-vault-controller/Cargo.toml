@@ -20,6 +20,7 @@ sp-runtime = { workspace = true }
 fp-evm = { workspace = true }
 pallet-evm = { workspace = true, features = ["forbid-evm-reentrancy"] }
 evm = { workspace = true }
+fp-rpc = { workspace = true }
 
 # Stability
 pallet-fee-rewards-vault = { workspace = true }
@@ -39,7 +40,7 @@ pallet-session = { workspace = true }
 sp-runtime = { workspace = true }
 precompile-utils = { workspace = true, features = ["testing"] }
 scale-info = { version = "2.0", default-features = false, features = [
-    "derive",
+	"derive",
 ] }
 sha3 = "0.10"
 sp-io = { workspace = true }
@@ -47,7 +48,7 @@ substrate-test-runtime-client = { workspace = true }
 sp-staking = { workspace = true }
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
 	"evm/std",
 	"fp-evm/std",
@@ -56,6 +57,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-dnt-fee-controller/std",
 	"pallet-fee-rewards-vault/std",
+	"pallet-validator-fee-selector/std",
 	"pallet-session/std",
 	"pallet-supported-tokens-manager/std",
 	"pallet-user-fee-selector/std",
@@ -64,4 +66,5 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"fp-rpc/std",
 ]

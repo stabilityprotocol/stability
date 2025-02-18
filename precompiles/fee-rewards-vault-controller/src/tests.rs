@@ -9,7 +9,6 @@ fn precompiles() -> Precompiles<Test> {
 	PrecompilesValue::get()
 }
 
-
 #[test]
 fn selectors() {
 	assert!(PCall::owner_selectors().contains(&0x8da5cb5b));
@@ -154,7 +153,7 @@ fn claim_ownership_if_claimable() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_LOG_NEW_OWNER,
-				solidity::encode_event_data(Into::<H256>::into(new_owner))
+				solidity::encode_event_data(Into::<H256>::into(new_owner)),
 			))
 			.execute_some();
 
@@ -172,7 +171,7 @@ fn test_set_whitelisted() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::is_whitelisted {
-					holder: SmartContratWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 				},
 			)
 			.execute_returns(false);
@@ -182,7 +181,7 @@ fn test_set_whitelisted() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::set_whitelist {
-					holder: SmartContratWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 					is_whitelisted: true,
 				},
 			)
@@ -193,7 +192,7 @@ fn test_set_whitelisted() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::is_whitelisted {
-					holder: SmartContratWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 				},
 			)
 			.execute_returns(true);
@@ -234,7 +233,7 @@ fn test_set_whitelisted_fails_if_sender_is_not_owner() {
 				NotOwner::get(),
 				Precompile1,
 				PCall::set_whitelist {
-					holder: SmartContratWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 					is_whitelisted: true,
 				},
 			)
@@ -255,18 +254,18 @@ fn test_can_claim_reward_returns_true_if_holder_and_claimant_are_equal() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::set_whitelist {
-					holder: SmartContratWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 					is_whitelisted: true,
 				},
 			)
 			.execute_returns(true);
 		precompiles()
 			.prepare_test(
-				SmartContratWithoutOwner::get(),
+				SmartContractWithoutOwner::get(),
 				Precompile1,
 				PCall::can_claim_reward {
-					claimant: SmartContratWithoutOwner::get().into(),
-					holder: SmartContratWithoutOwner::get().into(),
+					claimant: SmartContractWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 				},
 			)
 			.execute_returns(true);
@@ -420,7 +419,7 @@ fn test_can_claim_reward_should_return_false_if_dapp_not_implement_owner_functio
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::set_whitelist {
-					holder: SmartContratWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 					is_whitelisted: true,
 				},
 			)
@@ -431,7 +430,7 @@ fn test_can_claim_reward_should_return_false_if_dapp_not_implement_owner_functio
 				Precompile1,
 				PCall::can_claim_reward {
 					claimant: NotOwner::get().into(),
-					holder: SmartContratWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 				},
 			)
 			.with_subcall_handle(move |_| {
@@ -445,12 +444,12 @@ fn test_can_claim_reward_should_return_false_if_dapp_not_implement_owner_functio
 fn test_get_claimable_reward() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_eq!(
-			FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()),
+			FeeRewardsVault::get_claimable_reward(SmartContractWithoutOwner::get(), Token1::get()),
 			sp_core::U256::from(0)
 		);
 
 		FeeRewardsVault::add_claimable_reward(
-			SmartContratWithoutOwner::get(),
+			SmartContractWithoutOwner::get(),
 			Token1::get(),
 			sp_core::U256::from(100),
 		)
@@ -461,7 +460,7 @@ fn test_get_claimable_reward() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::get_claimable_reward {
-					holder: SmartContratWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 					token: Token1::get().into(),
 				},
 			)
@@ -479,25 +478,25 @@ fn test_claim_reward() {
 				DefaultOwner::get(),
 				Precompile1,
 				PCall::set_whitelist {
-					holder: SmartContratWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 					is_whitelisted: true,
 				},
 			)
 			.execute_returns(true);
 
 		assert_eq!(
-			FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()),
+			FeeRewardsVault::get_claimable_reward(SmartContractWithoutOwner::get(), Token1::get()),
 			sp_core::U256::from(0)
 		);
 
 		FeeRewardsVault::add_claimable_reward(
-			SmartContratWithoutOwner::get(),
+			SmartContractWithoutOwner::get(),
 			Token1::get(),
 			sp_core::U256::from(100),
 		)
 		.unwrap();
 		FeeRewardsVault::add_claimable_reward(
-			SmartContratWithoutOwner::get(),
+			SmartContractWithoutOwner::get(),
 			Token2::get(),
 			sp_core::U256::from(100),
 		)
@@ -505,10 +504,10 @@ fn test_claim_reward() {
 
 		precompiles()
 			.prepare_test(
-				SmartContratWithoutOwner::get(),
+				SmartContractWithoutOwner::get(),
 				Precompile1,
 				PCall::claim_reward {
-					holder: SmartContratWithoutOwner::get().into(),
+					holder: SmartContractWithoutOwner::get().into(),
 					token: Token1::get().into(),
 				},
 			)
@@ -532,7 +531,7 @@ fn test_claim_reward() {
 					stbl_tools::eth::generate_calldata(
 						&"transfer(address,uint256)",
 						&vec![
-							SmartContratWithoutOwner::get().into(),
+							SmartContractWithoutOwner::get().into(),
 							stbl_tools::misc::u256_to_h256(sp_core::U256::from(100))
 						]
 					)
@@ -549,18 +548,18 @@ fn test_claim_reward() {
 			.expect_log(log3(
 				precompile_address,
 				SELECTOR_REWARD_CLAIMED,
-				SmartContratWithoutOwner::get(),
-				SmartContratWithoutOwner::get(),
+				SmartContractWithoutOwner::get(),
+				SmartContractWithoutOwner::get(),
 				Vec::from(Token1::get().to_fixed_bytes()),
 			))
 			.execute_some();
 
 		assert_eq!(
-			FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token1::get()),
+			FeeRewardsVault::get_claimable_reward(SmartContractWithoutOwner::get(), Token1::get()),
 			sp_core::U256::from(0)
 		);
 		assert_eq!(
-			FeeRewardsVault::get_claimable_reward(SmartContratWithoutOwner::get(), Token2::get()),
+			FeeRewardsVault::get_claimable_reward(SmartContractWithoutOwner::get(), Token2::get()),
 			sp_core::U256::from(100)
 		);
 	});
@@ -600,7 +599,7 @@ fn test_set_validator_percentage_fails_if_not_owner() {
 	ExtBuilder::default().build().execute_with(|| {
 		precompiles()
 			.prepare_test(
-				SmartContratWithoutOwner::get(),
+				SmartContractWithoutOwner::get(),
 				Precompile1,
 				PCall::set_validator_percentage {
 					percentage: sp_core::U256::from(10),

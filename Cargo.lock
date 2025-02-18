@@ -7084,6 +7084,7 @@ version = "0.1.0"
 dependencies = [
  "evm",
  "fp-evm",
+ "fp-rpc",
  "frame-support",
  "frame-system",
  "hex",
