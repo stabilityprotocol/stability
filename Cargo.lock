@@ -6548,6 +6548,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-version",
+ "staging-xcm",
  "stbl-tools",
  "substrate-test-runtime-client",
  "syn 1.0.109",

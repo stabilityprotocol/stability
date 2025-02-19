@@ -2,9 +2,10 @@ use crate::mock::UpgradeRuntimeProposal;
 
 use super::*;
 use frame_support::traits::Hooks;
-use frame_support::{assert_noop, assert_ok, dispatch::DispatchError};
+use frame_support::{assert_noop, assert_ok};
 use mock::{assert_runtime_updated_digest, new_test_ext, Test};
 use sp_core::keccak_256;
+use sp_runtime::DispatchError;
 
 #[test]
 fn test_setup_works() {
