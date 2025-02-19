@@ -30,11 +30,7 @@ fn fail_validator_set_update_with_invalid_signature() {
 #[test]
 fn fail_validator_set_update_with_not_approved_validator() {
 	new_test_ext().execute_with(|| {
-		let keys: PublishingKeys<
-			UintAuthorityId,
-			UintAuthorityId,
-			<Test as frame_system::Config>::BlockNumber,
-		> = PublishingKeys {
+		let keys: PublishingKeys<UintAuthorityId, UintAuthorityId, u64> = PublishingKeys {
 			aura: UintAuthorityId(5),
 			grandpa: UintAuthorityId(5),
 			block_number: 1u64.into(),
@@ -54,11 +50,7 @@ fn fail_validator_set_update_with_not_approved_validator() {
 #[test]
 fn validator_publish_keys() {
 	new_test_ext().execute_with(|| {
-		let keys: PublishingKeys<
-			UintAuthorityId,
-			UintAuthorityId,
-			<Test as frame_system::Config>::BlockNumber,
-		> = PublishingKeys {
+		let keys: PublishingKeys<UintAuthorityId, UintAuthorityId, u64> = PublishingKeys {
 			aura: UintAuthorityId(1),
 			grandpa: UintAuthorityId(1),
 			block_number: 1u64.into(),

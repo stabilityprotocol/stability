@@ -6612,6 +6612,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
+ "sp-state-machine",
  "sp-std",
  "syn 1.0.109",
 ]

@@ -3,21 +3,21 @@
 #![cfg(test)]
 
 use super::*;
-use core::borrow::Borrow;
 use frame_support::{
 	parameter_types,
-	traits::{FindAuthor, GenesisBuild, StorageInstance},
-	BasicExternalities,
+	traits::{FindAuthor, StorageInstance},
 };
 use frame_system::EnsureRoot;
 use pallet_session::*;
 use sp_core::{crypto::key_types::DUMMY, H256};
+use sp_runtime::BuildStorage;
 use sp_runtime::{
 	impl_opaque_keys,
-	testing::{Header, UintAuthorityId},
+	testing::UintAuthorityId,
 	traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
 	KeyTypeId, RuntimeAppPublic,
 };
+use sp_state_machine::BasicExternalities;
 use std::cell::RefCell;
 
 impl_opaque_keys! {
@@ -61,11 +61,7 @@ type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 frame_support::construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
+	pub enum Test {
 		System: frame_system,
 		ValidatorSet: pallet_validator_set,
 		ValidatorKeysController: crate,
@@ -115,7 +111,7 @@ impl SessionHandler<u64> for TestSessionHandler {
 pub struct TestShouldEndSession;
 impl ShouldEndSession<u64> for TestShouldEndSession {
 	fn should_end_session(now: u64) -> bool {
-		let l = SESSION_LENGTH.with(|l| *l.borrow());
+		let l = SESSION_LENGTH.with(|l| *l);
 		now % l == 0
 			|| FORCE_SESSION_END.with(|l| {
 				let r = *l.borrow();
@@ -126,8 +122,8 @@ impl ShouldEndSession<u64> for TestShouldEndSession {
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let mut t = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
+	let mut t = frame_system::GenesisConfig::<Test>::default()
+		.build_storage()
 		.unwrap();
 	let keys: Vec<_> = NEXT_VALIDATORS.with(|l| {
 		l.borrow()
@@ -165,8 +161,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
-	pub BlockWeights: frame_system::limits::BlockWeights =
-		frame_system::limits::BlockWeights::simple_max(frame_support::weights::Weight::from_ref_time(1024));
 }
 
 impl frame_system::Config for Test {
@@ -175,14 +169,11 @@ impl frame_system::Config for Test {
 	type BlockLength = ();
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = u64;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = u64;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -194,10 +185,18 @@ impl frame_system::Config for Test {
 	type SS58Prefix = ();
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
-	pub const MinAuthorities: u32 = 1;
+	pub const MinAuthorities: u32 = 0;
 }
 
 pub struct PeriodicSessionBlockManager;
