@@ -24,20 +24,19 @@ use frame_support::{
 	construct_runtime,
 	pallet_prelude::{StorageValue, ValueQuery},
 	parameter_types,
-	traits::{Everything, GenesisBuild, StorageInstance},
+	traits::{Everything, StorageInstance},
 	weights::Weight,
 };
 use frame_system::{EnsureSigned, RawOrigin};
 use pallet_evm::{EvmConfig, IdentityAddressMapping};
-use sp_core::{H160, H256, ConstU32};
+use sp_core::{ConstU32, H160, H256};
 use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
+use sp_runtime::BuildStorage;
 use sp_std::vec;
 use std::collections::BTreeMap;
 
 pub type AccountId = H160;
 pub type Balance = u128;
-pub type BlockNumber = u32;
-pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 pub type Block = frame_system::mocking::MockBlock<Runtime>;
 
 parameter_types! {
@@ -49,14 +48,11 @@ impl frame_system::Config for Runtime {
 	type BaseCallFilter = Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = BlockNumber;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = sp_runtime::generic::Header<BlockNumber, BlakeTwo256>;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -70,6 +66,14 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -97,8 +101,8 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
-	type MaxHolds = ();
-	type HoldIdentifier = ();
+	type RuntimeHoldReason = ();
+	type RuntimeFreezeReason = ();
 	type FreezeIdentifier = ();
 	type MaxFreezes = ();
 }
@@ -185,10 +189,11 @@ where
 static LONDON_CONFIG: EvmConfig = EvmConfig::london();
 
 parameter_types! {
-	pub WeightPerGas : Weight = Weight::from_ref_time(1);
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 	pub EVMChainId: u64 = 1;
 	pub BlockGasLimit: U256 = U256::MAX;
 	pub const GasLimitPovSizeRatio: u64 = 15;
+	pub const SuicideQuickClearLimit: u32 = 64;
 }
 
 impl pallet_evm::Config for Runtime {
@@ -212,6 +217,7 @@ impl pallet_evm::Config for Runtime {
 	type Timestamp = Timestamp;
 	type FindAuthor = ();
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
+	type SuicideQuickClearLimit = SuicideQuickClearLimit;
 
 	fn config() -> &'static pallet_evm::EvmConfig {
 		&LONDON_CONFIG
@@ -228,7 +234,6 @@ parameter_types! {
 	pub const PostBlockAndTxnHashes: pallet_ethereum::PostLogContent = pallet_ethereum::PostLogContent::BlockAndTxnHashes;
 }
 
-
 impl pallet_ethereum::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
@@ -238,14 +243,10 @@ impl pallet_ethereum::Config for Runtime {
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+	pub enum Runtime{
+		System: frame_system,
+		Balances: pallet_balances,
+		Timestamp: pallet_timestamp,
 		ValidatorFeeSelector: crate,
 		EVM: pallet_evm,
 		Ethereum: pallet_ethereum,
@@ -264,39 +265,39 @@ impl Default for ExtBuilder {
 
 impl ExtBuilder {
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
-		let mut t = frame_system::GenesisConfig::default()
-			.build_storage::<Runtime>()
+		let mut t = frame_system::GenesisConfig::<Runtime>::default()
+			.build_storage()
 			.expect("Frame system builds valid default genesis config");
 
 		let initial_default_conversion_rate_controller =
-			crate::GenesisConfig::default().initial_default_conversion_rate_controller;
+			crate::GenesisConfig::<Runtime>::default().initial_default_conversion_rate_controller;
 
-		<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-			&pallet_evm::GenesisConfig {
-				accounts: {
-					let mut map = BTreeMap::new();
-					let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
-					map.insert(
-						initial_default_conversion_rate_controller,
-						fp_evm::GenesisAccount {
-							nonce: U256::zero(),
-							balance: U256::from(1000000000000000000u128),
-							storage: BTreeMap::new(),
-							code: revert_bytecode,
-						},
-					);
-					map
-				},
+		pallet_evm::GenesisConfig::<Runtime> {
+			accounts: {
+				let mut map = BTreeMap::new();
+				let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+				map.insert(
+					initial_default_conversion_rate_controller,
+					fp_evm::GenesisAccount {
+						nonce: U256::zero(),
+						balance: U256::from(1000000000000000000u128),
+						storage: BTreeMap::new(),
+						code: revert_bytecode,
+					},
+				);
+				map
 			},
-			&mut t,
-		)
-		.unwrap();
+			_marker: Default::default(),
+		}
+		.assimilate_storage(&mut t)
+		.expect("pallet_evm GenesisConfig is valid; qed");
 
-		<crate::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-			&crate::GenesisConfig::default(),
-			&mut t,
-		)
-		.unwrap();
+		crate::GenesisConfig::<Runtime> {
+			initial_default_conversion_rate_controller: initial_default_conversion_rate_controller,
+			_config: Default::default(),
+		}
+		.assimilate_storage(&mut t)
+		.expect("crate GenesisConfig is valid; qed");
 
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));

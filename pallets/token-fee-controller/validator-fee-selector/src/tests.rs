@@ -1,6 +1,6 @@
 use frame_support::parameter_types;
 use pallet_supported_tokens_manager::SupportedTokensManager;
-use sp_core::{H160};
+use sp_core::H160;
 
 use crate::mock::{ExtBuilder, MockSupportedTokensManager, ValidatorFeeSelector, MeaninglessTokenAddress, NotSupportedToken, Runtime, };
 
@@ -69,7 +69,7 @@ fn fail_update_not_supported_token_acceptance() {
 
 #[test]
 fn update_default_controller() {
-    let conversion_rate_controller : H160 = crate::GenesisConfig::default().initial_default_conversion_rate_controller;
+    let conversion_rate_controller : H160 = crate::GenesisConfig::<Runtime>::default().initial_default_conversion_rate_controller;
     ExtBuilder::default().build().execute_with(|| {
         assert_eq!(<ValidatorFeeSelector as crate::ValidatorFeeTokenController>::conversion_rate_controller(
             MeaninglessAccount::get()
@@ -88,7 +88,7 @@ fn update_default_controller() {
 #[test]
 fn updated_token_conversion_rate() {
     ExtBuilder::default().build().execute_with(|| {
-        let conversion_rate_controller : H160 = crate::GenesisConfig::default().initial_default_conversion_rate_controller;
+        let conversion_rate_controller : H160 = crate::GenesisConfig::<Runtime>::default().initial_default_conversion_rate_controller;
         assert!(<ValidatorFeeSelector as crate::ValidatorFeeTokenController>::update_conversion_rate_controller(
             MeaninglessAccount::get(),
             conversion_rate_controller,
