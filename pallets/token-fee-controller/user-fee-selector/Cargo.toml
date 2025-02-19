@@ -20,9 +20,10 @@ pallet-erc20-manager = { workspace = true }
 [dev-dependencies]
 pallet-timestamp = { workspace = true }
 pallet-balances = { workspace = true, features = ["std"] }
+staging-xcm = { workspace = true }
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
 	"frame-support/std",
 	"frame-system/std",
