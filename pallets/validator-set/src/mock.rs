@@ -8,7 +8,7 @@ use core::borrow::Borrow;
 use frame_support::traits::Everything;
 use frame_support::{
 	parameter_types,
-	traits::{FindAuthor, GenesisBuild, StorageInstance},
+	traits::{FindAuthor, StorageInstance},
 };
 use frame_system::EnsureRoot;
 use pallet_session::*;

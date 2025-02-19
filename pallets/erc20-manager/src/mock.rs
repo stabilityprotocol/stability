@@ -5,7 +5,7 @@ use crate as map_svm_evm;
 
 use frame_support::pallet_prelude::Weight;
 use frame_support::parameter_types;
-use frame_support::traits::{Contains, Everything, GenesisBuild};
+use frame_support::traits::{Contains, Everything};
 use hex::FromHex;
 use sp_core::{H256, U256};
 use sp_runtime::BuildStorage;
