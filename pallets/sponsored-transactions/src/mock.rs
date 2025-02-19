@@ -1,18 +1,17 @@
 #![cfg(test)]
 
 use core::str::FromStr;
-
-use runner::Runner as StabilityRunner;
-
 use frame_support::{
 	construct_runtime,
 	pallet_prelude::{StorageValue, ValueQuery},
 	parameter_types,
-	traits::{Everything, GenesisBuild, StorageInstance},
+	traits::{Everything, StorageInstance},
 	weights::Weight,
 };
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
-use sp_core::{H160, H256, U256, ConstU32};
+use runner::Runner as StabilityRunner;
+use sp_core::{ConstU32, H160, H256, U256};
+use sp_runtime::BuildStorage;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
@@ -23,8 +22,6 @@ pub type Signature = MultiSignature;
 
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 pub type Balance = u128;
-pub type BlockNumber = u32;
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
 
 pub struct MockUserFeeTokenController;
@@ -53,14 +50,11 @@ impl frame_system::Config for Runtime {
 	type BaseCallFilter = Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = BlockNumber;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<AccountId>;
-	type Header = sp_runtime::generic::Header<BlockNumber, BlakeTwo256>;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -74,6 +68,14 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -90,10 +92,10 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
-	type MaxHolds = ();
-	type HoldIdentifier = ();
 	type FreezeIdentifier = ();
 	type MaxFreezes = ();
+	type RuntimeFreezeReason = ();
+	type RuntimeHoldReason = ();
 }
 
 parameter_types! {
@@ -159,7 +161,7 @@ impl runner::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
-	pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 	pub ERC20SlotZero: H160 = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
 	pub ZeroSlot : H256 = H256::from_low_u64_be(0);
 }
@@ -167,6 +169,7 @@ parameter_types! {
 parameter_types! {
 	pub const ChainId: u64 = 20180428;
 	pub const GasLimitPovSizeRatio: u64 = 15;
+	pub const SuicideQuickClearLimit: u32 = 64;
 }
 
 impl pallet_evm::Config for Runtime {
@@ -190,6 +193,7 @@ impl pallet_evm::Config for Runtime {
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
+	type SuicideQuickClearLimit = SuicideQuickClearLimit;
 }
 
 parameter_types! {
@@ -248,15 +252,11 @@ impl crate::Config for Runtime {
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Evm: pallet_evm::{Pallet, Call, Storage, Event<T>},
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+	pub enum Runtime {
+		System: frame_system,
+		Balances: pallet_balances,
+		Evm: pallet_evm,
+		Timestamp: pallet_timestamp,
 		Ethereum: pallet_ethereum,
 		MetaTransactions: crate
 	}
@@ -273,22 +273,21 @@ parameter_types! {
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let mut t = frame_system::GenesisConfig::default()
-		.build_storage::<Runtime>()
+	let mut t = frame_system::GenesisConfig::<Runtime>::default()
+		.build_storage()
 		.unwrap();
-	let config = pallet_evm::GenesisConfig {
+	pallet_evm::GenesisConfig::<Runtime> {
 		accounts: BTreeMap::new(),
-	};
-	<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(&config, &mut t)
-		.unwrap();
+		..Default::default()
+	}
+	.assimilate_storage(&mut t)
+	.expect("Failed to set GenesisConfig for pallet_evm");
 
-	let eth_config: pallet_ethereum::GenesisConfig = Default::default();
-
-	<pallet_ethereum::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-		&eth_config,
-		&mut t,
-	)
-	.unwrap();
+	pallet_ethereum::GenesisConfig::<Runtime> {
+		..Default::default()
+	}
+	.assimilate_storage(&mut t)
+	.expect("Failed to set GenesisConfig for pallet_ethereum");
 
 	t.into()
 }
