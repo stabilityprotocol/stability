@@ -92,8 +92,7 @@ sqlx = { version = "0.7.4", default-features = false, features = ["macros"] }
 thiserror = "1.0"
 tokio = "1.40.0"
 # Polkadot
-xcm = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407" }
-staging-xcm = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407" }
+staging-xcm = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
 # Substrate Client
 sc-basic-authorship = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407" }
 sc-block-builder = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407" }
