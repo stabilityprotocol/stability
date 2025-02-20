@@ -25,6 +25,7 @@ pub struct StabilityConfiguration {
 /// This is a workaround for making work the unified accounts feature with Aura consensus.
 pub struct StbleAuraConsensusDataProvider<B, C> {
 	slot_duration: SlotDuration,
+	#[allow(dead_code)]
 	client: Arc<C>,
 	phantom_data: PhantomData<B>,
 }
