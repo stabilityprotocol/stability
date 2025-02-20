@@ -110,7 +110,12 @@ mod test {
 		);
 		assert_eq!(
 			info.max_conversion_rate,
-			Some((max_fee_x_gas, U256::from(1_000_000_000)))
+			Some((
+				max_fee_x_gas
+					.saturating_sub(base_fee)
+					.saturating_add(max_priority_fee_x_gas),
+				U256::from(1_000_000_000)
+			))
 		);
 	}
 

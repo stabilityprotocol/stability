@@ -4,7 +4,6 @@
 
 use super::*;
 use crate as validator_set;
-use core::borrow::Borrow;
 use frame_support::traits::Everything;
 use frame_support::{
 	parameter_types,
@@ -113,7 +112,7 @@ impl SessionHandler<u64> for TestSessionHandler {
 pub struct TestShouldEndSession;
 impl ShouldEndSession<u64> for TestShouldEndSession {
 	fn should_end_session(now: u64) -> bool {
-		let l = SESSION_LENGTH.with(|l| *l.borrow());
+		let l = SESSION_LENGTH.with(|l| *l);
 		now % l == 0
 			|| FORCE_SESSION_END.with(|l| {
 				let r = *l.borrow();
@@ -214,15 +213,10 @@ impl validator_set::Config for Test {
 	type AddRemoveOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type MinAuthorities = ();
-
 	type SessionBlockManager = PeriodicSessionBlockManager;
-
 	type FindAuthor = FindBlockAuthorityId;
-
 	type AuthorityId = UintAuthorityId;
-
 	type MaxKeys = MaxKeys;
-
 	type AccountIdOfValidator = AccountIdOfValidator;
 }
 

@@ -30,6 +30,7 @@ use sp_runtime::testing::UintAuthorityId;
 use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup, OpaqueKeys};
 use sp_runtime::BuildStorage;
 use sp_runtime::KeyTypeId;
+use sp_runtime::RuntimeAppPublic;
 use std::cell::RefCell;
 
 impl_opaque_keys! {
@@ -276,7 +277,7 @@ thread_local! {
 
 pub struct TestSessionHandler;
 impl SessionHandler<AccountId> for TestSessionHandler {
-	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[sp_runtime::KeyTypeId(*b"ecds")];
+	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[UintAuthorityId::ID];
 	fn on_genesis_session<T: OpaqueKeys>(_validators: &[(AccountId, T)]) {}
 	fn on_new_session<T: OpaqueKeys>(
 		changed: bool,

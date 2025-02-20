@@ -30,7 +30,6 @@ sp-runtime = { workspace = true }
 # Frontier
 fp-evm = { workspace = true }
 pallet-evm = { workspace = true, features = ["forbid-evm-reentrancy"] }
-fc-rpc = { workspace = true }
 
 pallet-user-fee-selector = { workspace = true }
 pallet-validator-fee-selector = { workspace = true }
@@ -38,6 +37,7 @@ pallet-supported-tokens-manager = { workspace = true }
 pallet-erc20-manager = { workspace = true }
 
 [dev-dependencies]
+fc-rpc = { workspace = true }
 derive_more = { version = "0.99" }
 hex-literal = "0.3.4"
 libsecp256k1 = "0.7"
