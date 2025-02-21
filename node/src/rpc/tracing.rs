@@ -49,10 +49,8 @@ impl FromStr for EthApi {
 			"debug" => Self::Debug,
 			"trace" => Self::Trace,
 			_ => {
-				return Err(format!(
-					"`{}` is not recognized as a supported Ethereum Api",
-					s
-				))
+				log::error!("`{}` is not recognized as a supported Ethereum Api", s);
+				Self::Txpool // Default to Txpool or any other default variant
 			}
 		})
 	}
