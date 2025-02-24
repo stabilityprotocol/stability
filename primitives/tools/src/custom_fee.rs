@@ -29,11 +29,14 @@ pub fn custom_info_from_fee_params(
 		// With tip, we include as much of the tip on top of base_fee that we can, never
 		// exceeding max_fee_per_gas
 		(Some(max_fee_per_gas), Some(max_priority_fee_per_gas)) => {
-			let actual_priority_fee_per_gas = max_fee_per_gas
-				.saturating_sub(base_fee)
-				.min(max_priority_fee_per_gas);
-
-			base_fee.saturating_add(actual_priority_fee_per_gas)
+			if max_fee_per_gas == U256::zero() {
+				max_fee_per_gas // It's a ZGT transaction
+			} else {
+				let actual_priority_fee_per_gas = max_fee_per_gas
+					.saturating_sub(base_fee)
+					.min(max_priority_fee_per_gas);
+				base_fee.saturating_add(actual_priority_fee_per_gas)
+			}
 		}
 		// Without tip, we include as much of the base_fee as we can, never exceeding
 		(Some(max_fee_per_gas), None) => {
