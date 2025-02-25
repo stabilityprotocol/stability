@@ -65,7 +65,7 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 						<FeeController as StabilityFeeController>::Token,
 						DefaultOwner,
 					>,
-					(CallableByContract, CallableByPrecompile),
+					EthereumPrecompilesChecks,
 				>,
 				PrecompileAt<
 					AddressU64<2050>,
@@ -74,27 +74,28 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 						<FeeController as StabilityFeeController>::Validator,
 						DefaultOwner,
 					>,
-					(CallableByContract, CallableByPrecompile),
+					EthereumPrecompilesChecks,
 				>,
 				PrecompileAt<
 					AddressU64<2051>,
 					FeeTokenPrecompile<R, <FeeController as StabilityFeeController>::User>,
-					(CallableByContract, CallableByPrecompile),
+					EthereumPrecompilesChecks,
 				>,
 				PrecompileAt<
 					AddressU64<2053>,
 					ValidatorControllerPrecompile<R, DefaultOwner>,
-					(CallableByContract, CallableByPrecompile),
+					EthereumPrecompilesChecks,
 				>,
 				PrecompileAt<
 					AddressU64<2054>,
 					UpgradeRuntimeControllerPrecompile<R, DefaultOwner>,
-					(CallableByContract, CallableByPrecompile),
+					EthereumPrecompilesChecks,
 				>,
 				PrecompileAt<
 					AddressU64<2055>,
 					FeeRewardsVaultControllerPrecompile<R, DefaultOwner>,
 					(
+						AcceptDelegateCall,
 						CallableByContract,
 						CallableByPrecompile,
 						SubcallWithMaxNesting<1>,
