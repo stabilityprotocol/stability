@@ -27,6 +27,7 @@ fp-evm = { workspace = true }
 fp-rpc = { workspace = true }
 ethereum = { workspace = true }
 ethereum-types = { workspace = true }
+log = { workspace = true }
 
 [dev-dependencies]
 pallet-timestamp = { workspace = true, features = ["std"] }

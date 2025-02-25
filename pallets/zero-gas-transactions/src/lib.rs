@@ -1,6 +1,44 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sp_core::H160;
+use log;
+use pallet_evm::TransactionValidationError;
+
+pub const LOG_TARGET: &'static str = "zero-gas-transactions";
+
+#[derive(Debug, PartialEq)]
+pub enum EthereumTxError {
+	GasLimitTooLow,
+	GasLimitTooHigh,
+	GasPriceTooLow,
+	PriorityFeeTooHigh,
+	BalanceTooLow,
+	TxNonceTooLow,
+	TxNonceTooHigh,
+	InvalidFeeInput,
+	InvalidChainId,
+	InvalidSignature,
+	UnknownError,
+}
+
+impl From<TransactionValidationError> for EthereumTxError {
+	fn from(e: TransactionValidationError) -> Self {
+		match e {
+			TransactionValidationError::GasLimitTooLow => EthereumTxError::GasLimitTooLow,
+			TransactionValidationError::GasLimitTooHigh => EthereumTxError::GasLimitTooHigh,
+			TransactionValidationError::GasPriceTooLow => EthereumTxError::GasPriceTooLow,
+			TransactionValidationError::PriorityFeeTooHigh => EthereumTxError::PriorityFeeTooHigh,
+			TransactionValidationError::BalanceTooLow => EthereumTxError::BalanceTooLow,
+			TransactionValidationError::TxNonceTooLow => EthereumTxError::TxNonceTooLow,
+			TransactionValidationError::TxNonceTooHigh => EthereumTxError::TxNonceTooHigh,
+			TransactionValidationError::InvalidFeeInput => EthereumTxError::InvalidFeeInput,
+			TransactionValidationError::InvalidChainId => EthereumTxError::InvalidChainId,
+			TransactionValidationError::InvalidSignature => EthereumTxError::InvalidSignature,
+			TransactionValidationError::UnknownError => EthereumTxError::UnknownError,
+		}
+	}
+}
+
 
 #[cfg(test)]
 mod mock;
@@ -13,10 +51,10 @@ pub mod pallet {
 	use super::*;
 	use fp_ethereum::TransactionData;
 	use fp_evm::FeeCalculator;
-	use frame_support::dispatch::GetDispatchInfo;
-	use frame_support::pallet_prelude::{StorageMap, *};
+use frame_support::dispatch::GetDispatchInfo;
+	use frame_support::pallet_prelude::*;
 	use frame_support::sp_runtime::traits::UniqueSaturatedInto;
-	use frame_system::pallet_prelude::*;
+use frame_system::pallet_prelude::*;
 	use pallet_evm::GasWeightMapping;
 	use parity_scale_codec::alloc::string::ToString;
 	use sp_core::H256;
@@ -31,9 +69,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
-
-	#[pallet::storage]
-	pub type SponsorNonce<T: Config> = StorageMap<_, Blake2_128Concat, H160, u64, ValueQuery>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_evm::Config + pallet_ethereum::Config {
@@ -123,8 +158,16 @@ pub mod pallet {
 
 			let origin: T::RuntimeOrigin =
 				pallet_ethereum::Origin::EthereumTransaction(from).into();
+
 			let dispatch = pallet_ethereum::Pallet::<T>::transact(origin, transaction)
-				.map_err(|_| DispatchError::Other("Signature doesn't meet with sponsor address"))?;
+				.map_err(|e| {
+					log::debug!(
+						target: LOG_TARGET,
+						"Dispatch transaction error: {:?}",
+						e
+					);
+					DispatchError::Other("Signature doesn't meet with sponsor address")
+				})?;
 
 			let used_gas = Self::gas_from_actual_weight(dispatch.actual_weight.unwrap())
 				.map_err(|_| DispatchError::Other("Arithmetic error due to overflows"))?;
@@ -169,11 +212,10 @@ pub mod pallet {
 			transaction: &pallet_ethereum::Transaction,
 		) -> Result<(), ()> {
 			let transaction_data: TransactionData = transaction.into();
-
 			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
 			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
 
-			fp_evm::CheckEvmTransaction::<pallet_ethereum::InvalidTransactionWrapper>::new(
+			fp_evm::CheckEvmTransaction::<EthereumTxError>::new(
 				fp_evm::CheckEvmTransactionConfig {
 					evm_config: T::config(),
 					block_gas_limit: T::BlockGasLimit::get(),
@@ -187,7 +229,14 @@ pub mod pallet {
 			)
 			.validate_in_pool_for(&who)
 			.and_then(|v| v.with_chain_id())
-			.map_err(|_| ())?;
+			.map_err(|e| {
+				log::debug!(
+					target: LOG_TARGET,
+					"Transaction validation error: {:?}",
+					e
+				);	
+				()
+			})?;
 
 			Ok(())
 		}
@@ -197,11 +246,10 @@ pub mod pallet {
 			transaction: &pallet_ethereum::Transaction,
 		) -> Result<(), ()> {
 			let transaction_data: TransactionData = transaction.into();
-
 			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
 			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
 
-			fp_evm::CheckEvmTransaction::<pallet_ethereum::InvalidTransactionWrapper>::new(
+			fp_evm::CheckEvmTransaction::<EthereumTxError>::new(
 				fp_evm::CheckEvmTransactionConfig {
 					evm_config: T::config(),
 					block_gas_limit: T::BlockGasLimit::get(),
@@ -215,7 +263,14 @@ pub mod pallet {
 			)
 			.validate_in_block_for(&who)
 			.and_then(|v| v.with_chain_id())
-			.map_err(|_| ())?;
+			.map_err(|e| {
+				log::debug!(
+					target: LOG_TARGET,
+					"Transaction validation error: {:?}",
+					e
+				);	
+				()
+			})?;
 
 			Ok(())
 		}
