@@ -520,18 +520,24 @@ where
 				};
 
 				let zgt_response_end = time::Instant::now();
+				let zgt_total_time = zgt_response_end.saturating_duration_since(zgt_response_start);
 				self.metrics.report(|metrics| {
 					metrics.zgt_response_time.observe(
-						zgt_response_end
-							.saturating_duration_since(zgt_response_start)
-							.as_secs_f64(),
+						zgt_total_time.clone().as_secs_f64(),
 					);
 				});
 
 				match result_response_raw_zero {
 					Ok(response) => {
 						match response.json::<RawZeroGasTransactionResponse>().await {
-							Ok(json) => Some(json as RawZeroGasTransactionResponse),
+							Ok(json) => {
+								info!(
+									"📥 Fetched {:?} txns from zero-gas-transactions pool ({:?} ms)",
+									json.transactions.len(),
+									zgt_total_time.as_millis()
+								);
+								Some(json as RawZeroGasTransactionResponse)
+							},
 							Err(e) => {
 								error!("Error parsing JSON response from zero gas transaction pool: {}", e);
 								None
@@ -553,11 +559,6 @@ where
 		// INSERT ZGTs INTO THE BLOCK
 		// If we pull successfully from the zero gas transaction pool, we will try to push them to the block
 		if let Some(raw_zero_gas_transactions) = raw_zero_gas_transactions_option {
-			info!(
-				"📥 Fetched {:?} txns from zero-gas-transactions pool",
-				raw_zero_gas_transactions.transactions.len()
-			);
-
 			let zgt_inclusion_in_block_start = time::Instant::now();
 
 			if raw_zero_gas_transactions.transactions.len() > 0 {
