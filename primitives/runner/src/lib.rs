@@ -190,7 +190,7 @@ where
 		}
 
 		// Caculate the fee variables for the transaction.
-		let custom_fee_info = stbl_tools::custom_fee::custom_info_from_fee_params(
+		let custom_fee_info = stbl_tools::custom_fee::compute_fee_details(
 			base_fee,
 			max_fee_per_gas,
 			max_priority_fee_per_gas,
@@ -198,15 +198,16 @@ where
 
 		// After eip-1559 we make sure the account can pay both the evm execution and priority fees.
 		let total_fee = if is_transactional {
-			custom_fee_info.max_fee_per_gas
+			custom_fee_info
+				.actual_fee
 				.checked_mul(U256::from(gas_limit))
 				.ok_or(RunnerError {
 					error: Error::<T>::FeeOverflow,
 					weight,
 				})?
-			} else {
-				U256::zero()
-			};
+		} else {
+			U256::zero()
+		};
 
 		// Check if the transaction is a zero gas transaction.
 		// Or a Non-Transactional OP - Read/Call
@@ -219,11 +220,14 @@ where
 		let validator_conversion_rate =
 			FC::get_transaction_conversion_rate(source, validator, token);
 
+		// If the user's conversion rate is greater than the validator's conversion rate,
+		// the user's conversion rate is used.
+		// This is to prevent the user from paying more than the validator.
 		let actual_conversion_rate =
 			if custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
 				validator_conversion_rate
 			} else {
-				custom_fee_info.max_conversion_rate.unwrap()
+				custom_fee_info.max_conversion_rate
 			};
 
 		// Ensure the account has enough balance to pay for the transaction.
@@ -261,11 +265,11 @@ where
 			)),
 			_ => used_gas.into(),
 		};
-		let actual_fee = effective_gas.saturating_mul(custom_fee_info.max_fee_per_gas);
+		let actual_fee = effective_gas.saturating_mul(custom_fee_info.actual_fee);
 
 		log::debug!(
 			target: "evm",
-			"Execution {:?} [source: {:?}, value: {}, gas_limit: {}, actual_fee: {}, used_gas: {}, effective_gas: {}, base_fee: {}, max_fee_per_gas: {}, total_fee: {}, is_transactional: {}, miner: {}, token_fee: {}]",
+			"Execution {:?} [source: {:?}, value: {}, gas_limit: {}, actual_fee: {}, used_gas: {}, effective_gas: {}, base_fee: {}, actual_fee: {}, total_fee: {}, is_transactional: {}, miner: {}, token_fee: {}]",
 			reason,
 			source,
 			value,
@@ -274,7 +278,7 @@ where
 			used_gas,
 			effective_gas,
 			base_fee,
-			custom_fee_info.max_fee_per_gas,
+			custom_fee_info.actual_fee,
 			total_fee,
 			is_transactional,
 			validator,

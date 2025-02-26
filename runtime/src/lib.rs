@@ -1637,58 +1637,28 @@ impl_runtime_apis! {
 
 	impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId> for Runtime {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool {
-			if let RuntimeCall::Ethereum(transact { transaction }) = tx.0.function {
-				let source_address_option =  stbl_tools::eth::recover_signer(&transaction);
+			match tx.0.function {
+				RuntimeCall::Ethereum(transact { transaction }) | RuntimeCall::MetaTransactions(send_sponsored_transaction { transaction, .. }) => {
+					let source_address_option = stbl_tools::eth::recover_signer(&transaction);
 
-				if source_address_option.is_none() {
-					return true
+					if source_address_option.is_none() {
+						return true;
+					}
+
+					let source_address = source_address_option.unwrap();
+					let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
+					let validator_conversion_rate = <pallet_validator_fee_selector::Pallet<Runtime>>::conversion_rate(source_address, validator.into(), source_fee_token);
+					let fee = pallet_base_fee::BaseFeePerGas::<Runtime>::get();
+					let custom_fee_info = CustomFeeInfo::new(fee, &transaction);
+
+					if !custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
+						return false;
+					}
+
+					<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
 				}
-
-				let source_address = source_address_option.unwrap();
-
-				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
-
-				let validator_conversion_rate = <pallet_validator_fee_selector::Pallet<Runtime>>::conversion_rate(source_address, validator.into(), source_fee_token);
-
-				let fee = pallet_base_fee::BaseFeePerGas::<Runtime>::get();
-
-				let custom_fee_info = CustomFeeInfo::new(fee, &transaction);
-
-				if !custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
-					return false
-				}
-
-				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
-			} else if let RuntimeCall::MetaTransactions(send_sponsored_transaction { transaction, .. }) = tx.0.function {
-				let source_address_option =  stbl_tools::eth::recover_signer(&transaction);
-
-				if source_address_option.is_none() {
-					return true
-				}
-
-				let source_address = source_address_option.unwrap();
-
-
-				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
-
-
-				let validator_conversion_rate = <pallet_validator_fee_selector::Pallet<Runtime>>::conversion_rate(source_address, validator.into(), source_fee_token);
-
-				let fee = pallet_base_fee::BaseFeePerGas::<Runtime>::get();
-
-				let custom_fee_info = CustomFeeInfo::new(fee, &transaction);
-
-				if !custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
-					return false
-				}
-
-				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
+				_ => true, // always return true for non-ethereum transactions
 			}
-			else {
-				// always return true for non-ethereum transactions
-				return true;
-			}
-
 		}
 	}
 

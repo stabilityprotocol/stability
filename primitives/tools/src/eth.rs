@@ -65,25 +65,19 @@ pub fn recover_signer(transaction: &Transaction) -> Option<H160> {
 			sig[0..32].copy_from_slice(&t.signature.r()[..]);
 			sig[32..64].copy_from_slice(&t.signature.s()[..]);
 			sig[64] = t.signature.standard_v();
-			msg.copy_from_slice(
-				&ethereum::LegacyTransactionMessage::from(t.clone()).hash()[..],
-			);
+			msg.copy_from_slice(&ethereum::LegacyTransactionMessage::from(t.clone()).hash()[..]);
 		}
 		Transaction::EIP2930(t) => {
 			sig[0..32].copy_from_slice(&t.r[..]);
 			sig[32..64].copy_from_slice(&t.s[..]);
 			sig[64] = t.odd_y_parity as u8;
-			msg.copy_from_slice(
-				&ethereum::EIP2930TransactionMessage::from(t.clone()).hash()[..],
-			);
+			msg.copy_from_slice(&ethereum::EIP2930TransactionMessage::from(t.clone()).hash()[..]);
 		}
 		Transaction::EIP1559(t) => {
 			sig[0..32].copy_from_slice(&t.r[..]);
 			sig[32..64].copy_from_slice(&t.s[..]);
 			sig[64] = t.odd_y_parity as u8;
-			msg.copy_from_slice(
-				&ethereum::EIP1559TransactionMessage::from(t.clone()).hash()[..],
-			);
+			msg.copy_from_slice(&ethereum::EIP1559TransactionMessage::from(t.clone()).hash()[..]);
 		}
 	}
 	let pubkey = sp_io::crypto::secp256k1_ecdsa_recover(&sig, &msg).ok()?;
@@ -135,12 +129,12 @@ pub fn transaction_gas_price(
 ) -> Result<U256, ()> {
 	let data: TransactionData = TransactionData::from(transaction);
 
-	let max_fee_per_gas = crate::custom_fee::custom_info_from_fee_params(
+	let max_fee_per_gas = crate::custom_fee::compute_fee_details(
 		base_fee,
 		data.max_fee_per_gas.or(data.gas_price),
 		data.max_priority_fee_per_gas,
 	)
-	.max_fee_per_gas;
+	.actual_fee;
 
 	if max_fee_per_gas < base_fee && is_transactional {
 		return Err(());
