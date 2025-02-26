@@ -44,7 +44,13 @@ pub fn compute_fee_details(
 					.max(base_fee.saturating_add(max_priority_fee_per_gas))
 			}
 		}
-		(Some(max_fee_per_gas), None) => max_fee_per_gas.min(base_fee),
+		(Some(max_fee_per_gas), None) => {
+			if max_fee_per_gas == U256::zero() {
+				max_fee_per_gas // ZGT transaction
+			} else {
+				max_fee_per_gas.min(base_fee)
+			}
+		}
 		_ => base_fee,
 	};
 
