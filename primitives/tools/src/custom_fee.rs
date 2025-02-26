@@ -74,11 +74,19 @@ impl CustomFeeInfo {
 		let adjusted_user_conversion_rate = self
 			.max_conversion_rate
 			.0
-			.div_mod(self.max_conversion_rate.1)
+			.div_mod(if self.max_conversion_rate.1.is_zero() {
+				U256::one()
+			} else {
+				self.max_conversion_rate.1
+			})
 			.0; // only keep the integer part
 		let adjusted_validator_conversion_rate = validator_conversion_rate
 			.0
-			.div_mod(validator_conversion_rate.1)
+			.div_mod(if validator_conversion_rate.1.is_zero() {
+				U256::one()
+			} else {
+				validator_conversion_rate.1
+			})
 			.0; // only keep the integer part
 
 		adjusted_user_conversion_rate >= adjusted_validator_conversion_rate
