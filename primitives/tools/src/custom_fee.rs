@@ -23,11 +23,11 @@ impl CustomFeeInfo {
 // 1. If the transaction is a ZGT transaction, the fee is zero.
 // 2. If the transaction is a transaction with a max_fee_per_gas and max_priority_fee_per_gas:
 //    - The fee is minimum the base_fee
-//    - fee = min(base_fee, max_fee_per_gas)
+//    - fee = max(base_fee, max_fee_per_gas)
 //    - fee = max(fee, base_fee + max_priority_fee_per_gas)
 // 3. If the transaction is a transaction with only max_fee_per_gas:
 //    - The fee is minimum the base_fee
-//    - fee = min(base_fee, max_fee_per_gas)
+//    - fee = max(base_fee, max_fee_per_gas)
 // 4. If nothing is specified, the fee is the base_fee.
 pub fn compute_fee_details(
 	base_fee: U256,
@@ -39,16 +39,16 @@ pub fn compute_fee_details(
 			if max_fee_per_gas == U256::zero() {
 				max_fee_per_gas // ZGT transaction
 			} else {
-				max_fee_per_gas
-					.min(base_fee)
-					.max(base_fee.saturating_add(max_priority_fee_per_gas))
+				let fee = max_fee_per_gas.max(base_fee);
+				let fee = fee.max(base_fee.saturating_add(max_priority_fee_per_gas));
+				fee
 			}
 		}
 		(Some(max_fee_per_gas), None) => {
 			if max_fee_per_gas == U256::zero() {
 				max_fee_per_gas // ZGT transaction
 			} else {
-				max_fee_per_gas.min(base_fee)
+				max_fee_per_gas.max(base_fee)
 			}
 		}
 		_ => base_fee,
@@ -109,7 +109,7 @@ mod test {
 	#[test]
 	fn compute_fee_details_for_trx_v2() {
 		let base_fee = U256::from(1_000_000_000);
-		let max_fee_x_gas = U256::from(2_000_000_000);
+		let max_fee_x_gas = U256::from(1_500_000_000);
 		let max_priority_fee_x_gas = U256::from(500_000_000);
 
 		let info = compute_fee_details(base_fee, Some(max_fee_x_gas), Some(max_priority_fee_x_gas));
@@ -121,12 +121,7 @@ mod test {
 		);
 		assert_eq!(
 			info.max_conversion_rate,
-			(
-				max_fee_x_gas
-					.saturating_sub(base_fee)
-					.saturating_add(max_priority_fee_x_gas),
-				U256::from(1_000_000_000)
-			)
+			(info.actual_fee, U256::from(1_000_000_000))
 		);
 	}
 
@@ -144,11 +139,23 @@ mod test {
 	}
 
 	#[test]
-	fn compute_fee_details_for_zgt_trx() {
+	fn compute_fee_details_for_zgt_trx_0() {
 		let base_fee = U256::from(1_000_000_000);
 		let info = compute_fee_details(base_fee, Some(U256::from(0)), None);
 
 		assert_eq!(info.max_priority_fee_per_gas, None);
+		assert_eq!(info.actual_fee, U256::from(0));
+		assert_eq!(
+			info.max_conversion_rate,
+			(U256::from(0), U256::from(1_000_000_000))
+		);
+	}
+
+	#[test]
+	fn compute_fee_details_for_zgt_trx_1() {
+		let base_fee = U256::from(1_000_000_000);
+		let info = compute_fee_details(base_fee, Some(U256::from(0)), Some(U256::from(0)));
+
 		assert_eq!(info.actual_fee, U256::from(0));
 		assert_eq!(
 			info.max_conversion_rate,
