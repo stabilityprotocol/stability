@@ -48,6 +48,9 @@ fi
 
 if [ -n "$NODE_KEY" ]; then
   START_COMMAND="$START_COMMAND --node-key $NODE_KEY"
+else
+  # Generate a new key if not provided
+  ./target/release/stability key generate-node-key --base-path /tmp/node --chain $CHAIN_TARGET
 fi
 
 if [ -n "$BOOTNODES" ]; then
