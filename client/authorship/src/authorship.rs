@@ -18,6 +18,8 @@
 
 // FIXME #1021 move this into sp-consensus
 
+use account::EthereumSigner;
+use fp_rpc::EthereumRuntimeRPCApi;
 use futures::{
 	channel::oneshot,
 	future,
@@ -26,6 +28,7 @@ use futures::{
 };
 use log::{debug, error, info, trace, warn};
 use parity_scale_codec::Encode;
+use prometheus_endpoint::Registry as PrometheusRegistry;
 use sc_block_builder::{BlockBuilderApi, BlockBuilderBuilder};
 use sc_telemetry::{telemetry, TelemetryHandle, CONSENSUS_INFO};
 use sc_transaction_pool_api::{InPoolTransaction, TransactionPool};
@@ -35,16 +38,15 @@ use sp_consensus::{DisableProofRecording, EnableProofRecording, ProofRecording, 
 use sp_core::crypto::KeyTypeId;
 use sp_core::traits::SpawnNamed;
 use sp_inherents::InherentData;
+use sp_keystore::{Keystore, KeystorePtr};
+use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::{
 	traits::{BlakeTwo256, Block as BlockT, Hash as HashT, Header as HeaderT},
 	Digest, ExtrinsicInclusionMode, Percent, SaturatedConversion,
 };
-use std::{marker::PhantomData, pin::Pin, sync::Arc, time};
-
-use fp_rpc::EthereumRuntimeRPCApi;
-use prometheus_endpoint::Registry as PrometheusRegistry;
-use sp_keystore::{Keystore, KeystorePtr};
 use stability_runtime::AccountId;
+use stbl_primitives_fee_compatible_api::CompatibleFeeApi;
+use std::{marker::PhantomData, pin::Pin, sync::Arc, time};
 // use stbl_primitives_fee_compatible_api::CompatibleFeeApi;
 use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 use stbl_proposer_metrics::{EndProposingReason, MetricsLink as PrometheusMetrics};
@@ -522,9 +524,9 @@ where
 				let zgt_response_end = time::Instant::now();
 				let zgt_total_time = zgt_response_end.saturating_duration_since(zgt_response_start);
 				self.metrics.report(|metrics| {
-					metrics.zgt_response_time.observe(
-						zgt_total_time.clone().as_secs_f64(),
-					);
+					metrics
+						.zgt_response_time
+						.observe(zgt_total_time.clone().as_secs_f64());
 				});
 
 				match result_response_raw_zero {
@@ -537,7 +539,7 @@ where
 									zgt_total_time.as_millis()
 								);
 								Some(json as RawZeroGasTransactionResponse)
-							},
+							}
 							Err(e) => {
 								error!("Error parsing JSON response from zero gas transaction pool: {}", e);
 								None
@@ -738,6 +740,9 @@ where
 			self.transaction_pool.status()
 		);
 
+		// Get the current Validators public keys
+		let validator = EthereumSigner::from(keys[0]).into_account();
+
 		let end_reason =
 			loop {
 				let pending_tx = if let Some(pending_tx) = pending_iterator.next() {
@@ -759,6 +764,22 @@ where
 				proceeding with proposing."
 					);
 					break EndProposingReason::HitDeadline;
+				}
+
+				// Check if the transaction is compatible with the current fee
+				// and the current validator
+				let is_compatible = self
+					.client
+					.runtime_api()
+					.is_compatible_fee(
+						self.parent_hash,
+						pending_tx.data().clone(),
+						validator.clone(),
+					)
+					.unwrap();
+				// If the transaction is not compatible, we skip it
+				if !is_compatible {
+					continue;
 				}
 
 				let pending_tx_data = pending_tx.data().clone();
