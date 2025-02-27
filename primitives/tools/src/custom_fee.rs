@@ -5,7 +5,7 @@ use sp_core::U256;
 pub struct CustomFeeInfo {
 	pub actual_fee: U256, // The actual fee that will be charged to the user.
 	pub max_priority_fee_per_gas: Option<U256>,
-	pub max_conversion_rate: (U256, U256),
+	pub user_conversion_rate_cap: (U256, U256),
 }
 
 impl CustomFeeInfo {
@@ -56,7 +56,7 @@ pub fn compute_fee_details(
 
 	CustomFeeInfo {
 		actual_fee: reduced_fee,
-		max_conversion_rate: (reduced_fee, 1_000_000_000.into()), // actual_fee / 1Gwei
+		user_conversion_rate_cap: (reduced_fee, 1_000_000_000.into()), // actual_fee / 1Gwei
 		max_priority_fee_per_gas,
 	}
 }
@@ -72,12 +72,12 @@ impl CustomFeeInfo {
 		validator_conversion_rate: (U256, U256),
 	) -> bool {
 		let adjusted_user_conversion_rate = self
-			.max_conversion_rate
+			.user_conversion_rate_cap
 			.0
-			.div_mod(if self.max_conversion_rate.1.is_zero() {
+			.div_mod(if self.user_conversion_rate_cap.1.is_zero() {
 				U256::one()
 			} else {
-				self.max_conversion_rate.1
+				self.user_conversion_rate_cap.1
 			})
 			.0; // only keep the integer part
 		let adjusted_validator_conversion_rate = validator_conversion_rate
@@ -109,7 +109,7 @@ mod test {
 		assert_eq!(info.max_priority_fee_per_gas, None);
 		assert_eq!(info.actual_fee, U256::from(1_000_000_000));
 		assert_eq!(
-			info.max_conversion_rate,
+			info.user_conversion_rate_cap,
 			(U256::from(1_000_000_000), U256::from(1_000_000_000))
 		);
 	}
@@ -128,7 +128,7 @@ mod test {
 			base_fee.saturating_add(max_priority_fee_x_gas)
 		);
 		assert_eq!(
-			info.max_conversion_rate,
+			info.user_conversion_rate_cap,
 			(info.actual_fee, U256::from(1_000_000_000))
 		);
 	}
@@ -141,7 +141,7 @@ mod test {
 		assert_eq!(info.max_priority_fee_per_gas, None);
 		assert_eq!(info.actual_fee, base_fee);
 		assert_eq!(
-			info.max_conversion_rate,
+			info.user_conversion_rate_cap,
 			(base_fee, U256::from(1_000_000_000))
 		);
 	}
@@ -154,7 +154,7 @@ mod test {
 		assert_eq!(info.max_priority_fee_per_gas, None);
 		assert_eq!(info.actual_fee, U256::from(0));
 		assert_eq!(
-			info.max_conversion_rate,
+			info.user_conversion_rate_cap,
 			(U256::from(0), U256::from(1_000_000_000))
 		);
 	}
@@ -166,7 +166,7 @@ mod test {
 
 		assert_eq!(info.actual_fee, U256::from(0));
 		assert_eq!(
-			info.max_conversion_rate,
+			info.user_conversion_rate_cap,
 			(U256::from(0), U256::from(1_000_000_000))
 		);
 	}

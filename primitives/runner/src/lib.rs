@@ -225,9 +225,9 @@ where
 		// This is to prevent the user from paying more than the validator.
 		let actual_conversion_rate =
 			if custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
-				validator_conversion_rate
+				custom_fee_info.user_conversion_rate_cap
 			} else {
-				custom_fee_info.max_conversion_rate
+				validator_conversion_rate
 			};
 
 		// Ensure the account has enough balance to pay for the transaction.
