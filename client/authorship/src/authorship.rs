@@ -779,6 +779,10 @@ where
 					.unwrap();
 				// If the transaction is not compatible, we skip it
 				if !is_compatible {
+					debug!(
+						target: LOG_TARGET,
+						"Transaction is not compatible with the current fee or fee is low, skipping."
+					);
 					continue;
 				}
 
