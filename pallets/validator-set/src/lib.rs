@@ -221,7 +221,7 @@ pub mod pallet {
 							};
 
 							let call = Call::<T>::add_validator_again {
-								heartbeat,
+								heartbeat: heartbeat.clone(),
 								signature: signature.unwrap(),
 							};
 
@@ -229,12 +229,19 @@ pub mod pallet {
 								call.into(),
 							) {
 								Err(_) => {
-									log::error!(target: LOG_TARGET, "Failed to submit transaction",);
+									log::error!(
+										target: LOG_TARGET,
+										"Failed to submit heartbeat transaction for validator {:?}: validator may already be active or transaction submission encountered an error",
+										validator_id,
+									);
 								}
 								_ => {
 									log::info!(
 										target: LOG_TARGET,
-										"Successfully submitted transaction",
+										"Heartbeat transaction successfully submitted for validator (index: {:?}, id: {:?}) at block: {:?}",
+										heartbeat.authority_index,
+										validator_id,
+										now,
 									);
 								}
 							};
