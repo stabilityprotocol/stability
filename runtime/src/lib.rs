@@ -321,13 +321,12 @@ parameter_types! {
 	pub const TransactionByteFee: Balance = 1;
 }
 
-pub struct MockedSubstrateFeeController;
-impl<T: pallet_transaction_payment::Config> OnChargeTransaction<T> for MockedSubstrateFeeController
+pub struct StbleOnChargeTransaction;
+impl<T: pallet_transaction_payment::Config> OnChargeTransaction<T> for StbleOnChargeTransaction
 where
 	account::AccountId20: From<T::AccountId>,
 {
 	type Balance = Balance;
-
 	type LiquidityInfo = Balance;
 
 	fn withdraw_fee(
@@ -367,7 +366,8 @@ where
 		let validator = EVM::find_author();
 
 		let token = DNTFeeController::get_transaction_fee_token(from);
-		let conversion_rate = DNTFeeController::get_transaction_conversion_rate(from, from, token);
+		let conversion_rate =
+			DNTFeeController::get_transaction_conversion_rate(from, validator, token);
 
 		DNTFeeController::correct_fee(
 			from,
@@ -395,7 +395,7 @@ where
 
 impl pallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type OnChargeTransaction = MockedSubstrateFeeController;
+	type OnChargeTransaction = StbleOnChargeTransaction;
 	type OperationalFeeMultiplier = ConstU8<5>;
 	type WeightToFee = IdentityFee<Balance>;
 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
