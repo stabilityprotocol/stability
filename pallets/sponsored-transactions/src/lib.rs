@@ -79,7 +79,7 @@ pub mod pallet {
 
 					let max_gas_used = match gas_price.checked_mul(transaction_data.gas_limit) {
 						Some(v) => v,
-						None => {
+						_ => {
 							return Err(TransactionValidityError::Invalid(
 								InvalidTransaction::Custom(1),
 							))
@@ -344,13 +344,13 @@ pub mod pallet {
 			payer: &H160,
 			payee: &H160,
 			amount: U256,
-		) -> Result<(), ()> {  
+		) -> Result<(), ()> {
 			if amount.is_zero() {
 				return Ok(());
-      }
+			}
 			if conversion_rate.1 == U256::zero() {
 				return Err(());
-      }
+			}
 
 			let actual_amount = amount
 				.saturating_mul(conversion_rate.0)
