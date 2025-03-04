@@ -57,11 +57,11 @@ num_enum = { default-features = false }
 paste = "1.0.6"
 similar-asserts = "1.1.0"
 bn = { package = "substrate-bn", version = "0.6", default-features = false }
-environmental = { default-features = false }
+environmental = { version = "1.1.4", default-features = false }
 jsonrpsee = { version = "0.23.2", features = ["server"] }
 kvdb-rocksdb = "0.19.0"
-libsecp256k1 = { default-features = false }
-hex = { default-features = false, features = ["alloc"] }
+libsecp256k1 = { version = "0.7", default-features = false }
+hex = { version = "0.4.3", default-features = false }
 parity-db = "0.4.13"
 rlp = { version = "0.5.2", default-features = false }
 scale-codec = { package = "parity-scale-codec", version = "3.6.12", default-features = false, features = [
@@ -245,9 +245,11 @@ sp-debug-derive = { git = "https://github.com/paritytech/polkadot-sdk", branch =
 
 stbl-core-primitives = { path = "primitives/core", default-features = false }
 account = { path = "primitives/account", default-features = false }
-blake2-rfc = { default-features = false }
-impl-serde = { default-features = false }
-parity-scale-codec = { default-features = false, features = ["derive"] }
+blake2-rfc = { version = "0.2.18", default-features = false }
+impl-serde = { version = "0.4.0", default-features = false }
+parity-scale-codec = { version = "3.2.2", default-features = false, features = [
+    "derive",
+] }
 sha3 = { version = "0.9", default-features = false }
 stability-rpc = { path = "./stability-rpc", default-features = false }
 stability-rpc-api = { path = "./primitives/stability-rpc-api", default-features = false }
