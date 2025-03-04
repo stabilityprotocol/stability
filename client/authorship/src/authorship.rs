@@ -538,7 +538,7 @@ where
 									json.transactions.len(),
 									zgt_total_time.as_millis()
 								);
-								Some(json as RawZeroGasTransactionResponse)
+								Some(json)
 							}
 							Err(e) => {
 								error!("Error parsing JSON response from zero gas transaction pool: {}", e);
@@ -598,7 +598,7 @@ where
 				let zgt_end_reason = loop {
 					let pending_hex_string_tx = match pending_raw_zero_gas_transactions.next() {
 						Some(tx) => tx,
-						None => break EndProposingReason::NoMoreTransactions,
+						_ => break EndProposingReason::NoMoreTransactions,
 					};
 
 					let now = (self.now)();
