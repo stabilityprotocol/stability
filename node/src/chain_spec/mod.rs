@@ -24,14 +24,18 @@ pub type ChainSpec = sc_service::GenericChainSpec;
 
 pub type AuraId = stbl_core_primitives::aura::Public;
 
+pub type AccountPublic = <Signature as Verify>::Signer;
+
+pub fn get_account_id_from_public(pubkey: &str) -> AccountId {
+	AccountPublic::from(ecdsa::Public::from_string(pubkey).unwrap()).into_account()
+}
+
 /// Generate a crypto pair from seed.
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
 	TPublic::Pair::from_string(&format!("//{}", seed), None)
 		.expect("static values are valid; qed")
 		.public()
 }
-
-type AccountPublic = <Signature as Verify>::Signer;
 
 /// Generate an account ID from seed.
 pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
