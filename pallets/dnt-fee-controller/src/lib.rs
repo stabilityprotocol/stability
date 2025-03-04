@@ -121,7 +121,7 @@ pub mod pallet {
 
 			let mapped_amount = match mapped_amount {
 				Some(amount) => amount,
-				None => return Err(Error::ArithmeticError),
+				_ => return Err(Error::ArithmeticError),
 			};
 
 			T::ERC20Manager::withdraw_amount(token, from, mapped_amount)
@@ -156,7 +156,7 @@ pub mod pallet {
 
 			let mapped_amount = match mapped_amount {
 				Some(amount) => amount,
-				None => return Err(Error::ArithmeticError),
+				_ => return Err(Error::ArithmeticError),
 			};
 
 			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get().unwrap();
@@ -189,12 +189,12 @@ pub mod pallet {
 
 			let fee_in_user_token = match fee_in_user_token {
 				Some(amount) => amount,
-				None => return Err(Error::ArithmeticError),
+				_ => return Err(Error::ArithmeticError),
 			};
 
 			let validator_share = match to {
-				None => 100.into(),
 				Some(_) => ValidatorPercentageStorage::<T>::get().unwrap(),
+				_ => 100.into(),
 			};
 
 			let validator_fee = fee_in_user_token
@@ -204,7 +204,7 @@ pub mod pallet {
 
 			let dapp_fee = match fee_in_user_token.checked_sub(validator_fee) {
 				Some(v) => v,
-				None => return Err(Error::<T>::FeeVaultOverflow),
+				_ => return Err(Error::<T>::FeeVaultOverflow),
 			};
 
 			pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
