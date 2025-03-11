@@ -71,6 +71,7 @@ std = [
 	'stbl-primitives-fee-compatible-api/std',
 	'stbl-primitives-zero-gas-transactions-api/std',
 	'substrate-wasm-builder',
+	"sp-debug-derive/std",
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
@@ -186,3 +187,5 @@ moonbeam-evm-tracer = { workspace = true, optional = true, default-features = fa
 moonbeam-primitives-ext = { workspace = true, optional = true, default-features = false }
 moonbeam-rpc-primitives-debug = { workspace = true, optional = true, default-features = false }
 moonbeam-rpc-primitives-txpool = { workspace = true, optional = true, default-features = false }
+
+sp-debug-derive = { workspace = true, features = ["force-debug"] }

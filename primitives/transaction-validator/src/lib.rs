@@ -15,6 +15,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub mod check_nonce;
+
 pub struct FallbackTransactionValidator<T>(PhantomData<T>);
 
 impl<T> FallbackTransactionValidator<T>
