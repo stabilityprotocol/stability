@@ -18,6 +18,8 @@ pub trait BaseRuntimeApiCollection<Block: BlockT>:
 	+ sp_offchain::OffchainWorkerApi<Block>
 	+ sp_session::SessionKeys<Block>
 	+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
+	+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>
+	+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block>
 {
 }
 
@@ -29,7 +31,9 @@ where
 		+ sp_block_builder::BlockBuilder<Block>
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_session::SessionKeys<Block>
-		+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>,
+		+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
+		+ moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>
+		+ moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<Block>,
 {
 }
 
