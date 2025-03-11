@@ -240,7 +240,9 @@ substrate-test-client = { git = "https://github.com/paritytech/polkadot-sdk", br
 substrate-test-runtime = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
 substrate-test-runtime-client = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
 sp-tracing = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
-sp-debug-derive = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false }
+sp-debug-derive = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2407", default-features = false, features = [
+    "force-debug",
+] }
 
 
 stbl-core-primitives = { path = "primitives/core", default-features = false }
