@@ -24,10 +24,10 @@ fp-evm = { workspace = true, features = ["std"] }
 pallet-evm-chain-id = { workspace = true, features = ["std"] }
 pallet-balances = { workspace = true, features = ["std"] }
 pallet-timestamp = { workspace = true, features = ["std"] }
-stbl-core-primitives ={ workspace = true, features = ["std"] }
+stbl-core-primitives = { workspace = true, features = ["std"] }
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
 	"frame-support/std",
 	"frame-system/std",

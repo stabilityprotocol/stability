@@ -72,6 +72,15 @@ pub mod pallet {
 			let token = Self::get_user_fee_token(account);
 			T::ERC20Manager::balance_of(token, account)
 		}
+
+		fn transfer(from: H160, to: H160, value: U256) -> Result<(), Self::Error> {
+			let token = Self::get_user_fee_token(from);
+			T::ERC20Manager::withdraw_amount(token, from, value)
+				.map_err(|_| Error::<T>::UnsupportedToken)?;
+			T::ERC20Manager::deposit_amount(token, to, value)
+				.map_err(|_| Error::<T>::UnsupportedToken)?;
+			Ok(())
+		}
 	}
 }
 
@@ -80,6 +89,7 @@ pub trait UserFeeTokenController {
 	fn get_user_fee_token(account: H160) -> H160;
 	fn set_user_fee_token(account: H160, token: H160) -> Result<(), Self::Error>;
 	fn balance_of(account: H160) -> U256;
+	fn transfer(from: H160, to: H160, value: U256) -> Result<(), Self::Error>;
 }
 
 #[cfg(test)]
@@ -93,5 +103,9 @@ impl UserFeeTokenController for () {
 	}
 	fn balance_of(_account: H160) -> U256 {
 		Default::default()
+	}
+
+	fn transfer(_from: H160, _to: H160, _value: U256) -> Result<(), Self::Error> {
+		Ok(())
 	}
 }

@@ -54,6 +54,10 @@ impl pallet_user_fee_selector::UserFeeTokenController for MockUserFeeTokenContro
 	fn set_user_fee_token(_account: H160, _token: H160) -> Result<(), Self::Error> {
 		Ok(())
 	}
+
+	fn transfer(_from: H160, _to: H160, _value: U256) -> Result<(), Self::Error> {
+		Ok(())
+	}
 }
 
 parameter_types! {

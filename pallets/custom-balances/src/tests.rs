@@ -190,9 +190,7 @@ fn ensure_transfer_dispatches_error_amount_higher_zero() {
 				1u128,
 				ExistenceRequirement::AllowDeath,
 			),
-			Err(DispatchError::Other(
-				"Transfer is not supported in this pallet",
-			))
+			Ok(())
 		);
 	});
 }

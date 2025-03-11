@@ -148,6 +148,10 @@ impl pallet_user_fee_selector::UserFeeTokenController for MockUserFeeTokenContro
 			U256::from(0)
 		}
 	}
+
+	fn transfer(_from: H160, _to: H160, _value: U256) -> Result<(), Self::Error> {
+		Ok(())
+	}
 }
 
 pub struct MockPrefix;

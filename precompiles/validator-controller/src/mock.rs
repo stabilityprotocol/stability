@@ -172,6 +172,10 @@ impl pallet_user_fee_selector::UserFeeTokenController for MockUserFeeTokenContro
 	fn balance_of(_account: H160) -> U256 {
 		Default::default()
 	}
+
+	fn transfer(_from: H160, _to: H160, _value: U256) -> Result<(), Self::Error> {
+		Ok(())
+	}
 }
 
 pub struct AccountIdToH160Mapping;

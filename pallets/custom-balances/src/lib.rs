@@ -180,17 +180,25 @@ pub mod pallet {
 		}
 
 		fn transfer(
-			_source: &T::AccountId,
-			_dest: &T::AccountId,
+			source: &T::AccountId,
+			dest: &T::AccountId,
 			value: Self::Balance,
 			_existence_requirement: ExistenceRequirement,
 		) -> DispatchResult {
 			if value == 0u128 {
 				Ok(())
 			} else {
-				Err(DispatchError::Other(
-					"Transfer is not supported in this pallet",
-				))
+				let source_evm_address = T::AccountIdMapping::into_evm_address(source);
+				let dest_evm_address = T::AccountIdMapping::into_evm_address(dest);
+
+				<T::UserFeeTokenController as UserFeeTokenController>::transfer(
+					source_evm_address,
+					dest_evm_address,
+					value.into(),
+				)
+				.map_err(|_| DispatchError::Other("Transfer failed"))?;
+
+				Ok(())
 			}
 		}
 
