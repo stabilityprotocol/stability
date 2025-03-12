@@ -1,17 +1,8 @@
 use super::{base_genesis, get_authority_from_pubkeys, ChainSpec};
 use sc_network::config::MultiaddrWithPeerId;
 use sc_service::ChainType;
-use sp_application_crypto::Ss58Codec;
-use sp_core::ecdsa;
-use sp_runtime::traits::{IdentifyAccount, Verify};
-use stability_runtime::{AccountId, Signature, WASM_BINARY};
+use stability_runtime::WASM_BINARY;
 use std::{str::FromStr, vec};
-
-type AccountPublic = <Signature as Verify>::Signer;
-
-fn get_account_id_from_public(pubkey: &str) -> AccountId {
-	AccountPublic::from(ecdsa::Public::from_string(pubkey).unwrap()).into_account()
-}
 
 pub fn gtn_config() -> ChainSpec {
 	ChainSpec::builder(WASM_BINARY.expect("WASM not available"), Default::default())
@@ -49,7 +40,7 @@ pub fn gtn_config() -> ChainSpec {
 					"5He4DiUGM1Tp1nDtTVFsGD7DrarMkuMki7HCBy2TRPc3X3R3",
 				),
 			],
-			vec![get_account_id_from_public(
+			vec![crate::chain_spec::get_account_id_from_public(
 				"KWAWnNYYgJzqvZQ2LLYmTVya95oeyAXX76PZN86DjbQKp7Czw",
 			)],
 			101010,

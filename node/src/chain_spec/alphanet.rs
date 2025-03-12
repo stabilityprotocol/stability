@@ -1,16 +1,8 @@
 use super::{base_genesis, get_authority_from_pubkeys, ChainSpec};
 use sc_service::ChainType;
-use sp_application_crypto::Ss58Codec;
-use sp_core::ecdsa;
-use sp_runtime::traits::{IdentifyAccount, Verify};
-use stability_runtime::{AccountId, Signature, WASM_BINARY};
+use sp_runtime::traits::Verify;
+use stability_runtime::{Signature, WASM_BINARY};
 use std::vec;
-
-type AccountPublic = <Signature as Verify>::Signer;
-
-fn get_account_id_from_public(pubkey: &str) -> AccountId {
-	AccountPublic::from(ecdsa::Public::from_string(pubkey).unwrap()).into_account()
-}
 
 pub fn alphanet_config() -> ChainSpec {
 	ChainSpec::builder(WASM_BINARY.expect("WASM not available"), Default::default())
@@ -44,7 +36,7 @@ pub fn alphanet_config() -> ChainSpec {
 					"5FqhzMYnwsDx4uZYiGVXxJWqvtGwTgMEgYvziEkihE6tfov7",
 				),
 			],
-			vec![get_account_id_from_public(
+			vec![crate::chain_spec::get_account_id_from_public(
 				"KWECfQF69Vr61qop6NVpesYrnw5WRS4M816286K7NUuVAn2zd",
 			)],
 			20180427,
