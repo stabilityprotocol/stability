@@ -40,6 +40,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub const LOG_TARGET: &'static str = "runner-evm";
+
 pub const TRANSACTION_FEE_TOPIC: [u8; 32] =
 	keccak256!("TransactionFee(address,uint256,address,uint256,address,uint256)");
 
@@ -223,6 +225,8 @@ where
 		// If the user's conversion rate is greater than the validator's conversion rate,
 		// the user's conversion rate is used.
 		// This is to prevent the user from paying more than the validator.
+		// It's weird that logic ends up here, but it's a requirement from the business.
+		// User transactions are filtered by the validator, so the user should pay the same or more than the validator.
 		let actual_conversion_rate =
 			if custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
 				custom_fee_info.user_conversion_rate_cap
@@ -234,6 +238,15 @@ where
 		if !is_zero_gas_transaction {
 			// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
 			FC::withdraw_fee(source, token, actual_conversion_rate, total_fee).map_err(|_| {
+				log::error!(
+					target: LOG_TARGET, 
+					"Error while withdrawing fee [source: {:?}, token: {:?}, conversion_rate: ({},{}), total_fee: {}]",
+					source,
+					token,
+					actual_conversion_rate.0,
+					actual_conversion_rate.1,
+					total_fee
+				);
 				RunnerError {
 					error: Error::<T>::FeeOverflow,
 					weight,
@@ -268,7 +281,7 @@ where
 		let actual_fee = effective_gas.saturating_mul(custom_fee_info.actual_fee);
 
 		log::debug!(
-			target: "evm",
+			target: LOG_TARGET,
 			"Execution {:?} [source: {:?}, value: {}, gas_limit: {}, actual_fee: {}, used_gas: {}, effective_gas: {}, base_fee: {}, actual_fee: {}, total_fee: {}, is_transactional: {}, miner: {}, token_fee: {}]",
 			reason,
 			source,
@@ -287,17 +300,23 @@ where
 
 		if !is_zero_gas_transaction {
 			FC::correct_fee(source, token, actual_conversion_rate, total_fee, actual_fee).map_err(
-				|_| RunnerError {
-					error: Error::<T>::FeeOverflow,
-					weight,
+				|_| {
+					log::error!(target: LOG_TARGET, "Error while correcting fee",);
+					RunnerError {
+						error: Error::<T>::FeeOverflow,
+						weight,
+					}
 				},
 			)?;
 
 			let (validator_fee, dapp_fee) =
 				FC::pay_fees(token, actual_conversion_rate, actual_fee, validator, dapp).map_err(
-					|_| RunnerError {
-						error: Error::<T>::FeeOverflow,
-						weight,
+					|_| {
+						log::error!(target: LOG_TARGET, "Error while paying fees",);
+						RunnerError {
+							error: Error::<T>::FeeOverflow,
+							weight,
+						}
 					},
 				)?;
 
@@ -317,26 +336,25 @@ where
 						stbl_tools::misc::u256_to_h256(dapp_fee),
 					]),
 				)
-				.map_err(|_| RunnerError {
-					error: Error::<T>::FeeOverflow,
-					weight,
+				.map_err(|_| {
+					log::error!(target: LOG_TARGET, "Error while logging transaction fee");
+					RunnerError {
+						error: Error::<T>::Undefined,
+						weight,
+					}
 				})?;
 		}
 
 		let state = executor.into_state();
 
 		for address in &state.substate.deletes {
-			log::debug!(
-				target: "evm",
-				"Deleting account at {:?}",
-				address
-			);
+			log::debug!(target: LOG_TARGET, "Deleting account at {:?}", address);
 			Pallet::<T>::remove_account(address)
 		}
 
 		for log in &state.substate.logs {
 			log::trace!(
-				target: "evm",
+				target: LOG_TARGET,
 				"Inserting log for {:?}, topics ({}) {:?}, data ({}): {:?}]",
 				log.address,
 				log.topics.len(),
@@ -406,7 +424,7 @@ where
 				return Err(RunnerError {
 					error: Self::Error::FeeOverflow,
 					weight,
-				})
+				});
 			}
 		};
 
@@ -937,7 +955,7 @@ where
 		// Then we insert or remove the entry based on the value.
 		if value == H256::default() {
 			log::debug!(
-				target: "evm",
+				target: LOG_TARGET,
 				"Removing storage for {:?} [index: {:?}]",
 				address,
 				index,
@@ -945,7 +963,7 @@ where
 			<AccountStorages<T>>::remove(address, index);
 		} else {
 			log::debug!(
-				target: "evm",
+				target: LOG_TARGET,
 				"Updating storage for {:?} [index: {:?}, value: {:?}]",
 				address,
 				index,
@@ -970,7 +988,7 @@ where
 
 	fn set_code(&mut self, address: H160, code: Vec<u8>) {
 		log::debug!(
-			target: "evm",
+			target: LOG_TARGET,
 			"Inserting code ({} bytes) at {:?}",
 			code.len(),
 			address

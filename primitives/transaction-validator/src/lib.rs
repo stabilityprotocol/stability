@@ -35,9 +35,7 @@ where
 		if let pallet_ethereum::Call::transact { transaction } = call {
 			let base_fee = <T as pallet_evm::Config>::FeeCalculator::min_gas_price().0;
 
-			let gas_price = stbl_tools::eth::transaction_gas_price(base_fee, &transaction, true)
-				.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Payment))?;
-
+			let gas_price = stbl_tools::eth::transaction_gas_price(base_fee, &transaction, true);
 			let transaction_data: TransactionData = (transaction).into();
 			let total_transaction_price =
 				transaction_data.gas_limit.mul(gas_price) + transaction_data.value;

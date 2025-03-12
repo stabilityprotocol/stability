@@ -126,20 +126,19 @@ pub fn transaction_gas_price(
 	base_fee: U256,
 	transaction: &Transaction,
 	is_transactional: bool,
-) -> Result<U256, ()> {
+) -> U256 {
 	let data: TransactionData = TransactionData::from(transaction);
 
-	let max_fee_per_gas = crate::custom_fee::compute_fee_details(
+	let custom_fee_info = crate::custom_fee::compute_fee_details(
 		base_fee,
 		data.max_fee_per_gas.or(data.gas_price),
 		data.max_priority_fee_per_gas,
-	)
-	.actual_fee;
+	);
 
-	if max_fee_per_gas < base_fee && is_transactional {
-		return Err(());
+	if is_transactional {
+		custom_fee_info.actual_fee
 	} else {
-		Ok(max_fee_per_gas)
+		U256::zero()
 	}
 }
 
