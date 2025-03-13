@@ -178,6 +178,16 @@ impl crate::OnChargeDecentralizedNativeTokenFee for MockDNTFeeController {
 	}
 }
 
+pub struct FixedBaseFee;
+impl FeeCalculator for FixedBaseFee {
+	fn min_gas_price() -> (U256, Weight) {
+		(
+			U256::from(1_000_000_000),
+			Weight::from_parts(1_000_000_000, 0),
+		)
+	}
+}
+
 parameter_types! {
 	pub BlockGasLimit: U256 = U256::max_value();
 	pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
@@ -188,7 +198,7 @@ parameter_types! {
 }
 
 impl pallet_evm::Config for Runtime {
-	type FeeCalculator = ();
+	type FeeCalculator = FixedBaseFee;
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
 	type WeightPerGas = WeightPerGas;
 	type CallOrigin = EnsureAddressRoot<AccountId>;
