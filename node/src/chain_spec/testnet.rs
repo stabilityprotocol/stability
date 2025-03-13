@@ -1,7 +1,6 @@
 use super::{base_genesis, get_authority_from_pubkeys, ChainSpec};
 use sc_service::ChainType;
-use sp_runtime::traits::Verify;
-use stability_runtime::{Signature, WASM_BINARY};
+use stability_runtime::WASM_BINARY;
 use std::vec;
 
 pub fn testnet_config() -> ChainSpec {

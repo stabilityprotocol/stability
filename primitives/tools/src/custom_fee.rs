@@ -19,15 +19,13 @@ impl CustomFeeInfo {
 	}
 }
 
-// We have a custom fee calculation for the transaction. The fee is calculated as follows:
-// 1. If the transaction is a ZGT transaction, the fee is zero.
+// The fee is calculated as follows (EIP-1559):
+// 1. If the transaction is a ZGT transaction (max_fee_per_gas is zero), the fee is zero.
 // 2. If the transaction is a transaction with a max_fee_per_gas and max_priority_fee_per_gas:
-//    - The fee is minimum the base_fee
-//    - fee = max(base_fee, max_fee_per_gas)
-//    - fee = max(fee, base_fee + max_priority_fee_per_gas)
+//    - The effective priority fee is min(max_priority_fee_per_gas, max_fee_per_gas - base_fee)
+//    - The total fee is min(max_fee_per_gas, base_fee + effective_priority_fee)
 // 3. If the transaction is a transaction with only max_fee_per_gas:
-//    - The fee is minimum the base_fee
-//    - fee = max(base_fee, max_fee_per_gas)
+//    - The fee is min(max_fee_per_gas, base_fee)
 // 4. If nothing is specified, the fee is the base_fee.
 pub fn compute_fee_details(
 	base_fee: U256,
@@ -39,16 +37,26 @@ pub fn compute_fee_details(
 			if max_fee_per_gas == U256::zero() {
 				max_fee_per_gas // ZGT transaction
 			} else {
-				let fee = max_fee_per_gas.max(base_fee);
-				let fee = fee.max(base_fee.saturating_add(max_priority_fee_per_gas));
-				fee
+				// Calculate effective priority fee (cannot exceed max_fee_per_gas - base_fee)
+				let available_for_priority = if max_fee_per_gas > base_fee {
+					max_fee_per_gas.saturating_sub(base_fee)
+				} else {
+					U256::zero()
+				};
+
+				let effective_priority_fee = max_priority_fee_per_gas.min(available_for_priority);
+
+				// Total fee is base_fee + priority fee, capped at max_fee_per_gas
+				base_fee
+					.saturating_add(effective_priority_fee)
+					.min(max_fee_per_gas)
 			}
 		}
 		(Some(max_fee_per_gas), None) => {
 			if max_fee_per_gas == U256::zero() {
 				max_fee_per_gas // ZGT transaction
 			} else {
-				max_fee_per_gas.max(base_fee)
+				max_fee_per_gas.min(base_fee)
 			}
 		}
 		_ => base_fee,
@@ -116,6 +124,25 @@ mod test {
 
 	#[test]
 	fn compute_fee_details_for_trx_v2() {
+		let base_fee = U256::from(1_000_000_000);
+		let max_fee_x_gas = U256::from(1_500_000_000);
+		let max_priority_fee_x_gas = U256::from(2_000_000_000);
+
+		let info = compute_fee_details(base_fee, Some(max_fee_x_gas), Some(max_priority_fee_x_gas));
+
+		assert_eq!(info.max_priority_fee_per_gas, Some(max_priority_fee_x_gas));
+		assert_eq!(
+			info.actual_fee,
+			max_fee_x_gas // The fee is capped at max_fee_x_gas
+		);
+		assert_eq!(
+			info.user_conversion_rate_cap,
+			(info.actual_fee, U256::from(1_000_000_000))
+		);
+	}
+
+	#[test]
+	fn compute_fee_details_for_trx_v3() {
 		let base_fee = U256::from(1_000_000_000);
 		let max_fee_x_gas = U256::from(1_500_000_000);
 		let max_priority_fee_x_gas = U256::from(500_000_000);
