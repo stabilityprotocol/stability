@@ -19,14 +19,15 @@ impl CustomFeeInfo {
 	}
 }
 
-// The fee is calculated as follows (EIP-1559):
-// 1. If the transaction is a ZGT transaction (max_fee_per_gas is zero), the fee is zero.
-// 2. If the transaction is a transaction with a max_fee_per_gas and max_priority_fee_per_gas:
-//    - The effective priority fee is min(max_priority_fee_per_gas, max_fee_per_gas - base_fee)
-//    - The total fee is min(max_fee_per_gas, base_fee + effective_priority_fee)
-// 3. If the transaction is a transaction with only max_fee_per_gas:
-//    - The fee is min(max_fee_per_gas, base_fee)
-// 4. If nothing is specified, the fee is the base_fee.
+// Fee calculation logic (following EIP-1559):
+// 1. For ZGT transactions (max_fee_per_gas = 0), fee is zero regardless of base_fee.
+// 2. For EIP-1559 transactions with both max_fee_per_gas and max_priority_fee_per_gas:
+//    - Calculate effective priority fee: min(max_priority_fee_per_gas, max_fee_per_gas - base_fee)
+//    - Total fee = base_fee + effective_priority_fee (never exceeds max_fee_per_gas)
+// 3. For legacy transactions with only max_fee_per_gas (gas_price):
+//    - If max_fee_per_gas = 0, fee is zero (ZGT transaction)
+//    - Otherwise, fee equals base_fee (no priority fee component)
+// 4. For read-only transactions (no specified fees), fee equals base_fee.
 pub fn compute_fee_details(
 	base_fee: U256,
 	max_fee_per_gas: Option<U256>,
@@ -37,26 +38,20 @@ pub fn compute_fee_details(
 			if max_fee_per_gas == U256::zero() {
 				max_fee_per_gas // ZGT transaction
 			} else {
-				// Calculate effective priority fee (cannot exceed max_fee_per_gas - base_fee)
-				let available_for_priority = if max_fee_per_gas > base_fee {
-					max_fee_per_gas.saturating_sub(base_fee)
-				} else {
-					U256::zero()
-				};
+				// With tip, we include as much of the tip on top of base_fee that we can, never
+				// exceeding max_fee_per_gas
+				let actual_priority_fee_per_gas = max_fee_per_gas
+					.saturating_sub(base_fee)
+					.min(max_priority_fee_per_gas);
 
-				let effective_priority_fee = max_priority_fee_per_gas.min(available_for_priority);
-
-				// Total fee is base_fee + priority fee, capped at max_fee_per_gas
-				base_fee
-					.saturating_add(effective_priority_fee)
-					.min(max_fee_per_gas)
+				base_fee.saturating_add(actual_priority_fee_per_gas)
 			}
 		}
 		(Some(max_fee_per_gas), None) => {
 			if max_fee_per_gas == U256::zero() {
 				max_fee_per_gas // ZGT transaction
 			} else {
-				max_fee_per_gas.min(base_fee)
+				base_fee
 			}
 		}
 		_ => base_fee,

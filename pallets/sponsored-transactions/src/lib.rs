@@ -74,7 +74,7 @@ pub mod pallet {
 
 					let (_, gas_price) = Self::get_transaction_gas_info(&transaction);
 
-					let (transaction_fee_token, _) = Self::get_fee_token_info(&from, &transaction);
+					let (transaction_fee_token, _) = Self::get_fee_token_info(&from);
 
 					let calculated_max_gas = match gas_price.checked_mul(transaction_data.gas_limit)
 					{
@@ -145,8 +145,7 @@ pub mod pallet {
 
 			let (gas_limit, gas_price) = Self::get_transaction_gas_info(&transaction);
 
-			let (transaction_fee_token, conversion_rate) =
-				Self::get_fee_token_info(&from, &transaction);
+			let (transaction_fee_token, conversion_rate) = Self::get_fee_token_info(&from);
 
 			let calculated_gas_usage = match gas_limit.checked_mul(gas_price.into()) {
 				Some(a) => a,
@@ -283,36 +282,17 @@ pub mod pallet {
 			Ok(())
 		}
 
-		fn get_fee_token_info(
-			from: &H160,
-			transaction: &pallet_ethereum::Transaction,
-		) -> (H160, (U256, U256)) {
+		fn get_fee_token_info(from: &H160) -> (H160, (U256, U256)) {
 			let transaction_fee_token =
 				T::DNTFeeController::get_transaction_fee_token(from.clone());
-			let base_fee = <T as pallet_evm::Config>::FeeCalculator::min_gas_price().0;
 			let validator = <pallet_evm::Pallet<T>>::find_author();
 			let validator_conversion_rate = T::DNTFeeController::get_transaction_conversion_rate(
 				from.clone(),
 				validator,
 				transaction_fee_token,
 			);
-			let tx_data: TransactionData = TransactionData::from(transaction);
-			let custom_fee_info = stbl_tools::custom_fee::compute_fee_details(
-				base_fee,
-				tx_data.max_fee_per_gas.or(tx_data.gas_price),
-				tx_data.max_priority_fee_per_gas,
-			);
 
-			// User pays at least the same as the validator or more
-			let actual_conversion_rate = if custom_fee_info
-				.match_validator_conversion_rate_limit(validator_conversion_rate)
-			{
-				custom_fee_info.user_conversion_rate_cap
-			} else {
-				validator_conversion_rate
-			};
-
-			(transaction_fee_token, actual_conversion_rate)
+			(transaction_fee_token, validator_conversion_rate)
 		}
 
 		fn get_transaction_gas_info(transaction: &pallet_ethereum::Transaction) -> (U256, U256) {
