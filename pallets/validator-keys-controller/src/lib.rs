@@ -169,7 +169,10 @@ pub mod pallet {
 								log::error!(target: LOG_TARGET, "Failed to submit transaction",);
 							}
 							_ => {
-								log::info!(target: LOG_TARGET, "Insert new validator keys",);
+								log::info!(
+									target: LOG_TARGET,
+									"🔑 Successfully inserted new validator keys",
+								);
 							}
 						};
 					}

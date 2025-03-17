@@ -238,7 +238,7 @@ pub mod pallet {
 								_ => {
 									log::info!(
 										target: LOG_TARGET,
-										"Heartbeat transaction successfully submitted for validator (index: {:?}, id: {:?}) at block: {:?}",
+										"✅ Heartbeat transaction successfully submitted for validator (index: {:?}, id: {:?}) at block: {:?}",
 										heartbeat.authority_index,
 										validator_id,
 										now,

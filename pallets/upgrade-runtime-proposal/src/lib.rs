@@ -161,7 +161,10 @@ pub mod pallet {
 			} else {
 				let hash = Pallet::<T>::hash_of_proposed_code().unwrap();
 				Pallet::<T>::set_current_code_hash(hash);
-				log::info!("Runtime upgraded");
+				log::info!(
+					"✅ Runtime successfully upgraded to version with hash: {:?}",
+					hash
+				);
 			}
 
 			Pallet::<T>::clear_proposed_code();
