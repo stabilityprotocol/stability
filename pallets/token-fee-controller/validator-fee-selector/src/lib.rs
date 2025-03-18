@@ -161,13 +161,23 @@ pub mod pallet {
 				false,
 				None,
 				None,
-				&pallet_evm::EvmConfig::london(),
+				&pallet_evm::EvmConfig::shanghai(),
 			)
 			.map(|execution_info| {
-				(
-					U256::from_big_endian(execution_info.value[0..32].as_ref()),
-					U256::from_big_endian(execution_info.value[32..64].as_ref()),
-				)
+				let value_len = execution_info.value.len();
+				if value_len >= 64 {
+					(
+						U256::from_big_endian(&execution_info.value[0..32]),
+						U256::from_big_endian(&execution_info.value[32..64]),
+					)
+				} else if value_len >= 32 {
+					(
+						U256::from_big_endian(&execution_info.value[0..32]),
+						U256::from(1),
+					)
+				} else {
+					(U256::from(1), U256::from(1))
+				}
 			})
 			.unwrap_or((U256::from(1), U256::from(1)))
 		}
