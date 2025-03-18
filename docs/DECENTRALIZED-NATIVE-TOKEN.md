@@ -16,7 +16,7 @@ Stability validators have to select which tokens want to accept as fees. The val
 
 To select the token and its conversion rate, the user has to interact with `ValidatorFeeManagerPrecompile` at `0x0000000000000000000000000000000000000802`. Token acceptance is directly set by the validator but token conversion rate is not directly set in this contract, instead what the validator sets is the address of a convesion rate manager.
 
-Actual transaction fees (in fee token units) would be: `gasUsed * transactionGasPrice * token_fee_conversion_rate`
+Actual transaction fees (in fee token units) would be: `gasUsed * transactionGasPrice * token_fee_conversion_rate` where `token_fee_conversion_rate` is the conversion rate of the selected token for the validator and `transactionGasPrice` is the `gas_price` or `max_fee_per_gas` of the transaction, check the [Fee Calculation logic](/primitives/tools/src/custom_fee.rs) for more information.
 
 ### How to create a conversion rate manager?
 
@@ -31,3 +31,27 @@ interface IConversionRateManager {
 ```
 
 This function is called every time a transaction is sent to the blockchain and used the result to calculate the actual DNT fees. The default conversion rate manager is `0x444212d6E4827893A70d19921E383130281Cda4a`.
+
+## Flowchart
+
+```mermaid
+flowchart TB
+subgraph UserFlow["User Flow"]
+User((User)) -->|Selects fee token| FeeTokenPrecompile["FeeTokenPrecompile\n(0x803)"]
+end
+
+    subgraph ValidatorFlow["Validator Flow"]
+        Validator((Validator)) -->|Sets token acceptance| ValidatorFeeManager["ValidatorFeeManager\n(0x802)"]
+        Validator -->|Sets address of| ConversionRateManager["ConversionRateManager"]
+    end
+
+    subgraph TransactionProcessing["Transaction Processing"]
+        Transaction[Transaction] -->|Gas used, gas price| FeeCalculation[Fee Calculation]
+        ConversionRateManager -->|Provides conversion rate| FeeCalculation
+        FeeCalculation -->|Calculates final fee| FinalFee["Final Fee in\nSelected Token"]
+    end
+
+    User -->|Submits| Transaction
+    Validator -->|Processes| Transaction
+    ValidatorFeeManager -->|References| ConversionRateManager
+```

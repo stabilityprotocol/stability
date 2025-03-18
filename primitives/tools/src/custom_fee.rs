@@ -19,42 +19,22 @@ impl CustomFeeInfo {
 	}
 }
 
-// Fee calculation logic (following EIP-1559):
-// 1. For ZGT transactions (max_fee_per_gas = 0), fee is zero regardless of base_fee.
-// 2. For EIP-1559 transactions with both max_fee_per_gas and max_priority_fee_per_gas:
-//    - Calculate effective priority fee: min(max_priority_fee_per_gas, max_fee_per_gas - base_fee)
-//    - Total fee = base_fee + effective_priority_fee (never exceeds max_fee_per_gas)
-// 3. For legacy transactions with only max_fee_per_gas (gas_price):
-//    - If max_fee_per_gas = 0, fee is zero (ZGT transaction)
-//    - Otherwise, fee equals base_fee (no priority fee component)
-// 4. For read-only transactions (no specified fees), fee equals base_fee.
+// Fee calculation logic:
+// 1. If max_fee_per_gas is provided and it is greater than base_fee, then the fee will be max_fee_per_gas.
+// 2. If max_fee_per_gas is provided and it is less than base_fee, then the fee will be base_fee.
+// 3. If max_fee_per_gas is not provided, then the fee will be base_fee.
+// 4. If max_fee_per_gas is provided and it is zero, then the fee will be zero = ZERO GAS TRANSACTION
+// 5. max_priority_fee_per_gas is ALWAYS IGNORED for the fee calculation.
 pub fn compute_fee_details(
 	base_fee: U256,
 	max_fee_per_gas: Option<U256>,
 	max_priority_fee_per_gas: Option<U256>,
 ) -> CustomFeeInfo {
 	let reduced_fee = match (max_fee_per_gas, max_priority_fee_per_gas) {
-		(Some(max_fee_per_gas), Some(max_priority_fee_per_gas)) => {
-			if max_fee_per_gas == U256::zero() {
-				max_fee_per_gas // ZGT transaction
-			} else {
-				// With tip, we include as much of the tip on top of base_fee that we can, never
-				// exceeding max_fee_per_gas
-				let actual_priority_fee_per_gas = max_fee_per_gas
-					.saturating_sub(base_fee)
-					.min(max_priority_fee_per_gas);
-
-				base_fee.saturating_add(actual_priority_fee_per_gas)
-			}
-		}
-		(Some(max_fee_per_gas), None) => {
-			if max_fee_per_gas == U256::zero() {
-				max_fee_per_gas // ZGT transaction
-			} else {
-				base_fee
-			}
-		}
-		_ => base_fee,
+		(Some(max_fee_per_gas), _) if max_fee_per_gas == U256::zero() => U256::zero(), // ZGT transaction
+		(Some(max_fee_per_gas), _) if max_fee_per_gas > base_fee => max_fee_per_gas, // Use max fee if it's higher than base fee
+		(Some(_), _) => base_fee, // Otherwise use base fee
+		_ => base_fee,            // Default to base fee if no max fee provided
 	};
 
 	CustomFeeInfo {

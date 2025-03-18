@@ -7,10 +7,9 @@
 
 ## Introduction
 
-In Stability, a transaction fee is shared between the validator and the destination dapp. The distribution percentage may change over time. You can check it by calling the function ` function getValidatorPercentage() external view returns (uint256)` in the precompile `FeeRewardsVaultController` with address `0x0000000000000000000000000000000000000807`. 
+In Stability, a transaction fee is shared between the validator and the destination dapp. The distribution percentage may change over time. You can check it by calling the function ` function getValidatorPercentage() external view returns (uint256)` in the precompile `FeeRewardsVaultController` with address `0x0000000000000000000000000000000000000807`.
 
 When a transaction is validated, the fees are sent to the `FeeRewardsVaultController` precompile. Then the dapp or the validator can claim his fee rewards using the `function claimReward(address holder, address token) external`
-
 
 ## Claim fees
 
@@ -31,6 +30,3 @@ Claim the fees using the owner of the dapp.
 
 In Stability, we develop the option of claiming as the owner to claim the fees without needing to change the dapp code.
 To get the owner of the dapp, we call the method `owner()` in the dapp. If the dapp doesn't implement the `owner()` method, Stability considers it has no owner.
-
-
-
