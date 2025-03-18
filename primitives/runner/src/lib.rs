@@ -225,28 +225,27 @@ where
 		// We compare the user's conversion rate against the validator's conversion rate.
 		// If the user's conversion rate is greater than or equal to the validator's rate,
 		// then we use the validator's rate for the transaction.
-		// If the user's rate is lower, we reject the transaction.
+		// If the user's rate is lower, we get the user's rate.
 		// 
 		// This ensures users don't overpay for transactions while still allowing validators
 		// to enforce their minimum acceptable conversion rate for transactions they process.
-		if !custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
-			return Err(RunnerError {
-				error: Error::<T>::WithdrawFailed,
-				weight,
-			});
-		}
+		let actual_conversion_rate = if custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
+			validator_conversion_rate
+		} else {
+			custom_fee_info.user_conversion_rate_cap
+		};
 
 		// Ensure the account has enough balance to pay for the transaction.
 		if !is_zero_gas_transaction {
 			// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
-			FC::withdraw_fee(source, token, validator_conversion_rate, total_fee).map_err(|_| {
+			FC::withdraw_fee(source, token, actual_conversion_rate, total_fee).map_err(|_| {
 				log::error!(
 					target: LOG_TARGET, 
 					"Error while withdrawing fee [source: {:?}, token: {:?}, conversion_rate: ({},{}), total_fee: {}]",
 					source,
 					token,
-					validator_conversion_rate.0,
-					validator_conversion_rate.1,
+					actual_conversion_rate.0,
+					actual_conversion_rate.1,
 					total_fee
 				);
 				RunnerError {
@@ -300,7 +299,7 @@ where
 		);
 
 		if !is_zero_gas_transaction {
-			FC::correct_fee(source, token, validator_conversion_rate, total_fee, actual_fee).map_err(
+			FC::correct_fee(source, token, actual_conversion_rate, total_fee, actual_fee).map_err(
 				|_| {
 					log::error!(target: LOG_TARGET, "Error while correcting fee");
 					RunnerError {
@@ -311,7 +310,7 @@ where
 			)?;
 
 			let (validator_fee, dapp_fee) =
-				FC::pay_fees(token, validator_conversion_rate, actual_fee, validator, dapp).map_err(
+				FC::pay_fees(token, actual_conversion_rate, actual_fee, validator, dapp).map_err(
 					|_| {
 						log::error!(target: LOG_TARGET, "Error while paying fees",);
 						RunnerError {
