@@ -74,25 +74,29 @@ impl CustomFeeInfo {
 		&self,
 		validator_conversion_rate: (U256, U256),
 	) -> bool {
-		let adjusted_user_conversion_rate = self
-			.user_conversion_rate_cap
-			.0
-			.div_mod(if self.user_conversion_rate_cap.1.is_zero() {
-				U256::one()
-			} else {
-				self.user_conversion_rate_cap.1
-			})
-			.0; // only keep the integer part
-		let adjusted_validator_conversion_rate = validator_conversion_rate
-			.0
-			.div_mod(if validator_conversion_rate.1.is_zero() {
-				U256::one()
-			} else {
-				validator_conversion_rate.1
-			})
-			.0; // only keep the integer part
+		// Ensure no division by zero
+		let user_denom = if self.user_conversion_rate_cap.1.is_zero() {
+			U256::one()
+		} else {
+			self.user_conversion_rate_cap.1
+		};
 
-		adjusted_user_conversion_rate >= adjusted_validator_conversion_rate
+		let validator_denom = if validator_conversion_rate.1.is_zero() {
+			U256::one()
+		} else {
+			validator_conversion_rate.1
+		};
+
+		// Cross-multiply to compare without division
+		// user_rate >= validator_rate is equivalent to:
+		// user_num * validator_denom >= validator_num * user_denom
+		match self.user_conversion_rate_cap.0.checked_mul(validator_denom) {
+			Some(user_side) => match validator_conversion_rate.0.checked_mul(user_denom) {
+				Some(validator_side) => user_side >= validator_side,
+				None => false, // Validator side would overflow, assume user rate is lower
+			},
+			None => true, // User side would overflow, assume user rate is higher
+		}
 	}
 }
 
