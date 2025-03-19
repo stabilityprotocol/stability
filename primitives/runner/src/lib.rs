@@ -198,23 +198,6 @@ where
 			max_priority_fee_per_gas,
 		);
 
-		// After eip-1559 we make sure the account can pay both the evm execution and priority fees.
-		let total_fee = if is_transactional {
-			custom_fee_info
-				.actual_fee
-				.checked_mul(U256::from(gas_limit))
-				.ok_or(RunnerError {
-					error: Error::<T>::FeeOverflow,
-					weight,
-				})?
-		} else {
-			U256::zero()
-		};
-
-		// Check if the transaction is a zero gas transaction.
-		// Or a Non-Transactional OP - Read/Call
-		let is_zero_gas_transaction: bool = total_fee == U256::zero();
-
 		let validator = <pallet_evm::Pallet<T>>::find_author();
 		let vault = FC::get_fee_vault();
 		let token = FC::get_transaction_fee_token(source);
@@ -235,10 +218,22 @@ where
 			custom_fee_info.user_conversion_rate_cap
 		};
 
+		let max_gas_units = if is_transactional {
+			U256::from(gas_limit)
+		} else {
+			U256::zero()
+		};
+
+		// Check if the transaction is a zero gas transaction.
+		// Or a Non-Transactional OP - Read/Call
+		let is_zero_gas_transaction: bool = max_gas_units == U256::zero();
+
 		// Ensure the account has enough balance to pay for the transaction.
 		if !is_zero_gas_transaction {
-			// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
-			FC::withdraw_fee(source, token, actual_conversion_rate, total_fee).map_err(|_| {
+			// Withdraw all the gas limit from the user's account.
+			// We will refund later if the transaction is inserted into the block.
+			// max_gas_units * actual_conversion_rate = total_fee
+			FC::withdraw_fee(source, token, actual_conversion_rate, max_gas_units).map_err(|_| {
 				log::error!(
 					target: LOG_TARGET, 
 					"Error while withdrawing fee [source: {:?}, token: {:?}, conversion_rate: ({},{}), total_fee: {}]",
@@ -246,7 +241,7 @@ where
 					token,
 					actual_conversion_rate.0,
 					actual_conversion_rate.1,
-					total_fee
+					max_gas_units
 				);
 				RunnerError {
 					error: Error::<T>::FeeOverflow,
@@ -269,6 +264,7 @@ where
 
 		// Post execution.
 		let used_gas = executor.used_gas();
+		// EFFECTIVE GAS UNITS - The gas units used by the transaction.
 		let effective_gas = match executor.state().weight_info() {
 			Some(weight_info) => U256::from(sp_std::cmp::max(
 				used_gas,
@@ -279,19 +275,17 @@ where
 			)),
 			_ => used_gas.into(),
 		};
-		let actual_fee = effective_gas.saturating_mul(custom_fee_info.actual_fee);
 
 		log::debug!(
 			target: LOG_TARGET,
-			"EVM execution result: {:?} [source: {:?}, gas: {{{} limit, {} used}}, fees: {{base: {}, calculate_actual: {}, gas_limit_w_fee: {}, effective_gas_w_fee: {}}}, value: {}, transaction: {{is_transactional: {}, validator: {:?}, token: {:?}}}]",
+			"EVM execution result: {:?} [source: {:?}, gas: {{{} limit, {} used}}, fees: {{base: {}, conversion_rate: ({}, {})}}, value: {}, transaction: {{is_transactional: {}, validator: {:?}, token: {:?}}}]",
 			reason,
 			source,
 			gas_limit,
-			used_gas,
+			effective_gas,
 			base_fee,
-			custom_fee_info.actual_fee,
-			total_fee,
-			actual_fee,
+			actual_conversion_rate.0,
+			actual_conversion_rate.1,
 			value,
 			is_transactional,
 			validator,
@@ -299,7 +293,9 @@ where
 		);
 
 		if !is_zero_gas_transaction {
-			FC::correct_fee(source, token, actual_conversion_rate, total_fee, actual_fee).map_err(
+			// Refund the user for the gas used in the transaction.
+			// (max_gas_units - effective_gas) * conversion_rate = gas refunded
+			FC::correct_fee(source, token, actual_conversion_rate, max_gas_units, effective_gas).map_err(
 				|_| {
 					log::error!(target: LOG_TARGET, "Error while correcting fee");
 					RunnerError {
@@ -310,7 +306,7 @@ where
 			)?;
 
 			let (validator_fee, dapp_fee) =
-				FC::pay_fees(token, actual_conversion_rate, actual_fee, validator, dapp).map_err(
+				FC::pay_fees(token, actual_conversion_rate, effective_gas, validator, dapp).map_err(
 					|_| {
 						log::error!(target: LOG_TARGET, "Error while paying fees",);
 						RunnerError {
