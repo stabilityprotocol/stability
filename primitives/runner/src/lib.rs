@@ -218,22 +218,24 @@ where
 			custom_fee_info.user_conversion_rate_cap
 		};
 
-		let max_gas_units = if is_transactional {
-			U256::from(gas_limit)
+		// Calculate the maximum gas cost with the base fee.
+		let maximum_gas_cost_with_base_fee = if is_transactional {
+			let gas_limit_u256 = U256::from(gas_limit);
+			gas_limit_u256.saturating_mul(base_fee)
 		} else {
 			U256::zero()
 		};
 
 		// Check if the transaction is a zero gas transaction.
 		// Or a Non-Transactional OP - Read/Call
-		let is_zero_gas_transaction: bool = max_gas_units == U256::zero();
+		let is_zero_gas_transaction: bool = maximum_gas_cost_with_base_fee == U256::zero();
 
 		// Ensure the account has enough balance to pay for the transaction.
 		if !is_zero_gas_transaction {
 			// Withdraw all the gas limit from the user's account.
 			// We will refund later if the transaction is inserted into the block.
-			// max_gas_units * actual_conversion_rate = total_fee
-			FC::withdraw_fee(source, token, actual_conversion_rate, max_gas_units).map_err(|_| {
+			// maximum_gas_cost_with_base_fee * actual_conversion_rate = total_fee
+			FC::withdraw_fee(source, token, actual_conversion_rate, maximum_gas_cost_with_base_fee).map_err(|_| {
 				log::error!(
 					target: LOG_TARGET, 
 					"Error while withdrawing fee [source: {:?}, token: {:?}, conversion_rate: ({},{}), total_fee: {}]",
@@ -241,7 +243,7 @@ where
 					token,
 					actual_conversion_rate.0,
 					actual_conversion_rate.1,
-					max_gas_units
+					maximum_gas_cost_with_base_fee
 				);
 				RunnerError {
 					error: Error::<T>::FeeOverflow,
@@ -275,6 +277,7 @@ where
 			)),
 			_ => used_gas.into(),
 		};
+		let effective_gas_w_base_fee = effective_gas.saturating_mul(base_fee);
 
 		log::debug!(
 			target: LOG_TARGET,
@@ -294,8 +297,8 @@ where
 
 		if !is_zero_gas_transaction {
 			// Refund the user for the gas used in the transaction.
-			// (max_gas_units - effective_gas) * conversion_rate = gas refunded
-			FC::correct_fee(source, token, actual_conversion_rate, max_gas_units, effective_gas).map_err(
+			// (maximum_gas_cost_with_base_fee - effective_gas_w_base_fee) * conversion_rate = gas refunded
+			FC::correct_fee(source, token, actual_conversion_rate, maximum_gas_cost_with_base_fee, effective_gas_w_base_fee).map_err(
 				|_| {
 					log::error!(target: LOG_TARGET, "Error while correcting fee");
 					RunnerError {
@@ -306,7 +309,7 @@ where
 			)?;
 
 			let (validator_fee, dapp_fee) =
-				FC::pay_fees(token, actual_conversion_rate, effective_gas, validator, dapp).map_err(
+				FC::pay_fees(token, actual_conversion_rate, effective_gas_w_base_fee, validator, dapp).map_err(
 					|_| {
 						log::error!(target: LOG_TARGET, "Error while paying fees",);
 						RunnerError {
@@ -322,7 +325,10 @@ where
 					sp_std::vec![TRANSACTION_FEE_TOPIC.into()],
 					stbl_tools::eth::args_to_bytes(sp_std::vec![
 						token.into(),
-						stbl_tools::misc::u256_to_h256(validator_fee + dapp_fee),
+						stbl_tools::misc::u256_to_h256(validator_fee.checked_add(dapp_fee).unwrap_or_else(|| {
+							log::warn!(target: LOG_TARGET, "Fee addition overflow: validator_fee={}, dapp_fee={}", validator_fee, dapp_fee);
+							U256::max_value()
+						})),
 						validator.into(),
 						stbl_tools::misc::u256_to_h256(validator_fee),
 						match dapp {
