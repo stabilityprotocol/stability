@@ -74,17 +74,17 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 						<FeeController as StabilityFeeController>::Validator,
 						DefaultOwner,
 					>,
-					EthereumPrecompilesChecks,
+					(), // Only from EOA
 				>,
 				PrecompileAt<
 					AddressU64<2051>,
 					FeeTokenPrecompile<R, <FeeController as StabilityFeeController>::User>,
-					EthereumPrecompilesChecks,
+					(), // Only from EOA
 				>,
 				PrecompileAt<
 					AddressU64<2053>,
 					ValidatorControllerPrecompile<R, DefaultOwner>,
-					EthereumPrecompilesChecks,
+					(), // Only from EOA
 				>,
 				PrecompileAt<
 					AddressU64<2054>,
