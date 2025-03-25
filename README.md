@@ -38,26 +38,40 @@ For containerized deployment options, please refer to the Docker [guidelines](do
 
 ## Architecture
 
-The Stability Substrate chain is built upon Polkadot version `0.9.36` and leverages the `frontier` framework to ensure full Ethereum compatibility. Our architecture incorporates a carefully selected set of pallets, each serving a unique role in the overall functionality of the blockchain.
+The Stability Substrate chain is built upon Polkadot version `stable-2407` and leverages the `frontier` framework to ensure full Ethereum compatibility. Our architecture incorporates a carefully selected set of pallets, each serving a unique role in the overall functionality of the blockchain.
 
 ### Core Pallets
 
 #### Consensus Mechanisms
 
-- **AuRa**: An adaptive and reactive consensus algorithm.
-- **GRANDPA**: GHOST-based Recursive Ancestor Deriving Prefix Agreement.
+- **AuRa**: An adaptive and reactive consensus algorithm for block production.
+- **GRANDPA**: GHOST-based Recursive Ancestor Deriving Prefix Agreement for finality.
+- **Validator Set**: Manages the dynamic validator set with automatic rotation and offline detection.
 
-#### Ethereum Virtual Machine (EVM)
+### Token and Fee Management
 
-- **pallet-evm**: Provides EVM functionalities, enabling the execution of Ethereum-based applications.
-- **pallet-ethereum**: Ensures compatibility with the Ethereum API.
+- **pallet-custom-balances**: Manages native token balances with EVM compatibility.
+- **pallet-supported-tokens-manager**: Handles supported token configurations and validations.
+- **pallet-user-fee-selector**: Allows users to select preferred tokens for fee payment.
+- **pallet-validator-fee-selector**: Manages validator fee token preferences.
+- **pallet-dnt-fee-controller**: Controls decentralized native token fee mechanisms.
+- **pallet-fee-rewards-vault**: Manages fee rewards distribution and storage.
 
-### Substrate Native Pallets
+### Transaction Management
 
-- **session**: Manages session keys and validator sets.
-- **timestamp**: Responsible for on-chain timekeeping.
-- **collective**: Facilitates governance functionalities.
+- **pallet-sponsored-transactions**: Enables transaction sponsorship functionality.
+- **pallet-zero-gas-transactions**: Handles zero-gas transaction processing.
+- **pallet-transaction-payment**: Manages transaction fee payments and calculations.
+
+### Governance and Control
+
+- **pallet-collective**: Facilitates governance functionalities through collective decision-making.
+- **pallet-root-controller**: Manages root-level administrative controls.
+- **pallet-upgrade-runtime-proposal**: Handles runtime upgrade proposals and execution.
+- **pallet-validator-keys-controller**: Controls validator key management and rotation.
 
 ### Third-Party Pallets
 
 - **Moonbeam's precompile-utils**: A utility pallet offering precompiled contract support.
+- **Moonbeam's RPC debug**: Provides enhanced debugging capabilities and transaction pool management.
+- **Frontier**: Provides Ethereum compatibility layer and RPC support.
