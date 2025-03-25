@@ -18,14 +18,8 @@
 
 use super::*;
 
-use std::str::FromStr;
-
-use frame_support::traits::GenesisBuild;
 use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::Weight};
 use frame_system::EnsureRoot;
-use sp_runtime::traits::Convert;
-use std::collections::BTreeMap;
-
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
 use pallet_session::{SessionHandler, ShouldEndSession};
 use precompile_utils::{
@@ -33,11 +27,16 @@ use precompile_utils::{
 	testing::{CryptoAlith, MockAccount},
 };
 use sp_core::{H160, H256, U256};
+use sp_runtime::traits::Convert;
+use sp_runtime::BuildStorage;
+use sp_runtime::RuntimeAppPublic;
 use sp_runtime::{
 	impl_opaque_keys,
 	testing::UintAuthorityId,
 	traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
 };
+use std::collections::BTreeMap;
+use std::str::FromStr;
 
 impl_opaque_keys! {
 	pub struct MockSessionKeys {
@@ -53,7 +52,7 @@ impl From<UintAuthorityId> for MockSessionKeys {
 
 pub type AccountId = MockAccount;
 pub type Balance = u128;
-pub type BlockNumber = u32;
+pub type BlockNumber = u64;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 pub type Block = frame_system::mocking::MockBlock<Runtime>;
 
@@ -66,14 +65,11 @@ impl frame_system::Config for Runtime {
 	type BaseCallFilter = Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = BlockNumber;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = sp_runtime::generic::Header<BlockNumber, BlakeTwo256>;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -87,6 +83,14 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -114,10 +118,10 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
-	type MaxHolds = ();
-	type HoldIdentifier = ();
 	type FreezeIdentifier = ();
 	type MaxFreezes = ();
+	type RuntimeHoldReason = ();
+	type RuntimeFreezeReason = ();
 }
 
 parameter_types! {
@@ -191,8 +195,9 @@ pub type PCall = ValidatorFeeManagerPrecompileCall<
 parameter_types! {
 		pub BlockGasLimit: U256 = U256::max_value();
 		pub PrecompilesValue: Precompiles<Runtime> = Precompiles::new();
-		pub const WeightPerGas: Weight = Weight::from_ref_time(1);
+		pub const WeightPerGas: Weight = Weight::from_parts(1, 0);
 		pub const GasLimitPovSizeRatio: u64 = 15;
+		pub const SuicideQuickClearLimit: u32 = 64;
 }
 
 impl pallet_evm::Config for Runtime {
@@ -216,11 +221,13 @@ impl pallet_evm::Config for Runtime {
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
+	type SuicideQuickClearLimit = SuicideQuickClearLimit;
 }
 
 pub struct TestSessionHandler;
 impl SessionHandler<AccountId> for TestSessionHandler {
-	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[sp_runtime::KeyTypeId(*b"ecds")];
+	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] =
+		&[sp_runtime::testing::UintAuthorityId::ID];
 	fn on_genesis_session<T: OpaqueKeys>(_validators: &[(AccountId, T)]) {}
 	fn on_new_session<T: OpaqueKeys>(
 		_changed: bool,
@@ -271,24 +278,17 @@ impl Convert<UintAuthorityId, AccountId> for AccountIdOfValidator {
 }
 
 parameter_types! {
-	pub const MinAuthorities: u32 = 1u32;
+	pub const MinAuthorities: u32 = 0u32;
 	pub const MaxKeys: u32 = 1000u32;
 }
 impl pallet_validator_set::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-
 	type AddRemoveOrigin = EnsureRoot<AccountId>;
-
 	type MinAuthorities = MinAuthorities;
-
 	type SessionBlockManager = MockSessionBlockManager;
-
 	type FindAuthor = MockFindAuthor;
-
 	type AuthorityId = UintAuthorityId;
-
 	type AccountIdOfValidator = AccountIdOfValidator;
-
 	type MaxKeys = MaxKeys;
 }
 
@@ -306,15 +306,11 @@ impl pallet_session::Config for Runtime {
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Evm: pallet_evm::{Pallet, Call, Storage, Event<T>},
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+	pub enum Runtime {
+		System: frame_system,
+		Balances: pallet_balances,
+		Evm: pallet_evm,
+		Timestamp: pallet_timestamp,
 		ValidatorFeeSelector: pallet_validator_fee_selector,
 		ValidatorSet: pallet_validator_set,
 		Session: pallet_session,
@@ -339,8 +335,8 @@ parameter_types! {
 
 impl ExtBuilder {
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
-		let mut t = frame_system::GenesisConfig::default()
-			.build_storage::<Runtime>()
+		let mut t = frame_system::GenesisConfig::<Runtime>::default()
+			.build_storage()
 			.expect("Frame system builds valid default genesis config");
 
 		pallet_balances::GenesisConfig::<Runtime> {
@@ -349,38 +345,34 @@ impl ExtBuilder {
 		.assimilate_storage(&mut t)
 		.expect("Pallet balances storage can be assimilated");
 
-		let config = pallet_validator_fee_selector::GenesisConfig {
-			initial_default_conversion_rate_controller: InitialDefaultConversionRateController::get(
-			),
-		};
-
 		let custom_controller = MeaninglessTokenAddress::get();
 
-		<pallet_evm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-			&pallet_evm::GenesisConfig {
-				accounts: {
-					let mut map = BTreeMap::new();
-					let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
-					map.insert(
-						custom_controller,
-						fp_evm::GenesisAccount {
-							nonce: U256::zero(),
-							balance: U256::from(1000000000000000000u128),
-							storage: BTreeMap::new(),
-							code: revert_bytecode,
-						},
-					);
-					map
-				},
+		pallet_evm::GenesisConfig::<Runtime> {
+			_marker: Default::default(),
+			accounts: {
+				let mut map = BTreeMap::new();
+				let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+				map.insert(
+					custom_controller,
+					fp_evm::GenesisAccount {
+						nonce: U256::zero(),
+						balance: U256::from(1000000000000000000u128),
+						storage: BTreeMap::new(),
+						code: revert_bytecode,
+					},
+				);
+				map
 			},
-			&mut t,
-		)
-		.unwrap();
+		}
+		.assimilate_storage(&mut t)
+		.expect("Pallet EVM storage can be assimilated");
 
-		<pallet_validator_fee_selector::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-			&config,
-			&mut t,
-		)
+		pallet_validator_fee_selector::GenesisConfig::<Runtime> {
+			initial_default_conversion_rate_controller: InitialDefaultConversionRateController::get(
+			),
+			_config: Default::default(),
+		}
+		.assimilate_storage(&mut t)
 		.expect("Pallet validator fee selector storage can be assimilated");
 
 		pallet_validator_set::GenesisConfig::<Runtime> {

@@ -22,6 +22,7 @@ use frame_support::{
 	pallet_prelude::*,
 	traits::{EstimateNextSessionRotation, Get, ValidatorSet, ValidatorSetWithIdentification},
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use log;
 pub use pallet::*;
 use sp_runtime::traits::{Convert, Saturating, Zero};
@@ -32,7 +33,10 @@ pub const LOG_TARGET: &'static str = "runtime::validator-set";
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_system::{offchain::SubmitTransaction, pallet_prelude::*};
+	use frame_system::{
+		offchain::SubmitTransaction,
+		pallet_prelude::{BlockNumberFor, *},
+	};
 
 	use frame_support::traits::FindAuthor;
 
@@ -58,7 +62,7 @@ pub mod pallet {
 		/// auto removal.
 		type MinAuthorities: Get<u32>;
 
-		type SessionBlockManager: SessionBlockManager<Self::BlockNumber>;
+		type SessionBlockManager: SessionBlockManager<BlockNumberFor<Self>>;
 
 		type FindAuthor: FindAuthor<Self::AccountId>;
 
@@ -108,13 +112,8 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn block_authors)]
-	pub type BlockAuthors<T: Config> = StorageMap<
-		_,
-		Twox64Concat,
-		<T as frame_system::Config>::BlockNumber,
-		T::AccountId,
-		OptionQuery,
-	>;
+	pub type BlockAuthors<T: Config> =
+		StorageMap<_, Twox64Concat, BlockNumberFor<T>, T::AccountId, OptionQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -222,7 +221,7 @@ pub mod pallet {
 							};
 
 							let call = Call::<T>::add_validator_again {
-								heartbeat,
+								heartbeat: heartbeat.clone(),
 								signature: signature.unwrap(),
 							};
 
@@ -230,12 +229,19 @@ pub mod pallet {
 								call.into(),
 							) {
 								Err(_) => {
-									log::error!(target: LOG_TARGET, "Failed to submit transaction",);
+									log::error!(
+										target: LOG_TARGET,
+										"Failed to submit heartbeat transaction for validator {:?}: validator may already be active or transaction submission encountered an error",
+										validator_id,
+									);
 								}
 								_ => {
 									log::info!(
 										target: LOG_TARGET,
-										"Successfully submitted transaction",
+										"✅ Heartbeat transaction successfully submitted for validator (index: {:?}, id: {:?}) at block: {:?}",
+										heartbeat.authority_index,
+										validator_id,
+										now,
 									);
 								}
 							};
@@ -257,7 +263,6 @@ pub mod pallet {
 		pub max_epochs_missed: U256,
 	}
 
-	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
@@ -267,25 +272,8 @@ pub mod pallet {
 		}
 	}
 
-	#[cfg(feature = "std")]
-	impl<T: Config> GenesisConfig<T> {
-		/// Direct implementation of `GenesisBuild::build_storage`.
-		///
-		/// Kept in order not to break dependency.
-		pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
-			<Self as GenesisBuild<T>>::build_storage(self)
-		}
-
-		/// Direct implementation of `GenesisBuild::assimilate_storage`.
-		///
-		/// Kept in order not to break dependency.
-		pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
-			<Self as GenesisBuild<T>>::assimilate_storage(self, storage)
-		}
-	}
-
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
 			Pallet::<T>::initialize_validators(self.initial_validators.clone());
 			MaxMissedEpochs::<T>::put(self.max_epochs_missed.clone());
@@ -324,7 +312,7 @@ pub mod pallet {
 		}
 
 		fn ensure_unsigned_origin(
-			heartbeat: Heartbeat<T::BlockNumber, T::AuthorityId>,
+			heartbeat: Heartbeat<BlockNumberFor<T>, T::AuthorityId>,
 			signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
 		) -> Result<(), ()> {
 			let is_valid = heartbeat
@@ -449,7 +437,7 @@ pub mod pallet {
 		#[pallet::weight(Pallet::<T>::add_validator_again_weight())]
 		pub fn add_validator_again(
 			origin: OriginFor<T>,
-			heartbeat: Heartbeat<T::BlockNumber, T::AuthorityId>,
+			heartbeat: Heartbeat<BlockNumberFor<T>, T::AuthorityId>,
 			_signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
 		) -> DispatchResult {
 			ensure_none(origin)?;
@@ -472,10 +460,6 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
 	fn initialize_validators(account_ids: Vec<T::AccountId>) {
-		assert!(
-			account_ids.len() as u32 >= T::MinAuthorities::get(),
-			"Initial set of validators must be at least T::MinAuthorities"
-		);
 		assert!(
 			<Validators<T>>::get().is_empty(),
 			"Validators are already initialized!"
@@ -574,10 +558,7 @@ impl<T: Config> Pallet<T> {
 
 // Provides the new set of validators to the session module when session is
 // being rotated.
-impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T>
-where
-	T::BlockNumber: Saturating,
-{
+impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
 	// Plan a new session and provide new validator set.
 
 	fn new_session(_new_index: u32) -> Option<Vec<T::AccountId>> {
@@ -628,20 +609,26 @@ where
 	fn start_session(_start_index: u32) {}
 }
 
-impl<T: Config> EstimateNextSessionRotation<T::BlockNumber> for Pallet<T> {
-	fn average_session_length() -> T::BlockNumber {
+impl<T: Config> EstimateNextSessionRotation<BlockNumberFor<T>> for Pallet<T> {
+	fn average_session_length() -> BlockNumberFor<T> {
 		Zero::zero()
 	}
 
 	fn estimate_current_session_progress(
-		_now: T::BlockNumber,
-	) -> (Option<sp_runtime::Permill>, frame_support::dispatch::Weight) {
+		_now: BlockNumberFor<T>,
+	) -> (
+		Option<sp_runtime::Permill>,
+		frame_support::pallet_prelude::Weight,
+	) {
 		(None, Zero::zero())
 	}
 
 	fn estimate_next_session_rotation(
-		_now: T::BlockNumber,
-	) -> (Option<T::BlockNumber>, frame_support::dispatch::Weight) {
+		_now: BlockNumberFor<T>,
+	) -> (
+		Option<BlockNumberFor<T>>,
+		frame_support::pallet_prelude::Weight,
+	) {
 		(None, Zero::zero())
 	}
 }

@@ -14,8 +14,7 @@ sp-io = { workspace = true }
 ethereum = { workspace = true }
 fp-ethereum = { workspace = true }
 sha3 = { version = "0.10.6", default-features = false }
-hex = {workspace= true, default-features = false }
-
+hex = { workspace= true, default-features = false }
 
 [dev-dependencies]
 pallet-evm = { workspace = true, features = ["std"] }

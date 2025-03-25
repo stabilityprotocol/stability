@@ -14,24 +14,47 @@
 // You should have received a copy of the GNU General Public License
 // along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::time::Duration;
-
 use super::*;
 
-use fc_rpc::OverrideHandle;
+use crate::eth::EthConfiguration;
+use fc_rpc_core::types::FilterPool;
+use fc_storage::StorageOverride;
 use fp_rpc::EthereumRuntimeRPCApi;
 use moonbeam_rpc_debug::{DebugHandler, DebugRequester};
 use moonbeam_rpc_trace::{CacheRequester as TraceFilterCacheRequester, CacheTask};
-use sc_client_api::BlockOf;
+use prometheus_endpoint::Registry as PrometheusRegistry;
+use sc_client_api::{
+	Backend, BlockOf, BlockchainEvents, HeaderBackend, StateBackend, StorageProvider,
+};
 use sc_service::TaskManager;
-use sp_core::{H256};
-use sp_runtime::traits::Header as HeaderT;
-use tokio::sync::Semaphore;
-use sp_runtime::traits::BlakeTwo256;
-use sc_client_api::StateBackend;
 use sp_block_builder::BlockBuilder;
-use fc_db::BackendReader;
-use crate::eth::{EthConfiguration, EthApi};
+use sp_core::H256;
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT};
+use std::str::FromStr;
+use tokio::sync::Semaphore;
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum EthApi {
+	Txpool,
+	Debug,
+	Trace,
+}
+
+impl FromStr for EthApi {
+	type Err = String;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		Ok(match s {
+			"txpool" => Self::Txpool,
+			"debug" => Self::Debug,
+			"trace" => Self::Trace,
+			_ => {
+				log::error!("`{}` is not recognized as a supported Ethereum Api", s);
+				Self::Txpool // Default to Txpool or any other default variant
+			}
+		})
+	}
+}
 
 #[derive(Clone)]
 pub struct RpcRequesters {
@@ -39,15 +62,20 @@ pub struct RpcRequesters {
 	pub trace: Option<TraceFilterCacheRequester>,
 }
 
+pub struct SpawnTasksParams<'a, B: BlockT, C, BE> {
+	pub task_manager: &'a TaskManager,
+	pub client: Arc<C>,
+	pub substrate_backend: Arc<BE>,
+	pub frontier_backend: Arc<dyn fc_api::Backend<B> + Send + Sync>,
+	pub filter_pool: Option<FilterPool>,
+	pub storage_override: Arc<dyn StorageOverride<B>>,
+}
+
 // Spawn the tasks that are required to run a Moonbeam tracing node.
 pub fn spawn_tracing_tasks<B, C, BE>(
-	eth_config: &EthConfiguration,
-	task_manager: &TaskManager,
-	client: Arc<C>,
-	backend: Arc<BE>,
-	frontier_backend: Arc<dyn BackendReader<B> + Send + Sync>,
-	overrides: Arc<OverrideHandle<B>>,
-	prometheus_registry : Option<prometheus_endpoint::Registry>,
+	rpc_config: &EthConfiguration,
+	prometheus: Option<PrometheusRegistry>,
+	params: SpawnTasksParams<B, C, BE>,
 ) -> RpcRequesters
 where
 	C: ProvideRuntimeApi<B> + BlockOf,
@@ -61,31 +89,32 @@ where
 	B::Header: HeaderT<Number = u32>,
 	BE: Backend<B> + 'static,
 	BE::State: StateBackend<BlakeTwo256>,
-{	
-	let permit_pool = Arc::new(Semaphore::new(eth_config.ethapi_max_permits as usize));
+{
+	let permit_pool = Arc::new(Semaphore::new(rpc_config.ethapi_max_permits as usize));
 
-	let (trace_filter_task, trace_filter_requester) = if eth_config.ethapi.contains(&EthApi::Trace) {
+	let (trace_filter_task, trace_filter_requester) = if rpc_config.ethapi.contains(&EthApi::Trace)
+	{
 		let (trace_filter_task, trace_filter_requester) = CacheTask::create(
-			Arc::clone(&client),
-			Arc::clone(&backend),
-			Duration::from_secs(eth_config.ethapi_trace_cache_duration),
+			Arc::clone(&params.client),
+			Arc::clone(&params.substrate_backend),
+			core::time::Duration::from_secs(rpc_config.ethapi_trace_cache_duration),
 			Arc::clone(&permit_pool),
-			Arc::clone(&overrides),
-			prometheus_registry.clone()
+			Arc::clone(&params.storage_override),
+			prometheus,
 		);
 		(Some(trace_filter_task), Some(trace_filter_requester))
 	} else {
 		(None, None)
 	};
 
-	let (debug_task, debug_requester) = if eth_config.ethapi.contains(&EthApi::Debug) {
+	let (debug_task, debug_requester) = if rpc_config.ethapi.contains(&EthApi::Debug) {
 		let (debug_task, debug_requester) = DebugHandler::task(
-			Arc::clone(&client),
-			Arc::clone(&backend),
-			Arc::clone(&frontier_backend),
+			Arc::clone(&params.client),
+			Arc::clone(&params.substrate_backend),
+			Arc::clone(&params.frontier_backend),
 			Arc::clone(&permit_pool),
-			Arc::clone(&overrides),
-			eth_config.tracing_raw_max_memory_usage,
+			Arc::clone(&params.storage_override),
+			rpc_config.tracing_raw_max_memory_usage,
 		);
 		(Some(debug_task), Some(debug_requester))
 	} else {
@@ -95,7 +124,7 @@ where
 	// `trace_filter` cache task. Essential.
 	// Proxies rpc requests to it's handler.
 	if let Some(trace_filter_task) = trace_filter_task {
-		task_manager.spawn_essential_handle().spawn(
+		params.task_manager.spawn_essential_handle().spawn(
 			"trace-filter-cache",
 			Some("eth-tracing"),
 			trace_filter_task,
@@ -105,7 +134,7 @@ where
 	// `debug` task if enabled. Essential.
 	// Proxies rpc requests to it's handler.
 	if let Some(debug_task) = debug_task {
-		task_manager.spawn_essential_handle().spawn(
+		params.task_manager.spawn_essential_handle().spawn(
 			"ethapi-debug",
 			Some("eth-tracing"),
 			debug_task,

@@ -1,5 +1,4 @@
-pub use ethereum::TransactionV2 as Transaction;
-use fp_ethereum::TransactionData;
+use fp_ethereum::{Transaction, TransactionData};
 use sha3::Digest;
 use sp_core::U256;
 use sp_core::{Encode, H160, H256};
@@ -127,20 +126,19 @@ pub fn transaction_gas_price(
 	base_fee: U256,
 	transaction: &Transaction,
 	is_transactional: bool,
-) -> Result<U256, ()> {
-	let data: TransactionData = transaction.into();
+) -> U256 {
+	let data: TransactionData = TransactionData::from(transaction);
 
-	let max_fee_per_gas = crate::custom_fee::custom_info_from_fee_params(
+	let custom_fee_info = crate::custom_fee::compute_fee_details(
 		base_fee,
 		data.max_fee_per_gas.or(data.gas_price),
 		data.max_priority_fee_per_gas,
-	)
-	.max_fee_per_gas;
+	);
 
-	if max_fee_per_gas < base_fee && is_transactional {
-		return Err(());
+	if is_transactional {
+		custom_fee_info.actual_fee
 	} else {
-		Ok(max_fee_per_gas)
+		U256::zero()
 	}
 }
 

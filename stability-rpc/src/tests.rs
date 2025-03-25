@@ -4,7 +4,7 @@ use crate::mock::*;
 use sp_core::H160;
 use std::str::FromStr;
 use std::sync::Arc;
-use stability_test_runtime_client::{self, runtime::Block};
+use substrate_test_runtime_client::{self, runtime::Block};
 
 sp_api::mock_impl_runtime_apis! {
 	impl stability_rpc_api::StabilityRpcApi<Block> for TestRuntimeApi {

@@ -34,14 +34,14 @@ pallet-ethereum = { workspace = true, features = ["std"]}
 ethereum = { workspace = true, features = ["std"] }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
-    "parity-scale-codec/std",
-	"scale-info/std",
 	"frame-support/std",
 	"frame-system/std",
-    "sp-runtime/std",
-    "sp-std/std",
-    'pallet-erc20-manager/std',
-    'runner/std',
+	'pallet-erc20-manager/std',
+	"parity-scale-codec/std",
+	'runner/std',
+	"scale-info/std",
+	"sp-runtime/std",
+	"sp-std/std",
 ]

@@ -4,21 +4,22 @@
 
 use super::*;
 use crate as validator_set;
-use core::borrow::Borrow;
+use frame_support::traits::Everything;
 use frame_support::{
 	parameter_types,
-	traits::{FindAuthor, GenesisBuild, StorageInstance},
-	BasicExternalities,
+	traits::{FindAuthor, StorageInstance},
 };
 use frame_system::EnsureRoot;
 use pallet_session::*;
 use sp_core::{crypto::key_types::DUMMY, H256};
+use sp_runtime::BuildStorage;
 use sp_runtime::{
 	impl_opaque_keys,
-	testing::{Header, UintAuthorityId},
+	testing::UintAuthorityId,
 	traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
 	KeyTypeId, RuntimeAppPublic,
 };
+use sp_state_machine::BasicExternalities;
 use std::cell::RefCell;
 
 impl_opaque_keys! {
@@ -62,11 +63,7 @@ type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 frame_support::construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
+	pub enum Test {
 		System: frame_system,
 		ValidatorSet: validator_set,
 		Session: pallet_session,
@@ -115,7 +112,7 @@ impl SessionHandler<u64> for TestSessionHandler {
 pub struct TestShouldEndSession;
 impl ShouldEndSession<u64> for TestShouldEndSession {
 	fn should_end_session(now: u64) -> bool {
-		let l = SESSION_LENGTH.with(|l| *l.borrow());
+		let l = SESSION_LENGTH.with(|l| *l);
 		now % l == 0
 			|| FORCE_SESSION_END.with(|l| {
 				let r = *l.borrow();
@@ -129,44 +126,6 @@ pub fn authorities() -> Vec<UintAuthorityId> {
 	AUTHORITIES.with(|l| l.borrow().to_vec())
 }
 
-pub fn new_test_ext() -> sp_io::TestExternalities {
-	let mut t = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap();
-	let keys: Vec<_> = NEXT_VALIDATORS.with(|l| {
-		l.borrow()
-			.iter()
-			.cloned()
-			.map(|i| {
-				(
-					i,
-					i,
-					MockSessionKeys {
-						dummy: UintAuthorityId(i),
-					},
-				)
-			})
-			.collect()
-	});
-	BasicExternalities::execute_with_storage(&mut t, || {
-		for (ref k, ..) in &keys {
-			frame_system::Pallet::<Test>::inc_providers(k);
-		}
-		frame_system::Pallet::<Test>::inc_providers(&4);
-		frame_system::Pallet::<Test>::inc_providers(&69);
-	});
-	validator_set::GenesisConfig::<Test> {
-		initial_validators: keys.iter().map(|x| x.1).collect::<Vec<_>>(),
-		max_epochs_missed: 2.into(),
-	}
-	.assimilate_storage(&mut t)
-	.unwrap();
-	pallet_session::GenesisConfig::<Test> { keys: keys.clone() }
-		.assimilate_storage(&mut t)
-		.unwrap();
-	sp_io::TestExternalities::new(t)
-}
-
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 	pub BlockWeights: frame_system::limits::BlockWeights =
@@ -174,19 +133,14 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type BaseCallFilter = frame_support::traits::Everything;
-	type BlockWeights = ();
-	type BlockLength = ();
+	type BaseCallFilter = Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = u64;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = u64;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -195,13 +149,19 @@ impl frame_system::Config for Test {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
+	type BlockWeights = ();
+	type BlockLength = ();
 	type SS58Prefix = ();
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
-}
-
-parameter_types! {
-	pub const MinAuthorities: u32 = 1;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 pub struct PeriodicSessionBlockManager;
@@ -252,16 +212,11 @@ parameter_types! {
 impl validator_set::Config for Test {
 	type AddRemoveOrigin = EnsureRoot<Self::AccountId>;
 	type RuntimeEvent = RuntimeEvent;
-	type MinAuthorities = MinAuthorities;
-
+	type MinAuthorities = ();
 	type SessionBlockManager = PeriodicSessionBlockManager;
-
 	type FindAuthor = FindBlockAuthorityId;
-
 	type AuthorityId = UintAuthorityId;
-
 	type MaxKeys = MaxKeys;
-
 	type AccountIdOfValidator = AccountIdOfValidator;
 }
 
@@ -275,4 +230,46 @@ impl pallet_session::Config for Test {
 	type Keys = MockSessionKeys;
 	type WeightInfo = ();
 	type RuntimeEvent = RuntimeEvent;
+}
+
+pub struct ExtBuilder;
+impl ExtBuilder {
+	pub fn build() -> sp_io::TestExternalities {
+		let mut t = frame_system::GenesisConfig::<Test>::default()
+			.build_storage()
+			.unwrap();
+
+		let keys: Vec<_> = NEXT_VALIDATORS.with(|l| {
+			l.borrow()
+				.iter()
+				.cloned()
+				.map(|i| {
+					(
+						i,
+						i,
+						MockSessionKeys {
+							dummy: UintAuthorityId(i),
+						},
+					)
+				})
+				.collect()
+		});
+		BasicExternalities::execute_with_storage(&mut t, || {
+			for (ref k, ..) in &keys {
+				frame_system::Pallet::<Test>::inc_providers(k);
+			}
+			frame_system::Pallet::<Test>::inc_providers(&4);
+			frame_system::Pallet::<Test>::inc_providers(&69);
+		});
+		validator_set::GenesisConfig::<Test> {
+			initial_validators: keys.iter().map(|x| x.1).collect::<Vec<_>>(),
+			max_epochs_missed: 2.into(),
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
+		pallet_session::GenesisConfig::<Test> { keys: keys.clone() }
+			.assimilate_storage(&mut t)
+			.unwrap();
+		sp_io::TestExternalities::from(t)
+	}
 }

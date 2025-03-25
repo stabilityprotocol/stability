@@ -1,73 +1,45 @@
 use super::{base_genesis, get_authority_from_pubkeys, ChainSpec};
-use sc_network::config::MultiaddrWithPeerId;
 use sc_service::ChainType;
-use sp_application_crypto::Ss58Codec;
-use sp_core::ecdsa;
-use sp_runtime::traits::{IdentifyAccount, Verify};
-use stability_runtime::{AccountId, Signature, WASM_BINARY};
-use std::{str::FromStr, vec};
+use stability_runtime::WASM_BINARY;
+use std::vec;
 
-type AccountPublic = <Signature as Verify>::Signer;
-
-fn get_account_id_from_public(pubkey: &str) -> AccountId {
-	AccountPublic::from(ecdsa::Public::from_string(pubkey).unwrap()).into_account()
-}
-
-pub fn testnet_config() -> Result<ChainSpec, String> {
-	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
-	Ok(ChainSpec::from_genesis(
-		// Name
-		"Testnet",
-		// ID
-		"testnet",
-		ChainType::Live,
-		move || {
-			base_genesis(
-				wasm_binary,
-				vec![
-					get_authority_from_pubkeys(
-						"KWECfQF69Vr61qop6NVpesYrnw5WRS4M816286K7NUuVAn2zd",
-						"5FviP577ihFCP4n8jCnrd38dQDCn2VeM5DAoYNEHbPy7JtWz",
-					),
-					get_authority_from_pubkeys(
-						"KW5B2djwfWnVUPjZALW9NjKPkYc5wA1LSXmYD7HB2QeNoyBX1",
-						"5FqDv66PJL7TtC49CitcfGNokKJjbL3nwDRmYnQ66BJttUrw",
-					),
-					get_authority_from_pubkeys(
-						"KWAefjXz8rjkX23DYt1tdjUoz9E8PPPQaA5SDULYc1mPpyg6i",
-						"5GUVATr2DwH51tnqaUEuBtuHA4bLnoWBAkauDxDafMukpZAZ",
-					),
-					get_authority_from_pubkeys(
-						"KWBJnoEoDMniHfxEC2iMv5xLQNwVHV7GdZPCD31eiiLi4niHt",
-						"5FiEnbnj7VV5CWAtbJXtZjCkiQTBBRqyb8MgXEkydW1SfLiJ",
-					),
-					get_authority_from_pubkeys(
-						"KW7fmVoR3DnYBEX8DwBfPZR2QBLf4uTQvXNm7zweVRWvXqJyt",
-						"5GzRrcmG4kztd31FPWEcr51B3Jd2GZPh6ZjpxwzymopHuViN",
-					),
-					get_authority_from_pubkeys(
-						"KWBJUVzDvXYKakKX1wuHKqxxH5qg751fHwtaG15KYpuPReU9x",
-						"5FqhzMYnwsDx4uZYiGVXxJWqvtGwTgMEgYvziEkihE6tfov7",
-					),
-				],
-				vec![get_account_id_from_public(
-					"KWAWnNYYgJzqvZQ2LLYmTVya95oeyAXX76PZN86DjbQKp7Czw",
-				)],
-				20180427,
-			)
-		},
-		// Bootnodes
-		vec![
-			MultiaddrWithPeerId::from_str("/dns4/s0.testnet.stble.io/tcp/30333/p2p/12D3KooWPaen1igo2WYUFCt3EAg4AWjWoMYgmr4tCa2Yb1WfgoDB").unwrap()
-		],
-		// Telemetry
-		None,
-		// Protocol ID
-		None,
-		None,
-		// Properties
-		None,
-		// Extensions
-		None,
-	))
+pub fn testnet_config() -> ChainSpec {
+	ChainSpec::builder(WASM_BINARY.expect("WASM not available"), Default::default())
+		.with_name("Alphanet")
+		.with_id("alphanet")
+		.with_chain_type(ChainType::Live)
+		.with_genesis_config_patch(base_genesis(
+			vec![
+				get_authority_from_pubkeys(
+					"KWECfQF69Vr61qop6NVpesYrnw5WRS4M816286K7NUuVAn2zd",
+					"5FviP577ihFCP4n8jCnrd38dQDCn2VeM5DAoYNEHbPy7JtWz",
+				),
+				get_authority_from_pubkeys(
+					"KW5B2djwfWnVUPjZALW9NjKPkYc5wA1LSXmYD7HB2QeNoyBX1",
+					"5FqDv66PJL7TtC49CitcfGNokKJjbL3nwDRmYnQ66BJttUrw",
+				),
+				get_authority_from_pubkeys(
+					"KWAefjXz8rjkX23DYt1tdjUoz9E8PPPQaA5SDULYc1mPpyg6i",
+					"5GUVATr2DwH51tnqaUEuBtuHA4bLnoWBAkauDxDafMukpZAZ",
+				),
+				get_authority_from_pubkeys(
+					"KWBJnoEoDMniHfxEC2iMv5xLQNwVHV7GdZPCD31eiiLi4niHt",
+					"5FiEnbnj7VV5CWAtbJXtZjCkiQTBBRqyb8MgXEkydW1SfLiJ",
+				),
+				get_authority_from_pubkeys(
+					"KW7fmVoR3DnYBEX8DwBfPZR2QBLf4uTQvXNm7zweVRWvXqJyt",
+					"5GzRrcmG4kztd31FPWEcr51B3Jd2GZPh6ZjpxwzymopHuViN",
+				),
+				get_authority_from_pubkeys(
+					"KWBJUVzDvXYKakKX1wuHKqxxH5qg751fHwtaG15KYpuPReU9x",
+					"5FqhzMYnwsDx4uZYiGVXxJWqvtGwTgMEgYvziEkihE6tfov7",
+				),
+			],
+			vec![crate::chain_spec::get_account_id_from_public(
+				"KWAWnNYYgJzqvZQ2LLYmTVya95oeyAXX76PZN86DjbQKp7Czw",
+			)],
+			20180427,
+			false,
+		))
+		.build()
 }

@@ -13,9 +13,10 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use account::AccountId20;
 use account::EthereumSigner;
 use core::str::FromStr;
+#[cfg(feature = "std")]
+pub use fp_evm::GenesisAccount;
 use frame_support::pallet_prelude::EnsureOrigin;
 use frame_support::pallet_prelude::InvalidTransaction;
-use frame_support::traits::EitherOfDiverse;
 use frame_system::EnsureRoot;
 use frame_system::RawOrigin;
 use opaque::SessionKeys;
@@ -32,6 +33,7 @@ use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
 	OpaqueMetadata, H160, H256, U256,
 };
+use sp_genesis_builder::PresetId;
 use sp_runtime::traits::Convert;
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::traits::IdentityLookup;
@@ -71,9 +73,11 @@ extern crate moonbeam_rpc_primitives_txpool;
 pub use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
+	genesis_builder_helper::{build_state, get_preset},
 	parameter_types,
 	traits::{
-		ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, OnFinalize, OnTimestampSet, Randomness,
+		ConstBool, ConstU32, ConstU8, EitherOfDiverse, FindAuthor, KeyOwnerProofSystem, OnFinalize,
+		OnTimestampSet, Randomness,
 	},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight},
@@ -134,6 +138,8 @@ pub type Balance = stbl_core_primitives::Balance;
 /// Index of a transaction in the chain.
 pub type Index = stbl_core_primitives::Index;
 
+pub type Nonce = Index;
+
 /// A hash of some data used by the chain.
 pub type Hash = stbl_core_primitives::Hash;
 
@@ -164,11 +170,12 @@ pub mod opaque {
 	}
 }
 
+#[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("node-stability"),
 	impl_name: create_runtime_str!("node-stability"),
 	authoring_version: 1,
-	spec_version: 2,
+	spec_version: 3,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -202,6 +209,10 @@ parameter_types! {
 // Configure FRAME pallets to include in runtime.
 
 impl frame_system::Config for Runtime {
+	/// The index type for storing how many extrinsics an account has signed.
+	type Nonce = Nonce;
+	/// The index type for blocks.
+	type Block = Block;
 	/// The basic call filter to use in dispatchable.
 	type BaseCallFilter = frame_support::traits::Everything;
 	/// Block & extrinsics weights: base values and limits.
@@ -212,10 +223,8 @@ impl frame_system::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	/// The aggregated dispatch type that is available for extrinsics.
 	type RuntimeCall = RuntimeCall;
-	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
+	/// The aggregated RuntimeTask type.
+	type RuntimeTask = RuntimeTask;
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
@@ -224,8 +233,6 @@ impl frame_system::Config for Runtime {
 	type AccountId = AccountId;
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
 	type Lookup = IdentityLookup<AccountId>;
-	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
@@ -251,6 +258,11 @@ impl frame_system::Config for Runtime {
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
 	type MaxConsumers = ConstU32<16>;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -261,6 +273,8 @@ impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type MaxAuthorities = MaxAuthorities;
 	type DisabledValidators = ();
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+	type SlotDuration = frame_support::traits::ConstU64<SLOT_DURATION>;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -270,6 +284,7 @@ impl pallet_grandpa::Config for Runtime {
 	type MaxSetIdSessionEntries = ();
 	type KeyOwnerProof = sp_core::Void;
 	type EquivocationReportSystem = ();
+	type MaxNominators = ();
 }
 
 parameter_types! {
@@ -306,13 +321,12 @@ parameter_types! {
 	pub const TransactionByteFee: Balance = 1;
 }
 
-pub struct MockedSubstrateFeeController;
-impl<T: pallet_transaction_payment::Config> OnChargeTransaction<T> for MockedSubstrateFeeController
+pub struct StbleOnChargeTransaction;
+impl<T: pallet_transaction_payment::Config> OnChargeTransaction<T> for StbleOnChargeTransaction
 where
 	account::AccountId20: From<T::AccountId>,
 {
 	type Balance = Balance;
-
 	type LiquidityInfo = Balance;
 
 	fn withdraw_fee(
@@ -352,7 +366,8 @@ where
 		let validator = EVM::find_author();
 
 		let token = DNTFeeController::get_transaction_fee_token(from);
-		let conversion_rate = DNTFeeController::get_transaction_conversion_rate(from, from, token);
+		let conversion_rate =
+			DNTFeeController::get_transaction_conversion_rate(from, validator, token);
 
 		DNTFeeController::correct_fee(
 			from,
@@ -380,7 +395,7 @@ where
 
 impl pallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type OnChargeTransaction = MockedSubstrateFeeController;
+	type OnChargeTransaction = StbleOnChargeTransaction;
 	type OperationalFeeMultiplier = ConstU8<5>;
 	type WeightToFee = IdentityFee<Balance>;
 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -396,10 +411,11 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorLinkedOrTruncated<F> {
 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{
 		if let Some(author_index) = F::find_author(digests) {
-			let authority_id = Aura::authorities()[author_index as usize].clone();
+			let authority_id =
+				pallet_aura::Authorities::<Runtime>::get()[author_index as usize].clone();
 
 			let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
-			let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
+			let signer: EthereumSigner = sp_core::ecdsa::Public::from(bytes).into();
 			return Some(signer.into_account().into());
 		}
 		None
@@ -413,10 +429,11 @@ impl<F: FindAuthor<u32>> FindAuthor<AccountId> for FindBlockAuthorityId<F> {
 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{
 		if let Some(author_index) = F::find_author(digests) {
-			let authority_id = Aura::authorities()[author_index as usize].clone();
+			let authority_id =
+				pallet_aura::Authorities::<Runtime>::get()[author_index as usize].clone();
 
 			let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
-			let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
+			let signer: EthereumSigner = sp_core::ecdsa::Public::from(bytes).into();
 			return Some(signer.into_account().into());
 		}
 		None
@@ -487,6 +504,7 @@ impl pallet_evm::Config for Runtime {
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
+	type SuicideQuickClearLimit = ConstU32<0>;
 }
 
 parameter_types! {
@@ -603,7 +621,7 @@ pub struct AccountIdOfValidator;
 impl Convert<AuraId, AccountId> for AccountIdOfValidator {
 	fn convert(authority_id: AuraId) -> AccountId {
 		let bytes: [u8; 33] = authority_id.as_slice().try_into().unwrap();
-		let signer: EthereumSigner = sp_core::ecdsa::Public(bytes).into();
+		let signer: EthereumSigner = sp_core::ecdsa::Public::from(bytes).into();
 		return signer.into_account().into();
 	}
 }
@@ -691,9 +709,10 @@ where
 			frame_system::CheckTxVersion::<Runtime>::new(),
 			frame_system::CheckGenesis::<Runtime>::new(),
 			frame_system::CheckEra::<Runtime>::from(era),
-			frame_system::CheckNonce::<Runtime>::from(nonce),
+			stbl_transaction_validator::check_nonce::StbleCheckNonce::<Runtime>::from(nonce),
 			frame_system::CheckWeight::<Runtime>::new(),
 			pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+			frame_metadata_hash_extension::CheckMetadataHash::<Runtime>::new(false),
 		);
 		let raw_payload = SignedPayload::new(call, extra)
 			.map_err(|e| {
@@ -759,12 +778,38 @@ impl pallet_upgrade_runtime_proposal::Config for Runtime {
 
 impl pallet_fee_rewards_vault::Config for Runtime {}
 
+#[frame_support::pallet]
+pub mod pallet_manual_seal {
+	use super::*;
+	use frame_support::pallet_prelude::*;
+
+	#[pallet::pallet]
+	pub struct Pallet<T>(PhantomData<T>);
+
+	#[pallet::config]
+	pub trait Config: frame_system::Config {}
+
+	#[pallet::genesis_config]
+	#[derive(frame_support::DefaultNoBound)]
+	pub struct GenesisConfig<T> {
+		pub enable: bool,
+		#[serde(skip)]
+		pub _config: PhantomData<T>,
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+		fn build(&self) {
+			EnableManualSeal::set(&self.enable);
+		}
+	}
+}
+
+impl pallet_manual_seal::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = opaque::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic
+	pub enum Runtime
 	{
 		System: frame_system,
 		Timestamp: pallet_timestamp,
@@ -790,31 +835,30 @@ construct_runtime!(
 		UpgradeRuntimeProposal: pallet_upgrade_runtime_proposal,
 		FeeRewardsVault: pallet_fee_rewards_vault,
 		MetaTransactions: pallet_sponsored_transactions,
-		ZeroGasTransactions: pallet_zero_gas_transactions
+		ZeroGasTransactions: pallet_zero_gas_transactions,
+		ManualSeal: pallet_manual_seal,
 	}
 );
 
 #[derive(Clone)]
-pub struct TransactionConverter;
+pub struct TransactionConverter<B>(PhantomData<B>);
 
-impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
-	fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> UncheckedExtrinsic {
-		UncheckedExtrinsic::new_unsigned(
-			pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
-		)
+impl<B> Default for TransactionConverter<B> {
+	fn default() -> Self {
+		Self(PhantomData)
 	}
 }
 
-impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConverter {
+impl<B: BlockT> fp_rpc::ConvertTransaction<<B as BlockT>::Extrinsic> for TransactionConverter<B> {
 	fn convert_transaction(
 		&self,
 		transaction: pallet_ethereum::Transaction,
-	) -> opaque::UncheckedExtrinsic {
+	) -> <B as BlockT>::Extrinsic {
 		let extrinsic = UncheckedExtrinsic::new_unsigned(
 			pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
 		);
 		let encoded = extrinsic.encode();
-		opaque::UncheckedExtrinsic::decode(&mut &encoded[..])
+		<B as BlockT>::Extrinsic::decode(&mut &encoded[..])
 			.expect("Encoded extrinsic is always valid")
 	}
 }
@@ -836,9 +880,10 @@ pub type SignedExtra = (
 	frame_system::CheckTxVersion<Runtime>,
 	frame_system::CheckGenesis<Runtime>,
 	frame_system::CheckEra<Runtime>,
-	frame_system::CheckNonce<Runtime>,
+	stbl_transaction_validator::check_nonce::StbleCheckNonce<Runtime>,
 	frame_system::CheckWeight<Runtime>,
 	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+	frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -966,7 +1011,7 @@ impl_runtime_apis! {
 			Executive::execute_block(block)
 		}
 
-		fn initialize_block(header: &<Block as BlockT>::Header) {
+		fn initialize_block(header: &<Block as BlockT>::Header) -> sp_runtime::ExtrinsicInclusionMode {
 			Executive::initialize_block(header)
 		}
 	}
@@ -980,7 +1025,7 @@ impl_runtime_apis! {
 			Runtime::metadata_at_version(version)
 		}
 
-		fn metadata_versions() -> Vec<u32> {
+		fn metadata_versions() -> sp_std::vec::Vec<u32> {
 			Runtime::metadata_versions()
 		}
 	}
@@ -1022,13 +1067,27 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+		fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_state::<RuntimeGenesisConfig>(config)
+		}
+
+		fn get_preset(id: &Option<PresetId>) -> Option<Vec<u8>> {
+			get_preset::<RuntimeGenesisConfig>(id, |_| None)
+		}
+
+		fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
+			vec![]
+		}
+	}
+
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
 		fn slot_duration() -> sp_consensus_aura::SlotDuration {
 			sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
 		}
 
 		fn authorities() -> Vec<AuraId> {
-			Aura::authorities().to_vec()
+			pallet_aura::Authorities::<Runtime>::get().to_vec()
 		}
 	}
 
@@ -1274,17 +1333,26 @@ impl_runtime_apis! {
 				pallet_ethereum::CurrentTransactionStatuses::<Runtime>::get()
 			)
 		}
+
+		fn initialize_pending_block(header: &<Block as BlockT>::Header) {
+			Executive::initialize_block(header);
+		}
 	}
 
 	impl moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block> for Runtime {
 		fn trace_transaction(
 			extrinsics: Vec<<Block as BlockT>::Extrinsic>,
 			traced_transaction: &pallet_ethereum::Transaction,
+			header: &<Block as BlockT>::Header,
 		) -> Result<
 			(),
 			sp_runtime::DispatchError,
 		> {
 			use moonbeam_evm_tracer::tracer::EvmTracer;
+
+			// We need to follow the order when replaying the transactions.
+			// Block initialize happens first then apply_extrinsic.
+			Executive::initialize_block(header);
 
 			// Apply the a subset of extrinsics: all the substrate-specific or ethereum
 			// transactions that preceded the requested transaction.
@@ -1325,11 +1393,17 @@ impl_runtime_apis! {
 		fn trace_block(
 			extrinsics: Vec<<Block as BlockT>::Extrinsic>,
 			known_transactions: Vec<H256>,
+			header: &<Block as BlockT>::Header,
 		) -> Result<
 			(),
 			sp_runtime::DispatchError,
 		> {
 			use moonbeam_evm_tracer::tracer::EvmTracer;
+
+
+			// We need to follow the order when replaying the transactions.
+			// Block initialize happens first then apply_extrinsic.
+			Executive::initialize_block(header);
 
 			let mut config = <Runtime as pallet_evm::Config>::config().clone();
 			config.estimate = true;
@@ -1370,6 +1444,84 @@ impl_runtime_apis! {
 				};
 			}
 
+			Ok(())
+		}
+
+		fn trace_call(
+			header: &<Block as BlockT>::Header,
+			from: H160,
+			to: H160,
+			data: Vec<u8>,
+			value: U256,
+			gas_limit: U256,
+			max_fee_per_gas: Option<U256>,
+			max_priority_fee_per_gas: Option<U256>,
+			nonce: Option<U256>,
+			access_list: Option<Vec<(H160, Vec<H256>)>>,
+		) -> Result<(), sp_runtime::DispatchError> {
+			use moonbeam_evm_tracer::tracer::EvmTracer;
+
+			// We need to follow the order when replaying the transactions.
+			// Block initialize happens first then apply_extrinsic.
+			Executive::initialize_block(header);
+
+			EvmTracer::new().trace(|| {
+				let is_transactional = false;
+				let validate = true;
+				let without_base_extrinsic_weight = true;
+
+
+				// Estimated encoded transaction size must be based on the heaviest transaction
+				// type (EIP1559Transaction) to be compatible with all transaction types.
+				let mut estimated_transaction_len = data.len() +
+				// pallet ethereum index: 1
+				// transact call index: 1
+				// Transaction enum variant: 1
+				// chain_id 8 bytes
+				// nonce: 32
+				// max_priority_fee_per_gas: 32
+				// max_fee_per_gas: 32
+				// gas_limit: 32
+				// action: 21 (enum varianrt + call address)
+				// value: 32
+				// access_list: 1 (empty vec size)
+				// 65 bytes signature
+				258;
+
+				if access_list.is_some() {
+					estimated_transaction_len += access_list.encoded_size();
+				}
+
+				let gas_limit = gas_limit.min(u64::MAX.into()).low_u64();
+
+				let (weight_limit, proof_size_base_cost) =
+					match <Runtime as pallet_evm::Config>::GasWeightMapping::gas_to_weight(
+						gas_limit,
+						without_base_extrinsic_weight
+					) {
+						weight_limit if weight_limit.proof_size() > 0 => {
+							(Some(weight_limit), Some(estimated_transaction_len as u64))
+						}
+						_ => (None, None),
+					};
+
+				let _ = <Runtime as pallet_evm::Config>::Runner::call(
+					from,
+					to,
+					data,
+					value,
+					gas_limit,
+					max_fee_per_gas,
+					max_priority_fee_per_gas,
+					nonce,
+					access_list.unwrap_or_default(),
+					is_transactional,
+					validate,
+					weight_limit,
+					proof_size_base_cost,
+					<Runtime as pallet_evm::Config>::config(),
+				);
+			});
 			Ok(())
 		}
 	}
@@ -1485,58 +1637,28 @@ impl_runtime_apis! {
 
 	impl stbl_primitives_fee_compatible_api::CompatibleFeeApi<Block, AccountId> for Runtime {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool {
-			if let RuntimeCall::Ethereum(transact { transaction }) = tx.0.function {
-				let source_address_option =  stbl_tools::eth::recover_signer(&transaction);
+			match tx.0.function {
+				RuntimeCall::Ethereum(transact { transaction }) | RuntimeCall::MetaTransactions(send_sponsored_transaction { transaction, .. }) => {
+					let source_address_option = stbl_tools::eth::recover_signer(&transaction);
 
-				if source_address_option.is_none() {
-					return true
+					if source_address_option.is_none() {
+						return true;
+					}
+
+					let source_address = source_address_option.unwrap();
+					let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
+					let validator_conversion_rate = <pallet_validator_fee_selector::Pallet<Runtime>>::conversion_rate(source_address, validator.into(), source_fee_token);
+					let fee = pallet_base_fee::BaseFeePerGas::<Runtime>::get();
+					let custom_fee_info = CustomFeeInfo::new(fee, &transaction);
+
+					if !custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
+						return false;
+					}
+
+					<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
 				}
-
-				let source_address = source_address_option.unwrap();
-
-				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
-
-				let validator_conversion_rate = <pallet_validator_fee_selector::Pallet<Runtime>>::conversion_rate(source_address, validator.into(), source_fee_token);
-
-				let fee = pallet_base_fee::BaseFeePerGas::<Runtime>::get();
-
-				let custom_fee_info = CustomFeeInfo::new(fee, &transaction);
-
-				if !custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
-					return false
-				}
-
-				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
-			} else if let RuntimeCall::MetaTransactions(send_sponsored_transaction { transaction, .. }) = tx.0.function {
-				let source_address_option =  stbl_tools::eth::recover_signer(&transaction);
-
-				if source_address_option.is_none() {
-					return true
-				}
-
-				let source_address = source_address_option.unwrap();
-
-
-				let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
-
-
-				let validator_conversion_rate = <pallet_validator_fee_selector::Pallet<Runtime>>::conversion_rate(source_address, validator.into(), source_fee_token);
-
-				let fee = pallet_base_fee::BaseFeePerGas::<Runtime>::get();
-
-				let custom_fee_info = CustomFeeInfo::new(fee, &transaction);
-
-				if !custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
-					return false
-				}
-
-				<pallet_validator_fee_selector::Pallet<Runtime>>::validator_supports_fee_token(validator.into(), source_fee_token)
+				_ => true, // always return true for non-ethereum transactions
 			}
-			else {
-				// always return true for non-ethereum transactions
-				return true;
-			}
-
 		}
 	}
 

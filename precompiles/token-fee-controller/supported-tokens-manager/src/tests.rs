@@ -2,11 +2,11 @@ use core::str::FromStr;
 
 use frame_support::parameter_types;
 use pallet_supported_tokens_manager::SupportedTokensManager as SupportedTokensManagerT;
+use precompile_utils::prelude::*;
 use precompile_utils::{
 	prelude::{log1, Address},
 	testing::{Precompile1, PrecompileTesterExt},
 };
-use precompile_utils::prelude::*;
 use sp_core::{H160, H256};
 
 use crate::{
@@ -124,7 +124,7 @@ fn claim_ownership_if_claimable() {
 			.expect_log(log1(
 				Precompile1,
 				SELECTOR_LOG_NEW_OWNER,
-				solidity::encode_event_data(Into::<H256>::into(new_owner))
+				solidity::encode_event_data(Into::<H256>::into(new_owner)),
 			))
 			.execute_some();
 

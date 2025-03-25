@@ -21,22 +21,23 @@ syn = { workspace = true }
 sp-application-crypto = { workspace = true }
 
 [dev-dependencies]
-serde = { version = '1.0.126',features = ['derive'] }
+serde = { version = '1.0.126', features = ['derive'] }
+sp-state-machine = { workspace = true }
 
 
 [features]
 default = ['std']
 runtime-benchmarks = ['frame-benchmarking']
 std = [
-    'parity-scale-codec/std',
-    'frame-benchmarking/std',
-    'frame-support/std',
-    'frame-system/std',
-    'scale-info/std',
-    'sp-core/std',
-    'sp-io/std',
-    'sp-std/std',
-    'sp-runtime/std',
-    'pallet-session/std'
+	'frame-benchmarking/std',
+	'frame-support/std',
+	'frame-system/std',
+	'pallet-session/std',
+	'parity-scale-codec/std',
+	'scale-info/std',
+	'sp-core/std',
+	'sp-io/std',
+	'sp-runtime/std',
+	'sp-std/std',
 ]
 try-runtime = ['frame-support/try-runtime']

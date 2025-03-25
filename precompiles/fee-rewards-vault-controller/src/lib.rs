@@ -15,7 +15,6 @@
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(test, feature(assert_matches))]
 
 #[cfg(test)]
 mod mock;
@@ -25,10 +24,10 @@ mod tests;
 
 use core::str::FromStr;
 use fp_evm::PrecompileHandle;
-use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
-
+use frame_support::dispatch::{GetDispatchInfo, PostDispatchInfo};
 use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};
+use sp_runtime::traits::Dispatchable;
 
 use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
@@ -139,7 +138,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_TRANSFER_OWNER,
 			Into::<H256>::into(owner),
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 
@@ -169,7 +168,7 @@ where
 		log1(
 			handle.context().address,
 			SELECTOR_LOG_NEW_OWNER,
-			solidity::encode_event_data(Into::<H256>::into(target_new_owner))
+			solidity::encode_event_data(Into::<H256>::into(target_new_owner)),
 		)
 		.record(handle)?;
 
@@ -262,7 +261,7 @@ where
 		if claimant == holder {
 			return Ok(true);
 		}
-		
+
 		let code = pallet_evm::AccountCodes::<Runtime>::get(Into::<H160>::into(holder));
 
 		if code.is_empty() {
@@ -288,13 +287,13 @@ where
 			},
 		);
 
-		if reason != ExitReason::Succeed(ExitSucceed::Returned) {
-			return Err(revert("call to owner() failed"));
+		match reason {
+			ExitReason::Succeed(ExitSucceed::Returned) => {
+				let owner = H160::from_slice(&output[12..32]);
+				Ok(owner == claimant.into())
+			}
+			_ => Err(revert("call to owner() failed")),
 		}
-
-		let owner = H160::from_slice(&output[12..32]);
-
-		Ok(owner == claimant.into())
 	}
 
 	#[precompile::public("getClaimableReward(address,address)")]

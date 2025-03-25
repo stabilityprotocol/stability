@@ -4,7 +4,7 @@
 
 use super::*;
 use crate::mock::{
-	authorities, new_test_ext, NextBlockValidator, RuntimeOrigin, Session, Test, ValidatorSet,
+	authorities, ExtBuilder, NextBlockValidator, RuntimeOrigin, Session, Test, ValidatorSet,
 	SESSION_BLOCK_LENGTH,
 };
 use frame_support::{assert_noop, assert_ok, pallet_prelude::*};
@@ -15,7 +15,7 @@ use sp_runtime::testing::UintAuthorityId;
 
 #[test]
 fn simple_setup_should_work() {
-	new_test_ext().execute_with(|| {
+	ExtBuilder::build().execute_with(|| {
 		assert_eq!(
 			authorities(),
 			vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)]
@@ -27,7 +27,7 @@ fn simple_setup_should_work() {
 
 #[test]
 fn add_validator_updates_approved_validators_list() {
-	new_test_ext().execute_with(|| {
+	ExtBuilder::build().execute_with(|| {
 		assert_ok!(ValidatorSet::add_validator(RuntimeOrigin::root(), 4));
 		assert_eq!(
 			ValidatorSet::approved_validators(),
@@ -38,7 +38,7 @@ fn add_validator_updates_approved_validators_list() {
 
 #[test]
 fn remove_validator_updates_validators_list() {
-	new_test_ext().execute_with(|| {
+	ExtBuilder::build().execute_with(|| {
 		assert_ok!(ValidatorSet::remove_validator(RuntimeOrigin::root(), 2));
 		assert_eq!(ValidatorSet::validators(), vec![1u64, 3u64]);
 		assert_eq!(ValidatorSet::approved_validators(), vec![1u64, 3u64]);
@@ -47,7 +47,7 @@ fn remove_validator_updates_validators_list() {
 
 #[test]
 fn add_validator_fails_with_invalid_origin() {
-	new_test_ext().execute_with(|| {
+	ExtBuilder::build().execute_with(|| {
 		assert_noop!(
 			ValidatorSet::add_validator(RuntimeOrigin::signed(1), 4),
 			DispatchError::BadOrigin
@@ -57,7 +57,7 @@ fn add_validator_fails_with_invalid_origin() {
 
 #[test]
 fn remove_validator_fails_with_invalid_origin() {
-	new_test_ext().execute_with(|| {
+	ExtBuilder::build().execute_with(|| {
 		assert_noop!(
 			ValidatorSet::remove_validator(RuntimeOrigin::signed(1), 4),
 			DispatchError::BadOrigin
@@ -67,7 +67,7 @@ fn remove_validator_fails_with_invalid_origin() {
 
 #[test]
 fn duplicate_check() {
-	new_test_ext().execute_with(|| {
+	ExtBuilder::build().execute_with(|| {
 		assert_ok!(ValidatorSet::add_validator(RuntimeOrigin::root(), 4));
 		assert_eq!(
 			ValidatorSet::approved_validators(),
@@ -84,7 +84,7 @@ fn duplicate_check() {
 
 #[test]
 fn validator_goes_off_and_reconnects() {
-	new_test_ext().execute_with(|| {
+	ExtBuilder::build().execute_with(|| {
 		for i in 0..SESSION_BLOCK_LENGTH {
 			mock_mine_block(1, i);
 		}
@@ -123,7 +123,7 @@ fn validator_goes_off_and_reconnects() {
 
 #[test]
 fn validator_misses_one_and_reconnects() {
-	new_test_ext().execute_with(|| {
+	ExtBuilder::build().execute_with(|| {
 		for i in 0..SESSION_BLOCK_LENGTH {
 			mock_mine_block(1, i);
 		}
@@ -147,7 +147,7 @@ fn validator_misses_one_and_reconnects() {
 
 #[test]
 fn validator_tries_to_reconnect_with_mismatch_parameters() {
-	new_test_ext().execute_with(|| {
+	ExtBuilder::build().execute_with(|| {
 		for i in 0..SESSION_BLOCK_LENGTH {
 			mock_mine_block(1, i);
 		}
@@ -184,7 +184,7 @@ fn validator_tries_to_reconnect_with_mismatch_parameters() {
 
 #[test]
 fn non_approved_validator_tries_to_connect() {
-	new_test_ext().execute_with(|| {
+	ExtBuilder::build().execute_with(|| {
 		for i in 0..SESSION_BLOCK_LENGTH {
 			mock_mine_block(1, i);
 		}

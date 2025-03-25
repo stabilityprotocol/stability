@@ -1,9 +1,10 @@
 use super::*;
-use frame_support::{assert_noop, assert_ok, dispatch::DispatchError};
+use frame_support::{assert_noop, assert_ok};
 use mock::{
 	new_test_ext, AllowedAccountId, Logger, LoggerCall, NotAllowedAccountId, RootController,
 	RuntimeCall, RuntimeEvent as TestEvent, RuntimeOrigin, System,
 };
+use sp_runtime::DispatchError;
 
 #[test]
 fn test_setup_works() {

@@ -2,7 +2,7 @@
 
 use core::str::FromStr;
 
-use crate::mock::{MockUserFeeTokenController};
+use crate::mock::MockUserFeeTokenController;
 
 use super::*;
 use evm::ExitSucceed;
@@ -141,7 +141,41 @@ fn transaction_fee_log_emitted() {
 		let result = Runner::<Runtime, MockDNTFeeController, MockUserFeeTokenController>::call(
 			acc,
 			token_addr,
-			stbl_tools::eth::generate_calldata("balanceOf(address)", &vec![token_addr.into()]),
+			stbl_tools::eth::generate_calldata("transfer(recipient, amount)", &vec![acc.into(), H256::from_low_u64_be(100)]),
+			U256::from(0),
+			u64::MAX,
+			Some(U256::from(1)),
+			None,
+			None,
+			vec![],
+			true,
+			false,
+			None,
+			None,
+			&config,
+		);
+
+		assert!(result.is_ok());
+
+		let response = result.unwrap();
+		assert_eq!(response.logs.len(), 1);
+		assert_eq!(response.logs[0].topics.len(), 1);
+		assert_eq!(response.logs[0].topics[0], TRANSACTION_FEE_TOPIC.into());
+	})
+}
+
+#[test]
+fn transaction_fee_log_not_emitted() {
+	new_test_ext().execute_with(|| {
+		let config = pallet_evm::EvmConfig::london();
+
+		let acc = H160::from_low_u64_be(1);
+		let token_addr = H160::from_str("0x22D598E0a9a1b474CdC7c6fBeA0B4F83E12046a9").unwrap();
+
+		let result = Runner::<Runtime, MockDNTFeeController, MockUserFeeTokenController>::call(
+			acc,
+			token_addr,
+			stbl_tools::eth::generate_calldata("balanceOf(account)", &vec![acc.into()]),
 			U256::from(0),
 			u64::MAX,
 			Some(U256::from(1)),
@@ -158,8 +192,6 @@ fn transaction_fee_log_emitted() {
 		assert!(result.is_ok());
 
 		let response = result.unwrap();
-		assert_eq!(response.logs.len(), 1);
-		assert_eq!(response.logs[0].topics.len(), 1);
-		assert_eq!(response.logs[0].topics[0], TRANSACTION_FEE_TOPIC.into());
+		assert_eq!(response.logs.len(), 0);
 	})
 }

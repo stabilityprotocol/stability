@@ -1,22 +1,6 @@
-// This file is part of Stability.
-
-// Copyright (C) 2017-2021 Parity Technologies (UK) Ltd.
-// SPDX-License-Identifier: Apache-2.0
-
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// 	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 use futures::TryFutureExt;
 // Substrate
-use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
+use sc_cli::{ChainSpec, SubstrateCli};
 use sc_service::DatabaseSource;
 // Frontier
 use fc_db::kv::frontier_database_dir;
@@ -26,6 +10,9 @@ use crate::{
 	cli::{Cli, Subcommand},
 	service::{self, db_config_dir},
 };
+
+#[cfg(feature = "runtime-benchmarks")]
+use crate::chain_spec::get_account_id_from_seed;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -54,22 +41,18 @@ impl SubstrateCli for Cli {
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn ChainSpec>, String> {
 		Ok(match id {
-			"alphanet" => Box::new(chain_spec::alphanet::alphanet_config()?),
-			"betanet" => Box::new(chain_spec::betanet::betanet_config()?),
-			"testnet" => Box::new(chain_spec::testnet::testnet_config()?),
-			"gtn" => Box::new(chain_spec::gtn::gtn_config()?),
+			"alphanet" => Box::new(chain_spec::alphanet::alphanet_config()),
+			"betanet" => Box::new(chain_spec::betanet::betanet_config()),
+			"testnet" => Box::new(chain_spec::testnet::testnet_config()),
+			"gtn" => Box::new(chain_spec::gtn::gtn_config()),
 			"" | "local" | "dev" => {
-				let enable_manual_seal = self.sealing.map(|_| true);
+				let enable_manual_seal = self.sealing.map(|_| true).unwrap_or_default();
 				Box::new(chain_spec::dev::development_config(enable_manual_seal))
 			}
 			path => Box::new(chain_spec::ChainSpec::from_json_file(
 				std::path::PathBuf::from(path),
 			)?),
 		})
-	}
-
-	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		&stability_runtime::VERSION
 	}
 }
 
@@ -182,12 +165,12 @@ pub fn run() -> sc_cli::Result<()> {
 			use frame_benchmarking_cli::{
 				BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE,
 			};
-			use stability_runtime::{Block, ExistentialDeposit};
+			use stability_runtime::{Hashing, EXISTENTIAL_DEPOSIT};
 
 			let runner = cli.create_runner(cmd)?;
 			match cmd {
 				BenchmarkCmd::Pallet(cmd) => runner
-					.sync_run(|config| cmd.run::<Block, service::TemplateRuntimeExecutor>(config)),
+					.sync_run(|config| cmd.run_with_spec::<Hashing, ()>(Some(config.chain_spec))),
 				BenchmarkCmd::Block(cmd) => runner.sync_run(|mut config| {
 					let (client, _, _, _, _) = service::new_chain_ops(&mut config, &cli.eth)?;
 					cmd.run(client)
@@ -216,8 +199,8 @@ pub fn run() -> sc_cli::Result<()> {
 						Box::new(RemarkBuilder::new(client.clone())),
 						Box::new(TransferKeepAliveBuilder::new(
 							client.clone(),
-							sp_keyring::Sr25519Keyring::Alice.to_account_id(),
-							ExistentialDeposit::get(),
+							get_account_id_from_seed::<sp_core::ecdsa::Public>("Alice"),
+							EXISTENTIAL_DEPOSIT,
 						)),
 					]);
 
@@ -238,7 +221,7 @@ pub fn run() -> sc_cli::Result<()> {
 				let (client, _, _, _, frontier_backend) =
 					service::new_chain_ops(&mut config, &cli.eth)?;
 				let frontier_backend = match frontier_backend {
-					fc_db::Backend::KeyValue(kv) => std::sync::Arc::new(kv),
+					fc_db::Backend::KeyValue(kv) => kv,
 					_ => panic!("Only fc_db::Backend::KeyValue supported"),
 				};
 				cmd.run(client, frontier_backend)

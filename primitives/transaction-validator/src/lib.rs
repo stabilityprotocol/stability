@@ -1,8 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use core::{marker::PhantomData, ops::Mul};
-
-use ethereum::TransactionV2;
 use fp_ethereum::TransactionData;
 use fp_evm::{CheckEvmTransaction, CheckEvmTransactionConfig, FeeCalculator};
 use pallet_ethereum::InvalidTransactionWrapper;
@@ -16,6 +14,8 @@ use sp_runtime::transaction_validity::{
 mod mock;
 #[cfg(test)]
 mod tests;
+
+pub mod check_nonce;
 
 pub struct FallbackTransactionValidator<T>(PhantomData<T>);
 
@@ -35,9 +35,7 @@ where
 		if let pallet_ethereum::Call::transact { transaction } = call {
 			let base_fee = <T as pallet_evm::Config>::FeeCalculator::min_gas_price().0;
 
-			let gas_price = stbl_tools::eth::transaction_gas_price(base_fee, &transaction, true)
-				.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Payment))?;
-
+			let gas_price = stbl_tools::eth::transaction_gas_price(base_fee, &transaction, true);
 			let transaction_data: TransactionData = (transaction).into();
 			let total_transaction_price =
 				transaction_data.gas_limit.mul(gas_price) + transaction_data.value;
@@ -62,7 +60,7 @@ where
 
 	fn build_validity_success_transaction(
 		origin: &H160,
-		transaction: &TransactionV2,
+		transaction: &ethereum::TransactionV2,
 		gas_price: U256,
 	) -> TransactionValidity {
 		let transaction_data: TransactionData = transaction.into();

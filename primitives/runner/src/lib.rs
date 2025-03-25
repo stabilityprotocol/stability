@@ -40,6 +40,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub const LOG_TARGET: &'static str = "runner-evm";
+
 pub const TRANSACTION_FEE_TOPIC: [u8; 32] =
 	keccak256!("TransactionFee(address,uint256,address,uint256,address,uint256)");
 
@@ -189,43 +191,60 @@ where
 			});
 		}
 
-		let custom_fee_info = stbl_tools::custom_fee::custom_info_from_fee_params(
+		// Caculate the fee variables for the transaction.
+		let custom_fee_info = stbl_tools::custom_fee::compute_fee_details(
 			base_fee,
 			max_fee_per_gas,
 			max_priority_fee_per_gas,
 		);
 
-		let total_fee_per_gas = custom_fee_info.max_fee_per_gas;
-
-		// After eip-1559 we make sure the account can pay both the evm execution and priority fees.
-		let total_fee =
-			total_fee_per_gas
-				.checked_mul(U256::from(gas_limit))
-				.ok_or(RunnerError {
-					error: Error::<T>::FeeOverflow,
-					weight,
-				})?;
-
-		let token = FC::get_transaction_fee_token(source);
-
-		let is_zero_gas_transaction: bool = total_fee_per_gas == U256::zero();
-
 		let validator = <pallet_evm::Pallet<T>>::find_author();
 		let vault = FC::get_fee_vault();
+		let token = FC::get_transaction_fee_token(source);
 
 		let validator_conversion_rate =
 			FC::get_transaction_conversion_rate(source, validator, token);
 
-		let actual_conversion_rate =
-			if custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
-				validator_conversion_rate
-			} else {
-				custom_fee_info.max_conversion_rate.unwrap()
-			};
+		// We compare the user's conversion rate against the validator's conversion rate.
+		// If the user's conversion rate is greater than or equal to the validator's rate,
+		// then we use the validator's rate for the transaction.
+		// If the user's rate is lower, we get the user's rate.
+		// 
+		// This ensures users don't overpay for transactions while still allowing validators
+		// to enforce their minimum acceptable conversion rate for transactions they process.
+		let actual_conversion_rate = if custom_fee_info.match_validator_conversion_rate_limit(validator_conversion_rate) {
+			validator_conversion_rate
+		} else {
+			custom_fee_info.user_conversion_rate_cap
+		};
 
+		// Calculate the maximum gas cost with the base fee.
+		let maximum_gas_cost_with_base_fee = if is_transactional {
+			let gas_limit_u256 = U256::from(gas_limit);
+			gas_limit_u256.saturating_mul(base_fee)
+		} else {
+			U256::zero()
+		};
+
+		// Check if the transaction is a zero gas transaction.
+		// Or a Non-Transactional OP - Read/Call
+		let is_zero_gas_transaction: bool = maximum_gas_cost_with_base_fee == U256::zero();
+
+		// Ensure the account has enough balance to pay for the transaction.
 		if !is_zero_gas_transaction {
-			// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
-			FC::withdraw_fee(source, token, actual_conversion_rate, total_fee).map_err(|_| {
+			// Withdraw all the gas limit from the user's account.
+			// We will refund later if the transaction is inserted into the block.
+			// maximum_gas_cost_with_base_fee * actual_conversion_rate = total_fee
+			FC::withdraw_fee(source, token, actual_conversion_rate, maximum_gas_cost_with_base_fee).map_err(|_| {
+				log::error!(
+					target: LOG_TARGET, 
+					"Error while withdrawing fee [source: {:?}, token: {:?}, conversion_rate: ({},{}), total_fee: {}]",
+					source,
+					token,
+					actual_conversion_rate.0,
+					actual_conversion_rate.1,
+					maximum_gas_cost_with_base_fee
+				);
 				RunnerError {
 					error: Error::<T>::FeeOverflow,
 					weight,
@@ -247,6 +266,7 @@ where
 
 		// Post execution.
 		let used_gas = executor.used_gas();
+		// EFFECTIVE GAS UNITS - The gas units used by the transaction.
 		let effective_gas = match executor.state().weight_info() {
 			Some(weight_info) => U256::from(sp_std::cmp::max(
 				used_gas,
@@ -257,38 +277,45 @@ where
 			)),
 			_ => used_gas.into(),
 		};
-		let actual_fee = effective_gas.saturating_mul(total_fee_per_gas);
+		let effective_gas_w_base_fee = effective_gas.saturating_mul(base_fee);
 
 		log::debug!(
-			target: "evm",
-			"Execution {:?} [source: {:?}, value: {}, gas_limit: {}, actual_fee: {}, used_gas: {}, effective_gas: {}, base_fee: {}, total_fee_per_gas: {}, is_transactional: {}, miner: {}, token_fee: {}]",
+			target: LOG_TARGET,
+			"EVM execution result: {:?} [source: {:?}, gas: {{{} limit, {} used}}, fees: {{base: {}, conversion_rate: ({}, {})}}, value: {}, transaction: {{is_transactional: {}, validator: {:?}, token: {:?}}}]",
 			reason,
 			source,
-			value,
 			gas_limit,
-			actual_fee,
-			used_gas,
 			effective_gas,
 			base_fee,
-			total_fee_per_gas,
+			actual_conversion_rate.0,
+			actual_conversion_rate.1,
+			value,
 			is_transactional,
 			validator,
 			token
 		);
 
 		if !is_zero_gas_transaction {
-			FC::correct_fee(source, token, actual_conversion_rate, total_fee, actual_fee).map_err(
-				|_| RunnerError {
-					error: Error::<T>::FeeOverflow,
-					weight,
+			// Refund the user for the gas used in the transaction.
+			// (maximum_gas_cost_with_base_fee - effective_gas_w_base_fee) * conversion_rate = gas refunded
+			FC::correct_fee(source, token, actual_conversion_rate, maximum_gas_cost_with_base_fee, effective_gas_w_base_fee).map_err(
+				|_| {
+					log::error!(target: LOG_TARGET, "Error while correcting fee");
+					RunnerError {
+						error: Error::<T>::FeeOverflow,
+						weight,
+					}
 				},
 			)?;
 
 			let (validator_fee, dapp_fee) =
-				FC::pay_fees(token, actual_conversion_rate, actual_fee, validator, dapp).map_err(
-					|_| RunnerError {
-						error: Error::<T>::FeeOverflow,
-						weight,
+				FC::pay_fees(token, actual_conversion_rate, effective_gas_w_base_fee, validator, dapp).map_err(
+					|_| {
+						log::error!(target: LOG_TARGET, "Error while paying fees",);
+						RunnerError {
+							error: Error::<T>::FeeOverflow,
+							weight,
+						}
 					},
 				)?;
 
@@ -298,7 +325,10 @@ where
 					sp_std::vec![TRANSACTION_FEE_TOPIC.into()],
 					stbl_tools::eth::args_to_bytes(sp_std::vec![
 						token.into(),
-						stbl_tools::misc::u256_to_h256(validator_fee + dapp_fee),
+						stbl_tools::misc::u256_to_h256(validator_fee.checked_add(dapp_fee).unwrap_or_else(|| {
+							log::warn!(target: LOG_TARGET, "Fee addition overflow: validator_fee={}, dapp_fee={}", validator_fee, dapp_fee);
+							U256::max_value()
+						})),
 						validator.into(),
 						stbl_tools::misc::u256_to_h256(validator_fee),
 						match dapp {
@@ -308,26 +338,25 @@ where
 						stbl_tools::misc::u256_to_h256(dapp_fee),
 					]),
 				)
-				.map_err(|_| RunnerError {
-					error: Error::<T>::FeeOverflow,
-					weight,
+				.map_err(|_| {
+					log::error!(target: LOG_TARGET, "Error while logging transaction fee");
+					RunnerError {
+						error: Error::<T>::Undefined,
+						weight,
+					}
 				})?;
 		}
 
 		let state = executor.into_state();
 
 		for address in &state.substate.deletes {
-			log::debug!(
-				target: "evm",
-				"Deleting account at {:?}",
-				address
-			);
+			log::debug!(target: LOG_TARGET, "Deleting account at {:?}", address);
 			Pallet::<T>::remove_account(address)
 		}
 
 		for log in &state.substate.logs {
 			log::trace!(
-				target: "evm",
+				target: LOG_TARGET,
 				"Inserting log for {:?}, topics ({}) {:?}, data ({}): {:?}]",
 				log.address,
 				log.topics.len(),
@@ -397,7 +426,7 @@ where
 				return Err(RunnerError {
 					error: Self::Error::FeeOverflow,
 					weight,
-				})
+				});
 			}
 		};
 
@@ -928,7 +957,7 @@ where
 		// Then we insert or remove the entry based on the value.
 		if value == H256::default() {
 			log::debug!(
-				target: "evm",
+				target: LOG_TARGET,
 				"Removing storage for {:?} [index: {:?}]",
 				address,
 				index,
@@ -936,7 +965,7 @@ where
 			<AccountStorages<T>>::remove(address, index);
 		} else {
 			log::debug!(
-				target: "evm",
+				target: LOG_TARGET,
 				"Updating storage for {:?} [index: {:?}, value: {:?}]",
 				address,
 				index,
@@ -961,7 +990,7 @@ where
 
 	fn set_code(&mut self, address: H160, code: Vec<u8>) {
 		log::debug!(
-			target: "evm",
+			target: LOG_TARGET,
 			"Inserting code ({} bytes) at {:?}",
 			code.len(),
 			address
@@ -1058,7 +1087,7 @@ where
 				evm::ExternalOperation::IsEmpty => {
 					weight_info.try_record_proof_size_or_fail(IS_EMPTY_CHECK_PROOF_SIZE)?
 				}
-				evm::ExternalOperation::Write => {
+				evm::ExternalOperation::Write(_) => {
 					weight_info.try_record_proof_size_or_fail(WRITE_PROOF_SIZE)?
 				}
 			};
@@ -1226,7 +1255,7 @@ where
 		}
 
 		// Record cost
-		self.record_external_cost(None, Some(opcode_proof_size.low_u64()))?;
+		self.record_external_cost(None, Some(opcode_proof_size.low_u64()), None)?;
 		Ok(())
 	}
 
@@ -1234,6 +1263,7 @@ where
 		&mut self,
 		ref_time: Option<u64>,
 		proof_size: Option<u64>,
+		_storage_growth: Option<u64>,
 	) -> Result<(), ExitError> {
 		let weight_info = if let (Some(weight_info), _) = self.info_mut() {
 			weight_info

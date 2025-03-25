@@ -31,7 +31,9 @@ sp-inherents = { workspace = true }
 sp-keyring = { workspace = true }
 sp-runtime = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true, features = ["std"] }
-stbl-primitives-zero-gas-transactions-api = { workspace = true, features = ["std"] }
+stbl-primitives-zero-gas-transactions-api = { workspace = true, features = [
+    "std",
+] }
 stbl-tools = { workspace = true }
 ethereum = { workspace = true }
 sp-keystore = { workspace = true }
@@ -42,7 +44,7 @@ reqwest = { workspace = true, features = ["json", "gzip"] }
 serde = { workspace = true, features = ["derive"] }
 bytes = { workspace = true }
 hex = { workspace = true }
-stability-test-runtime-client = { workspace = true }
+substrate-test-runtime-client = { workspace = true }
 
 [dev-dependencies]
 parking_lot = { workspace = true }

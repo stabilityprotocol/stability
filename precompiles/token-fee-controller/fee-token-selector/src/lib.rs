@@ -17,13 +17,13 @@
 //! Precompile to interact with pallet_balances instances using the ERC20 interface standard.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(test, feature(assert_matches))]
 
 use core::str::FromStr;
 
 use fp_evm::PrecompileHandle;
-use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
+use frame_support::dispatch::{GetDispatchInfo, PostDispatchInfo};
 use frame_support::parameter_types;
+use sp_runtime::traits::Dispatchable;
 
 use precompile_utils::prelude::*;
 use sp_core::H256;
@@ -81,7 +81,7 @@ where
 			handle.context().address,
 			SELECTOR_LOG_FEE_CHANGED,
 			msg_sender,
-			solidity::encode_event_data(token_address)
+			solidity::encode_event_data(token_address),
 		)
 		.record(handle)?;
 

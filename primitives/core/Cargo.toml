@@ -18,7 +18,7 @@ default = [ "std" ]
 std = [
 	"account/std",
 	"fp-self-contained/std",
+	"sp-application-crypto/std",
 	"sp-core/std",
 	"sp-runtime/std",
-	"sp-application-crypto/std",
 ]

@@ -8,6 +8,7 @@ use jsonrpsee::RpcModule;
 use sc_client_api::{
 	backend::{Backend, StorageProvider},
 	client::BlockchainEvents,
+	AuxStore, UsageProvider,
 };
 use sc_consensus_manual_seal::rpc::EngineCommand;
 use sc_rpc::SubscriptionTaskExecutor;
@@ -16,20 +17,23 @@ use sc_service::TransactionPool;
 use sc_transaction_pool::ChainApi;
 use sp_api::{CallApiAt, ProvideRuntimeApi};
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+use sp_core::H256;
+use sp_inherents::CreateInherentDataProviders;
 use sp_runtime::traits::Block as BlockT;
+use sp_runtime::traits::Header as HeaderT;
 use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 // Runtime
-use stability_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
-
-mod tracing;
-pub use self::tracing::*;
+use stability_runtime::{AccountId, Balance, Hash, Nonce};
+use tracing::RpcRequesters;
 
 mod eth;
-pub use self::eth::{create_eth, overrides_handle, EthDeps, };
-use crate::service::EthConfiguration;
+pub use self::eth::{create_eth, EthDeps};
+
+pub mod tracing;
+pub use self::tracing::*;
 
 /// Full client dependencies.
-pub struct FullDeps<C, P, A: ChainApi, CT> {
+pub struct FullDeps<B: BlockT, C, P, A: ChainApi, CT, CIDP> {
 	/// The client instance to use.
 	pub client: Arc<C>,
 	/// Transaction pool instance.
@@ -39,55 +43,59 @@ pub struct FullDeps<C, P, A: ChainApi, CT> {
 	/// Manual seal command sink
 	pub command_sink: Option<mpsc::Sender<EngineCommand<Hash>>>,
 	/// Ethereum-compatibility specific dependencies.
-	pub eth: EthDeps<C, P, A, CT, Block>,
+	pub eth: EthDeps<B, C, P, A, CT, CIDP>,
 }
 
-pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
-
-impl<C, BE> fc_rpc::EthConfig<Block, C> for DefaultEthConfig<C, BE>
-where
-	C: sc_client_api::StorageProvider<Block, BE> + Sync + Send + 'static,
-	BE: Backend<Block> + 'static,
-{
-	type EstimateGasAdapter = ();
-	type RuntimeStorageOverride =
-		fc_rpc::frontier_backend_client::SystemAccountId20StorageOverride<Block, C, BE>;
-}
 pub struct TracingConfig {
 	pub tracing_requesters: RpcRequesters,
 	pub trace_filter_max_count: u32,
 }
 
+pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
+
+impl<B, C, BE> fc_rpc::EthConfig<B, C> for DefaultEthConfig<C, BE>
+where
+	B: BlockT<Hash = H256>,
+	C: StorageProvider<B, BE> + Sync + Send + 'static,
+	BE: Backend<B> + 'static,
+{
+	type EstimateGasAdapter = ();
+	type RuntimeStorageOverride =
+		fc_rpc::frontier_backend_client::SystemAccountId20StorageOverride<B, C, BE>;
+}
+
 /// Instantiate all Full RPC extensions.
-pub fn create_full<C, P, BE, A, CT>(
-	eth_config: &EthConfiguration,
-	deps: FullDeps<C, P, A, CT>,
+pub fn create_full<B, C, P, BE, A, CT, CIDP>(
+	deps: FullDeps<B, C, P, A, CT, CIDP>,
 	subscription_task_executor: SubscriptionTaskExecutor,
 	pubsub_notification_sinks: Arc<
 		fc_mapping_sync::EthereumBlockNotificationSinks<
-			fc_mapping_sync::EthereumBlockNotification<Block>,
+			fc_mapping_sync::EthereumBlockNotification<B>,
 		>,
 	>,
 	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
-	C: CallApiAt<Block> + ProvideRuntimeApi<Block>,
-	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
-	C::Api: sp_block_builder::BlockBuilder<Block>,
-	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
-	C::Api: fp_rpc::ConvertTransactionRuntimeApi<Block>,
-	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
-	C::Api: stability_rpc::StabilityRpcRuntimeApi<Block>,
-	C::Api: ZeroGasTransactionApi<Block>,
-	C: BlockchainEvents<Block> + 'static,
-	C: HeaderBackend<Block>
-		+ HeaderMetadata<Block, Error = BlockChainError>
-		+ StorageProvider<Block, BE>,
-	BE: Backend<Block> + 'static,
-	C::Api: moonbeam_rpc_primitives_debug::DebugRuntimeApi<Block>,
-	P: TransactionPool<Block = Block> + 'static,
-	A: ChainApi<Block = Block> + 'static,
-	CT: fp_rpc::ConvertTransaction<<Block as BlockT>::Extrinsic> + Send + Sync + 'static,
+	B: BlockT<Hash = H256>,
+	B::Header: HeaderT<Number = u32>,
+	C: CallApiAt<B> + ProvideRuntimeApi<B>,
+	C::Api: sp_block_builder::BlockBuilder<B>,
+	C::Api: sp_consensus_aura::AuraApi<B, stbl_core_primitives::aura::Public>,
+	C::Api: substrate_frame_rpc_system::AccountNonceApi<B, AccountId, Nonce>,
+	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<B, Balance>,
+	C::Api: fp_rpc::ConvertTransactionRuntimeApi<B>,
+	C::Api: fp_rpc::EthereumRuntimeRPCApi<B>,
+	C::Api: ZeroGasTransactionApi<B>,
+	C::Api: stability_rpc::StabilityRpcRuntimeApi<B>,
+	C::Api: moonbeam_rpc_primitives_debug::DebugRuntimeApi<B>,
+	C::Api: moonbeam_rpc_primitives_txpool::TxPoolRuntimeApi<B>,
+	C: HeaderBackend<B> + HeaderMetadata<B, Error = BlockChainError> + 'static,
+	C: BlockchainEvents<B> + AuxStore + UsageProvider<B> + StorageProvider<B, BE>,
+	BE: Backend<B> + 'static,
+	P: TransactionPool<Block = B> + 'static,
+	A: ChainApi<Block = B> + 'static,
+	CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
+	CT: fp_rpc::ConvertTransaction<<B as BlockT>::Extrinsic> + Send + Sync + 'static,
 {
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 	use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApiServer};
@@ -116,12 +124,11 @@ where
 	}
 
 	// Ethereum compatibility RPCs
-	let io = create_eth::<_, _, _, _, _, _, DefaultEthConfig<C, BE>>(
+	let io = create_eth::<_, _, _, _, _, _, _, DefaultEthConfig<C, BE>>(
 		io,
 		eth,
 		subscription_task_executor,
 		pubsub_notification_sinks,
-		eth_config,
 		optional_tracing_config,
 	)?;
 

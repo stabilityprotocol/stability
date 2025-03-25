@@ -1,14 +1,11 @@
 use futures_util::TryFutureExt;
-use jsonrpsee::{
-	core::{error, Error as JsonRpseeError, RpcResult},
-	proc_macros::rpc,
-	types::error::{CallError, ErrorObject},
-};
+use jsonrpsee::types::{ErrorObject};
+use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use sc_transaction_pool_api::TransactionSource;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::{Bytes, H160, H256};
-use sp_runtime::{generic::BlockId, traits::Block as BlockT};
+use sp_runtime::traits::Block as BlockT;
 pub use stability_rpc_api::StabilityRpcApi as StabilityRpcRuntimeApi;
 use std::{
 	str::{self},
@@ -20,7 +17,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
 pub struct StabilityOutput<T> {
 	code: u32,
 	value: T,
@@ -130,13 +127,23 @@ where
 
 		let slice = &transaction.0[..];
 		if slice.is_empty() {
-			return Err(error::Error::Custom("Invalid raw transaction".into()));
+			return Err(ErrorObject::owned(
+				1,
+				format!("Invalid raw transaction"),
+				None::<()>,
+			));
 		}
 
 		let transaction: ethereum::TransactionV2 = match ethereum::EnvelopedDecodable::decode(slice)
 		{
 			Ok(transaction) => transaction,
-			Err(_) => return Err(error::Error::Custom("Invalid raw transaction".into())),
+			Err(_) => {
+				return Err(ErrorObject::owned(
+					1,
+					format!("Invalid raw transaction"),
+					None::<()>,
+				))
+			}
 		};
 
 		let extrinsic = self
@@ -153,14 +160,14 @@ where
 		let transaction_hash = transaction.hash();
 
 		self.pool
-			.submit_one(
-				&BlockId::Hash(block_hash),
-				TransactionSource::Local,
-				extrinsic,
-			)
+			.submit_one(block_hash, TransactionSource::Local, extrinsic)
 			.map_ok(move |_| transaction_hash)
 			.map_err(|e| {
-				error::Error::Custom(format!("Unable to submit transaction: {:?}", e).into())
+				ErrorObject::owned(
+					1,
+					format!("Unable to submit transaction: {:?}", e),
+					None::<()>,
+				)
 			})
 			.await
 	}
@@ -169,11 +176,10 @@ where
 const RUNTIME_ERROR: i32 = 1;
 
 /// Converts a runtime trap into an RPC error.
-fn runtime_error_into_rpc_err(err: impl std::fmt::Debug) -> JsonRpseeError {
-	CallError::Custom(ErrorObject::owned(
+fn runtime_error_into_rpc_err(err: impl std::fmt::Debug) -> RpcResult<String> {
+	Err(ErrorObject::owned(
 		RUNTIME_ERROR,
 		"Runtime error",
 		Some(format!("{:?}", err)),
 	))
-	.into()
 }

@@ -1,30 +1,31 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet::*;
-
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod tests;
+
+pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
 
 	use core::marker::PhantomData;
 
-	use parity_scale_codec::MaxEncodedLen;
-	use frame_support::traits::tokens::{DepositConsequence, WithdrawConsequence, Preservation, Provenance, Fortitude};
-	use frame_support::traits::{Imbalance, SameOrOther, TryDrop};
-	use frame_support::RuntimeDebug;
+	use frame_support::traits::tokens::{
+		DepositConsequence, Fortitude, Preservation, Provenance, WithdrawConsequence,
+	};
+	use frame_support::traits::{fungible, Imbalance, SameOrOther, TryDrop};
 	use frame_support::{
 		pallet_prelude::MaybeSerializeDeserialize,
 		traits::{
-			tokens::{currency::Currency, fungible::Inspect, Balance},
+			tokens::{currency::Currency, Balance},
 			ExistenceRequirement, SignedImbalance, WithdrawReasons,
 		},
 	};
 	use pallet_user_fee_selector::UserFeeTokenController;
-	use sp_runtime::{DispatchError, DispatchResult, FixedPointOperand};
+	use parity_scale_codec::MaxEncodedLen;
+	use sp_runtime::{DispatchError, DispatchResult, FixedPointOperand, RuntimeDebug};
 	use sp_std::fmt::Debug;
 
 	#[pallet::pallet]
@@ -105,6 +106,10 @@ pub mod pallet {
 		fn peek(&self) -> T {
 			self.0.clone()
 		}
+
+		fn extract(&mut self, _balance: T) -> Self {
+			NeutralImbalance(self.0)
+		}
 	}
 
 	impl<T: Config> Currency<T::AccountId> for Pallet<T> {
@@ -175,17 +180,25 @@ pub mod pallet {
 		}
 
 		fn transfer(
-			_source: &T::AccountId,
-			_dest: &T::AccountId,
+			source: &T::AccountId,
+			dest: &T::AccountId,
 			value: Self::Balance,
 			_existence_requirement: ExistenceRequirement,
 		) -> DispatchResult {
 			if value == 0u128 {
 				Ok(())
 			} else {
-				Err(DispatchError::Other(
-					"Transfer is not supported in this pallet",
-				))
+				let source_evm_address = T::AccountIdMapping::into_evm_address(source);
+				let dest_evm_address = T::AccountIdMapping::into_evm_address(dest);
+
+				<T::UserFeeTokenController as UserFeeTokenController>::transfer(
+					source_evm_address,
+					dest_evm_address,
+					value.into(),
+				)
+				.map_err(|_| DispatchError::Other("Transfer failed"))?;
+
+				Ok(())
 			}
 		}
 
@@ -246,7 +259,7 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> Inspect<T::AccountId> for Pallet<T> {
+	impl<T: Config> fungible::Inspect<T::AccountId> for Pallet<T> {
 		/// Scalar type for representing balance of an account.
 		type Balance = <Self as Currency<T::AccountId>>::Balance;
 
@@ -276,7 +289,11 @@ pub mod pallet {
 		}
 
 		/// Get the maximum amount that `who` can withdraw/transfer successfully.
-		fn reducible_balance(who: &T::AccountId, _preservation: Preservation, _force: Fortitude) -> Self::Balance {
+		fn reducible_balance(
+			who: &T::AccountId,
+			_preservation: Preservation,
+			_force: Fortitude,
+		) -> Self::Balance {
 			<Self as Currency<T::AccountId>>::total_balance(who)
 		}
 
@@ -303,5 +320,34 @@ pub mod pallet {
 				.map(|_| WithdrawConsequence::Success)
 				.unwrap_or(WithdrawConsequence::BalanceLow)
 		}
+	}
+
+	impl<T: Config> fungible::Unbalanced<T::AccountId> for Pallet<T> {
+		fn handle_dust(_dust: fungible::Dust<T::AccountId, Self>) {
+			()
+		}
+		fn write_balance(
+			_who: &T::AccountId,
+			_amount: Self::Balance,
+		) -> Result<Option<Self::Balance>, DispatchError> {
+			Ok(Some(0u128))
+		}
+
+		fn set_total_issuance(_amount: Self::Balance) {
+			()
+		}
+
+		fn deactivate(_amount: Self::Balance) {
+			()
+		}
+
+		fn reactivate(_amount: Self::Balance) {
+			()
+		}
+	}
+
+	impl<T: Config> fungible::Balanced<T::AccountId> for Pallet<T> {
+		type OnDropCredit = fungible::DecreaseIssuance<T::AccountId, Self>;
+		type OnDropDebt = fungible::IncreaseIssuance<T::AccountId, Self>;
 	}
 }

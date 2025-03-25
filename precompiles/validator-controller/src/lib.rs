@@ -15,7 +15,6 @@
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(test, feature(assert_matches))]
 
 #[cfg(test)]
 mod mock;
@@ -25,7 +24,8 @@ mod tests;
 
 use core::str::FromStr;
 use fp_evm::PrecompileHandle;
-use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
+use frame_support::dispatch::{GetDispatchInfo, PostDispatchInfo};
+use sp_runtime::traits::Dispatchable;
 
 use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};

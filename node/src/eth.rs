@@ -7,31 +7,32 @@ use std::{
 
 use futures::{future, prelude::*};
 // Substrate
-use sc_client_api::{BlockchainEvents, StateBackendFor};
-use sc_executor::NativeExecutionDispatch;
+use sc_client_api::BlockchainEvents;
+use sc_executor::HostFunctions;
 use sc_network_sync::SyncingService;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sp_api::ConstructRuntimeApi;
-use sp_runtime::traits::BlakeTwo256;
-use core::str::FromStr;
+use sp_core::H256;
+use sp_runtime::traits::Block as BlockT;
 // Frontier
 pub use fc_consensus::FrontierBlockImport;
-
-use fc_rpc::{EthTask, OverrideHandle};
+use fc_rpc::EthTask;
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
-// Local
-use stability_runtime::opaque::Block;
+pub use fc_storage::{StorageOverride, StorageOverrideHandler};
 
-use crate::client::{FullBackend, FullClient};
+use crate::{
+	client::{FullBackend, FullClient},
+	rpc::tracing::EthApi,
+};
 
 /// Frontier DB backend type.
-pub type FrontierBackend = fc_db::Backend<Block>;
+pub type FrontierBackend<B, C> = fc_db::Backend<B, C>;
 
 pub fn db_config_dir(config: &Configuration) -> PathBuf {
 	config.base_path.config_dir(config.chain_spec.id())
 }
 
-/// Avalailable frontier backend types.
+/// Available frontier backend types.
 #[derive(Debug, Copy, Clone, Default, clap::ValueEnum)]
 pub enum BackendType {
 	/// Either RocksDb or ParityDb as per inherited from the global backend settings.
@@ -39,34 +40,6 @@ pub enum BackendType {
 	KeyValue,
 	/// Sql database with custom log indexing.
 	Sql,
-}
-
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum EthApi {
-	Txpool,
-	Debug,
-	Trace,
-	None,
-}
-
-impl FromStr for EthApi {
-	type Err = String;
-
-	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		Ok(match s {
-			"txpool" => Self::Txpool,
-			"debug" => Self::Debug,
-			"trace" => Self::Trace,
-			"none" => Self::None,
-			_ => {
-				return Err(format!(
-					"`{}` is not recognized as a supported Ethereum Api",
-					s
-				))
-			}
-		})
-	}
 }
 
 /// The ethereum-compatibility configuration used to run a node.
@@ -83,6 +56,9 @@ pub struct EthConfiguration {
 	#[arg(long)]
 	pub enable_dev_signer: bool,
 
+	/// The dynamic-fee pallet target gas price set by block author
+	#[arg(long, default_value = "1")]
+	pub target_gas_price: u64,
 
 	/// Maximum allowed gas limit will be `block.gas_limit * execute_gas_limit_multiplier`
 	/// when using eth_call/eth_estimateGas.
@@ -118,6 +94,8 @@ pub struct EthConfiguration {
 	#[arg(long, default_value = "209715200")]
 	pub frontier_sql_backend_cache_size: u64,
 
+	/// TRACING CONFIG BELOW
+
 	/// Sets the maximum permits
 	#[arg(long, default_value = "10")]
 	pub ethapi_max_permits: u64,
@@ -138,7 +116,6 @@ pub struct EthConfiguration {
 
 	#[arg(long, value_delimiter = ',', default_value = "none")]
 	pub ethapi: Vec<EthApi>,
-
 }
 
 pub struct FrontierPartialComponents {
@@ -158,89 +135,87 @@ pub fn new_frontier_partial(
 }
 
 /// A set of APIs that ethereum-compatible runtimes must implement.
-pub trait EthCompatRuntimeApiCollection:
+pub trait EthCompatRuntimeApiCollection<Block: BlockT>:
 	sp_api::ApiExt<Block>
 	+ fp_rpc::ConvertTransactionRuntimeApi<Block>
 	+ fp_rpc::EthereumRuntimeRPCApi<Block>
-where
-	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
-impl<Api> EthCompatRuntimeApiCollection for Api
+impl<Block, Api> EthCompatRuntimeApiCollection<Block> for Api
 where
+	Block: BlockT,
 	Api: sp_api::ApiExt<Block>
 		+ fp_rpc::ConvertTransactionRuntimeApi<Block>
 		+ fp_rpc::EthereumRuntimeRPCApi<Block>,
-	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
-pub async fn spawn_frontier_tasks<RuntimeApi, Executor>(
+pub async fn spawn_frontier_tasks<B, RA, HF>(
 	task_manager: &TaskManager,
-	client: Arc<FullClient<RuntimeApi, Executor>>,
-	backend: Arc<FullBackend>,
-	frontier_backend: FrontierBackend,
+	client: Arc<FullClient<B, RA, HF>>,
+	backend: Arc<FullBackend<B>>,
+	frontier_backend: Arc<FrontierBackend<B, FullClient<B, RA, HF>>>,
 	filter_pool: Option<FilterPool>,
-	overrides: Arc<OverrideHandle<Block>>,
+	storage_override: Arc<dyn StorageOverride<B>>,
 	fee_history_cache: FeeHistoryCache,
 	fee_history_cache_limit: FeeHistoryCacheLimit,
-	sync: Arc<SyncingService<Block>>,
+	sync: Arc<SyncingService<B>>,
 	pubsub_notification_sinks: Arc<
 		fc_mapping_sync::EthereumBlockNotificationSinks<
-			fc_mapping_sync::EthereumBlockNotification<Block>,
+			fc_mapping_sync::EthereumBlockNotification<B>,
 		>,
 	>,
 ) where
-	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
-	RuntimeApi: Send + Sync + 'static,
-	RuntimeApi::RuntimeApi:
-		EthCompatRuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
-	Executor: NativeExecutionDispatch + 'static,
+	B: BlockT<Hash = H256>,
+	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
+	RA: Send + Sync + 'static,
+	RA::RuntimeApi: EthCompatRuntimeApiCollection<B>,
+	HF: HostFunctions + 'static,
 {
-		// Spawn main mapping sync worker background task.
-		match frontier_backend {
-			fc_db::Backend::KeyValue(b) => {
-				task_manager.spawn_essential_handle().spawn(
-					"frontier-mapping-sync-worker",
-					Some("frontier"),
-					fc_mapping_sync::kv::MappingSyncWorker::new(
-						client.import_notification_stream(),
-						Duration::new(6, 0),
-						client.clone(),
-						backend,
-						overrides.clone(),
-						Arc::new(b),
-						3,
-						0,
-						fc_mapping_sync::SyncStrategy::Normal,
-						sync,
-						pubsub_notification_sinks,
-					)
-					.for_each(|()| future::ready(())),
-				);
-			}
-			fc_db::Backend::Sql(b) => {
-				task_manager.spawn_essential_handle().spawn_blocking(
-					"frontier-mapping-sync-worker",
-					Some("frontier"),
-					fc_mapping_sync::sql::SyncWorker::run(
-						client.clone(),
-						backend,
-						Arc::new(b),
-						client.import_notification_stream(),
-						fc_mapping_sync::sql::SyncWorkerConfig {
-							read_notification_timeout: Duration::from_secs(10),
-							check_indexed_blocks_interval: Duration::from_secs(60),
-						},
-						fc_mapping_sync::SyncStrategy::Parachain,
-						sync,
-						pubsub_notification_sinks,
-					),
-				);
-			}
+	// Spawn main mapping sync worker background task.
+	match &*frontier_backend {
+		fc_db::Backend::KeyValue(b) => {
+			task_manager.spawn_essential_handle().spawn(
+				"frontier-mapping-sync-worker",
+				Some("frontier"),
+				fc_mapping_sync::kv::MappingSyncWorker::new(
+					client.import_notification_stream(),
+					Duration::new(6, 0),
+					client.clone(),
+					backend,
+					storage_override.clone(),
+					b.clone(),
+					3,
+					0u32.into(),
+					fc_mapping_sync::SyncStrategy::Normal,
+					sync,
+					pubsub_notification_sinks,
+				)
+				.for_each(|()| future::ready(())),
+			);
 		}
-	
+		fc_db::Backend::Sql(b) => {
+			task_manager.spawn_essential_handle().spawn_blocking(
+				"frontier-mapping-sync-worker",
+				Some("frontier"),
+				fc_mapping_sync::sql::SyncWorker::run(
+					client.clone(),
+					backend,
+					b.clone(),
+					client.import_notification_stream(),
+					fc_mapping_sync::sql::SyncWorkerConfig {
+						read_notification_timeout: Duration::from_secs(30),
+						check_indexed_blocks_interval: Duration::from_secs(60),
+					},
+					fc_mapping_sync::SyncStrategy::Parachain,
+					sync,
+					pubsub_notification_sinks,
+				),
+			);
+		}
+	}
+
 	// Spawn Frontier EthFilterApi maintenance task.
 	if let Some(filter_pool) = filter_pool {
 		// Each filter is allowed to stay in the pool for 100 blocks.
@@ -258,7 +233,7 @@ pub async fn spawn_frontier_tasks<RuntimeApi, Executor>(
 		Some("frontier"),
 		EthTask::fee_history_task(
 			client,
-			overrides,
+			storage_override,
 			fee_history_cache,
 			fee_history_cache_limit,
 		),

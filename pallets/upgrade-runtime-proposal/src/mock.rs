@@ -6,14 +6,11 @@ use frame_support::traits::{ConstU32, ConstU64, Contains};
 use frame_system::EnsureRoot;
 use sp_core::H256;
 use sp_runtime::generic;
-use sp_runtime::{
-	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
-};
+use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
+use sp_runtime::BuildStorage;
 use sp_version::RuntimeVersion;
 
 type Block = frame_system::mocking::MockBlock<Test>;
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 
 pub struct BlockEverything;
 impl Contains<RuntimeCall> for BlockEverything {
@@ -42,13 +39,10 @@ impl frame_system::Config for Test {
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type Index = u64;
-	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = u64;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = ConstU64<250>;
 	type Version = Version;
@@ -60,6 +54,14 @@ impl frame_system::Config for Test {
 	type SS58Prefix = ();
 	type OnSetCode = ();
 	type MaxConsumers = ConstU32<16>;
+	type RuntimeTask = ();
+	type Nonce = u64;
+	type Block = Block;
+	type SingleBlockMigrations = ();
+	type MultiBlockMigrator = ();
+	type PreInherents = ();
+	type PostInherents = ();
+	type PostTransactions = ();
 }
 
 parameter_types! {
@@ -72,19 +74,15 @@ impl pallet_upgrade_runtime_proposal::Config for Test {
 }
 
 frame_support::construct_runtime!(
-	pub enum Test
-	where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic, {
+	pub enum Test {
 			System: frame_system,
 			UpgradeRuntimeProposal: pallet_upgrade_runtime_proposal
 		}
 );
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let t = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
+	let t = frame_system::GenesisConfig::<Test>::default()
+		.build_storage()
 		.unwrap();
 
 	t.into()

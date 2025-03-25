@@ -19,7 +19,6 @@ COPY pallets ./pallets
 COPY primitives ./primitives
 COPY client ./client
 COPY stability-rpc ./stability-rpc
-COPY test-utils ./test-utils
 COPY vendor ./vendor
 COPY chain-specs ./chain-specs
 COPY Cargo.lock Cargo.toml rust-toolchain.toml ./

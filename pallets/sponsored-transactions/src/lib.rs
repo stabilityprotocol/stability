@@ -72,14 +72,14 @@ pub mod pallet {
 
 					let transaction_data: TransactionData = transaction.into();
 
-					let (gas_price, _) = Self::get_transaction_gas_info(&transaction)
-						.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Call))?;
+					let (_, gas_price) = Self::get_transaction_gas_info(&transaction);
 
 					let (transaction_fee_token, _) = Self::get_fee_token_info(&from);
 
-					let max_gas_used = match gas_price.checked_mul(transaction_data.gas_limit) {
+					let calculated_max_gas = match gas_price.checked_mul(transaction_data.gas_limit)
+					{
 						Some(v) => v,
-						None => {
+						_ => {
 							return Err(TransactionValidityError::Invalid(
 								InvalidTransaction::Custom(1),
 							))
@@ -89,7 +89,7 @@ pub mod pallet {
 					Self::ensure_sponsor_balance(
 						meta_trx_sponsor.clone(),
 						transaction_fee_token,
-						max_gas_used,
+						calculated_max_gas,
 					)
 					.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::Payment))?;
 
@@ -143,12 +143,11 @@ pub mod pallet {
 			Self::block_ensure_transaction_unicity(&from, &transaction)
 				.map_err(|_| DispatchError::Other("Transaction object is invalid"))?;
 
-			let (gas_limit, gas_price) = Self::get_transaction_gas_info(&transaction)
-				.map_err(|_| DispatchError::Other("Invalid gas price info"))?;
+			let (gas_limit, gas_price) = Self::get_transaction_gas_info(&transaction);
 
 			let (transaction_fee_token, conversion_rate) = Self::get_fee_token_info(&from);
 
-			let max_gas_used = match gas_limit.checked_mul(gas_price.into()) {
+			let calculated_gas_usage = match gas_limit.checked_mul(gas_price.into()) {
 				Some(a) => a,
 				None => return Err(DispatchError::Other("Arithmetic error due to overflow.")),
 			};
@@ -158,7 +157,7 @@ pub mod pallet {
 				conversion_rate,
 				&meta_trx_sponsor,
 				&from,
-				max_gas_used,
+				calculated_gas_usage,
 			)
 			.map_err(|_| DispatchError::Other("Failed to borrow fee token"))?;
 
@@ -287,26 +286,24 @@ pub mod pallet {
 			let transaction_fee_token =
 				T::DNTFeeController::get_transaction_fee_token(from.clone());
 			let validator = <pallet_evm::Pallet<T>>::find_author();
-			let conversion_rate = T::DNTFeeController::get_transaction_conversion_rate(
+			let validator_conversion_rate = T::DNTFeeController::get_transaction_conversion_rate(
 				from.clone(),
 				validator,
 				transaction_fee_token,
 			);
 
-			(transaction_fee_token, conversion_rate)
+			(transaction_fee_token, validator_conversion_rate)
 		}
 
-		fn get_transaction_gas_info(
-			transaction: &pallet_ethereum::Transaction,
-		) -> Result<(U256, U256), ()> {
+		fn get_transaction_gas_info(transaction: &pallet_ethereum::Transaction) -> (U256, U256) {
 			let transaction_data: TransactionData = transaction.into();
 			let base_fee = <T as pallet_evm::Config>::FeeCalculator::min_gas_price().0;
-			let gas_price = stbl_tools::eth::transaction_gas_price(base_fee, transaction, true)?;
+			let gas_price = stbl_tools::eth::transaction_gas_price(base_fee, transaction, true);
 
 			if transaction_data.input.len() == 0 {
-				Ok((runner::TRANSFER_GAS_LIMIT.into(), gas_price))
+				(runner::TRANSFER_GAS_LIMIT.into(), gas_price)
 			} else {
-				Ok((transaction_data.gas_limit, gas_price))
+				(transaction_data.gas_limit, gas_price)
 			}
 		}
 
@@ -344,13 +341,13 @@ pub mod pallet {
 			payer: &H160,
 			payee: &H160,
 			amount: U256,
-		) -> Result<(), ()> {  
+		) -> Result<(), ()> {
 			if amount.is_zero() {
 				return Ok(());
-      }
+			}
 			if conversion_rate.1 == U256::zero() {
 				return Err(());
-      }
+			}
 
 			let actual_amount = amount
 				.saturating_mul(conversion_rate.0)

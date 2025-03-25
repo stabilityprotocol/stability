@@ -15,7 +15,6 @@
 // along with Stability.  If not, see <http://www.gnu.org/licenses/>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(test, feature(assert_matches))]
 
 #[cfg(test)]
 mod mock;
@@ -25,15 +24,16 @@ mod tests;
 
 use core::str::FromStr;
 use fp_evm::PrecompileHandle;
-use frame_support::dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo};
+use frame_support::dispatch::{GetDispatchInfo, PostDispatchInfo};
+use sp_runtime::traits::Dispatchable;
 
 use frame_support::parameter_types;
 use frame_support::storage::types::{StorageValue, ValueQuery};
 
-use frame_support::inherent::Vec;
 use frame_support::traits::ChangeMembers;
 use frame_support::traits::StorageInstance;
 use precompile_utils::prelude::*;
+use sp_std::vec::Vec;
 
 use sp_core::Get;
 use sp_core::{H160, H256, U256};
@@ -95,7 +95,6 @@ where
 	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
 	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
-	<Runtime as frame_system::Config>::BlockNumber: From<u32>,
 	<Runtime as frame_system::Config>::Hash: Into<H256>,
 	<Runtime as frame_system::Config>::AccountId: From<H160>,
 	<Runtime as frame_system::Config>::AccountId: Into<H160>,
@@ -250,7 +249,7 @@ where
 		let member_id: H160 = member.into();
 
 		let old_members =
-			pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+			pallet_collective::Members::<Runtime, pallet_collective::Instance1>::get();
 
 		if old_members.contains(&member_id.into()) {
 			return Err(revert("already a member"));
@@ -300,7 +299,7 @@ where
 		let member_account = <Runtime as frame_system::Config>::AccountId::from(member_id);
 
 		let old_members =
-			pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+			pallet_collective::Members::<Runtime, pallet_collective::Instance1>::get();
 
 		if !old_members.contains(&member_account) {
 			return Err(revert("not a member"));
@@ -337,7 +336,7 @@ where
 	) -> EvmResult<Vec<Address>> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		let members = pallet_collective::Pallet::<Runtime, pallet_collective::Instance1>::members();
+		let members = pallet_collective::Members::<Runtime, pallet_collective::Instance1>::get();
 
 		Ok(members
 			.iter()

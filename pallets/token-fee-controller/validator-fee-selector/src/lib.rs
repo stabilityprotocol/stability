@@ -82,22 +82,23 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_config]
-	#[cfg(feature = "std")]
-	pub struct GenesisConfig {
+	pub struct GenesisConfig<T> {
 		pub initial_default_conversion_rate_controller: H160,
+		#[serde(skip)]
+		pub _config: PhantomData<T>,
 	}
 
-	#[cfg(feature = "std")]
-	impl Default for GenesisConfig {
+	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
 				initial_default_conversion_rate_controller: H160::zero(),
+				_config: Default::default(),
 			}
 		}
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig {
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
 			DefaultController::<T>::put(self.initial_default_conversion_rate_controller);
 		}
@@ -160,13 +161,23 @@ pub mod pallet {
 				false,
 				None,
 				None,
-				&pallet_evm::EvmConfig::london(),
+				&pallet_evm::EvmConfig::shanghai(),
 			)
 			.map(|execution_info| {
-				(
-					U256::from_big_endian(execution_info.value[0..32].as_ref()),
-					U256::from_big_endian(execution_info.value[32..64].as_ref()),
-				)
+				let value_len = execution_info.value.len();
+				if value_len >= 64 {
+					(
+						U256::from_big_endian(&execution_info.value[0..32]),
+						U256::from_big_endian(&execution_info.value[32..64]),
+					)
+				} else if value_len >= 32 {
+					(
+						U256::from_big_endian(&execution_info.value[0..32]),
+						U256::from(1),
+					)
+				} else {
+					(U256::from(1), U256::from(1))
+				}
 			})
 			.unwrap_or((U256::from(1), U256::from(1)))
 		}

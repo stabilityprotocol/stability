@@ -3,10 +3,9 @@
 use sp_runtime::traits::Block as BlockT;
 
 sp_api::decl_runtime_apis! {
+	#[api_version(1)]
 	pub trait CompatibleFeeApi<AccountId> where
 		AccountId: codec::Codec,  {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool;
 	}
 }
-
-

@@ -132,7 +132,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn offchain_publish_keys(block_number: T::BlockNumber) {
+		fn offchain_publish_keys(block_number: BlockNumberFor<T>) {
 			let aura_local_keys = T::AuthorityId::all();
 			let grandpa_local_keys = T::FinalizationId::all();
 
@@ -169,7 +169,10 @@ pub mod pallet {
 								log::error!(target: LOG_TARGET, "Failed to submit transaction",);
 							}
 							_ => {
-								log::info!(target: LOG_TARGET, "Insert new validator keys",);
+								log::info!(
+									target: LOG_TARGET,
+									"🔑 Successfully inserted new validator keys",
+								);
 							}
 						};
 					}
@@ -177,7 +180,7 @@ pub mod pallet {
 		}
 
 		fn verify_signature(
-			publishing_keys: PublishingKeys<T::AuthorityId, T::FinalizationId, T::BlockNumber>,
+			publishing_keys: PublishingKeys<T::AuthorityId, T::FinalizationId, BlockNumberFor<T>>,
 			signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
 		) -> Result<(), ()> {
 			if publishing_keys
@@ -219,7 +222,7 @@ pub mod pallet {
 		#[pallet::weight({0})]
 		pub fn publish_keys(
 			origin: OriginFor<T>,
-			keys: PublishingKeys<T::AuthorityId, T::FinalizationId, T::BlockNumber>,
+			keys: PublishingKeys<T::AuthorityId, T::FinalizationId, BlockNumberFor<T>>,
 			_signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
 		) -> DispatchResult {
 			ensure_none(origin)?;

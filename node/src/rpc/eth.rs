@@ -1,14 +1,13 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use jsonrpsee::RpcModule;
-use moonbeam_rpc_debug::{Debug, DebugServer};
-use moonbeam_rpc_trace::{Trace, TraceServer};
 // Substrate
 use sc_client_api::{
 	backend::{Backend, StorageProvider},
 	client::BlockchainEvents,
+	AuxStore, UsageProvider,
 };
-use sc_network::NetworkService;
+use sc_network::service::traits::NetworkService;
 use sc_network_sync::SyncingService;
 use sc_rpc::SubscriptionTaskExecutor;
 use sc_transaction_pool::{ChainApi, Pool};
@@ -16,20 +15,24 @@ use sc_transaction_pool_api::TransactionPool;
 use sp_api::{CallApiAt, ProvideRuntimeApi};
 use sp_block_builder::BlockBuilder as BlockBuilderApi;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+use sp_consensus_aura::AuraApi;
 use sp_core::H256;
+use sp_inherents::CreateInherentDataProviders;
 use sp_runtime::traits::Block as BlockT;
 use sp_runtime::traits::Header as HeaderT;
 // Frontier
-pub use fc_rpc::{EthBlockDataCacheTask, EthConfig, OverrideHandle, StorageOverride, TxPool};
+pub use fc_rpc::{EthBlockDataCacheTask, EthConfig};
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
-pub use fc_storage::overrides_handle;
+use fc_storage::StorageOverride;
 use fp_rpc::{ConvertTransaction, ConvertTransactionRuntimeApi, EthereumRuntimeRPCApi};
-use crate::eth::{EthApi, EthConfiguration};
+// Tracing
+use moonbeam_rpc_debug::{Debug as MoonbeamDebug, DebugServer};
+use moonbeam_rpc_trace::{Trace, TraceServer};
 
 use super::TracingConfig;
 
 /// Extra dependencies for Ethereum compatibility.
-pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
+pub struct EthDeps<B: BlockT, C, P, A: ChainApi, CT, CIDP> {
 	/// The client instance to use.
 	pub client: Arc<C>,
 	/// Transaction pool instance.
@@ -43,13 +46,13 @@ pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
 	/// Whether to enable dev signer
 	pub enable_dev_signer: bool,
 	/// Network service
-	pub network: Arc<NetworkService<B, B::Hash>>,
+	pub network: Arc<dyn NetworkService>,
 	/// Chain syncing service
 	pub sync: Arc<SyncingService<B>>,
 	/// Frontier Backend.
-	pub frontier_backend: Arc<dyn fc_db::BackendReader<B> + Send + Sync>,
+	pub frontier_backend: Arc<dyn fc_api::Backend<B>>,
 	/// Ethereum data access overrides.
-	pub overrides: Arc<OverrideHandle<B>>,
+	pub storage_override: Arc<dyn StorageOverride<B>>,
 	/// Cache for Ethereum block data.
 	pub block_data_cache: Arc<EthBlockDataCacheTask<B>>,
 	/// EthFilterApi pool.
@@ -65,62 +68,46 @@ pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
 	pub execute_gas_limit_multiplier: u64,
 	/// Mandated parent hashes for a given block hash.
 	pub forced_parent_hashes: Option<BTreeMap<H256, H256>>,
-}
-
-impl<C, P, A: ChainApi, CT: Clone, B: BlockT> Clone for EthDeps<C, P, A, CT, B> {
-	fn clone(&self) -> Self {
-		Self {
-			client: self.client.clone(),
-			pool: self.pool.clone(),
-			graph: self.graph.clone(),
-			converter: self.converter.clone(),
-			is_authority: self.is_authority,
-			enable_dev_signer: self.enable_dev_signer,
-			network: self.network.clone(),
-			sync: self.sync.clone(),
-			frontier_backend: self.frontier_backend.clone(),
-			overrides: self.overrides.clone(),
-			block_data_cache: self.block_data_cache.clone(),
-			filter_pool: self.filter_pool.clone(),
-			max_past_logs: self.max_past_logs,
-			fee_history_cache: self.fee_history_cache.clone(),
-			fee_history_cache_limit: self.fee_history_cache_limit,
-			execute_gas_limit_multiplier: self.execute_gas_limit_multiplier,
-			forced_parent_hashes: self.forced_parent_hashes.clone(),
-		}
-	}
+	/// Something that can create the inherent data providers for pending state
+	pub pending_create_inherent_data_providers: CIDP,
 }
 
 /// Instantiate Ethereum-compatible RPC extensions.
-pub fn create_eth<C, BE, P, A, CT, B, EC: EthConfig<B, C>>(
+pub fn create_eth<B, C, BE, P, A, CT, CIDP, EC>(
 	mut io: RpcModule<()>,
-	deps: EthDeps<C, P, A, CT, B>,
+	deps: EthDeps<B, C, P, A, CT, CIDP>,
 	subscription_task_executor: SubscriptionTaskExecutor,
 	pubsub_notification_sinks: Arc<
 		fc_mapping_sync::EthereumBlockNotificationSinks<
 			fc_mapping_sync::EthereumBlockNotification<B>,
 		>,
 	>,
-	eth_config: &EthConfiguration,
 	optional_tracing_config: Option<TracingConfig>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
-	B: BlockT<Hash = sp_core::H256>,
+	B: BlockT<Hash = H256>,
 	B::Header: HeaderT<Number = u32>,
 	C: CallApiAt<B> + ProvideRuntimeApi<B>,
-	C::Api: BlockBuilderApi<B> + ConvertTransactionRuntimeApi<B> + EthereumRuntimeRPCApi<B>,
-	C: BlockchainEvents<B> + 'static,
-	C: HeaderBackend<B> + HeaderMetadata<B, Error = BlockChainError> + StorageProvider<B, BE>,
+	C::Api: AuraApi<B, stbl_core_primitives::aura::Public>
+		+ BlockBuilderApi<B>
+		+ ConvertTransactionRuntimeApi<B>
+		+ EthereumRuntimeRPCApi<B>,
+	C: HeaderBackend<B> + HeaderMetadata<B, Error = BlockChainError>,
+	C: BlockchainEvents<B> + AuxStore + UsageProvider<B> + StorageProvider<B, BE> + 'static,
 	BE: Backend<B> + 'static,
-	B::Header: HeaderT<Number = u32>,
 	P: TransactionPool<Block = B> + 'static,
 	A: ChainApi<Block = B> + 'static,
 	CT: ConvertTransaction<<B as BlockT>::Extrinsic> + Send + Sync + 'static,
+	CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
+	EC: EthConfig<B, C>,
 {
+	use crate::stability::StbleAuraConsensusDataProvider;
 	use fc_rpc::{
-		Eth, EthApiServer, EthDevSigner, EthFilter, EthFilterApiServer, EthPubSub,
-		EthPubSubApiServer, EthSigner, Net, NetApiServer, TxPoolApiServer, Web3, Web3ApiServer,
+		Debug, DebugApiServer, Eth, EthApiServer, EthDevSigner, EthFilter, EthFilterApiServer,
+		EthPubSub, EthPubSubApiServer, EthSigner, Net, NetApiServer, Web3, Web3ApiServer,
 	};
+	#[cfg(feature = "txpool")]
+	use fc_rpc::{TxPool, TxPoolApiServer};
 
 	let EthDeps {
 		client,
@@ -132,7 +119,7 @@ where
 		network,
 		sync,
 		frontier_backend,
-		overrides,
+		storage_override,
 		block_data_cache,
 		filter_pool,
 		max_past_logs,
@@ -140,6 +127,7 @@ where
 		fee_history_cache_limit,
 		execute_gas_limit_multiplier,
 		forced_parent_hashes,
+		pending_create_inherent_data_providers,
 	} = deps;
 
 	let mut signers = Vec::new();
@@ -148,14 +136,14 @@ where
 	}
 
 	io.merge(
-		Eth::new(
+		Eth::<B, C, P, CT, BE, A, CIDP, EC>::new(
 			client.clone(),
 			pool.clone(),
 			graph.clone(),
 			converter,
 			sync.clone(),
 			signers,
-			overrides.clone(),
+			storage_override.clone(),
 			frontier_backend.clone(),
 			is_authority,
 			block_data_cache.clone(),
@@ -163,22 +151,25 @@ where
 			fee_history_cache_limit,
 			execute_gas_limit_multiplier,
 			forced_parent_hashes,
+			pending_create_inherent_data_providers,
+			Some(Box::new(StbleAuraConsensusDataProvider::new(
+				client.clone(),
+			))),
 		)
 		.replace_config::<EC>()
 		.into_rpc(),
 	)?;
 
-	let tx_pool = TxPool::new(client.clone(), graph);
 	if let Some(filter_pool) = filter_pool {
 		io.merge(
 			EthFilter::new(
 				client.clone(),
-				frontier_backend,
-				tx_pool.clone(),
+				frontier_backend.clone(),
+				graph.clone(),
 				filter_pool,
 				500_usize, // max stored filters
 				max_past_logs,
-				block_data_cache,
+				block_data_cache.clone(),
 			)
 			.into_rpc(),
 		)?;
@@ -190,7 +181,7 @@ where
 			client.clone(),
 			sync,
 			subscription_task_executor,
-			overrides,
+			storage_override.clone(),
 			pubsub_notification_sinks,
 		)
 		.into_rpc(),
@@ -208,18 +199,28 @@ where
 
 	io.merge(Web3::new(client.clone()).into_rpc())?;
 
+	io.merge(
+		Debug::new(
+			client.clone(),
+			frontier_backend,
+			storage_override,
+			block_data_cache,
+		)
+		.into_rpc(),
+	)?;
+
+	#[cfg(feature = "txpool")]
+	io.merge(TxPool::new(client, graph).into_rpc())?;
+
+	// Merge the tracing RPCs into the RPC module.
 	if let Some(tracing_config) = optional_tracing_config {
 		if let Some(debug_requester) = tracing_config.tracing_requesters.debug {
-			io.merge(Debug::new(debug_requester).into_rpc())?;
+			io.merge(MoonbeamDebug::new(debug_requester.clone()).into_rpc())?;
 		}
 
 		if let Some(trace_requester) = tracing_config.tracing_requesters.trace {
 			io.merge(Trace::new(client.clone(), trace_requester, 20).into_rpc())?;
 		}
-	}
-
-	if eth_config.ethapi.contains(&EthApi::Txpool) {
-		io.merge(tx_pool.into_rpc())?;
 	}
 
 	Ok(io)
