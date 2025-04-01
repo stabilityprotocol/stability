@@ -228,7 +228,7 @@ where
 
 		// Check if the transaction is a zero gas transaction.
 		// Or a Non-Transactional OP - Read/Call
-		let is_zero_gas_transaction: bool = maximum_gas_cost_with_base_fee == U256::zero();
+		let is_zero_gas_transaction: bool = custom_fee_info.actual_fee == U256::zero();
 
 		// Ensure the account has enough balance to pay for the transaction.
 		if !is_zero_gas_transaction {

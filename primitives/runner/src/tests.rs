@@ -141,7 +141,10 @@ fn transaction_fee_log_emitted() {
 		let result = Runner::<Runtime, MockDNTFeeController, MockUserFeeTokenController>::call(
 			acc,
 			token_addr,
-			stbl_tools::eth::generate_calldata("transfer(recipient, amount)", &vec![acc.into(), H256::from_low_u64_be(100)]),
+			stbl_tools::eth::generate_calldata(
+				"transfer(recipient, amount)",
+				&vec![acc.into(), H256::from_low_u64_be(100)],
+			),
 			U256::from(0),
 			u64::MAX,
 			Some(U256::from(1)),
@@ -178,7 +181,7 @@ fn transaction_fee_log_not_emitted() {
 			stbl_tools::eth::generate_calldata("balanceOf(account)", &vec![acc.into()]),
 			U256::from(0),
 			u64::MAX,
-			Some(U256::from(1)),
+			Some(U256::from(0)),
 			None,
 			None,
 			vec![],
