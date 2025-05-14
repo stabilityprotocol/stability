@@ -1,0 +1,60 @@
+[package]
+name = "runner"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+environmental = { workspace = true, optional = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+evm = { workspace = true, features = ["with-codec"] }
+sp-core = { workspace = true, default-features = false }
+parity-scale-codec = { workspace = true }
+scale-info = { workspace = true }
+frame-benchmarking = { workspace = true, optional = true }
+sp-io = { workspace = true }
+log = { workspace = true }
+pallet-evm = { workspace = true }
+pallet-timestamp = { workspace = true }
+fp-evm = { workspace = true }
+stbl-tools = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
+precompile-utils = { workspace = true }
+fp-rpc = { workspace = true }
+
+[dev-dependencies]
+hex = "0.4"
+pallet-balances = { workspace = true, features = ["default"] }
+pallet-dnt-fee-controller = { workspace = true }
+pallet-erc20-manager = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
+pallet-validator-fee-selector = { workspace = true }
+
+[features]
+default = ["std"]
+runtime-benchmarks = ['frame-benchmarking']
+std = [
+	"environmental?/std",
+	"evm/std",
+	"evm/with-serde",
+	"fp-evm/std",
+	'frame-benchmarking/std',
+	"frame-support/std",
+	"frame-system/std",
+	"pallet-dnt-fee-controller/std",
+	"pallet-evm/std",
+	"pallet-timestamp/std",
+	"pallet-user-fee-selector/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-std/std",
+	"precompile-utils/std",
+	"fp-rpc/std",
+]
+forbid-evm-reentrancy = ["dep:environmental"]
+try-runtime = ['frame-support/try-runtime']

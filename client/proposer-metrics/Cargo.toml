@@ -1,0 +1,16 @@
+[package]
+name = "stbl-proposer-metrics"
+version = "1.0.0"
+authors = ["Stability Solutions"]
+edition = "2021"
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository = "https://github.com/stabilityprotocol/stability/"
+description = "Basic metrics for block production."
+readme = "README.md"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+log = { workspace = true }
+prometheus-endpoint = { workspace = true }

@@ -1,0 +1,53 @@
+[package]
+name = "pallet-zero-gas-transactions"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+parity-scale-codec = { workspace = true }
+hex = { workspace = true, default-features = false }
+scale-info = { workspace = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+pallet-evm = { workspace = true }
+stbl-tools = { workspace = true }
+pallet-erc20-manager = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
+pallet-validator-fee-selector = { workspace = true }
+pallet-supported-tokens-manager = { workspace = true }
+runner = { workspace = true }
+pallet-fee-rewards-vault = { workspace = true }
+pallet-ethereum = { workspace = true }
+fp-ethereum = { workspace = true }
+fp-evm = { workspace = true }
+fp-rpc = { workspace = true }
+ethereum = { workspace = true }
+ethereum-types = { workspace = true }
+log = { workspace = true }
+
+[dev-dependencies]
+pallet-timestamp = { workspace = true, features = ["std"] }
+pallet-balances = { workspace = true, features = ["std"] }
+pallet-evm-chain-id = { workspace = true, features = ["std"] }
+pallet-evm = { workspace = true, features = ["std"]}
+pallet-ethereum = { workspace = true, features = ["std"]}
+ethereum = { workspace = true, features = ["std"] }
+libsecp256k1 = { workspace= true, features = ["std"] }
+rlp = { version = "0.5", default-features = false }
+
+[features]
+default = [ "std" ]
+std = [
+	"frame-support/std",
+	"frame-system/std",
+	'pallet-erc20-manager/std',
+	"parity-scale-codec/std",
+	'runner/std',
+	"scale-info/std",
+	"sp-runtime/std",
+	"sp-std/std",
+]

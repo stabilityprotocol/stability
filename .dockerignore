@@ -1,0 +1,4 @@
+**/target/
+**/examples/
+utils/
+Dockerfile

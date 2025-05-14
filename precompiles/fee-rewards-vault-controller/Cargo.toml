@@ -1,0 +1,70 @@
+[package]
+name = "precompile-fee-rewards-vault-controller"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Substrate
+sp-core = { workspace = true }
+parity-scale-codec = { workspace = true }
+frame-system = { workspace = true }
+frame-support = { workspace = true }
+sp-std = { workspace = true }
+pallet-timestamp = { workspace = true }
+sp-version = { workspace = true }
+sp-runtime = { workspace = true }
+
+# Frontier
+fp-evm = { workspace = true }
+pallet-evm = { workspace = true, features = ["forbid-evm-reentrancy"] }
+evm = { workspace = true }
+fp-rpc = { workspace = true }
+
+# Stability
+pallet-fee-rewards-vault = { workspace = true }
+precompile-utils = { workspace = true }
+stbl-tools = { workspace = true }
+pallet-dnt-fee-controller = { workspace = true }
+pallet-erc20-manager = { workspace = true }
+pallet-supported-tokens-manager = { workspace = true }
+pallet-validator-fee-selector = { workspace = true }
+pallet-user-fee-selector = { workspace = true }
+pallet-validator-set = { workspace = true }
+sp-io = { workspace = true }
+[dev-dependencies]
+hex = { workspace = true }
+pallet-balances = { workspace = true }
+pallet-session = { workspace = true }
+sp-runtime = { workspace = true }
+precompile-utils = { workspace = true, features = ["testing"] }
+scale-info = { version = "2.0", default-features = false, features = [
+	"derive",
+] }
+sha3 = "0.10"
+sp-io = { workspace = true }
+substrate-test-runtime-client = { workspace = true }
+sp-staking = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"evm/std",
+	"fp-evm/std",
+	"frame-support/std",
+	"frame-system/std",
+	"pallet-balances/std",
+	"pallet-dnt-fee-controller/std",
+	"pallet-fee-rewards-vault/std",
+	"pallet-validator-fee-selector/std",
+	"pallet-session/std",
+	"pallet-supported-tokens-manager/std",
+	"pallet-user-fee-selector/std",
+	"pallet-validator-set/std",
+	"precompile-utils/std",
+	"sp-core/std",
+	"sp-runtime/std",
+	"sp-std/std",
+	"fp-rpc/std",
+]

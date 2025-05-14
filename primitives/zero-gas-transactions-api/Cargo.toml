@@ -1,0 +1,17 @@
+[package]
+name = "stbl-primitives-zero-gas-transactions-api"
+version = "1.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sp-runtime = { workspace = true}
+sp-api = { workspace = true}
+codec = { workspace = true }
+fp-ethereum = { workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
+
+[features]
+default = [ 'std' ]
+std = [ 'codec/std', 'sp-api/std', 'sp-runtime/std' ]

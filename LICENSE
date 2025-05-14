@@ -1,0 +1,42 @@
+STABILITY OPEN LICENSE AGREEMENT
+
+Copyright © 2022 STABILITY SOLUTIONS, INC. All rights reserved.
+
+This Agreement governs your use of the Stability Global Trust Network client software and accompanying documentation (the “Software”) made available by STABILITY SOLUTIONS, INC. (“Owner”). By accessing or using the Software, you agree to be bound by the terms below and any additional terms in force as stated on the Owner’s website at http://stabilityprotocol.com/.
+
+1. Definitions
+   1.1 “Agreement” means this software license agreement.
+   1.2 “Software” means the source code, binaries, documentation, and any other materials provided in the repository.
+   1.3 “You” or “Licensee” means any individual or entity that accesses or uses the Software.
+   1.4 “Network” means the Stability Global Trust Network and Testnet to which the Software connects for synchronization.
+
+2. License Grant
+   Owner hereby grants you a non‐exclusive, non‐transferable, worldwide, revocable license to use the Software subject to the terms of this Agreement.
+
+3. Restrictions
+   You must not distribute, sublicense, rent, sell, or otherwise transfer the Software (or any portion thereof) to any third party. Third parties should obtain the Software from our official repository at GitHub.
+
+4. High-Volume Access  
+   4.1 The Software provides sync access to Owner’s Network.
+   4.2 If you are a Remote Procedure Call Service Provider or related or affiliated company (“RPC Service Providers”), you are treated as a high-volume access user and this License does not apply to you. You are strictly prohibited from relying on this License for high-volume access and/or provision of RPC services.
+   4.3 To enjoy high‐volume access or use the Software for provision of RPC services, RPC Service Providers must obtain a separate commercial license from Owner.
+
+5. Termination  
+   5.1 Owner may terminate this License immediately upon your breach of any term.
+   5.2 Upon termination, you must cease all use of the Software and destroy all copies in your possession.
+
+6. No Waiver of Rights
+   No failure or delay in exercising any right, power, or privilege in respect of this Agreement shall be deemed to operate as a waiver, and a single or partial exercise of any right, power, or privilege shall not preclude any subsequent or further exercise of that right, power, or privilege, or the exercise of any other right, power, or privilege.
+
+7. Disclaimer; Limitation of Liability  
+   THE SOFTWARE IS PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND. OWNER EXPRESSLY DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL OWNER BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF USE OF THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+8. Changes to Terms  
+   Owner reserves the right to modify this License at any time. Revised terms will be posted in this repository; your continued use after posting constitutes your acceptance.
+
+9. Governing Law
+   This License shall be governed by and construed in accordance with the laws of the State of Delaware, USA, without regard to conflict-of-law principles.
+
+–––
+
+© 2022 STABILITY SOLUTIONS, INC.

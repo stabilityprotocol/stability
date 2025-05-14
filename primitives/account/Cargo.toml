@@ -1,0 +1,51 @@
+[package]
+name = "account"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.1"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[dependencies]
+blake2-rfc = { workspace = true, default-features = false, optional = true }
+hex = { workspace = true, default-features = false }
+impl-serde = { workspace = true, default-features = false }
+libsecp256k1 = { workspace = true, default-features = false, features = ["hmac"]}
+log = { workspace = true }
+serde = { workspace = true, default-features = false, features = ["derive"] }
+sha3 = { workspace = true, default-features = false }
+
+# Substrate
+parity-scale-codec = { workspace = true, features = [ "derive" ] }
+scale-info = { workspace = true, features = [ "derive" ] }
+sp-core = { workspace = true, default-features = false }
+sp-io = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false }
+sp-runtime-interface = { workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
+
+[dev-dependencies]
+hex = "0.4.3"
+
+[features]
+default = [ "std" ]
+std = [
+	"full_crypto",
+	"hex/std",
+	"impl-serde/std",
+	"libsecp256k1/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"serde/std",
+	"sha3/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-std/std",
+]
+
+full_crypto = [
+	"blake2-rfc",
+	"sp-runtime-interface/disable_target_static_assertions",
+]

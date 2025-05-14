@@ -1,0 +1,56 @@
+[package]
+name = "stability-rpc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+codec = { workspace = true }
+scale-info = { workspace = true }
+jsonrpsee = { workspace = true, features = ["server", "macros"] }
+lazy_static = { version = "1.4.0", optional = true }
+tokio = { version = "1.17.0", optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Substrate packages
+sp-api = { default-features = false, workspace = true }
+sp-blockchain = { workspace = true }
+sp-runtime = { default-features = false, workspace = true }
+sp-core = { default-features = false, workspace = true }
+fp-rpc = { workspace = true }
+fc-rpc-core = { workspace = true }
+ethereum = { workspace = true }
+async-trait = { workspace = true }
+precompile-utils = { workspace = true }
+
+# local packages
+stability-rpc-api = { workspace = true, default-features = false }
+stbl-primitives-zero-gas-transactions-api = { workspace = true, default-features = false }
+sc-transaction-pool-api = { workspace = true }
+pallet-sponsored-transactions = { workspace = true }
+futures-util = { version = "0.3.17" }
+jsonrpsee-core = { version = "0.18.1" }
+
+[dev-dependencies]
+sc-service = { workspace = true }
+sp-api = { workspace = true }
+assert_matches = "1.3.0"
+tokio = "1.17.0"
+substrate-test-runtime-client = { workspace = true }
+sc-client-api = { workspace = true }
+pallet-sponsored-transactions = { workspace = true }
+
+
+[features]
+default = ["std"]
+std = [
+	"pallet-sponsored-transactions/std",
+	"sp-api/std",
+	"sp-core/std",
+	"sp-runtime/std",
+	"stability-rpc-api/std",
+	"fp-rpc/std",
+	"stbl-primitives-zero-gas-transactions-api/std",
+	"precompile-utils/std",
+]
+test-helpers = ["lazy_static", "tokio"]
