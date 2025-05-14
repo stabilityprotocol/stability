@@ -4,7 +4,7 @@
 
 // You can download and use the Software for free under the terms of
 // the Stability Open License Agreement as published by Stability on
-// Github at https://github.com/stabilityprotocol/stability/LICENSE.
+// Github at https://github.com/stabilityprotocol/stability/blob/master/LICENSE.
 
 // THE SOFTWARE IS PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND.
 // STABILITY EXPRESSLY DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED,
