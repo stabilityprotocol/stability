@@ -9,7 +9,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  IMAGE_NAME: stability-test
+  IMAGE_NAME: stability-test-v2
   REGISTRY: ghcr.io
 jobs:
   test:
