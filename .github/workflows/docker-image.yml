@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: stability-v2
+  IMAGE_NAME: stability
 
 jobs:
   build:
