@@ -40,7 +40,7 @@ docker run -d --name stability-archive-node \
   -v ~/stability/genesis/testnet.json:/genesis/testnet.json \
   -e CHAIN_NAME=/genesis/testnet.json \
   -e MODE="archive" \
-  -e BACKEND_TYPE="sql" \ # Recommended to use sql backend for archive mode for faster reads
+  -e BACKEND_TYPE="sql" \
   -p 30333:30333 \
   -p 9933:9933 \
   ghcr.io/stabilityprotocol/stability:latest
