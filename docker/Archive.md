@@ -13,7 +13,7 @@ This guide provides instructions for running an archive node on the Stability Pr
 Pull the latest Stability node image from the official repository:
 
 ```
-docker pull stabilityprotocol/stability:latest
+docker pull ghcr.io/stabilityprotocol/stability:latest
 ```
 
 If the image is not publicly available, refer to the [Stability repository](https://github.com/stabilityprotocol/stability) for instructions on building from source.
@@ -43,7 +43,7 @@ docker run -d --name stability-archive-node \
   -e BACKEND_TYPE="sql" \ # Recommended to use sql backend for archive mode for faster reads
   -p 30333:30333 \
   -p 9933:9933 \
-  stabilityprotocol/stability:latest
+  ghcr.io/stabilityprotocol/stability:latest
 ```
 
 ### Command Explanation
