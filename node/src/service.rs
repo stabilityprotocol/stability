@@ -610,16 +610,16 @@ where
 		// This polls the external pool and submits ZGTs into the Substrate mempool,
 		// decoupling the HTTP fetch from the block proposal hot path.
 		if let Some(ref zgt_enqueue_url) = stability_config.zero_gas_tx_pool_enqueue {
-			stbl_zero_gas_fetcher::spawn_zero_gas_fetcher::<Block, _, _>(
-				task_manager.spawn_handle(),
-				client.clone(),
-				transaction_pool.clone(),
-				keystore_container.keystore(),
-				zgt_enqueue_url.clone(),
-				stability_config.zero_gas_tx_pool_timeout,
-				stability_config.zero_gas_tx_pool_enqueue_interval,
-				prometheus_registry.as_ref(),
-			);
+		stbl_zero_gas_fetcher::spawn_zero_gas_fetcher::<B, _, _>(
+			task_manager.spawn_handle(),
+			client.clone(),
+			transaction_pool.clone(),
+			keystore_container.keystore(),
+			zgt_enqueue_url.clone(),
+			stability_config.zero_gas_tx_pool_timeout,
+			stability_config.zero_gas_tx_pool_enqueue_interval,
+			prometheus_registry.as_ref(),
+		);
 		}
 
 		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
