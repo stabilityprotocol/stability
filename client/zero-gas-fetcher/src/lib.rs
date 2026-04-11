@@ -23,7 +23,6 @@
 //! This decouples the HTTP fetch from the block proposal hot path, allowing the
 //! proposer to pick up ZGTs from `pool.ready()` like any other transaction.
 
-use ethereum::EnvelopedDecodable;
 use fp_rpc::EthereumRuntimeRPCApi;
 use futures::{future::FutureExt, select};
 use log::{debug, error, info, warn};
@@ -37,7 +36,6 @@ use sp_runtime::{
 	traits::{Block as BlockT, NumberFor},
 	SaturatedConversion,
 };
-use stability_runtime::AccountId;
 use stbl_primitives_zero_gas_transactions_api::ZeroGasTransactionApi;
 use std::{
 	collections::HashMap,
@@ -189,7 +187,7 @@ async fn zero_gas_fetcher_loop<Block, C, P>(
 	NumberFor<Block>: Into<u64>,
 {
 	// Dedup map: ethereum tx hash -> block number when first seen
-	let mut seen_txs: HashMap<ethereum::H256, u32> = HashMap::new();
+	let mut seen_txs: HashMap<sp_core::H256, u32> = HashMap::new();
 	let http_client = reqwest::Client::new();
 
 	loop {
