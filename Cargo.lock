@@ -10886,6 +10886,7 @@ dependencies = [
  "stbl-primitives-fee-compatible-api",
  "stbl-primitives-zero-gas-transactions-api",
  "stbl-tools",
+ "stbl-zero-gas-fetcher",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
@@ -11209,6 +11210,32 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "stbl-tools",
+]
+
+[[package]]
+name = "stbl-zero-gas-fetcher"
+version = "1.0.0"
+dependencies = [
+ "account",
+ "ethereum",
+ "fp-rpc",
+ "futures 0.3.31",
+ "futures-timer",
+ "hex",
+ "log",
+ "reqwest",
+ "sc-client-api",
+ "sc-transaction-pool-api",
+ "serde",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-keystore",
+ "sp-runtime",
+ "stability-runtime",
+ "stbl-primitives-zero-gas-transactions-api",
+ "stbl-tools",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]

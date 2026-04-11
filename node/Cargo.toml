@@ -88,6 +88,7 @@ stability-runtime = { path = "./../runtime", features = ["std"] }
 
 # Stability
 stbl-cli-authorship = { workspace = true }
+stbl-zero-gas-fetcher = { workspace = true }
 stbl-primitives-fee-compatible-api = { workspace = true, features = [
 	"default",
 ] }

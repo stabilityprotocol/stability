@@ -37,8 +37,10 @@ Optional environment variables:
 - BOOTNODES: This environment variable allows specifying the bootnodes to use, separated by commas. If not specified, the node will use the default bootnodes for the chain spec.
 - MODE: This environment variable allows the node to run in different pruning modes. Possible values are "full_node" or "archive". The default value is "full_node".
 - BACKEND_TYPE: The only available option is `sql` for now. This option allows the node to use a SQL backend instead of the default `key-value` backend for faster Ethereum log queries.
-- ZERO_GAS_TX_POOL: This environment variable allows the node to run with a zero gas price transaction pool. By default the feature is disabled. The expected value is a string containing an URL. Check the [Zero Gas Transaction Pool](../docs/ZERO-GAS-TRANSACTIONS.md) document for more information.
-- ZERO_GAS_TX_POOL_TIMEOUT: This environment variable allows specifying the timeout for the zero gas transaction in millisecond. If not specified, the node will use the default timeout (1000ms).
+- ZERO_GAS_TX_POOL: This environment variable allows the node to run with a zero gas price transaction pool using the **inline** mode (HTTP fetch during block proposal). By default the feature is disabled. The expected value is a string containing a URL. Check the [Zero Gas Transaction Pool](../docs/ZERO-GAS-TRANSACTIONS.md) document for more information.
+- ZERO_GAS_TX_POOL_TIMEOUT: This environment variable allows specifying the timeout for the zero gas transaction HTTP requests in milliseconds. Applies to both inline and enqueue modes. If not specified, the node will use the default timeout (1000ms).
+- ZERO_GAS_TX_POOL_ENQUEUE: This environment variable enables the **enqueue** mode, where a background worker polls the external pool and submits zero-gas transactions into the Substrate mempool. This decouples the HTTP fetch from block production, improving block proposal performance. The expected value is a string containing a URL. Check the [Zero Gas Transaction Pool](../docs/ZERO-GAS-TRANSACTIONS.md) document for more information.
+- ZERO_GAS_TX_POOL_ENQUEUE_INTERVAL: This environment variable allows specifying the poll interval for the enqueue mode background worker in milliseconds. If not specified, the node will use the default interval (3000ms).
 
 To set an environment variable in the docker run, use the flag -e NAME=VALUE
 

@@ -102,7 +102,7 @@ pub mod pallet {
 	{
 		type Call = Call<T>;
 
-		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+		fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
 			match call {
 				Call::send_zero_gas_transaction {
 					transaction,
@@ -113,13 +113,22 @@ pub mod pallet {
 							TransactionValidityError::Invalid(InvalidTransaction::BadProof)
 						})?;
 
-					let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
+					// For InBlock source (block import/execution), perform full consent
+					// signature validation. For Local/External sources (pool submission),
+					// skip the consent check since block_number() and find_author() return
+					// incorrect values during pool validation. The consent signature will
+					// be fully validated during block execution in send_zero_gas_transaction.
+					if matches!(source, TransactionSource::InBlock) {
+						let current_block_validator = <pallet_evm::Pallet<T>>::find_author();
 
-					Self::ensure_zero_gas_transaction(
-						current_block_validator,
-						validator_signature.clone(),
-					)
-					.map_err(|_| TransactionValidityError::Invalid(InvalidTransaction::BadProof))?;
+						Self::ensure_zero_gas_transaction(
+							current_block_validator,
+							validator_signature.clone(),
+						)
+						.map_err(|_| {
+							TransactionValidityError::Invalid(InvalidTransaction::BadProof)
+						})?;
+					}
 
 					let transaction_data: TransactionData = transaction.into();
 
@@ -129,6 +138,7 @@ pub mod pallet {
 					return sp_runtime::transaction_validity::ValidTransactionBuilder::default()
 						.and_provides((from, transaction_data.nonce))
 						.priority(u64::MAX)
+						.longevity(20)
 						.build();
 				}
 				_ => Err(TransactionValidityError::Unknown(
@@ -281,6 +291,12 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// The number of blocks before and after the current block for which
+		/// a validator consent signature is considered valid. This allows the
+		/// background ZGT fetcher to sign for a future block and have the
+		/// signature remain valid when the transaction is actually included.
+		const CONSENT_BLOCK_WINDOW: u64 = 10;
+
 		fn ensure_zero_gas_transaction(
 			expected_validator: H160,
 			validator_signature: Vec<u8>,
@@ -290,19 +306,42 @@ pub mod pallet {
 				frame_system::Pallet::<T>::block_number(),
 			);
 
+			// Try the exact block number first (fast path for the inline authorship case)
 			let zero_gas_trx_internal_message: Vec<u8> =
 				Self::get_zero_gas_transaction_signing_message(block_number.into(), chain_id);
-
 			let eip191_message =
 				stbl_tools::eth::build_eip191_message_hash(zero_gas_trx_internal_message);
-
 			let zero_gas_trx_signer_address =
 				Self::get_zero_gas_trx_signer(validator_signature.clone(), eip191_message.clone());
 
-			match zero_gas_trx_signer_address {
-				Some(address) if address == expected_validator => Ok(()),
-				_ => Err(()),
+			if matches!(zero_gas_trx_signer_address, Some(address) if address == expected_validator)
+			{
+				return Ok(());
 			}
+
+			// If exact block didn't match, try a +/- CONSENT_BLOCK_WINDOW range.
+			// This supports the pool-based enqueue path where the background fetcher
+			// signs for best_block + 1 but the transaction may execute several blocks later.
+			let range_start = block_number.saturating_sub(Self::CONSENT_BLOCK_WINDOW);
+			let range_end = block_number.saturating_add(Self::CONSENT_BLOCK_WINDOW);
+
+			for candidate_block in range_start..=range_end {
+				if candidate_block == block_number {
+					continue; // already tried above
+				}
+
+				let message =
+					Self::get_zero_gas_transaction_signing_message(candidate_block, chain_id);
+				let eip191 = stbl_tools::eth::build_eip191_message_hash(message);
+				let signer =
+					Self::get_zero_gas_trx_signer(validator_signature.clone(), eip191.clone());
+
+				if matches!(signer, Some(address) if address == expected_validator) {
+					return Ok(());
+				}
+			}
+
+			Err(())
 		}
 
 		pub fn get_zero_gas_transaction_signing_message(

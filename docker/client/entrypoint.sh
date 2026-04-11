@@ -65,6 +65,14 @@ if [ -n "$ZERO_GAS_TX_POOL_TIMEOUT" ]; then
   START_COMMAND="$START_COMMAND --zero-gas-tx-pool-timeout $ZERO_GAS_TX_POOL_TIMEOUT"
 fi
 
+if [ -n "$ZERO_GAS_TX_POOL_ENQUEUE" ]; then
+  START_COMMAND="$START_COMMAND --zero-gas-tx-pool-enqueue $ZERO_GAS_TX_POOL_ENQUEUE"
+fi
+
+if [ -n "$ZERO_GAS_TX_POOL_ENQUEUE_INTERVAL" ]; then
+  START_COMMAND="$START_COMMAND --zero-gas-tx-pool-enqueue-interval $ZERO_GAS_TX_POOL_ENQUEUE_INTERVAL"
+fi
+
 if [ -n "$CUSTOM_ETH_APIS" ]; then
     START_COMMAND="$START_COMMAND --ethapi=$CUSTOM_ETH_APIS"
 else
