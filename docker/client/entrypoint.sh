@@ -9,6 +9,15 @@ if [ ! -z "$CHAIN_NAME" ]; then
   CHAIN_TARGET="$CHAIN_NAME"
 fi
 
+# Remove stale RocksDB lock files from dead containers, but only if no
+# running process actually holds the lock (prevents corruption from
+# deleting locks held by a live concurrent container on the same volume).
+find /tmp/node/chains -name "LOCK" 2>/dev/null | while read lockfile; do
+  if flock -n "$lockfile" true 2>/dev/null; then
+    rm -f "$lockfile"
+  fi
+done
+
 if [[ "$CHAIN_TARGET" == "dev" ]]; then
   echo "Starting dev chain"
   START_COMMAND_DEV="./target/release/stability --base-path /tmp/node --dev --unsafe-rpc-external --rpc-cors all --prometheus-external"
