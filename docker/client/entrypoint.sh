@@ -9,6 +9,10 @@ if [ ! -z "$CHAIN_NAME" ]; then
   CHAIN_TARGET="$CHAIN_NAME"
 fi
 
+# Remove stale RocksDB lock files to prevent "Resource temporarily unavailable" errors
+# when Docker reschedules containers on the same volume
+find /tmp/node/chains -name "LOCK" -delete 2>/dev/null || true
+
 if [[ "$CHAIN_TARGET" == "dev" ]]; then
   echo "Starting dev chain"
   START_COMMAND_DEV="./target/release/stability --base-path /tmp/node --dev --unsafe-rpc-external --rpc-cors all --prometheus-external"
