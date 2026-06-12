@@ -73,6 +73,7 @@ impl frame_system::Config for Runtime {
 	type PreInherents = ();
 	type PostInherents = ();
 	type PostTransactions = ();
+	type ExtensionsWeightInfo = ();
 }
 
 parameter_types! {
@@ -91,6 +92,7 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Runtime {
+	type DoneSlashHandler = ();
 	type MaxReserves = ();
 	type ReserveIdentifier = ();
 	type MaxLocks = ();

@@ -44,7 +44,7 @@ impl Default for MockedMempool {
 
 pub struct MockTransaction;
 impl InPoolTransaction for MockTransaction {
-	type Transaction = Extrinsic;
+	type Transaction = sc_service::Arc<Extrinsic>;
 
 	type Hash = Hash;
 
@@ -77,6 +77,7 @@ impl InPoolTransaction for MockTransaction {
 	}
 }
 
+#[async_trait::async_trait]
 impl sc_service::TransactionPool for MockedMempool {
 	type Block = Block;
 
@@ -86,52 +87,55 @@ impl sc_service::TransactionPool for MockedMempool {
 
 	type Error = sc_transaction_pool_api::error::Error;
 
-	fn submit_at(
+	async fn submit_at(
 		&self,
 		_at: <Block as BlockT>::Hash,
 		_source: sc_transaction_pool_api::TransactionSource,
 		_xts: Vec<sc_transaction_pool_api::TransactionFor<Self>>,
-	) -> sc_transaction_pool_api::PoolFuture<
-		Vec<Result<sc_transaction_pool_api::TxHash<Self>, Self::Error>>,
-		Self::Error,
-	> {
+	) -> Result<Vec<Result<sc_transaction_pool_api::TxHash<Self>, Self::Error>>, Self::Error> {
 		todo!()
 	}
 
-	fn submit_one(
+	async fn submit_one(
 		&self,
 		_at: <Block as BlockT>::Hash,
 		_source: sc_transaction_pool_api::TransactionSource,
 		_xt: sc_transaction_pool_api::TransactionFor<Self>,
-	) -> sc_transaction_pool_api::PoolFuture<sc_transaction_pool_api::TxHash<Self>, Self::Error> {
+	) -> Result<sc_transaction_pool_api::TxHash<Self>, Self::Error> {
 		todo!()
 	}
 
-	fn submit_and_watch(
+	async fn submit_and_watch(
 		&self,
 		_at: <Block as BlockT>::Hash,
 		_source: sc_transaction_pool_api::TransactionSource,
 		_xt: sc_transaction_pool_api::TransactionFor<Self>,
-	) -> sc_transaction_pool_api::PoolFuture<
+	) -> Result<
 		std::pin::Pin<Box<sc_transaction_pool_api::TransactionStatusStreamFor<Self>>>,
 		Self::Error,
 	> {
 		todo!()
 	}
 
-	fn ready_at(
+	async fn ready_at(
 		&self,
-		_at: NumberFor<Self::Block>,
-	) -> std::pin::Pin<
-		Box<
-			dyn futures_util::Future<
-					Output = Box<
-						dyn sc_transaction_pool_api::ReadyTransactions<
-								Item = sc_service::Arc<Self::InPoolTransaction>,
-							> + Send,
-					>,
-				> + Send,
-		>,
+		_at: <Block as BlockT>::Hash,
+	) -> Box<
+		dyn sc_transaction_pool_api::ReadyTransactions<
+				Item = sc_service::Arc<Self::InPoolTransaction>,
+			> + Send,
+	> {
+		todo!()
+	}
+
+	async fn ready_at_with_timeout(
+		&self,
+		_at: <Block as BlockT>::Hash,
+		_timeout: std::time::Duration,
+	) -> Box<
+		dyn sc_transaction_pool_api::ReadyTransactions<
+				Item = sc_service::Arc<Self::InPoolTransaction>,
+			> + Send,
 	> {
 		todo!()
 	}
@@ -146,9 +150,12 @@ impl sc_service::TransactionPool for MockedMempool {
 		todo!()
 	}
 
-	fn remove_invalid(
+	async fn report_invalid(
 		&self,
-		_hashes: &[sc_transaction_pool_api::TxHash<Self>],
+		_at: Option<<Block as BlockT>::Hash>,
+		_invalid_tx_errors: sc_transaction_pool_api::TxInvalidityReportMap<
+			sc_transaction_pool_api::TxHash<Self>,
+		>,
 	) -> Vec<sc_service::Arc<Self::InPoolTransaction>> {
 		todo!()
 	}

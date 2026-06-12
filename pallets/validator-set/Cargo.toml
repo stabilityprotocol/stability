@@ -20,6 +20,7 @@ scale-info = { workspace = true }
 sp-application-crypto = { workspace = true }
 
 [dev-dependencies]
+pallet-balances = { workspace = true, features = ["std"] }
 serde = { version = '1.0.126', features = ['derive'] }
 sp-state-machine = { workspace = true }
 

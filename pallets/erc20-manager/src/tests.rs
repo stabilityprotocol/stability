@@ -24,7 +24,7 @@ use sp_core::{H160, U256};
 type TestRunner = <Test as pallet_evm::Config>::Runner;
 
 fn get_balance_of(erc20: H160, address: H160) -> U256 {
-	TestRunner::call(
+	let res = TestRunner::call(
 		address,
 		erc20,
 		stbl_tools::eth::generate_calldata("balanceOf(address)", &vec![address.into()]),
@@ -34,17 +34,15 @@ fn get_balance_of(erc20: H160, address: H160) -> U256 {
 		None,
 		None,
 		Default::default(),
+		Default::default(),
 		false,
 		false,
 		None,
 		None,
 		&pallet_evm::EvmConfig::istanbul(),
 	)
-	.unwrap()
-	.value
-	.as_slice()
-	.try_into()
-	.unwrap()
+	.unwrap();
+	U256::from_big_endian(res.value.as_slice())
 }
 
 #[test]

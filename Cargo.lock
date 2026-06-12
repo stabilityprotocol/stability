@@ -2869,7 +2869,7 @@ dependencies = [
  "hash256-std-hasher",
  "k256",
  "parity-scale-codec",
- "rlp 0.6.1",
+ "rlp",
  "scale-info",
  "serde",
  "sha3 0.10.8",
@@ -2933,7 +2933,7 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "primitive-types",
- "rlp 0.6.1",
+ "rlp",
  "scale-info",
  "serde",
  "sha3 0.10.8",
@@ -3174,7 +3174,7 @@ dependencies = [
  "parity-scale-codec",
  "prometheus",
  "rand 0.9.2",
- "rlp 0.6.1",
+ "rlp",
  "sc-client-api",
  "sc-consensus-aura",
  "sc-network",
@@ -3211,7 +3211,7 @@ dependencies = [
  "ethereum",
  "ethereum-types",
  "jsonrpsee",
- "rlp 0.6.1",
+ "rlp",
  "rustc-hex",
  "serde",
  "serde_json",
@@ -4861,7 +4861,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54ed8ad1f3877f7e775b8cbf30ed1bd3209a95401817f19a0eb4402d13f8cf90"
 dependencies = [
- "rlp 0.6.1",
+ "rlp",
 ]
 
 [[package]]
@@ -7774,6 +7774,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "sp-version",
  "stbl-tools",
 ]
 
@@ -7785,6 +7786,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
+ "pallet-balances",
  "pallet-session",
  "pallet-validator-set",
  "parity-scale-codec",
@@ -7807,6 +7809,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
+ "pallet-balances",
  "pallet-session",
  "parity-scale-codec",
  "scale-info",
@@ -7845,7 +7848,7 @@ dependencies = [
  "pallet-user-fee-selector",
  "pallet-validator-fee-selector",
  "parity-scale-codec",
- "rlp 0.5.2",
+ "rlp",
  "runner",
  "scale-info",
  "sp-core",
@@ -9654,16 +9657,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd124222d17ad93a644ed9d011a40f4fb64aa54275c08cc216524a9ea82fb09f"
 dependencies = [
  "digest 0.10.7",
-]
-
-[[package]]
-name = "rlp"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb919243f34364b6bd2fc10ef797edbfa75f33c252e7998527479c6d6b47e1ec"
-dependencies = [
- "bytes",
- "rustc-hex",
 ]
 
 [[package]]
@@ -13238,6 +13231,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "sp-version",
  "stbl-tools",
 ]
 

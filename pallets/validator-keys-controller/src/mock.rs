@@ -85,6 +85,7 @@ frame_support::construct_runtime!(
 		ValidatorSet: pallet_validator_set,
 		ValidatorKeysController: crate,
 		Session: pallet_session,
+		Balances: pallet_balances,
 	}
 );
 
@@ -172,7 +173,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
-	pallet_session::GenesisConfig::<Test> { keys: keys.clone() }
+	pallet_session::GenesisConfig::<Test> { keys: keys.clone(), non_authority_keys: Default::default() }
 		.assimilate_storage(&mut t)
 		.unwrap();
 	sp_io::TestExternalities::new(t)
@@ -197,7 +198,7 @@ impl frame_system::Config for Test {
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<u64>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
@@ -212,6 +213,7 @@ impl frame_system::Config for Test {
 	type PreInherents = ();
 	type PostInherents = ();
 	type PostTransactions = ();
+	type ExtensionsWeightInfo = ();
 }
 
 parameter_types! {
@@ -247,12 +249,20 @@ impl FindAuthor<u64> for FindBlockAuthorityId {
 	}
 }
 
-impl<C> frame_system::offchain::SendTransactionTypes<C> for Test
+impl<C> frame_system::offchain::CreateTransactionBase<C> for Test
 where
 	RuntimeCall: From<C>,
 {
 	type Extrinsic = UncheckedExtrinsic;
-	type OverarchingCall = RuntimeCall;
+	type RuntimeCall = RuntimeCall;
+}
+impl<C> frame_system::offchain::CreateBare<C> for Test
+where
+	RuntimeCall: From<C>,
+{
+	fn create_bare(call: RuntimeCall) -> UncheckedExtrinsic {
+		UncheckedExtrinsic::new_bare(call)
+	}
 }
 pub struct AccountIdOfValidator;
 impl Convert<UintAuthorityId, u64> for AccountIdOfValidator {
@@ -279,7 +289,27 @@ impl pallet_validator_set::Config for Test {
 	type AccountIdOfValidator = AccountIdOfValidator;
 }
 
+impl pallet_balances::Config for Test {
+	type Balance = u64;
+	type RuntimeEvent = RuntimeEvent;
+	type DustRemoval = ();
+	type ExistentialDeposit = frame_support::traits::ConstU64<1>;
+	type AccountStore = System;
+	type MaxLocks = ();
+	type MaxReserves = ();
+	type ReserveIdentifier = ();
+	type WeightInfo = ();
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
+	type FreezeIdentifier = ();
+	type MaxFreezes = ();
+	type DoneSlashHandler = ();
+}
+
 impl pallet_session::Config for Test {
+	type DisablingStrategy = pallet_session::disabling::UpToLimitWithReEnablingDisablingStrategy;
+	type Currency = Balances;
+	type KeyDeposit = ();
 	type ValidatorId = <Self as frame_system::Config>::AccountId;
 	type ValidatorIdOf = pallet_validator_set::ValidatorOf<Self>;
 	type ShouldEndSession = TestShouldEndSession;

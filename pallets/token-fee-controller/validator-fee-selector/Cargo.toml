@@ -20,6 +20,7 @@ stbl-tools = { workspace = true }
 pallet-ethereum = { workspace = true } 
 
 [dev-dependencies]
+sp-version = { workspace = true, features = ["std"] }
 pallet-timestamp = { workspace = true }
 pallet-balances = { workspace = true, features = ["std"] }
 pallet-root-controller = { workspace = true }
