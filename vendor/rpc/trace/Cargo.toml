@@ -12,6 +12,8 @@ ethereum-types = { workspace = true }
 futures = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "macros", "server" ] }
 log = { workspace = true }
+parity-scale-codec = { workspace = true }
+schnellru = "0.2.4"
 substrate-prometheus-endpoint = { workspace = true }
 tokio = { workspace = true, features = [ "sync", "time" ] }
 tracing = { workspace = true }

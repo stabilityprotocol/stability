@@ -153,7 +153,7 @@ where
 			));
 		}
 
-		let transaction: ethereum::TransactionV2 = match ethereum::EnvelopedDecodable::decode(slice)
+		let transaction: ethereum::TransactionV3 = match ethereum::EnvelopedDecodable::decode(slice)
 		{
 			Ok(transaction) => transaction,
 			Err(_) => {

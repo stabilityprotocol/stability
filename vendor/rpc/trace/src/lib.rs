@@ -49,7 +49,8 @@ use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT};
 use substrate_prometheus_endpoint::Registry as PrometheusRegistry;
 
 use ethereum_types::H256;
-use fc_rpc::lru_cache::LRUCacheByteLimited;
+mod lru_cache;
+use lru_cache::LRUCacheByteLimited;
 use fc_storage::StorageOverride;
 use fp_rpc::EthereumRuntimeRPCApi;
 
