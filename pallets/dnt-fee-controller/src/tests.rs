@@ -27,6 +27,7 @@ use crate::mock::{
 use super::*;
 use mock::{new_test_ext, MeaninglessAddress, MeaninglessAddress2, Test};
 use runner::OnChargeDecentralizedNativeTokenFee;
+use sp_core::H160;
 
 #[test]
 fn withdraw_fee_calls_deposit_and_withdraw() {
@@ -125,7 +126,7 @@ fn pay_fees_calls_vault_pallet() {
 	new_test_ext().execute_with(|| {
 		let meaningless_amount = 100.into();
 		let validator_amount =
-			DNTFeeController::validator_percentage().unwrap() * meaningless_amount / 100;
+			DNTFeeController::validator_percentage() * meaningless_amount / 100;
 		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::pay_fees(
 			MeaninglessTokenAddress::get(),
 			(1.into(), 1.into()),
@@ -274,10 +275,50 @@ fn fails_withdraw_if_erc20_manager_fails() {
 #[test]
 fn validator_percentage_updates() {
 	new_test_ext().execute_with(|| {
-		assert_eq!(DNTFeeController::validator_percentage().unwrap(), 50.into());
+		assert_eq!(DNTFeeController::validator_percentage(), 50.into());
 
 		assert!(DNTFeeController::set_validator_percentage(10.into()).is_ok());
 
-		assert_eq!(DNTFeeController::validator_percentage().unwrap(), 10.into());
+		assert_eq!(DNTFeeController::validator_percentage(), 10.into());
+	});
+}
+
+#[test]
+fn missing_storage_falls_back_to_defaults_without_panicking() {
+	new_test_ext().execute_with(|| {
+		FeeVaultPrecompileAddressStorage::<Test>::kill();
+		ValidatorPercentageStorage::<Test>::kill();
+
+		assert_eq!(
+			<Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::get_fee_vault(),
+			H160::from_low_u64_be(0x807)
+		);
+		assert_eq!(DNTFeeController::get_validator_percentage(), 50.into());
+
+		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::withdraw_fee(
+			MeaninglessAddress::get(),
+			MeaninglessTokenAddress::get(),
+			(1.into(), 1.into()),
+			100.into(),
+		);
+		assert!(result.is_ok());
+
+		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::correct_fee(
+			MeaninglessAddress::get(),
+			MeaninglessTokenAddress::get(),
+			(1.into(), 1.into()),
+			100.into(),
+			10.into(),
+		);
+		assert!(result.is_ok());
+
+		let result = <Pallet<Test> as OnChargeDecentralizedNativeTokenFee>::pay_fees(
+			MeaninglessTokenAddress::get(),
+			(1.into(), 1.into()),
+			100.into(),
+			MeaninglessAddress::get(),
+			Some(MeaninglessAddress2::get()),
+		);
+		assert_eq!(result.unwrap(), (50.into(), 50.into()));
 	});
 }

@@ -18,6 +18,8 @@
 // information.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+// expect_used is not denied because FRAME macros expand to expect() internally.
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
 use sp_core::H160;
 
@@ -185,7 +187,15 @@ pub mod pallet {
 			let dispatch = pallet_ethereum::Pallet::<T>::transact(origin, transaction)
 				.map_err(|_| DispatchError::Other("Signature doesn't meet with sponsor address"))?;
 
-			let gas_used = Self::gas_from_actual_weight(dispatch.actual_weight.unwrap())
+			// Fall back to the declared gas limit (worst case) if the dispatch
+			// reports no actual weight.
+			let transaction_weight = dispatch.actual_weight.unwrap_or_else(|| {
+				<T as pallet_evm::Config>::GasWeightMapping::gas_to_weight(
+					gas_limit.unique_saturated_into(),
+					true,
+				)
+			});
+			let gas_used = Self::gas_from_actual_weight(transaction_weight)
 				.map_err(|_| DispatchError::Other("Arithmetic error due to overflow."))?;
 
 			let gas_left = match gas_limit.checked_sub(gas_used.into()) {
@@ -395,8 +405,12 @@ pub mod pallet {
 		}
 
 		fn get_meta_trx_signer(signature: Vec<u8>, message: H256) -> Option<H160> {
+			let signature: [u8; 65] = match signature.as_slice().try_into() {
+				Ok(signature) => signature,
+				Err(_) => return None,
+			};
 			let result = match sp_io::crypto::secp256k1_ecdsa_recover(
-				signature.as_slice().try_into().unwrap(),
+				&signature,
 				message.as_fixed_bytes(),
 			) {
 				Ok(pubkey) => {

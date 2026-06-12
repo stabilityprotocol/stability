@@ -18,6 +18,7 @@
 // information.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
 
 use core::marker::PhantomData;
 
@@ -714,6 +715,11 @@ impl<'config> SubstrateStackSubstate<'config> {
 		sp_io::storage::start_transaction();
 	}
 
+	// Invariant: the evm executor pairs every exit_* with a prior enter(), so
+	// `parent` is always Some here. This mirrors upstream Frontier
+	// (frame/evm/src/runner/stack.rs); converting the expect into an error
+	// would desync the sp_io::storage transaction depth.
+	#[allow(clippy::expect_used)]
 	pub fn exit_commit(&mut self) -> Result<(), ExitError> {
 		let mut exited = *self.parent.take().expect("Cannot commit on root substate");
 		mem::swap(&mut exited, self);
@@ -726,6 +732,7 @@ impl<'config> SubstrateStackSubstate<'config> {
 		Ok(())
 	}
 
+	#[allow(clippy::expect_used)]
 	pub fn exit_revert(&mut self) -> Result<(), ExitError> {
 		let mut exited = *self.parent.take().expect("Cannot discard on root substate");
 		mem::swap(&mut exited, self);
@@ -735,6 +742,7 @@ impl<'config> SubstrateStackSubstate<'config> {
 		Ok(())
 	}
 
+	#[allow(clippy::expect_used)]
 	pub fn exit_discard(&mut self) -> Result<(), ExitError> {
 		let mut exited = *self.parent.take().expect("Cannot discard on root substate");
 		mem::swap(&mut exited, self);
