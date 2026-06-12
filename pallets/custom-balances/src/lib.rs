@@ -92,6 +92,14 @@ pub mod pallet {
 	}
 
 	impl<T: Balance + MaybeSerializeDeserialize + Debug + MaxEncodedLen + FixedPointOperand>
+		frame_support::traits::tokens::imbalance::TryMerge for NeutralImbalance<T>
+	{
+		fn try_merge(self, other: Self) -> Result<Self, (Self, Self)> {
+			Ok(Self::new(self.0.saturating_add(other.0)))
+		}
+	}
+
+	impl<T: Balance + MaybeSerializeDeserialize + Debug + MaxEncodedLen + FixedPointOperand>
 		Imbalance<T> for NeutralImbalance<T>
 	{
 		type Opposite = Self;

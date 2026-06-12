@@ -141,8 +141,10 @@ where
 	ValidatorFeeTokenController: pallet_validator_fee_selector::ValidatorFeeTokenController,
 	Instance: 'static + InstanceToPrefix,
 	Runtime: pallet_evm::Config + pallet_timestamp::Config + pallet_validator_set::Config,
-	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
-	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
+	<Runtime as frame_system::Config>::RuntimeCall:
+		Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
+	<<Runtime as frame_system::Config>::RuntimeCall as Dispatchable>::RuntimeOrigin:
+		From<Option<Runtime::AccountId>>,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
 	<Runtime as frame_system::Config>::AccountId: From<H160>,
 {

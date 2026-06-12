@@ -61,7 +61,7 @@ pub mod pallet {
 
 	use sp_application_crypto::RuntimeAppPublic;
 
-	use frame_system::offchain::SendTransactionTypes;
+	use frame_system::offchain::CreateBare;
 
 	use sp_core::U256;
 
@@ -69,7 +69,7 @@ pub mod pallet {
 	/// depends.
 	#[pallet::config]
 	pub trait Config:
-		frame_system::Config + pallet_session::Config + SendTransactionTypes<Call<Self>>
+		frame_system::Config + pallet_session::Config + CreateBare<Call<Self>>
 	{
 		/// The Event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -244,9 +244,8 @@ pub mod pallet {
 								signature: signature.unwrap(),
 							};
 
-							match SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(
-								call.into(),
-							) {
+							let xt = T::create_bare(call.into());
+							match SubmitTransaction::<T, Call<T>>::submit_transaction(xt) {
 								Err(_) => {
 									log::error!(
 										target: LOG_TARGET,

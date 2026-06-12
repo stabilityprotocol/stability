@@ -37,6 +37,8 @@ pub enum EthereumTxError {
 	InvalidFeeInput,
 	InvalidChainId,
 	InvalidSignature,
+	EmptyAuthorizationList,
+	AuthorizationListTooLarge,
 	UnknownError,
 }
 
@@ -53,6 +55,12 @@ impl From<TransactionValidationError> for EthereumTxError {
 			TransactionValidationError::InvalidFeeInput => EthereumTxError::InvalidFeeInput,
 			TransactionValidationError::InvalidChainId => EthereumTxError::InvalidChainId,
 			TransactionValidationError::InvalidSignature => EthereumTxError::InvalidSignature,
+			TransactionValidationError::EmptyAuthorizationList => {
+				EthereumTxError::EmptyAuthorizationList
+			}
+			TransactionValidationError::AuthorizationListTooLarge => {
+				EthereumTxError::AuthorizationListTooLarge
+			}
 			TransactionValidationError::UnknownError => EthereumTxError::UnknownError,
 		}
 	}
@@ -228,6 +236,7 @@ pub mod pallet {
 			let transaction_data: TransactionData = transaction.into();
 			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
 			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
+			let is_eip7702 = matches!(transaction, Transaction::EIP7702(_));
 
 			fp_evm::CheckEvmTransaction::<EthereumTxError>::new(
 				fp_evm::CheckEvmTransactionConfig {
@@ -243,6 +252,7 @@ pub mod pallet {
 			)
 			.validate_in_pool_for(&who)
 			.and_then(|v| v.with_chain_id())
+			.and_then(|v| v.with_eip7702_authorization_list(is_eip7702))
 			.map_err(|e| {
 				log::debug!(target: LOG_TARGET, "Transaction validation error: {:?}", e);
 				()
@@ -258,6 +268,7 @@ pub mod pallet {
 			let transaction_data: TransactionData = transaction.into();
 			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
 			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
+			let is_eip7702 = matches!(transaction, Transaction::EIP7702(_));
 
 			fp_evm::CheckEvmTransaction::<EthereumTxError>::new(
 				fp_evm::CheckEvmTransactionConfig {
@@ -273,6 +284,7 @@ pub mod pallet {
 			)
 			.validate_in_block_for(&who)
 			.and_then(|v| v.with_chain_id())
+			.and_then(|v| v.with_eip7702_authorization_list(is_eip7702))
 			.map_err(|e| {
 				log::debug!(target: LOG_TARGET, "Transaction validation error: {:?}", e);
 				()
