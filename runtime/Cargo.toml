@@ -31,6 +31,7 @@ std = [
 	'pallet-collective/std',
 	'pallet-custom-balances/std',
 	'pallet-dnt-fee-controller/std',
+	'ethereum/std',
 	'pallet-ethereum/std',
 	'pallet-evm-chain-id/std',
 	'pallet-evm-precompile-modexp/std',
@@ -168,6 +169,7 @@ fp-rpc = { workspace = true }
 fp-self-contained = { workspace = true, features = ["serde"] }
 # Frontier FRAME
 pallet-base-fee = { workspace = true }
+ethereum = { workspace = true }
 pallet-ethereum = { workspace = true }
 pallet-evm = { workspace = true }
 pallet-evm-chain-id = { workspace = true }

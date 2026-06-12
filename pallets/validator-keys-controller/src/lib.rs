@@ -227,7 +227,7 @@ pub mod pallet {
 		pub authority_index: u32,
 	}
 
-	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+	#[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 	pub struct PublishingKeys<AuthorityId, FinalizationId, BlockNumber> {
 		pub aura: AuthorityId,
 		pub grandpa: FinalizationId,

@@ -12924,6 +12924,7 @@ name = "stability-runtime"
 version = "0.0.0"
 dependencies = [
  "account",
+ "ethereum",
  "fp-account",
  "fp-evm",
  "fp-rpc",

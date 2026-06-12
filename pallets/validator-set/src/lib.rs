@@ -355,7 +355,7 @@ pub mod pallet {
 		}
 	}
 
-	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+	#[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 	pub struct Heartbeat<BlockNumber, AuthorityId>
 	where
 		BlockNumber: PartialEq + Eq + Decode + Encode,
