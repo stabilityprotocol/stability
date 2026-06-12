@@ -172,6 +172,7 @@ substrate-frame-rpc-system = { git = "https://github.com/paritytech/polkadot-sdk
 substrate-wasm-builder = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2512" }
 sp-staking = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2512", default-features = false }
 cumulus-primitives-storage-weight-reclaim = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2512", default-features = false }
+cumulus-primitives-proof-size-hostfunction = { git = "https://github.com/paritytech/polkadot-sdk", branch = "stable2512", default-features = false }
 # Frontier Client
 fc-cli = { git = "https://github.com/polkadot-evm/frontier", branch = "stable2512", default-features = false }
 fc-consensus = { git = "https://github.com/polkadot-evm/frontier", branch = "stable2512" }

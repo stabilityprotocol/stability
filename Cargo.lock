@@ -12786,6 +12786,7 @@ dependencies = [
  "account",
  "async-trait",
  "clap",
+ "cumulus-primitives-proof-size-hostfunction",
  "fc-api",
  "fc-cli",
  "fc-consensus",
