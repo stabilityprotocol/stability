@@ -20,7 +20,6 @@ pallet-erc20-manager = { workspace = true }
 [dev-dependencies]
 pallet-timestamp = { workspace = true }
 pallet-balances = { workspace = true, features = ["std"] }
-staging-xcm = { workspace = true }
 
 [features]
 default = ["std"]
@@ -31,5 +30,4 @@ std = [
 	"scale-info/std",
 	"sp-runtime/std",
 	"sp-std/std",
-	'staging-xcm/std',
 ]

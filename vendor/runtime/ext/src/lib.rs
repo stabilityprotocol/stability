@@ -1,21 +1,18 @@
-// Copyright © 2022 STABILITY SOLUTIONS, INC. (“STABILITY”)
-// This file is part of the Stability Global Trust Network client
-// software and accompanying documentation (the “Software”).
+// Copyright 2019-2025 PureStake Inc.
+// This file is part of Moonbeam.
 
-// You can download and use the Software for free under the terms of
-// the Stability Open License Agreement as published by Stability on
-// Github at https://github.com/stabilityprotocol/stability/blob/master/LICENSE.
+// Moonbeam is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-// THE SOFTWARE IS PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND.
-// STABILITY EXPRESSLY DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED,
-// INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
-// NON-INFRINGEMENT. IN NO EVENT SHALL OWNER BE LIABLE FOR ANY
-// INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES ARISING
-// OUT OF USE OF THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-// SUCH DAMAGES.
+// Moonbeam is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 
-// Please see the Stability Open License Agreement for more
-// information.
+// You should have received a copy of the GNU General Public License
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Environmental-aware externalities for EVM tracing in Wasm runtime. This enables
 //! capturing the - potentially large - trace output data in the host and keep
@@ -26,7 +23,10 @@
 //! - Host functions will decode the input and emit an event `with` environmental.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-use sp_runtime_interface::runtime_interface;
+use sp_runtime_interface::{
+	pass_by::{AllocateAndReturnByCodec, PassFatPointerAndRead},
+	runtime_interface,
+};
 
 use parity_scale_codec::Decode;
 use sp_std::vec::Vec;
@@ -35,20 +35,20 @@ use evm_tracing_events::{Event, EvmEvent, GasometerEvent, RuntimeEvent, StepEven
 
 #[runtime_interface]
 pub trait MoonbeamExt {
-	fn raw_step(&mut self, _data: Vec<u8>) {}
+	fn raw_step(&mut self, _data: PassFatPointerAndRead<Vec<u8>>) {}
 
-	fn raw_gas(&mut self, _data: Vec<u8>) {}
+	fn raw_gas(&mut self, _data: PassFatPointerAndRead<Vec<u8>>) {}
 
-	fn raw_return_value(&mut self, _data: Vec<u8>) {}
+	fn raw_return_value(&mut self, _data: PassFatPointerAndRead<Vec<u8>>) {}
 
-	fn call_list_entry(&mut self, _index: u32, _value: Vec<u8>) {}
+	fn call_list_entry(&mut self, _index: u32, _value: PassFatPointerAndRead<Vec<u8>>) {}
 
 	fn call_list_new(&mut self) {}
 
 	// New design, proxy events.
 	/// An `Evm` event proxied by the Moonbeam runtime to this host function.
 	/// evm -> moonbeam_runtime -> host.
-	fn evm_event(&mut self, event: Vec<u8>) {
+	fn evm_event(&mut self, event: PassFatPointerAndRead<Vec<u8>>) {
 		if let Ok(event) = EvmEvent::decode(&mut &event[..]) {
 			Event::Evm(event).emit();
 		}
@@ -56,7 +56,7 @@ pub trait MoonbeamExt {
 
 	/// A `Gasometer` event proxied by the Moonbeam runtime to this host function.
 	/// evm_gasometer -> moonbeam_runtime -> host.
-	fn gasometer_event(&mut self, event: Vec<u8>) {
+	fn gasometer_event(&mut self, event: PassFatPointerAndRead<Vec<u8>>) {
 		if let Ok(event) = GasometerEvent::decode(&mut &event[..]) {
 			Event::Gasometer(event).emit();
 		}
@@ -64,7 +64,7 @@ pub trait MoonbeamExt {
 
 	/// A `Runtime` event proxied by the Moonbeam runtime to this host function.
 	/// evm_runtime -> moonbeam_runtime -> host.
-	fn runtime_event(&mut self, event: Vec<u8>) {
+	fn runtime_event(&mut self, event: PassFatPointerAndRead<Vec<u8>>) {
 		if let Ok(event) = RuntimeEvent::decode(&mut &event[..]) {
 			Event::Runtime(event).emit();
 		}
@@ -73,7 +73,7 @@ pub trait MoonbeamExt {
 	/// Allow the tracing module in the runtime to know how to filter Step event
 	/// content, as cloning the entire data is expensive and most of the time
 	/// not necessary.
-	fn step_event_filter(&self) -> StepEventFilter {
+	fn step_event_filter(&self) -> AllocateAndReturnByCodec<StepEventFilter> {
 		evm_tracing_events::step_event_filter().unwrap_or_default()
 	}
 
