@@ -62,6 +62,13 @@ std = [
 	"sp-runtime/std",
 	"sp-std/std",
 	"precompile-utils/std",
+	"stbl-tools/std",
+	"ethereum/std",
+	"fp-ethereum/std",
+	"log/std",
+	"pallet-ethereum/std",
+	"serde/std",
+	"sha3/std",
 ]
 forbid-evm-reentrancy = ["dep:environmental"]
 try-runtime = ['frame-support/try-runtime']

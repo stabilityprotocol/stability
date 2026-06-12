@@ -6946,6 +6946,7 @@ version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dcbff9bc912032c62bf65ef1d5aea88983b420f4f839db1e9b0c281a25c9c799"
 dependencies = [
+ "proc-macro-crate 1.1.3",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
@@ -7613,6 +7614,7 @@ version = "45.0.0"
 source = "git+https://github.com/paritytech/polkadot-sdk?branch=stable2512#ee31a93f2b080badb685218a77b8963c9435cfdd"
 dependencies = [
  "docify",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",

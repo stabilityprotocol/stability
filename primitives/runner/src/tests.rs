@@ -114,8 +114,7 @@ fn test_sends_users_token_on_call() {
 			ExitReason::Succeed(ExitSucceed::Returned)
 		);
 
-		let mut expected_value = [0u8; 32];
-		U256::from(100_u128).to_big_endian(&mut expected_value);
+		let expected_value = U256::from(100_u128).to_big_endian();
 		assert_eq!(target_res.value, expected_value);
 	});
 }

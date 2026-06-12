@@ -66,4 +66,11 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"log/std",
+	"num_enum/std",
+	"pallet-erc20-manager/std",
+	"pallet-supported-tokens-manager/std",
+	"pallet-timestamp/std",
+	"pallet-user-fee-selector/std",
+	"pallet-validator-fee-selector/std",
 ]

@@ -17,7 +17,7 @@
 // Please see the Stability Open License Agreement for more
 // information.
 
-use ethereum::TransactionV2;
+use ethereum::TransactionV3;
 use fp_ethereum::TransactionData;
 use sp_core::U256;
 
@@ -28,7 +28,7 @@ pub struct CustomFeeInfo {
 }
 
 impl CustomFeeInfo {
-	pub fn new(base_fee: U256, transaction: &TransactionV2) -> Self {
+	pub fn new(base_fee: U256, transaction: &TransactionV3) -> Self {
 		let data: TransactionData = transaction.into();
 		compute_fee_details(
 			base_fee,

@@ -82,10 +82,7 @@ pub mod pallet {
 					Error::<T>::UnderflowBalance
 				});
 
-				let mut new_balance_bytes: [u8; 32] = [0; 32];
-				new_balance.to_big_endian(&mut new_balance_bytes);
-
-				*stored_value = H256::from(new_balance_bytes);
+				*stored_value = H256::from(new_balance.to_big_endian());
 
 				Ok(amount)
 			})?;
@@ -106,10 +103,7 @@ pub mod pallet {
 					Error::<T>::OverflowBalance
 				});
 
-				let mut new_balance_bytes: [u8; 32] = [0; 32];
-				new_balance.to_big_endian(&mut new_balance_bytes);
-
-				*stored_value = H256::from(new_balance_bytes);
+				*stored_value = H256::from(new_balance.to_big_endian());
 
 				Ok(())
 			})?;

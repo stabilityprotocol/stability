@@ -51,9 +51,7 @@ macro_rules! none_or_err {
 }
 
 pub fn u256_to_h256(value: U256) -> H256 {
-	let mut tmp = [0u8; 32];
-	value.to_big_endian(&mut tmp);
-	H256::from(tmp)
+	H256::from(value.to_big_endian())
 }
 
 pub fn bool_to_vec_u8(value: bool) -> Vec<u8> {
@@ -63,12 +61,7 @@ pub fn bool_to_vec_u8(value: bool) -> Vec<u8> {
 }
 
 pub fn u256_to_vec_u8(value: U256) -> Vec<u8> {
-	let mut bytes = [0u8; 32];
-	let bytes_slice = bytes.as_mut_slice();
-
-	value.to_big_endian(bytes_slice);
-
-	bytes_slice.to_vec()
+	value.to_big_endian().to_vec()
 }
 
 pub fn truncate_u256_to_u64(n: U256) -> u64 {

@@ -39,5 +39,8 @@ std = [
 	'sp-io/std',
 	'sp-runtime/std',
 	'sp-std/std',
+	'log/std',
+	'sp-application-crypto/std',
+	'sp-staking/std',
 ]
 try-runtime = ['frame-support/try-runtime']

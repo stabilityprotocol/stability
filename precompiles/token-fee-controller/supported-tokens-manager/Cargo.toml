@@ -62,4 +62,9 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"log/std",
+	"num_enum/std",
+	"pallet-supported-tokens-manager/std",
+	"parity-scale-codec/std",
+	"sp-io/std",
 ]

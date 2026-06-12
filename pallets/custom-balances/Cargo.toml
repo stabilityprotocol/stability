@@ -37,4 +37,7 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"stbl-tools/std",
+	"pallet-user-fee-selector/std",
+	"sp-core/std",
 ]
