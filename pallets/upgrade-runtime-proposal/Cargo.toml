@@ -13,7 +13,6 @@ frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 scale-info = { workspace = true }
-syn = { workspace = true }
 parity-scale-codec = { workspace = true }
 stbl-tools = { workspace = true }
 log = { workspace = true }

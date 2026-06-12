@@ -17,7 +17,6 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 pallet-session = { workspace = true }
 scale-info = { workspace = true }
-syn = { workspace = true }
 sp-application-crypto = { workspace = true }
 
 [dev-dependencies]

@@ -18,7 +18,6 @@ frame-system = { workspace = true }
 pallet-session = { workspace = true }
 pallet-validator-set = { workspace = true }
 scale-info = { workspace = true }
-syn = { workspace = true }
 sp-application-crypto = { workspace = true }
 
 [dev-dependencies]

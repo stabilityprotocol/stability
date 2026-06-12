@@ -7720,7 +7720,6 @@ dependencies = [
  "sp-version",
  "stbl-tools",
  "substrate-test-runtime-client",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -7798,7 +7797,6 @@ dependencies = [
  "sp-staking",
  "sp-state-machine",
  "sp-std",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -7820,7 +7818,6 @@ dependencies = [
  "sp-staking",
  "sp-state-machine",
  "sp-std",
- "syn 1.0.109",
 ]
 
 [[package]]
