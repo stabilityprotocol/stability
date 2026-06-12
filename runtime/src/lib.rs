@@ -351,7 +351,10 @@ impl pallet_balances::Config for Runtime {
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;
-	type ExistentialDeposit = ExistentialDeposit;
+	// `pallet-balances` requires a non-zero existential deposit (integrity test). This
+	// instance is inert — it exists only to satisfy `pallet_session`'s currency bound and
+	// never holds funds — so a nominal ED of 1 is used instead of the chain's zero ED.
+	type ExistentialDeposit = frame_support::traits::ConstU128<1>;
 	type AccountStore = frame_system::Pallet<Runtime>;
 	type WeightInfo = ();
 	type FreezeIdentifier = RuntimeFreezeReason;
