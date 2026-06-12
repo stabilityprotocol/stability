@@ -105,6 +105,7 @@ pub fn base_genesis(
 		// System
 		system: Default::default(),
 		transaction_payment: Default::default(),
+		native_balances: Default::default(),
 		session: SessionConfig {
 			keys: initial_authorities
 				.iter()
@@ -116,6 +117,7 @@ pub fn base_genesis(
 					)
 				})
 				.collect::<Vec<_>>(),
+			non_authority_keys: Default::default(),
 		},
 		validator_set: ValidatorSetConfig {
 			initial_validators: initial_authorities.iter().map(|x| x.0).collect(),

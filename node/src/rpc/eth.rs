@@ -29,7 +29,6 @@ use sc_client_api::{
 use sc_network::service::traits::NetworkService;
 use sc_network_sync::SyncingService;
 use sc_rpc::SubscriptionTaskExecutor;
-use sc_transaction_pool::{ChainApi, Pool};
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::{CallApiAt, ProvideRuntimeApi};
 use sp_block_builder::BlockBuilder as BlockBuilderApi;
@@ -51,13 +50,11 @@ use moonbeam_rpc_trace::{Trace, TraceServer};
 use super::TracingConfig;
 
 /// Extra dependencies for Ethereum compatibility.
-pub struct EthDeps<B: BlockT, C, P, A: ChainApi, CT, CIDP> {
+pub struct EthDeps<B: BlockT, C, P, CT, CIDP> {
 	/// The client instance to use.
 	pub client: Arc<C>,
 	/// Transaction pool instance.
 	pub pool: Arc<P>,
-	/// Graph pool instance.
-	pub graph: Arc<Pool<A>>,
 	/// Ethereum transaction converter.
 	pub converter: Option<CT>,
 	/// The Node authority flag
@@ -78,6 +75,8 @@ pub struct EthDeps<B: BlockT, C, P, A: ChainApi, CT, CIDP> {
 	pub filter_pool: Option<FilterPool>,
 	/// Maximum number of logs in a query.
 	pub max_past_logs: u32,
+	/// Maximum number of blocks scanned per `eth_getLogs` query.
+	pub max_block_range: u32,
 	/// Fee history cache.
 	pub fee_history_cache: FeeHistoryCache,
 	/// Maximum fee history cache size.
@@ -92,9 +91,9 @@ pub struct EthDeps<B: BlockT, C, P, A: ChainApi, CT, CIDP> {
 }
 
 /// Instantiate Ethereum-compatible RPC extensions.
-pub fn create_eth<B, C, BE, P, A, CT, CIDP, EC>(
+pub fn create_eth<B, C, BE, P, CT, CIDP, EC>(
 	mut io: RpcModule<()>,
-	deps: EthDeps<B, C, P, A, CT, CIDP>,
+	deps: EthDeps<B, C, P, CT, CIDP>,
 	subscription_task_executor: SubscriptionTaskExecutor,
 	pubsub_notification_sinks: Arc<
 		fc_mapping_sync::EthereumBlockNotificationSinks<
@@ -114,8 +113,7 @@ where
 	C: HeaderBackend<B> + HeaderMetadata<B, Error = BlockChainError>,
 	C: BlockchainEvents<B> + AuxStore + UsageProvider<B> + StorageProvider<B, BE> + 'static,
 	BE: Backend<B> + 'static,
-	P: TransactionPool<Block = B> + 'static,
-	A: ChainApi<Block = B> + 'static,
+	P: TransactionPool<Block = B, Hash = B::Hash> + 'static,
 	CT: ConvertTransaction<<B as BlockT>::Extrinsic> + Send + Sync + 'static,
 	CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
 	EC: EthConfig<B, C>,
@@ -125,13 +123,10 @@ where
 		Debug, DebugApiServer, Eth, EthApiServer, EthDevSigner, EthFilter, EthFilterApiServer,
 		EthPubSub, EthPubSubApiServer, EthSigner, Net, NetApiServer, Web3, Web3ApiServer,
 	};
-	#[cfg(feature = "txpool")]
-	use fc_rpc::{TxPool, TxPoolApiServer};
 
 	let EthDeps {
 		client,
 		pool,
-		graph,
 		converter,
 		is_authority,
 		enable_dev_signer,
@@ -142,6 +137,7 @@ where
 		block_data_cache,
 		filter_pool,
 		max_past_logs,
+		max_block_range,
 		fee_history_cache,
 		fee_history_cache_limit,
 		execute_gas_limit_multiplier,
@@ -155,10 +151,9 @@ where
 	}
 
 	io.merge(
-		Eth::<B, C, P, CT, BE, A, CIDP, EC>::new(
+		Eth::<B, C, P, CT, BE, CIDP, EC>::new(
 			client.clone(),
 			pool.clone(),
-			graph.clone(),
 			converter,
 			sync.clone(),
 			signers,
@@ -184,10 +179,11 @@ where
 			EthFilter::new(
 				client.clone(),
 				frontier_backend.clone(),
-				graph.clone(),
+				pool.clone(),
 				filter_pool,
 				500_usize, // max stored filters
 				max_past_logs,
+				max_block_range,
 				block_data_cache.clone(),
 			)
 			.into_rpc(),
@@ -228,8 +224,6 @@ where
 		.into_rpc(),
 	)?;
 
-	#[cfg(feature = "txpool")]
-	io.merge(TxPool::new(client, graph).into_rpc())?;
 
 	// Merge the tracing RPCs into the RPC module.
 	if let Some(tracing_config) = optional_tracing_config {
@@ -238,7 +232,7 @@ where
 		}
 
 		if let Some(trace_requester) = tracing_config.tracing_requesters.trace {
-			io.merge(Trace::new(client.clone(), trace_requester, 20).into_rpc())?;
+			io.merge(Trace::new(client.clone(), trace_requester, tracing_config.trace_filter_max_count, 1024).into_rpc())?;
 		}
 	}
 
