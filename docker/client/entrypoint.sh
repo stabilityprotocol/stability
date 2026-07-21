@@ -71,5 +71,18 @@ else
     START_COMMAND="$START_COMMAND --ethapi=txpool,debug,trace"
 fi
 
+# Size of the WASM runtime instance cache. The frontier SQL indexer re-executes
+# blocks through a runtime instance; when a node has an index backlog it can
+# exhaust the default pool (8) and the index stalls ("Ran out of free WASM
+# instances"). Raise this on nodes that need to drain a backlog (max 32).
+if [ -n "$MAX_RUNTIME_INSTANCES" ]; then
+  START_COMMAND="$START_COMMAND --max-runtime-instances $MAX_RUNTIME_INSTANCES"
+fi
+
+# Escape hatch for any additional node flags without editing this script again.
+if [ -n "$EXTRA_ARGS" ]; then
+  START_COMMAND="$START_COMMAND $EXTRA_ARGS"
+fi
+
 echo "Starting $CHAIN_TARGET chain"
 eval $START_COMMAND
