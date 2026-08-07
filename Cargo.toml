@@ -32,6 +32,7 @@ members = [
     'pallets/root-controller',
     'stability-rpc',
     'client/authorship',
+    'client/zero-gas-fetcher',
     'primitives/core',
     'primitives/account',
     'primitives/transaction-validator',
@@ -207,6 +208,7 @@ precompile-utils = { git = "https://github.com/stabilityprotocol/frontier", bran
 # Stability Client
 stbl-cli-authorship = { path = './client/authorship' }
 stbl-proposer-metrics = { path = './client/proposer-metrics' }
+stbl-zero-gas-fetcher = { path = './client/zero-gas-fetcher' }
 # Stability
 pallet-evm-precompile-blake2 = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }
 pallet-evm-precompile-bn128 = { git = "https://github.com/stabilityprotocol/frontier", branch = "stable2407", default-features = false }

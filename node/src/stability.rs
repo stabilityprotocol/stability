@@ -31,6 +31,7 @@ use std::{marker::PhantomData, sync::Arc};
 #[derive(Clone, Debug, clap::Parser)]
 pub struct StabilityConfiguration {
 	/// HTTP URL of the private pool from which the node will retrieve zero-gas transactions
+	/// inline during block proposal (existing behavior).
 	#[arg(long, value_name = "URL")]
 	pub zero_gas_tx_pool: Option<String>,
 
@@ -38,6 +39,17 @@ pub struct StabilityConfiguration {
 	/// (default: 1000)
 	#[arg(long, value_name = "MILLISECONDS", default_value = "1000")]
 	pub zero_gas_tx_pool_timeout: u64,
+
+	/// HTTP URL of the pool from which a background worker will fetch zero-gas
+	/// transactions and enqueue them into the Substrate mempool. This decouples
+	/// the HTTP fetch from the block proposal hot path.
+	#[arg(long, value_name = "URL")]
+	pub zero_gas_tx_pool_enqueue: Option<String>,
+
+	/// Poll interval in milliseconds for the zero-gas transaction enqueue pool
+	/// (default: 3000)
+	#[arg(long, value_name = "MILLISECONDS", default_value = "3000")]
+	pub zero_gas_tx_pool_enqueue_interval: u64,
 }
 
 /// StbleAuraConsensusDataProvider provides the data required for the Aura consensus engine.

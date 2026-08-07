@@ -1,0 +1,39 @@
+[package]
+name = "stbl-zero-gas-fetcher"
+version = "1.0.0"
+authors = ["Stability Solutions"]
+edition = "2021"
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+description = "Background worker that fetches zero-gas transactions from an external pool and enqueues them into the Substrate transaction pool."
+repository = "https://github.com/stabilityprotocol/stability/"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+futures = { workspace = true }
+futures-timer = { workspace = true }
+log = { workspace = true }
+hex = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+reqwest = { workspace = true, features = ["json", "gzip"] }
+ethereum = { workspace = true }
+prometheus-endpoint = { workspace = true }
+
+# Substrate
+sc-client-api = { workspace = true }
+sc-transaction-pool-api = { workspace = true }
+sp-api = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-core = { workspace = true }
+sp-keystore = { workspace = true }
+sp-runtime = { workspace = true }
+
+# Frontier
+fp-rpc = { workspace = true }
+
+# Stability
+stbl-primitives-zero-gas-transactions-api = { workspace = true, features = ["std"] }
+stbl-tools = { workspace = true }
+account = { workspace = true, features = ["std"] }
+stability-runtime = { path = "./../../runtime", features = ["std"] }

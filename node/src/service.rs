@@ -606,6 +606,22 @@ where
 			telemetry.as_ref().map(|x| x.handle()),
 		);
 
+		// Spawn the background ZGT fetcher if the enqueue URL is configured.
+		// This polls the external pool and submits ZGTs into the Substrate mempool,
+		// decoupling the HTTP fetch from the block proposal hot path.
+		if let Some(ref zgt_enqueue_url) = stability_config.zero_gas_tx_pool_enqueue {
+		stbl_zero_gas_fetcher::spawn_zero_gas_fetcher::<B, _, _>(
+			task_manager.spawn_handle(),
+			client.clone(),
+			transaction_pool.clone(),
+			keystore_container.keystore(),
+			zgt_enqueue_url.clone(),
+			stability_config.zero_gas_tx_pool_timeout,
+			stability_config.zero_gas_tx_pool_enqueue_interval,
+			prometheus_registry.as_ref(),
+		);
+		}
+
 		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 		let target_gas_price = eth_config.target_gas_price;
 		let create_inherent_data_providers = move |_, ()| async move {
@@ -728,6 +744,7 @@ where
 	RA: Send + Sync + 'static,
 	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>,
 	HF: HostFunctionsT + 'static,
+	NumberFor<B>: Into<u64>,
 {
 	let proposer_factory = stbl_cli_authorship::ProposerFactory::new(
 		task_manager.spawn_handle(),
@@ -739,6 +756,20 @@ where
 		prometheus_registry,
 		telemetry.as_ref().map(|x| x.handle()),
 	);
+
+	// Spawn the background ZGT fetcher for manual seal mode too
+	if let Some(ref zgt_enqueue_url) = stability_config.zero_gas_tx_pool_enqueue {
+		stbl_zero_gas_fetcher::spawn_zero_gas_fetcher::<B, _, _>(
+			task_manager.spawn_handle(),
+			client.clone(),
+			transaction_pool.clone(),
+			keystore.keystore(),
+			zgt_enqueue_url.clone(),
+			stability_config.zero_gas_tx_pool_timeout,
+			stability_config.zero_gas_tx_pool_enqueue_interval,
+			prometheus_registry,
+		);
+	}
 
 	thread_local!(static TIMESTAMP: RefCell<u64> = const { RefCell::new(0) });
 

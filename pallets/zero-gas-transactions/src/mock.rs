@@ -26,9 +26,9 @@ use runner::Runner as StabilityRunner;
 use ethereum::{TransactionAction, TransactionSignature};
 use frame_support::{
 	construct_runtime,
-	pallet_prelude::{StorageValue, ValueQuery},
+	pallet_prelude::{OptionQuery, StorageValue, ValueQuery},
 	parameter_types,
-	traits::{Everything, StorageInstance},
+	traits::{Everything, FindAuthor, StorageInstance},
 	weights::Weight,
 };
 use pallet_evm::{EnsureAddressNever, EnsureAddressRoot};
@@ -37,7 +37,7 @@ use sp_core::{keccak_256, H160, H256, U256};
 use sp_runtime::BuildStorage;
 use sp_runtime::{
 	traits::{BlakeTwo256, ConstU32, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature,
+	ConsensusEngineId, MultiSignature,
 };
 use std::collections::BTreeMap;
 
@@ -214,7 +214,7 @@ impl pallet_evm::Config for Runtime {
 	type OnChargeTransaction = ();
 	type BlockGasLimit = BlockGasLimit;
 	type BlockHashMapping = pallet_evm::SubstrateBlockHashMapping<Self>;
-	type FindAuthor = ();
+	type FindAuthor = MockFindAuthor;
 	type OnCreate = ();
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
@@ -267,6 +267,29 @@ impl pallet_erc20_manager::ERC20Manager for MockERC20Manager {
 			args.push((true, token, from, amount));
 		});
 		Ok(amount.into())
+	}
+}
+
+// Storage-backed mock FindAuthor for pallet_evm.
+// Set the block author in tests via MockBlockAuthor::put(address).
+pub struct MockAuthorPrefix;
+impl StorageInstance for MockAuthorPrefix {
+	fn pallet_prefix() -> &'static str {
+		"MockAuthorPrefix"
+	}
+
+	const STORAGE_PREFIX: &'static str = "Author";
+}
+
+pub type MockBlockAuthor = StorageValue<MockAuthorPrefix, H160, OptionQuery>;
+
+pub struct MockFindAuthor;
+impl FindAuthor<H160> for MockFindAuthor {
+	fn find_author<'a, I>(_digests: I) -> Option<H160>
+	where
+		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
+	{
+		MockBlockAuthor::get()
 	}
 }
 
@@ -393,4 +416,32 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	.expect("Failed to set GenesisConfig for pallet-ethereum");
 
 	t.into()
+}
+
+/// Derive an Ethereum H160 address from a private key.
+pub fn eth_address_from_private_key(private_key: &H256) -> H160 {
+	let secret = libsecp256k1::SecretKey::parse_slice(&private_key[..]).unwrap();
+	let public = libsecp256k1::PublicKey::from_secret_key(&secret);
+	let public_bytes = public.serialize();
+	// Skip the 0x04 prefix byte (uncompressed public key format)
+	let hash = keccak_256(&public_bytes[1..65]);
+	H160::from_slice(&hash[12..32])
+}
+
+/// Sign a validator consent message correctly using EIP-191 format,
+/// matching the pallet's `ensure_zero_gas_transaction` verification logic.
+///
+/// Returns a 65-byte signature (r[32] + s[32] + recovery_id[1]) compatible
+/// with `sp_io::crypto::secp256k1_ecdsa_recover`.
+pub fn sign_consent_message(private_key: &H256, block_number: u64, chain_id: u64) -> Vec<u8> {
+	let message =
+		crate::Pallet::<Runtime>::get_zero_gas_transaction_signing_message(block_number, chain_id);
+	let eip191_hash = stbl_tools::eth::build_eip191_message_hash(message);
+	let msg = libsecp256k1::Message::parse(eip191_hash.as_fixed_bytes());
+	let secret = libsecp256k1::SecretKey::parse_slice(&private_key[..]).unwrap();
+	let (sig, recovery_id) = libsecp256k1::sign(&msg, &secret);
+	let mut signature = [0u8; 65];
+	signature[0..64].copy_from_slice(&sig.serialize());
+	signature[64] = recovery_id.serialize();
+	signature.to_vec()
 }
