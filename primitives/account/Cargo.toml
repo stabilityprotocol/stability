@@ -43,6 +43,8 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"log/std",
+	"sp-runtime-interface/std",
 ]
 
 full_crypto = [

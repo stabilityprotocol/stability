@@ -206,6 +206,7 @@ where
 			pallet_upgrade_runtime_proposal::Call::<Runtime>::set_block_application {
 				block_number: block_number.into(),
 			},
+			0,
 		)?;
 
 		handle.record_log_costs_manual(1, 32)?;
@@ -235,6 +236,7 @@ where
 			handle,
 			frame_system::RawOrigin::Root.into(),
 			pallet_upgrade_runtime_proposal::Call::<Runtime>::reject_proposed_code {},
+			0,
 		)?;
 
 		handle.record_log_costs_manual(0, 32)?;

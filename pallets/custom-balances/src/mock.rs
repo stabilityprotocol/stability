@@ -70,6 +70,7 @@ impl frame_system::Config for Test {
 	type PreInherents = ();
 	type PostInherents = ();
 	type PostTransactions = ();
+	type ExtensionsWeightInfo = ();
 }
 
 parameter_types! {
@@ -104,6 +105,10 @@ impl pallet_evm::AddressMapping<AccountId> for IdentityAddressMapping {
 }
 
 impl pallet_evm::Config for Test {
+	type AccountProvider = pallet_evm::FrameSystemAccountProvider<Self>;
+	type CreateOriginFilter = ();
+	type CreateInnerOriginFilter = ();
+	type GasLimitStorageGrowthRatio = frame_support::traits::ConstU64<0>;
 	type FeeCalculator = ();
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
 	type WeightPerGas = WeightPerGas;
@@ -111,7 +116,6 @@ impl pallet_evm::Config for Test {
 	type WithdrawOrigin = pallet_evm::EnsureAddressNever<AccountId>;
 	type AddressMapping = IdentityAddressMapping;
 	type Currency = CustomBalances;
-	type RuntimeEvent = RuntimeEvent;
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
 	type PrecompilesType = ();
 	type PrecompilesValue = ();
@@ -124,7 +128,6 @@ impl pallet_evm::Config for Test {
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
-	type SuicideQuickClearLimit = SuicideQuickClearLimit;
 }
 
 pub struct AccountIdToH160Mapping;

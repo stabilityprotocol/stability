@@ -31,6 +31,7 @@ std = [
 	'pallet-collective/std',
 	'pallet-custom-balances/std',
 	'pallet-dnt-fee-controller/std',
+	'ethereum/std',
 	'pallet-ethereum/std',
 	'pallet-evm-chain-id/std',
 	'pallet-evm-precompile-modexp/std',
@@ -72,6 +73,30 @@ std = [
 	'stbl-primitives-zero-gas-transactions-api/std',
 	'substrate-wasm-builder',
 	"sp-debug-derive/std",
+	'stbl-tools/std',
+	'frame-benchmarking?/std',
+	'frame-system-benchmarking?/std',
+	'log/std',
+	'moonbeam-primitives-ext?/std',
+	'pallet-balances/std',
+	'pallet-erc20-manager/std',
+	'pallet-evm-precompile-blake2/std',
+	'pallet-evm-precompile-bn128/std',
+	'pallet-fee-rewards-vault/std',
+	'pallet-sponsored-transactions/std',
+	'pallet-sudo/std',
+	'pallet-user-fee-selector/std',
+	'pallet-zero-gas-transactions/std',
+	'precompile-fee-rewards-vault-controller/std',
+	'precompile-fee-token-selector/std',
+	'precompile-supported-tokens-manager/std',
+	'precompile-utils/std',
+	'precompile-validator-controller/std',
+	'precompile-validator-fee-selector/std',
+	'serde?/std',
+	'sp-application-crypto/std',
+	'sp-staking/std',
+	'stbl-transaction-validator/std',
 ]
 with-paritydb-weights = []
 with-rocksdb-weights = []
@@ -144,6 +169,7 @@ fp-rpc = { workspace = true }
 fp-self-contained = { workspace = true, features = ["serde"] }
 # Frontier FRAME
 pallet-base-fee = { workspace = true }
+ethereum = { workspace = true }
 pallet-ethereum = { workspace = true }
 pallet-evm = { workspace = true }
 pallet-evm-chain-id = { workspace = true }

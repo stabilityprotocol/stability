@@ -68,6 +68,10 @@ pub struct EthConfiguration {
 	#[arg(long, default_value = "10000")]
 	pub max_past_logs: u32,
 
+	/// Maximum number of blocks to scan per `eth_getLogs` query.
+	#[arg(long, default_value = "1024")]
+	pub max_block_range: u32,
+
 	/// Maximum fee history cache size.
 	#[arg(long, default_value = "2048")]
 	pub fee_history_limit: u64,
@@ -132,6 +136,10 @@ pub struct EthConfiguration {
 	/// discarded.
 	#[arg(long, default_value = "300")]
 	pub ethapi_trace_cache_duration: u64,
+
+	/// Size in bytes of the LRU cache for `trace_filter` block traces (default 100MB).
+	#[arg(long, default_value = "104857600")]
+	pub ethapi_trace_cache_size: u64,
 
 	#[arg(long, value_delimiter = ',', default_value = "none")]
 	pub ethapi: Vec<EthApi>,

@@ -79,7 +79,7 @@ where
 
 	fn build_validity_success_transaction(
 		origin: &H160,
-		transaction: &ethereum::TransactionV2,
+		transaction: &ethereum::TransactionV3,
 		gas_price: U256,
 	) -> TransactionValidity {
 		let transaction_data: TransactionData = transaction.into();

@@ -87,14 +87,14 @@ fn fail_to_execute_meta_transaction_twice_with_invalid_trx() {
 #[test]
 fn fail_to_execute_meta_transaction_twice_with_invalid_trx_signature() {
 	new_test_ext().execute_with(|| {
-		let trx0 = ethereum::TransactionV2::Legacy(ethereum::LegacyTransaction {
+		let trx0 = ethereum::TransactionV3::Legacy(ethereum::LegacyTransaction {
 			nonce: 0.into(),
 			gas_price: 1_000_000_000.into(),
 			gas_limit: 0.into(),
 			action: ethereum::TransactionAction::Call(H160::zero()),
 			value: 0.into(),
 			input: Vec::new(),
-			signature: ethereum::TransactionSignature::new(
+			signature: ethereum::legacy::TransactionSignature::new(
 				27,
 				H256::from_low_u64_be(10),
 				H256::from_low_u64_be(10),

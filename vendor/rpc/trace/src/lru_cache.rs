@@ -1,0 +1,131 @@
+// This file is part of Frontier.
+
+// Copyright (C) Parity Technologies (UK) Ltd.
+// SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+// Vendored from frontier `client/rpc/src/cache/lru_cache.rs` because the
+// upstream `polkadot-evm/frontier` does not expose it publicly (only the
+// moonbeam fork re-exported it as `fc_rpc::lru_cache`).
+
+use parity_scale_codec::Encode;
+use substrate_prometheus_endpoint as prometheus_endpoint;
+use prometheus_endpoint::prometheus;
+use schnellru::{LruMap, Unlimited};
+
+pub struct LRUCacheByteLimited<K, V> {
+	cache: LruMap<K, V, Unlimited>,
+	max_size: u64,
+	metrics: Option<LRUCacheByteLimitedMetrics>,
+	size: u64,
+}
+
+impl<K: Eq + core::hash::Hash, V: Encode> LRUCacheByteLimited<K, V> {
+	pub fn new(
+		cache_name: &'static str,
+		max_size: u64,
+		prometheus_registry: Option<prometheus_endpoint::Registry>,
+	) -> Self {
+		let metrics = match prometheus_registry {
+			Some(registry) => match LRUCacheByteLimitedMetrics::register(cache_name, &registry) {
+				Ok(metrics) => Some(metrics),
+				Err(e) => {
+					log::error!(target: "eth-cache", "Failed to register metrics: {e:?}");
+					None
+				}
+			},
+			None => None,
+		};
+
+		Self {
+			cache: LruMap::new(Unlimited),
+			max_size,
+			metrics,
+			size: 0,
+		}
+	}
+	pub fn get(&mut self, k: &K) -> Option<&V> {
+		if let Some(v) = self.cache.get(k) {
+			// Update metrics
+			if let Some(metrics) = &self.metrics {
+				metrics.hits.inc();
+			}
+			Some(v)
+		} else {
+			// Update metrics
+			if let Some(metrics) = &self.metrics {
+				metrics.miss.inc();
+			}
+			None
+		}
+	}
+	pub fn put(&mut self, k: K, v: V) {
+		// Handle size limit
+		self.size += v.encoded_size() as u64;
+
+		while self.size > self.max_size {
+			if let Some((_, v)) = self.cache.pop_oldest() {
+				let v_size = v.encoded_size() as u64;
+				self.size -= v_size;
+			} else {
+				break;
+			}
+		}
+
+		// Add entry in cache
+		self.cache.insert(k, v);
+		// Update metrics
+		if let Some(metrics) = &self.metrics {
+			metrics.size.set(self.size);
+		}
+	}
+}
+
+struct LRUCacheByteLimitedMetrics {
+	hits: prometheus::IntCounter,
+	miss: prometheus::IntCounter,
+	size: prometheus_endpoint::Gauge<prometheus_endpoint::U64>,
+}
+
+impl LRUCacheByteLimitedMetrics {
+	pub(crate) fn register(
+		cache_name: &'static str,
+		registry: &prometheus_endpoint::Registry,
+	) -> Result<Self, prometheus_endpoint::PrometheusError> {
+		Ok(Self {
+			hits: prometheus_endpoint::register(
+				prometheus::IntCounter::new(
+					format!("frontier_eth_{cache_name}_hits"),
+					format!("Hits of eth {cache_name} cache."),
+				)?,
+				registry,
+			)?,
+			miss: prometheus_endpoint::register(
+				prometheus::IntCounter::new(
+					format!("frontier_eth_{cache_name}_miss"),
+					format!("Misses of eth {cache_name} cache."),
+				)?,
+				registry,
+			)?,
+			size: prometheus_endpoint::register(
+				prometheus_endpoint::Gauge::new(
+					format!("frontier_eth_{cache_name}_size"),
+					format!("Size of eth {cache_name} data cache."),
+				)?,
+				registry,
+			)?,
+		})
+	}
+}

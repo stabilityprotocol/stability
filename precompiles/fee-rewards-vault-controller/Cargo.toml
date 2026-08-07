@@ -67,4 +67,11 @@ std = [
 	"sp-runtime/std",
 	"sp-std/std",
 	"fp-rpc/std",
+	"stbl-tools/std",
+	"pallet-erc20-manager/std",
+	"pallet-evm/std",
+	"pallet-timestamp/std",
+	"parity-scale-codec/std",
+	"sp-io/std",
+	"sp-version/std",
 ]

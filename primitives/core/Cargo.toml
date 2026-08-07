@@ -21,4 +21,6 @@ std = [
 	"sp-application-crypto/std",
 	"sp-core/std",
 	"sp-runtime/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
 ]

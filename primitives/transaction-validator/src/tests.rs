@@ -21,7 +21,7 @@
 
 use crate::mock::{new_test_ext, FundedAccount, NoFundsAccount, Runtime};
 
-use ethereum::{EIP2930Transaction, TransactionAction, TransactionV2 as Transaction};
+use ethereum::{EIP2930Transaction, TransactionAction, TransactionV3 as Transaction};
 use fp_evm::FeeCalculator;
 use frame_support::parameter_types;
 use sp_core::{H160, H256, U256};
@@ -37,9 +37,7 @@ parameter_types! {
 		value: U256::from(1_000_000_000),
 		input: Default::default(),
 		access_list: Default::default(),
-		odd_y_parity: false,
-		r: H256::from_low_u64_be(0),
-		s: H256::from_low_u64_be(0),
+		signature: ethereum::eip2930::TransactionSignature::new(false, H256::from_low_u64_be(1), H256::from_low_u64_be(1)).unwrap(),
 	});
 }
 
@@ -53,9 +51,7 @@ parameter_types! {
 		value: U256::from(1_000_000_000),
 		input: Default::default(),
 		access_list: Default::default(),
-		odd_y_parity: false,
-		r: H256::from_low_u64_be(0),
-		s: H256::from_low_u64_be(0),
+		signature: ethereum::eip2930::TransactionSignature::new(false, H256::from_low_u64_be(1), H256::from_low_u64_be(1)).unwrap(),
 	});
 }
 

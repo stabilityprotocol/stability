@@ -17,10 +17,10 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 pallet-session = { workspace = true }
 scale-info = { workspace = true }
-syn = { workspace = true }
 sp-application-crypto = { workspace = true }
 
 [dev-dependencies]
+pallet-balances = { workspace = true, features = ["std"] }
 serde = { version = '1.0.126', features = ['derive'] }
 sp-state-machine = { workspace = true }
 
@@ -39,5 +39,8 @@ std = [
 	'sp-io/std',
 	'sp-runtime/std',
 	'sp-std/std',
+	'log/std',
+	'sp-application-crypto/std',
+	'sp-staking/std',
 ]
 try-runtime = ['frame-support/try-runtime']

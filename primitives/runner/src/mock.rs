@@ -98,6 +98,7 @@ impl frame_system::Config for Runtime {
 	type PreInherents = ();
 	type PostInherents = ();
 	type PostTransactions = ();
+	type ExtensionsWeightInfo = ();
 }
 
 parameter_types! {
@@ -105,6 +106,7 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Runtime {
+	type DoneSlashHandler = ();
 	type MaxReserves = ();
 	type ReserveIdentifier = ();
 	type MaxLocks = ();
@@ -201,6 +203,10 @@ parameter_types! {
 }
 
 impl pallet_evm::Config for Runtime {
+	type AccountProvider = pallet_evm::FrameSystemAccountProvider<Self>;
+	type CreateOriginFilter = ();
+	type CreateInnerOriginFilter = ();
+	type GasLimitStorageGrowthRatio = frame_support::traits::ConstU64<0>;
 	type FeeCalculator = FixedBaseFee;
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
 	type WeightPerGas = WeightPerGas;
@@ -208,7 +214,6 @@ impl pallet_evm::Config for Runtime {
 	type WithdrawOrigin = EnsureAddressNever<AccountId>;
 	type AddressMapping = pallet_evm::HashedAddressMapping<BlakeTwo256>;
 	type Currency = Balances;
-	type RuntimeEvent = RuntimeEvent;
 	type Runner = StabilityRunner::Runner<Self, MockDNTFeeController, MockUserFeeTokenController>;
 	type PrecompilesType = ();
 	type PrecompilesValue = ();
@@ -221,7 +226,6 @@ impl pallet_evm::Config for Runtime {
 	type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
 	type Timestamp = Timestamp;
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
-	type SuicideQuickClearLimit = SuicideQuickClearLimit;
 }
 
 // Configure a mock runtime to test the pallet.

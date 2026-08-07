@@ -1,22 +1,19 @@
-// Copyright © 2022 STABILITY SOLUTIONS, INC. (“STABILITY”)
-// This file is part of the Stability Global Trust Network client
-// software and accompanying documentation (the “Software”).
+// Copyright 2019-2025 PureStake Inc.
+// This file is part of Moonbeam.
 
-// You can download and use the Software for free under the terms of
-// the Stability Open License Agreement as published by Stability on
-// Github at https://github.com/stabilityprotocol/stability/blob/master/LICENSE.
+// Moonbeam is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-// THE SOFTWARE IS PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND.
-// STABILITY EXPRESSLY DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED,
-// INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
-// NON-INFRINGEMENT. IN NO EVENT SHALL OWNER BE LIABLE FOR ANY
-// INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES ARISING
-// OUT OF USE OF THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-// SUCH DAMAGES.
+// Moonbeam is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 
-// Please see the Stability Open License Agreement for more
-// information.
-#[allow(clippy::all)]
+// You should have received a copy of the GNU General Public License
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
 use super::blockscout::BlockscoutCallInner;
 use crate::types::{
 	single::{Call, Log, TransactionTrace},
@@ -28,6 +25,7 @@ use crate::listeners::call_list::Listener;
 use crate::types::serialization::*;
 use serde::Serialize;
 
+use crate::types::block::BlockTransactionTrace;
 use ethereum_types::{H160, U256};
 use parity_scale_codec::{Decode, Encode};
 use sp_std::{cmp::Ordering, vec::Vec};
@@ -36,16 +34,22 @@ pub struct Formatter;
 
 impl super::ResponseFormatter for Formatter {
 	type Listener = Listener;
-	type Response = Vec<TransactionTrace>;
+	type Response = Vec<BlockTransactionTrace>;
 
-	fn format(mut listener: Listener) -> Option<Vec<TransactionTrace>> {
-		// Remove empty BTreeMaps pushed to `entries`.
-		// I.e. InvalidNonce or other pallet_evm::runner exits
-		listener.entries.retain(|x| !x.is_empty());
+	fn format(listener: Listener) -> Option<Vec<BlockTransactionTrace>> {
 		let mut traces = Vec::new();
-		for entry in listener.entries.iter() {
+		for (eth_tx_index, entry) in listener.entries.iter().enumerate() {
+			// Skip empty BTreeMaps pushed to `entries`.
+			// I.e. InvalidNonce or other pallet_evm::runner exits
+			if entry.is_empty() {
+				log::debug!(
+					target: "tracing",
+					"Empty trace entry with transaction index {}, skipping...", eth_tx_index
+				);
+				continue;
+			}
 			let mut result: Vec<Call> = entry
-				.iter()
+				.into_iter()
 				.map(|(_, it)| {
 					let from = it.from;
 					let trace_address = it.trace_address.clone();
@@ -54,9 +58,9 @@ impl super::ResponseFormatter for Formatter {
 					let gas_used = it.gas_used;
 					let inner = it.inner.clone();
 					Call::CallTracer(CallTracerCall {
-						from,
-						gas,
-						gas_used,
+						from: from,
+						gas: gas,
+						gas_used: gas_used,
 						trace_address: Some(trace_address.clone()),
 						inner: match inner.clone() {
 							BlockscoutCallInner::Call {
@@ -100,7 +104,7 @@ impl super::ResponseFormatter for Formatter {
 									} => Some(created_contract_code),
 									CreateResult::Error { .. } => None,
 								},
-								value,
+								value: value,
 								call_type: "CREATE".as_bytes().to_vec(),
 							},
 							BlockscoutCallInner::SelfDestruct { balance, to } => {
@@ -160,7 +164,7 @@ impl super::ResponseFormatter for Formatter {
 				//
 				// We consider an item to be `Ordering::Less` when:
 				// 	- Is closer to the root or
-				// 	- Is greater than its sibling.
+				//	- Is greater than its sibling.
 				result.sort_by(|a, b| match (a, b) {
 					(
 						Call::CallTracer(CallTracerCall {
@@ -184,9 +188,9 @@ impl super::ResponseFormatter for Formatter {
 									continue;
 								}
 							}
-							false
+							return false;
 						};
-						if b_len > a_len || (a_len == b_len && sibling_greater_than(a, b)) {
+						if b_len > a_len || (a_len == b_len && sibling_greater_than(&a, &b)) {
 							Ordering::Less
 						} else {
 							Ordering::Greater
@@ -200,30 +204,27 @@ impl super::ResponseFormatter for Formatter {
 						.pop()
 						.expect("result.len() > 1, so pop() necessarily returns an element");
 					// Find the parent index.
-					if let Some(index) = result
-						.iter()
-						.filter(|it| match it {
-							// Filters out calls to the ConversionRateController and other Precompiles
-							Call::CallTracer(CallTracerCall { from, .. }) => from.ne(&H160::zero()),
-							_ => false,
-						})
-						.position(|current| match (last.clone(), current) {
-							(
-								Call::CallTracer(CallTracerCall {
-									trace_address: Some(a),
-									..
-								}),
-								Call::CallTracer(CallTracerCall {
-									trace_address: Some(b),
-									..
-								}),
-							) => {
-								&b[..]
-									== a.get(0..a.len() - 1)
-										.expect("non-root element while traversing trace result")
-							}
-							_ => unreachable!(),
-						}) {
+					if let Some(index) =
+						result
+							.iter()
+							.position(|current| match (last.clone(), current) {
+								(
+									Call::CallTracer(CallTracerCall {
+										trace_address: Some(a),
+										..
+									}),
+									Call::CallTracer(CallTracerCall {
+										trace_address: Some(b),
+										..
+									}),
+								) => {
+									&b[..]
+										== a.get(0..a.len() - 1).expect(
+											"non-root element while traversing trace result",
+										)
+								}
+								_ => unreachable!(),
+							}) {
 						// Remove `trace_address` from result.
 						if let Call::CallTracer(CallTracerCall {
 							ref mut trace_address,
@@ -247,15 +248,22 @@ impl super::ResponseFormatter for Formatter {
 				*trace_address = None;
 			}
 			if result.len() == 1 {
-				traces.push(TransactionTrace::CallListNested(result.pop().expect(
-					"result.len() == 1, so pop() necessarily returns this element",
-				)));
+				traces.push(BlockTransactionTrace {
+					tx_position: eth_tx_index as u32,
+					// Use default, the correct value will be set upstream
+					tx_hash: Default::default(),
+					result: TransactionTrace::CallListNested(
+						result
+							.pop()
+							.expect("result.len() == 1, so pop() necessarily returns this element"),
+					),
+				});
 			}
 		}
 		if traces.is_empty() {
 			return None;
 		}
-		Some(traces)
+		return Some(traces);
 	}
 }
 

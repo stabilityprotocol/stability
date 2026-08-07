@@ -50,7 +50,7 @@ pub mod pallet {
 
 	use sp_application_crypto::RuntimeAppPublic;
 
-	use frame_system::offchain::SendTransactionTypes;
+	use frame_system::offchain::CreateBare;
 
 	/// Configure the pallet by specifying the parameters and types on which it
 	/// depends.
@@ -59,7 +59,7 @@ pub mod pallet {
 		frame_system::Config
 		+ pallet_session::Config
 		+ pallet_validator_set::Config
-		+ SendTransactionTypes<Call<Self>>
+		+ CreateBare<Call<Self>>
 	{
 		/// The Event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -181,9 +181,8 @@ pub mod pallet {
 
 						let call = Call::<T>::publish_keys { keys, signature };
 
-						match SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(
-							call.into(),
-						) {
+						let xt = <T as CreateBare<Call<T>>>::create_bare(call.into());
+						match SubmitTransaction::<T, Call<T>>::submit_transaction(xt) {
 							Err(_) => {
 								log::error!(target: LOG_TARGET, "Failed to submit transaction",);
 							}
@@ -228,7 +227,7 @@ pub mod pallet {
 		pub authority_index: u32,
 	}
 
-	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+	#[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 	pub struct PublishingKeys<AuthorityId, FinalizationId, BlockNumber> {
 		pub aura: AuthorityId,
 		pub grandpa: FinalizationId,

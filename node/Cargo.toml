@@ -32,6 +32,7 @@ sc-consensus = { workspace = true }
 sc-consensus-aura = { workspace = true }
 sc-consensus-manual-seal = { workspace = true }
 sc-executor = { workspace = true }
+cumulus-primitives-proof-size-hostfunction = { workspace = true, features = ["std"] }
 sc-consensus-grandpa = { workspace = true }
 sc-network = { workspace = true }
 sc-network-common = { workspace = true }

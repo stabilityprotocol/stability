@@ -93,9 +93,11 @@ where
 		+ pallet_evm::Config
 		+ pallet_custom_balances::Config
 		+ pallet_evm::Config,
-	Runtime::RuntimeCall: From<pallet_validator_set::Call<Runtime>>,
-	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
-	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
+	<Runtime as frame_system::Config>::RuntimeCall: From<pallet_validator_set::Call<Runtime>>,
+	<<Runtime as frame_system::Config>::RuntimeCall as Dispatchable>::RuntimeOrigin:
+		From<Option<Runtime::AccountId>>,
+	<Runtime as frame_system::Config>::RuntimeCall:
+		Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
 	<Runtime as frame_system::Config>::AccountId: From<H160>,
 {
@@ -216,8 +218,8 @@ where
 		validator: Address,
 	) -> EvmResult<U256> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
-		let account_id =
-			<Runtime as pallet_evm::Config>::AddressMapping::into_account_id(validator.into());
+		let validator_h160: H160 = validator.into();
+		let account_id = <Runtime as frame_system::Config>::AccountId::from(validator_h160);
 		let epochs_missed = pallet_validator_set::EpochsMissed::<Runtime>::get(account_id);
 		Ok(epochs_missed)
 	}
@@ -242,6 +244,7 @@ where
 			pallet_validator_set::Call::<Runtime>::add_validator {
 				validator_id: origin_id.into(),
 			},
+			0,
 		)?;
 
 		handle.record_log_costs_manual(1, 32)?;
@@ -278,6 +281,7 @@ where
 			pallet_validator_set::Call::<Runtime>::remove_validator {
 				validator_id: origin_id.into(),
 			},
+			0,
 		)?;
 
 		handle.record_log_costs_manual(1, 32)?;

@@ -14,7 +14,7 @@ RUN cargo install cargo-expand
 COPY rust-toolchain.toml ./
 
 # Install the pinned toolchain and wasm target
-RUN rustup show && rustup target add wasm32-unknown-unknown
+RUN rustup show && rustup target add wasm32-unknown-unknown && rustup target add wasm32v1-none
 
 # ---------------------
 # Stage 2: Plan recipe

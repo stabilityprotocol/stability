@@ -13,11 +13,9 @@ frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 scale-info = { workspace = true }
-syn = { workspace = true }
 parity-scale-codec = { workspace = true }
 stbl-tools = { workspace = true }
 log = { workspace = true }
-staging-xcm = { workspace = true }
 
 [dev-dependencies]
 substrate-test-runtime-client = { workspace = true }
@@ -36,6 +34,7 @@ std = [
 	'sp-core/std',
 	'sp-runtime/std',
 	'sp-std/std',
-	'staging-xcm/std',
+	'stbl-tools/std',
+	'sp-io/std',
 ]
 try-runtime = ['frame-support/try-runtime']

@@ -20,6 +20,7 @@ stbl-tools = { workspace = true }
 pallet-ethereum = { workspace = true } 
 
 [dev-dependencies]
+sp-version = { workspace = true, features = ["std"] }
 pallet-timestamp = { workspace = true }
 pallet-balances = { workspace = true, features = ["std"] }
 pallet-root-controller = { workspace = true }
@@ -35,4 +36,9 @@ std = [
 	"scale-info/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"stbl-tools/std",
+	"pallet-evm/std",
+	"pallet-supported-tokens-manager/std",
+	"sp-core/std",
+	"sp-io/std",
 ]

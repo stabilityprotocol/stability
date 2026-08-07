@@ -23,6 +23,8 @@ stbl-tools = { workspace = true }
 pallet-user-fee-selector = { workspace = true }
 precompile-utils = { workspace = true }
 fp-rpc = { workspace = true }
+ethereum = { workspace = true }
+cumulus-primitives-storage-weight-reclaim = { workspace = true }
 
 [dev-dependencies]
 hex = "0.4"
@@ -55,6 +57,10 @@ std = [
 	"sp-std/std",
 	"precompile-utils/std",
 	"fp-rpc/std",
+	"stbl-tools/std",
+	"log/std",
+	"ethereum/std",
+	"cumulus-primitives-storage-weight-reclaim/std",
 ]
 forbid-evm-reentrancy = ["dep:environmental"]
 try-runtime = ['frame-support/try-runtime']

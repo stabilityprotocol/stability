@@ -478,7 +478,7 @@ where
 		let soft_deadline =
 			now + time::Duration::from_micros(self.soft_deadline_percent.mul_floor(left_micros));
 		let mut skipped = 0;
-		let mut unqueue_invalid = Vec::new();
+		let mut unqueue_invalid = sc_transaction_pool_api::TxInvalidityReportMap::new();
 
 		// START STABILITY ZGT LOGIC
 		let mut transaction_pushed = false;
@@ -616,7 +616,7 @@ where
 						Err(_) => continue,
 					};
 
-					let ethereum_transaction: ethereum::TransactionV2 =
+					let ethereum_transaction: ethereum::TransactionV3 =
 						ethereum::EnvelopedDecodable::decode(&pending_raw_tx).unwrap();
 
 					let pending_tx = match self.client.runtime_api().convert_zero_gas_transaction(
@@ -715,7 +715,7 @@ where
 		};
 		// END STABILITY ZGT LOGIC
 
-		let mut t1 = self.transaction_pool.ready_at(self.parent_number).fuse();
+		let mut t1 = self.transaction_pool.ready_at(self.parent_hash).fuse();
 		let mut t2 =
 			futures_timer::Delay::new(deadline.saturating_duration_since((self.now)()) / 8).fuse();
 
@@ -774,7 +774,7 @@ where
 					.runtime_api()
 					.is_compatible_fee(
 						self.parent_hash,
-						pending_tx.data().clone(),
+						(**pending_tx.data()).clone(),
 						validator.clone(),
 					)
 					.unwrap();
@@ -787,7 +787,7 @@ where
 					continue;
 				}
 
-				let pending_tx_data = pending_tx.data().clone();
+				let pending_tx_data = (**pending_tx.data()).clone();
 				let pending_tx_hash = pending_tx.hash().clone();
 
 				let block_size =
@@ -860,7 +860,7 @@ where
 							target: LOG_TARGET,
 							"[{:?}] Invalid transaction: {}", pending_tx_hash, e
 						);
-						unqueue_invalid.push(pending_tx_hash);
+						unqueue_invalid.insert(pending_tx_hash, None);
 					}
 				}
 			};
@@ -872,7 +872,9 @@ where
 			);
 		}
 
-		self.transaction_pool.remove_invalid(&unqueue_invalid);
+		self.transaction_pool
+			.report_invalid(Some(self.parent_hash), unqueue_invalid)
+			.await;
 		Ok(end_reason)
 	}
 

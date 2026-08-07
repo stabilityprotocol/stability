@@ -28,12 +28,12 @@ use sc_client_api::{Backend as BackendT, BlockBackend};
 use sc_consensus::{BasicQueue, BoxBlockImport};
 use sc_consensus_grandpa::BlockNumberOps;
 use sc_executor::HostFunctions as HostFunctionsT;
-use sc_network_sync::strategy::warp::{WarpSyncParams, WarpSyncProvider};
+use sc_network_sync::strategy::warp::{WarpSyncConfig, WarpSyncProvider};
 use sc_service::{
 	error::Error as ServiceError, Configuration, KeystoreContainer, PartialComponents, TaskManager,
 };
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
-use sc_transaction_pool::FullPool;
+use sc_transaction_pool::TransactionPoolHandle;
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_api::ConstructRuntimeApi;
 use sp_core::{H256, U256};
@@ -64,12 +64,14 @@ use crate::{
 #[cfg(feature = "runtime-benchmarks")]
 pub type HostFunctions = (
 	sp_io::SubstrateHostFunctions,
+	cumulus_primitives_proof_size_hostfunction::storage_proof_size::HostFunctions,
 	frame_benchmarking::benchmarking::HostFunctions,
 );
 /// Otherwise we use empty host functions for ext host functions.
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type HostFunctions = (
 	sp_io::SubstrateHostFunctions,
+	cumulus_primitives_proof_size_hostfunction::storage_proof_size::HostFunctions,
 	moonbeam_primitives_ext::moonbeam_ext::HostFunctions,
 );
 
@@ -95,7 +97,7 @@ pub fn new_partial<B, RA, HF, BIQ>(
 		FullBackend<B>,
 		FullSelectChain<B>,
 		BasicQueue<B>,
-		FullPool<B, FullClient<B, RA, HF>>,
+		TransactionPoolHandle<B, FullClient<B, RA, HF>>,
 		(
 			Option<Telemetry>,
 			BoxBlockImport<B>,
@@ -133,13 +135,15 @@ where
 		})
 		.transpose()?;
 
-	let executor = sc_service::new_wasm_executor(config);
+	let executor = sc_service::new_wasm_executor(&config.executor);
 
-	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<B, RA, _>(
-		config,
-		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
-		executor,
-	)?;
+	let (client, backend, keystore_container, task_manager) =
+		sc_service::new_full_parts_record_import::<B, RA, _>(
+			config,
+			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+			executor,
+			true,
+		)?;
 	let client = Arc::new(client);
 
 	let telemetry = telemetry.map(|(worker, telemetry)| {
@@ -197,12 +201,15 @@ where
 		grandpa_block_import,
 	)?;
 
-	let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-		config.transaction_pool.clone(),
-		config.role.is_authority().into(),
-		config.prometheus_registry(),
-		task_manager.spawn_essential_handle(),
-		client.clone(),
+	let transaction_pool = Arc::from(
+		sc_transaction_pool::Builder::new(
+			task_manager.spawn_essential_handle(),
+			client.clone(),
+			config.role.is_authority().into(),
+		)
+		.with_options(config.transaction_pool.clone())
+		.with_prometheus(config.prometheus_registry())
+		.build(),
 	);
 
 	Ok(PartialComponents {
@@ -349,12 +356,13 @@ where
 		fee_history_cache_limit,
 	} = new_frontier_partial(&eth_config)?;
 
-	let mut net_config =
-		sc_network::config::FullNetworkConfiguration::<_, _, NB>::new(&config.network);
-	let peer_store_handle = net_config.peer_store_handle();
-	let metrics = NB::register_notification_metrics(
-		config.prometheus_config.as_ref().map(|cfg| &cfg.registry),
+	let maybe_registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
+	let mut net_config = sc_network::config::FullNetworkConfiguration::<_, _, NB>::new(
+		&config.network,
+		maybe_registry.cloned(),
 	);
+	let peer_store_handle = net_config.peer_store_handle();
+	let metrics = NB::register_notification_metrics(maybe_registry);
 
 	let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
 		&client
@@ -370,7 +378,7 @@ where
 			peer_store_handle,
 		);
 
-	let warp_sync_params = if sealing.is_some() {
+	let warp_sync_config = if sealing.is_some() {
 		None
 	} else {
 		net_config.add_notification_protocol(grandpa_protocol_config);
@@ -380,10 +388,10 @@ where
 				grandpa_link.shared_authority_set().clone(),
 				Vec::new(),
 			));
-		Some(WarpSyncParams::WithProvider(warp_sync))
+		Some(WarpSyncConfig::WithProvider(warp_sync))
 	};
 
-	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
+	let (network, system_rpc_tx, tx_handler_controller, sync_service) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
 			net_config,
@@ -392,15 +400,13 @@ where
 			spawn_handle: task_manager.spawn_handle(),
 			import_queue,
 			block_announce_validator_builder: None,
-			warp_sync_params,
+			warp_sync_config,
 			block_relay: None,
 			metrics,
 		})?;
 
 	if config.offchain_worker.enabled {
-		task_manager.spawn_handle().spawn(
-			"offchain-workers-runner",
-			"offchain-worker",
+		let offchain_workers =
 			sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
 				runtime_api_provider: client.clone(),
 				is_validator: config.role.is_authority(),
@@ -412,9 +418,13 @@ where
 				network_provider: Arc::new(network.clone()),
 				enable_http_requests: true,
 				custom_extensions: |_| vec![],
-			})
-			.run(client.clone(), task_manager.spawn_handle())
-			.boxed(),
+			})?;
+		task_manager.spawn_handle().spawn(
+			"offchain-workers-runner",
+			"offchain-worker",
+			offchain_workers
+				.run(client.clone(), task_manager.spawn_handle())
+				.boxed(),
 		);
 	}
 
@@ -438,7 +448,7 @@ where
 	let pubsub_notification_sinks = Arc::new(pubsub_notification_sinks);
 
 	// for ethereum-compatibility rpc.
-	config.rpc_id_provider = Some(Box::new(fc_rpc::EthereumSubIdProvider));
+	config.rpc.id_provider = Some(Box::new(fc_rpc::EthereumSubIdProvider));
 
 	// spawn tracing tasks
 	let tracing_requesters = crate::rpc::spawn_tracing_tasks(
@@ -466,6 +476,7 @@ where
 		let is_authority = role.is_authority();
 		let enable_dev_signer = eth_config.enable_dev_signer;
 		let max_past_logs = eth_config.max_past_logs;
+		let max_block_range = eth_config.max_block_range;
 		let execute_gas_limit_multiplier = eth_config.execute_gas_limit_multiplier;
 		let filter_pool = filter_pool.clone();
 		let frontier_backend = frontier_backend.clone();
@@ -494,11 +505,10 @@ where
 			Ok((slot, timestamp, dynamic_fee))
 		};
 
-		Box::new(move |deny_unsafe, subscription_task_executor| {
+		Box::new(move |subscription_task_executor| {
 			let eth_deps = crate::rpc::EthDeps {
 				client: client.clone(),
 				pool: pool.clone(),
-				graph: pool.pool().clone(),
 				converter: Some(TransactionConverter::<B>::default()),
 				is_authority,
 				enable_dev_signer,
@@ -512,6 +522,7 @@ where
 				block_data_cache: block_data_cache.clone(),
 				filter_pool: filter_pool.clone(),
 				max_past_logs,
+				max_block_range,
 				fee_history_cache: fee_history_cache.clone(),
 				fee_history_cache_limit,
 				execute_gas_limit_multiplier,
@@ -521,7 +532,6 @@ where
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
-				deny_unsafe,
 				command_sink: if sealing.is_some() {
 					Some(command_sink.clone())
 				} else {
@@ -556,6 +566,7 @@ where
 		tx_handler_controller,
 		sync_service: sync_service.clone(),
 		telemetry: telemetry.as_mut(),
+		tracing_execute_block: None,
 	})?;
 
 	spawn_frontier_tasks(
@@ -590,7 +601,6 @@ where
 				keystore_container,
 			)?;
 
-			network_starter.start_network();
 			log::info!("Manual Seal Ready");
 			return Ok(task_manager);
 		}
@@ -702,7 +712,6 @@ where
 			.spawn_blocking("grandpa-voter", None, grandpa_voter);
 	}
 
-	network_starter.start_network();
 	Ok(task_manager)
 }
 
@@ -710,7 +719,7 @@ fn run_manual_seal_authorship<B, RA, HF>(
 	eth_config: &EthConfiguration,
 	sealing: Sealing,
 	client: Arc<FullClient<B, RA, HF>>,
-	transaction_pool: Arc<FullPool<B, FullClient<B, RA, HF>>>,
+	transaction_pool: Arc<TransactionPoolHandle<B, FullClient<B, RA, HF>>>,
 	select_chain: FullSelectChain<B>,
 	block_import: BoxBlockImport<B>,
 	task_manager: &TaskManager,

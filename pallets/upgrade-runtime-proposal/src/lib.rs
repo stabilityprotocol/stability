@@ -91,7 +91,9 @@ pub mod pallet {
 				Error::<T>::ProposalInProgress.into()
 			});
 
-			frame_system::Pallet::<T>::can_set_code(&code).map_err(|_| Error::<T>::InvalidCode)?;
+			frame_system::Pallet::<T>::can_set_code(&code, true)
+				.into_result()
+				.map_err(|_| Error::<T>::InvalidCode)?;
 
 			<ProposedCode<T>>::try_mutate::<(), Error<T>, _>(|code_saved| {
 				*code_saved = Some(

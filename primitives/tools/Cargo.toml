@@ -18,3 +18,17 @@ hex = { workspace= true, default-features = false }
 
 [dev-dependencies]
 pallet-evm = { workspace = true, features = ["std"] }
+
+[features]
+default = ["std"]
+std = [
+	"pallet-evm/std",
+	"sp-core/std",
+	"sp-runtime/std",
+	"sp-std/std",
+	"sp-io/std",
+	"ethereum/std",
+	"fp-ethereum/std",
+	"sha3/std",
+	"hex/std",
+]

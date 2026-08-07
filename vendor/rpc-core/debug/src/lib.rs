@@ -1,26 +1,24 @@
-// Copyright © 2022 STABILITY SOLUTIONS, INC. (“STABILITY”)
-// This file is part of the Stability Global Trust Network client
-// software and accompanying documentation (the “Software”).
+// Copyright 2019-2025 PureStake Inc.
+// This file is part of Moonbeam.
 
-// You can download and use the Software for free under the terms of
-// the Stability Open License Agreement as published by Stability on
-// Github at https://github.com/stabilityprotocol/stability/blob/master/LICENSE.
+// Moonbeam is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-// THE SOFTWARE IS PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND.
-// STABILITY EXPRESSLY DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED,
-// INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
-// NON-INFRINGEMENT. IN NO EVENT SHALL OWNER BE LIABLE FOR ANY
-// INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES ARISING
-// OUT OF USE OF THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-// SUCH DAMAGES.
+// Moonbeam is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 
-// Please see the Stability Open License Agreement for more
-// information.
-use ethereum::AccessListItem;
+// You should have received a copy of the GNU General Public License
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
+
+use ethereum::{AccessListItem, AuthorizationList};
 use ethereum_types::{H160, H256, U256};
 use fc_rpc_core::types::Bytes;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
-use moonbeam_client_evm_tracing::types::single;
+use moonbeam_client_evm_tracing::types::{block, single};
 use moonbeam_rpc_core_types::RequestBlockId;
 use serde::Deserialize;
 
@@ -32,8 +30,8 @@ pub struct TraceParams {
 	pub disable_stack: Option<bool>,
 	/// Javascript tracer (we just check if it's Blockscout tracer string)
 	pub tracer: Option<String>,
-	pub timeout: Option<String>,
 	pub tracer_config: Option<single::TraceCallConfig>,
+	pub timeout: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Eq, PartialEq, Deserialize)]
@@ -59,6 +57,8 @@ pub struct TraceCallParams {
 	pub nonce: Option<U256>,
 	/// EIP-2930 access list
 	pub access_list: Option<Vec<AccessListItem>>,
+	/// EIP-7702 authorization list
+	pub authorization_list: Option<AuthorizationList>,
 	/// EIP-2718 type
 	#[serde(rename = "type")]
 	pub transaction_type: Option<U256>,
@@ -85,5 +85,5 @@ pub trait Debug {
 		&self,
 		id: RequestBlockId,
 		params: Option<TraceParams>,
-	) -> RpcResult<Vec<single::TransactionTrace>>;
+	) -> RpcResult<Vec<block::BlockTransactionTrace>>;
 }

@@ -1,21 +1,18 @@
-// Copyright © 2022 STABILITY SOLUTIONS, INC. (“STABILITY”)
-// This file is part of the Stability Global Trust Network client
-// software and accompanying documentation (the “Software”).
+// Copyright 2019-2025 PureStake Inc.
+// This file is part of Moonbeam.
 
-// You can download and use the Software for free under the terms of
-// the Stability Open License Agreement as published by Stability on
-// Github at https://github.com/stabilityprotocol/stability/blob/master/LICENSE.
+// Moonbeam is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-// THE SOFTWARE IS PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND.
-// STABILITY EXPRESSLY DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED,
-// INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
-// NON-INFRINGEMENT. IN NO EVENT SHALL OWNER BE LIABLE FOR ANY
-// INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES ARISING
-// OUT OF USE OF THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-// SUCH DAMAGES.
+// Moonbeam is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 
-// Please see the Stability Open License Agreement for more
-// information.
+// You should have received a copy of the GNU General Public License
+// along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Types for tracing all Ethereum transactions of a block.
 
@@ -25,6 +22,17 @@ use serde::Serialize;
 use ethereum_types::{H160, H256, U256};
 use parity_scale_codec::{Decode, Encode};
 use sp_std::vec::Vec;
+
+/// Block transaction trace.
+#[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BlockTransactionTrace {
+	#[serde(serialize_with = "h256_0x_serialize")]
+	pub tx_hash: H256,
+	pub result: crate::types::single::TransactionTrace,
+	#[serde(skip_serializing)]
+	pub tx_position: u32,
+}
 
 #[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, Serialize)]
 #[serde(rename_all = "camelCase")]

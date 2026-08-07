@@ -75,7 +75,7 @@ pub type StabilityPrecompiles<R, FeeController> = PrecompileSetBuilder<
 				PrecompileAt<AddressU64<8>, Bn128Pairing, EthereumPrecompilesChecks>,
 				PrecompileAt<AddressU64<9>, Blake2F, EthereumPrecompilesChecks>,
 				// Non-Stability specific nor Ethereum precompiles
-				PrecompileAt<AddressU64<1024>, Sha3FIPS256>,
+				PrecompileAt<AddressU64<1024>, Sha3FIPS256<R, ()>>,
 				PrecompileAt<AddressU64<1026>, ECRecoverPublicKey>,
 				PrecompileAt<
 					AddressU64<2049>,

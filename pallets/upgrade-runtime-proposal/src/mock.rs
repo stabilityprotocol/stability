@@ -47,7 +47,7 @@ parameter_types! {
 		impl_version: 1,
 		apis: sp_version::create_apis_vec!([]),
 		transaction_version: 1,
-		state_version: 1,
+		system_version: 1,
 	};
 }
 
@@ -81,6 +81,7 @@ impl frame_system::Config for Test {
 	type PreInherents = ();
 	type PostInherents = ();
 	type PostTransactions = ();
+	type ExtensionsWeightInfo = ();
 }
 
 parameter_types! {

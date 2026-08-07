@@ -98,9 +98,12 @@ where
 		+ pallet_evm::Config
 		+ pallet_dnt_fee_controller::Config
 		+ pallet_validator_set::Config,
-	<Runtime::RuntimeCall as Dispatchable>::RuntimeOrigin: From<Option<Runtime::AccountId>>,
-	Runtime::RuntimeCall: Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
+	<<Runtime as frame_system::Config>::RuntimeCall as Dispatchable>::RuntimeOrigin:
+		From<Option<Runtime::AccountId>>,
+	<Runtime as frame_system::Config>::RuntimeCall:
+		Dispatchable<PostInfo = PostDispatchInfo> + GetDispatchInfo,
 	<Runtime as pallet_timestamp::Config>::Moment: Into<U256>,
+	<Runtime as frame_system::Config>::AccountId: From<H160>,
 {
 	#[precompile::public("owner()")]
 	#[precompile::view]
@@ -250,8 +253,9 @@ where
 	) -> EvmResult<bool> {
 		handle.record_cost(RuntimeHelper::<Runtime>::db_read_gas_cost())?;
 
-		let holder_account_id: <Runtime as frame_system::Config>::AccountId =
-			<Runtime as pallet_evm::Config>::AddressMapping::into_account_id(holder.into());
+		let holder_h160: H160 = holder.into();
+		let holder_account_id =
+			<Runtime as frame_system::Config>::AccountId::from(holder_h160);
 		let is_whitelisted =
 			pallet_fee_rewards_vault::Pallet::<Runtime>::is_whitelisted(holder.into());
 		let is_validator =

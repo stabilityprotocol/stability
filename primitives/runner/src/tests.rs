@@ -47,6 +47,7 @@ fn test_forwards_a_call_op() {
 			None,
 			None,
 			vec![],
+			Default::default(),
 			false,
 			false,
 			None,
@@ -78,6 +79,7 @@ fn test_sends_users_token_on_call() {
 			None,
 			None,
 			vec![],
+			Default::default(),
 			false,
 			false,
 			None,
@@ -101,6 +103,7 @@ fn test_sends_users_token_on_call() {
 			None,
 			None,
 			vec![],
+			Default::default(),
 			false,
 			false,
 			None,
@@ -114,8 +117,7 @@ fn test_sends_users_token_on_call() {
 			ExitReason::Succeed(ExitSucceed::Returned)
 		);
 
-		let mut expected_value = [0u8; 32];
-		U256::from(100_u128).to_big_endian(&mut expected_value);
+		let expected_value = U256::from(100_u128).to_big_endian();
 		assert_eq!(target_res.value, expected_value);
 	});
 }
@@ -136,6 +138,7 @@ fn test_forwards_a_create_op() {
 			None,
 			None,
 			vec![],
+			Default::default(),
 			false,
 			true,
 			None,
@@ -170,6 +173,7 @@ fn transaction_fee_log_emitted() {
 			None,
 			None,
 			vec![],
+			Default::default(),
 			true,
 			false,
 			None,
@@ -204,6 +208,7 @@ fn transaction_fee_log_not_emitted() {
 			None,
 			None,
 			vec![],
+			Default::default(),
 			false,
 			false,
 			None,

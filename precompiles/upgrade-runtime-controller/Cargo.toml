@@ -52,4 +52,8 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"pallet-evm/std",
+	"pallet-timestamp/std",
+	"parity-scale-codec/std",
+	"sp-version/std",
 ]

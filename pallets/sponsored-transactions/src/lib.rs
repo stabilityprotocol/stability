@@ -251,6 +251,7 @@ pub mod pallet {
 
 			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
 			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
+			let is_eip7702 = matches!(transaction, pallet_ethereum::Transaction::EIP7702(_));
 
 			fp_evm::CheckEvmTransaction::<pallet_ethereum::InvalidTransactionWrapper>::new(
 				CheckEvmTransactionConfig {
@@ -267,6 +268,7 @@ pub mod pallet {
 			.validate_in_block_for(&who)
 			.and_then(|v| v.with_chain_id())
 			.and_then(|v| v.with_base_fee())
+			.and_then(|v| v.with_eip7702_authorization_list(is_eip7702))
 			.map_err(|_| ())?;
 
 			Ok(())
@@ -280,6 +282,7 @@ pub mod pallet {
 
 			let (base_fee, _) = <T as pallet_evm::Config>::FeeCalculator::min_gas_price();
 			let (who, _) = pallet_evm::Pallet::<T>::account_basic(origin);
+			let is_eip7702 = matches!(transaction, pallet_ethereum::Transaction::EIP7702(_));
 
 			fp_evm::CheckEvmTransaction::<pallet_ethereum::InvalidTransactionWrapper>::new(
 				CheckEvmTransactionConfig {
@@ -296,6 +299,7 @@ pub mod pallet {
 			.validate_in_pool_for(&who)
 			.and_then(|v| v.with_chain_id())
 			.and_then(|v| v.with_base_fee())
+			.and_then(|v| v.with_eip7702_authorization_list(is_eip7702))
 			.map_err(|_| ())?;
 
 			Ok(())

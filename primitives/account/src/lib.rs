@@ -23,7 +23,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160};
@@ -31,7 +31,18 @@ use sp_core::{ecdsa, H160};
 pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 #[derive(
-	Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord,
+	Eq,
+	PartialEq,
+	Copy,
+	Clone,
+	Encode,
+	Decode,
+	DecodeWithMemTracking,
+	TypeInfo,
+	MaxEncodedLen,
+	Default,
+	PartialOrd,
+	Ord,
 )]
 pub struct AccountId20(pub [u8; 20]);
 
@@ -106,7 +117,16 @@ impl std::str::FromStr for AccountId20 {
 }
 
 #[derive(
-	Eq, PartialEq, Clone, Encode, Decode, sp_core::RuntimeDebug, TypeInfo, Serialize, Deserialize,
+	Eq,
+	PartialEq,
+	Clone,
+	Encode,
+	Decode,
+	DecodeWithMemTracking,
+	sp_core::RuntimeDebug,
+	TypeInfo,
+	Serialize,
+	Deserialize,
 )]
 pub struct EthereumSignature(ecdsa::Signature);
 
@@ -126,6 +146,9 @@ impl From<sp_runtime::MultiSignature> for EthereumSignature {
 				panic!("Sr25519 not supported for EthereumSignature")
 			}
 			sp_runtime::MultiSignature::Ecdsa(sig) => Self(sig),
+			sp_runtime::MultiSignature::Eth(sig) => {
+				Self(ecdsa::Signature::from_raw(*sig.as_ref()))
+			}
 		}
 	}
 }
