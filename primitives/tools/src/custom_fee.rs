@@ -89,13 +89,9 @@ impl CustomFeeInfo {
 		// Cross-multiply to compare without division
 		// user_rate >= validator_rate is equivalent to:
 		// user_num * validator_denom >= validator_num * user_denom
-		match self.user_conversion_rate_cap.0.checked_mul(validator_denom) {
-			Some(user_side) => match validator_conversion_rate.0.checked_mul(user_denom) {
-				Some(validator_side) => user_side >= validator_side,
-				None => false, // Validator side would overflow, assume user rate is lower
-			},
-			None => true, // User side would overflow, assume user rate is higher
-		}
+		// full_mul widens to U512, so the comparison is exact and cannot overflow.
+		self.user_conversion_rate_cap.0.full_mul(validator_denom)
+			>= validator_conversion_rate.0.full_mul(user_denom)
 	}
 }
 
@@ -194,5 +190,64 @@ mod test {
 			info.user_conversion_rate_cap,
 			(U256::from(0), U256::from(1_000_000_000))
 		);
+	}
+
+	fn info_with_cap(numerator: U256, denominator: U256) -> CustomFeeInfo {
+		CustomFeeInfo {
+			actual_fee: numerator,
+			max_priority_fee_per_gas: None,
+			user_conversion_rate_cap: (numerator, denominator),
+		}
+	}
+
+	#[test]
+	fn conversion_rate_limit_equal_rates_match() {
+		let info = info_with_cap(U256::from(3), U256::from(2));
+		assert!(info.match_validator_conversion_rate_limit((U256::from(3), U256::from(2))));
+		assert!(info.match_validator_conversion_rate_limit((U256::from(6), U256::from(4))));
+	}
+
+	#[test]
+	fn conversion_rate_limit_user_rate_higher_matches() {
+		let info = info_with_cap(U256::from(3), U256::from(1));
+		assert!(info.match_validator_conversion_rate_limit((U256::from(2), U256::from(1))));
+	}
+
+	#[test]
+	fn conversion_rate_limit_user_rate_lower_rejects() {
+		let info = info_with_cap(U256::from(1), U256::from(2));
+		assert!(!info.match_validator_conversion_rate_limit((U256::from(2), U256::from(1))));
+	}
+
+	#[test]
+	fn conversion_rate_limit_zero_denominators_do_not_panic() {
+		// Zero denominators are normalized to 1 on both sides.
+		let info = info_with_cap(U256::from(5), U256::zero());
+		assert!(info.match_validator_conversion_rate_limit((U256::from(5), U256::zero())));
+		assert!(info.match_validator_conversion_rate_limit((U256::from(4), U256::zero())));
+		assert!(!info.match_validator_conversion_rate_limit((U256::from(6), U256::zero())));
+	}
+
+	#[test]
+	fn conversion_rate_limit_user_side_overflow_is_exact() {
+		// user = MAX/1, validator = MAX/1 with big denominators: cross products
+		// exceed 256 bits but full_mul keeps the comparison exact.
+		let info = info_with_cap(U256::max_value(), U256::from(2));
+		assert!(info.match_validator_conversion_rate_limit((U256::max_value(), U256::from(3))));
+		// user rate (MAX/3) < validator rate (MAX/2) must reject even though
+		// both cross products overflow 256 bits.
+		let info = info_with_cap(U256::max_value(), U256::from(3));
+		assert!(!info.match_validator_conversion_rate_limit((U256::max_value(), U256::from(2))));
+	}
+
+	#[test]
+	fn conversion_rate_limit_validator_side_overflow_is_exact() {
+		// validator product overflows 256 bits, user product does not:
+		// user rate is clearly lower, must reject.
+		let info = info_with_cap(U256::from(1), U256::from(1));
+		assert!(!info.match_validator_conversion_rate_limit((U256::max_value(), U256::from(2))));
+		// and the symmetric case: huge user rate against tiny validator rate.
+		let info = info_with_cap(U256::max_value(), U256::from(1));
+		assert!(info.match_validator_conversion_rate_limit((U256::from(1), U256::from(2))));
 	}
 }

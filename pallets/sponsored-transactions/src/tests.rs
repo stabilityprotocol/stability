@@ -214,3 +214,28 @@ fn check_correct_fee_management(called_arguments: Vec<(bool, H160, H160, U256)>)
 	}
 	assert_eq!(total_deposited, total_withdrawn);
 }
+
+#[test]
+fn fail_to_execute_meta_transaction_with_short_meta_signature() {
+	new_test_ext().execute_with(|| {
+		let trx1 = get_transaction_from_bytes(RawTransaction0::get());
+
+		let from = recover_signer(&trx1).unwrap();
+		let origin: <Runtime as frame_system::Config>::RuntimeOrigin =
+			pallet_ethereum::Origin::EthereumTransaction(from).into();
+
+		// A signature shorter than 65 bytes must be rejected, not panic.
+		let error = crate::Pallet::<Runtime>::send_sponsored_transaction(
+			origin.clone(),
+			trx1.clone(),
+			Sponsor::get(),
+			vec![0u8; 10],
+		)
+		.unwrap_err();
+
+		assert!(matches!(
+			error,
+			DispatchError::Other("Invalid metatransaction signature")
+		));
+	});
+}

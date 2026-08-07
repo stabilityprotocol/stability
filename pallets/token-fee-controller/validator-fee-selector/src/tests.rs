@@ -140,3 +140,27 @@ fn not_supported_by_validator_if_not_supported_by_chain() {
         ), false);
     });
 }
+#[test]
+fn missing_default_controller_does_not_panic() {
+    ExtBuilder::default().build().execute_with(|| {
+        crate::DefaultController::<Runtime>::kill();
+
+        assert_eq!(
+            <ValidatorFeeSelector as crate::ValidatorFeeTokenController>::conversion_rate_controller(
+                MeaninglessAccount::get()
+            ),
+            H160::zero()
+        );
+
+        // With a zero-address controller the simulator call yields no usable
+        // output, so the conversion rate falls back to (1, 1).
+        assert_eq!(
+            <ValidatorFeeSelector as crate::ValidatorFeeTokenController>::conversion_rate(
+                MeaninglessAccount::get(),
+                MeaninglessAccount::get(),
+                MeaninglessTokenAddress::get(),
+            ),
+            (1.into(), 1.into())
+        );
+    });
+}

@@ -56,3 +56,24 @@ fn fail_to_execute_transaction_with_high_nonce() {
 		));
 	})
 }
+
+#[test]
+fn fail_to_execute_transaction_with_short_validator_signature() {
+	new_test_ext().execute_with(|| {
+		let private_key = H256::random();
+		let trx1 = legacy_erc20_creation_transaction(0.into(), &private_key);
+
+		// A validator signature shorter than 65 bytes must be rejected, not panic.
+		let error = crate::Pallet::<Runtime>::send_zero_gas_transaction(
+			RawOrigin::None.into(),
+			Transaction::Legacy(trx1.clone()),
+			vec![0u8; 10],
+		)
+		.unwrap_err();
+
+		assert!(matches!(
+			error.error,
+			sp_runtime::DispatchError::Other("Invalid zero gas transaction signature")
+		));
+	})
+}

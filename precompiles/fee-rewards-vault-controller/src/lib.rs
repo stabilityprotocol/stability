@@ -392,7 +392,8 @@ where
 		}
 
 		handle.record_cost(RuntimeHelper::<Runtime>::db_write_gas_cost())?;
-		pallet_dnt_fee_controller::Pallet::<Runtime>::set_validator_percentage(percentage).unwrap();
+		pallet_dnt_fee_controller::Pallet::<Runtime>::set_validator_percentage(percentage)
+			.map_err(|_| revert("percentage is too high"))?;
 
 		handle.record_log_costs_manual(1, 32)?;
 		log1(

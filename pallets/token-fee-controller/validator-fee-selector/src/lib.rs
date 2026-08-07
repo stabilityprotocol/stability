@@ -18,6 +18,8 @@
 // information.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+// expect_used is not denied because FRAME macros expand to expect() internally.
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
 pub use pallet::*;
 use sp_core::{H160, U256};
@@ -72,7 +74,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn default_controller)]
-	pub type DefaultController<T: Config> = StorageValue<_, H160, OptionQuery>;
+	pub type DefaultController<T: Config> = StorageValue<_, H160, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn conversion_rate_fee_tokens)]
@@ -154,7 +156,7 @@ pub mod pallet {
 
 		fn conversion_rate_controller(validator: H160) -> H160 {
 			ValidatorConversionRateController::<T>::get(validator)
-				.unwrap_or(DefaultController::<T>::get().unwrap())
+				.unwrap_or_else(DefaultController::<T>::get)
 		}
 
 		fn conversion_rate(sender: H160, validator: H160, token: H160) -> (U256, U256) {

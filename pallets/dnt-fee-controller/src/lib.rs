@@ -18,6 +18,8 @@
 // information.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+// expect_used is not denied because FRAME macros expand to expect() internally.
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
 pub use pallet::*;
 
@@ -55,13 +57,25 @@ pub mod pallet {
 		ArithmeticError,
 	}
 
+	#[pallet::type_value]
+	pub fn DefaultFeeVaultPrecompileAddress<T: Config>() -> H160 {
+		H160::from_low_u64_be(0x807)
+	}
+
+	#[pallet::type_value]
+	pub fn DefaultValidatorPercentage<T: Config>() -> U256 {
+		U256::from(50)
+	}
+
 	#[pallet::storage]
 	#[pallet::getter(fn fee_vault_precompile_address)]
-	pub type FeeVaultPrecompileAddressStorage<T: Config> = StorageValue<_, H160, OptionQuery>;
+	pub type FeeVaultPrecompileAddressStorage<T: Config> =
+		StorageValue<_, H160, ValueQuery, DefaultFeeVaultPrecompileAddress<T>>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn validator_percentage)]
-	pub type ValidatorPercentageStorage<T: Config> = StorageValue<_, U256, OptionQuery>;
+	pub type ValidatorPercentageStorage<T: Config> =
+		StorageValue<_, U256, ValueQuery, DefaultValidatorPercentage<T>>;
 
 	#[pallet::config]
 	pub trait Config:
@@ -83,10 +97,7 @@ pub mod pallet {
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
-				fee_vault_precompile_address: <H160 as core::str::FromStr>::from_str(
-					"0x0000000000000000000000000000000000000807",
-				)
-				.unwrap(),
+				fee_vault_precompile_address: H160::from_low_u64_be(0x807),
 				validator_percentage: 50.into(),
 				_config: Default::default(),
 			}
@@ -117,7 +128,7 @@ pub mod pallet {
 		}
 
 		fn get_fee_vault() -> H160 {
-			Self::fee_vault_precompile_address().unwrap()
+			Self::fee_vault_precompile_address()
 		}
 
 		fn withdraw_fee(
@@ -133,7 +144,7 @@ pub mod pallet {
 				return Err(Error::<T>::InvalidConversionRate);
 			}
 
-			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get().unwrap();
+			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get();
 			let mapped_amount = amount
 				.checked_mul(conversion_rate.0)
 				.map(|v| v.div_mod(conversion_rate.1).0);
@@ -178,7 +189,7 @@ pub mod pallet {
 				_ => return Err(Error::ArithmeticError),
 			};
 
-			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get().unwrap();
+			let fee_vault = FeeVaultPrecompileAddressStorage::<T>::get();
 			T::ERC20Manager::withdraw_amount(token, fee_vault, mapped_amount)
 				.map_err(|_| Error::<T>::ERC20WithdrawFailed)?;
 			T::ERC20Manager::deposit_amount(token, from, mapped_amount)
@@ -212,7 +223,7 @@ pub mod pallet {
 			};
 
 			let validator_share = match to {
-				Some(_) => ValidatorPercentageStorage::<T>::get().unwrap(),
+				Some(_) => ValidatorPercentageStorage::<T>::get(),
 				_ => 100.into(),
 			};
 
@@ -233,13 +244,9 @@ pub mod pallet {
 			)
 			.map_err(|_| Error::<T>::FeeVaultOverflow)?;
 
-			if to.is_some() {
-				pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(
-					to.unwrap(),
-					token,
-					dapp_fee,
-				)
-				.map_err(|_| Error::<T>::FeeVaultOverflow)?;
+			if let Some(dapp) = to {
+				pallet_fee_rewards_vault::Pallet::<T>::add_claimable_reward(dapp, token, dapp_fee)
+					.map_err(|_| Error::<T>::FeeVaultOverflow)?;
 			}
 
 			Ok((validator_fee, dapp_fee))
@@ -256,7 +263,7 @@ pub mod pallet {
 		}
 
 		pub fn get_validator_percentage() -> U256 {
-			ValidatorPercentageStorage::<T>::get().unwrap()
+			ValidatorPercentageStorage::<T>::get()
 		}
 	}
 }

@@ -18,6 +18,7 @@
 // information.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
 
 pub mod custom_fee;
 pub mod eth;

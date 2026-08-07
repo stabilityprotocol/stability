@@ -1658,13 +1658,10 @@ impl_runtime_apis! {
 		fn is_compatible_fee(tx: <Block as BlockT>::Extrinsic, validator: AccountId) -> bool {
 			match tx.0.function {
 				RuntimeCall::Ethereum(transact { transaction }) | RuntimeCall::MetaTransactions(send_sponsored_transaction { transaction, .. }) => {
-					let source_address_option = stbl_tools::eth::recover_signer(&transaction);
-
-					if source_address_option.is_none() {
-						return true;
-					}
-
-					let source_address = source_address_option.unwrap();
+					let source_address = match stbl_tools::eth::recover_signer(&transaction) {
+						Some(address) => address,
+						None => return true,
+					};
 					let source_fee_token = <pallet_user_fee_selector::Pallet<Runtime>>::get_user_fee_token(source_address);
 					let validator_conversion_rate = <pallet_validator_fee_selector::Pallet<Runtime>>::conversion_rate(source_address, validator.into(), source_fee_token);
 					let fee = pallet_base_fee::BaseFeePerGas::<Runtime>::get();

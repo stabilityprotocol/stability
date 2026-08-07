@@ -164,7 +164,7 @@ pub fn transaction_gas_price(
 pub fn build_eip191_message_hash(message: Vec<u8>) -> H256 {
 	let result = b"\x19Ethereum Signed Message:\n"
 		.iter()
-		.chain(crate::misc::u64_to_buffer_in_ascii(message.len().try_into().unwrap()).iter())
+		.chain(crate::misc::u64_to_buffer_in_ascii(message.len() as u64).iter())
 		.chain(message.iter())
 		.cloned()
 		.collect::<Vec<u8>>();
